@@ -1,14 +1,14 @@
 <li class="relative flex">
-    <a href="" class="border-4 border-red-600 rounded-lg py-4 px-7 transition hover:bg-black/5">
+    <a href="" class="border-4 border-red-600 rounded-lg py-4 px-7 transition hover:bg-black/5 w-full">
         <div class="flex flex-row items-center justify-between">
             <div class="flex flex-col items-start justify-center">
-                <h3 class="font-bold text-lg">Abonnement 1 mois - HD</h3>
+                <h3 class="font-bold text-lg">{{ subscription.name }}</h3>
                 <span class="font-medium text-gray-400 text-nowrap">Le moins chère</span>
             </div>
-            <span class="text-3xl font-bold">3€</span>
+            <span class="text-3xl font-bold">{{ subscription.price }}€</span>
         </div>
         <p class="flex items-start justify-between mt-5 mb-8 text-md pr-3">
-            Lorem ipsum dolor sit amet, consectetur adipisicing elit. Doloremque in iure officiis suscipit vel.
+            Durée : {{ subscription.duration }} mois.
         </p>
         <div>
             <button class="border-transparent bg-red-600 px-4 py-3 text-md text-white rounded-md">S'abonner</button>

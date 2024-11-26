@@ -33,10 +33,9 @@
                 Votre abonnement actuel : <span class="text-red-600 font-bold ml-2">Aucun</span>
             </div>
             <ul class="mt-9 grid grid-cols-2 gap-y-5 gap-x-5">
-                {% include 'parts/subscriptions/card_subscription.html.twig' %}
-                {% include 'parts/subscriptions/card_subscription.html.twig' %}
-                {% include 'parts/subscriptions/card_subscription.html.twig' %}
-                {% include 'parts/subscriptions/card_subscription.html.twig' %}
+                {% for subscription in subscriptions %}
+                    {% include 'parts/subscriptions/card_subscription.html.twig' %}
+                {% endfor %}
             </ul>
         </section>
     </main>

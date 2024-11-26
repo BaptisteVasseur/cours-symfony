@@ -27,7 +27,7 @@
             <div class="tracking-wideflex-1">MMovie<span class="text-red-600">.</span></div>
         </header>
         <section class="">
-            <h1 class="text-lg font-medium text-black">Détails de <span class="font-bold text-red-600">Interstellar</span></h1>
+            <h1 class="text-lg font-medium text-black">Détails de <span class="font-bold text-red-600">{{ movie.title }}</span></h1>
             <div class="flex flex-col items-center mt-9">
                 <a class="relative flex w-full flex-row p-3 items-center justify-center rounded-lg overflow-hidden border hover:scale-105 cursor-pointer transition hover:bg-gray-100">
                     <span class="text-red-600 font-bold mr-2">
@@ -47,7 +47,7 @@
                     <span class="pl-4 text-xs drop-shadow-lg">Recommandé par 12 amis</span>
                 </div>
                 <div class="bg-gradient-to-r from-black/40 to-transparent -mx-7 -mb-6 px-7 pb-6 pt-2">
-                    <span class="uppercase text-3xl font-semibold drop-shadow-lg ">Inception</span>
+                    <span class="uppercase text-3xl font-semibold drop-shadow-lg ">{{ movie.title }}</span>
                     <div class="mt-4 flex items-center justify-between">
                         <div class="flex space-x-3 items-center">
                             <a href="#" class="px-5 flex items-center justify-center py-2.5 bg-red-600 hover:bg-red-700 rounded-lg text-xs inline-block">
@@ -89,17 +89,21 @@
                 <h2 class="text-lg font-medium text-black"><span class="font-bold text-red-600">Infos</span> du film</h2>
                 <div class="flex items-center flex-wrap mt-9">
                     <span class="flex bg-black/10 m-0.5 px-1 py-0.5 rounded"><b class="mr-2">Durée</b> 2h40 mins</span>
-                    <span class="flex bg-black/10 m-0.5 px-1 py-0.5 rounded"><b class="mr-2">Date de sortie</b> 21 Octobre 2024</span>
+                    <span class="flex bg-black/10 m-0.5 px-1 py-0.5 rounded"><b class="mr-2">Date de sortie</b> {{ movie.releaseDate | date("m/d/Y") }}</span>
                     <span class="flex bg-black/10 m-0.5 px-1 py-0.5 rounded"><b class="mr-2">Notes</b> <span class="flex space-x-2 items-center text-xs"><span>7.4</span><svg class="w-8 h-5" xmlns="http://www.w3.org/2000/svg" width="64" height="32" viewBox="0 0 64 32" version="1.1"><g fill="#F5C518"><rect x="0" y="0" width="100%" height="100%" rx="4"></rect></g><g transform="translate(8.000000, 7.000000)" fill="#000000" fill-rule="nonzero"><polygon points="0 18 5 18 5 0 0 0"></polygon><path d="M15.6725178,0 L14.5534833,8.40846934 L13.8582008,3.83502426 C13.65661,2.37009263 13.4632474,1.09175121 13.278113,0 L7,0 L7,18 L11.2416347,18 L11.2580911,6.11380679 L13.0436094,18 L16.0633571,18 L17.7583653,5.8517865 L17.7707076,18 L22,18 L22,0 L15.6725178,0 Z"></path><path d="M24,18 L24,0 L31.8045586,0 C33.5693522,0 35,1.41994415 35,3.17660424 L35,14.8233958 C35,16.5777858 33.5716617,18 31.8045586,18 L24,18 Z M29.8322479,3.2395236 C29.6339219,3.13233348 29.2545158,3.08072342 28.7026524,3.08072342 L28.7026524,14.8914865 C29.4312846,14.8914865 29.8796736,14.7604764 30.0478195,14.4865461 C30.2159654,14.2165858 30.3021941,13.486105 30.3021941,12.2871637 L30.3021941,5.3078959 C30.3021941,4.49404499 30.272014,3.97397442 30.2159654,3.74371416 C30.1599168,3.5134539 30.0348852,3.34671372 29.8322479,3.2395236 Z"></path><path d="M44.4299079,4.50685823 L44.749518,4.50685823 C46.5447098,4.50685823 48,5.91267586 48,7.64486762 L48,14.8619906 C48,16.5950653 46.5451816,18 44.749518,18 L44.4299079,18 C43.3314617,18 42.3602746,17.4736618 41.7718697,16.6682739 L41.4838962,17.7687785 L37,17.7687785 L37,0 L41.7843263,0 L41.7843263,5.78053556 C42.4024982,5.01015739 43.3551514,4.50685823 44.4299079,4.50685823 Z M43.4055679,13.2842155 L43.4055679,9.01907814 C43.4055679,8.31433946 43.3603268,7.85185468 43.2660746,7.63896485 C43.1718224,7.42607505 42.7955881,7.2893916 42.5316822,7.2893916 C42.267776,7.2893916 41.8607934,7.40047379 41.7816216,7.58767002 L41.7816216,9.01907814 L41.7816216,13.4207851 L41.7816216,14.8074788 C41.8721037,15.0130276 42.2602358,15.1274059 42.5316822,15.1274059 C42.8031285,15.1274059 43.1982131,15.0166981 43.281155,14.8074788 C43.3640968,14.5982595 43.4055679,14.0880581 43.4055679,13.2842155 Z"></path></g></svg></span></span>
                     <span class="flex bg-black/10 m-0.5 px-1 py-0.5 rounded"><b class="mr-2">Langues</b> Français, Anglais, Italien</span>
                     <span class="flex bg-black/10 m-0.5 px-1 py-0.5 rounded"><b class="mr-2">Sous-titre</b> Français, Anglais</span>
-                    <span class="flex bg-black/10 m-0.5 px-1 py-0.5 rounded"><b class="mr-2">Catégories</b> <a href="#" class="hover:text-red-600 underline decoration-red-400 decoration-2">Action</a>,&nbsp;<a href="#" class="hover:text-red-600 underline decoration-red-400 decoration-2">Aventure</a>,&nbsp;<a href="#" class="hover:text-red-600 underline decoration-red-400 decoration-2">Science Fiction</a></span>
+                    <span class="flex bg-black/10 m-0.5 px-1 py-0.5 rounded"><b class="mr-2">Catégories</b>
+                        {% for category in movie.categories %}
+                            <a href="{{ path('page_category', {id: category.id}) }}" class="hover:text-red-600 underline decoration-red-400 decoration-2">{{ category.label }}</a>,&nbsp;
+                        {% endfor %}
+                    </span>
                     <span class="flex bg-black/10 m-0.5 px-1 py-0.5 rounded"><b class="mr-2">Bande annonce</b> <a href="#" class="hover:text-red-600 underline decoration-red-400 decoration-2">Youtube</a>,&nbsp;<a href="#" class="hover:text-red-600 underline decoration-red-400 decoration-2">Allociné</a></span>
                 </div>
             </div>
             <div class="max-w-3xl mx-auto mt-9">
                 <h2 class="text-lg font-medium text-black">Résumé <span class="font-bold text-red-600">rapide</span></h2>
-                <p class="text-md mt-9">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aliquam, consectetur deleniti deserunt ducimus harum iusto laboriosam minima nobis obcaecati odit officiis omnis quibusdam repellat repudiandae totam voluptas, voluptatem voluptatibus voluptatum.</p>
+                <p class="text-md mt-9">{{ movie.shortDescription }}</p>
             </div>
             <div class="max-w-3xl mx-auto mt-9">
                 <h2 class="text-lg font-medium text-black"><span class="font-bold text-red-600">Équipe</span> du film</h2>
@@ -186,79 +190,51 @@
             <div class="max-w-3xl mx-auto mt-9">
                 <h2 class="text-lg font-medium text-black">Résumé <span class="font-bold text-red-600">détaillé</span></h2>
                 <p class="text-md mt-9">
-                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Culpa dolor error ipsa mollitia necessitatibus perferendis perspiciatis quasi, quidem repellendus rerum. Autem culpa eum iusto magnam voluptatem. Autem doloribus esse natus! Ab commodi deserunt eaque eos incidunt laudantium magni neque officiis optio praesentium sint, voluptates!
-                    <br><br>Assumenda atque blanditiis dicta ducimus, eligendi ex fuga fugiat hic illo laboriosam maiores natus nemo, officiis pariatur perferendis quasi reiciendis repellat repellendus sit ullam, vitae voluptatem voluptatum? Aliquid amet, animi aspernatur consectetur cumque doloribus impedit nihil quidem recusandae totam. Alias architecto cumque cupiditate expedita laboriosam laudantium magni, minus possimus quisquam quod quos suscipit temporibus tenetur.
-                    <br><br>Accusamus adipisci aperiam, assumenda beatae corporis culpa dignissimos dolore dolorem doloremque dolores eveniet libero magnam molestiae molestias nam nulla officiis provident quasi quia quibusdam quod rem repudiandae similique suscipit temporibus velit voluptates. Culpa cum dolor est similique.
-                    <br><br>Exercitationem magnam, necessitatibus. Adipisci, amet asperiores aspernatur atque aut commodi cupiditate dolore ea earum et facilis, fuga in laudantium magnam nulla odio quas repudiandae sunt voluptas, voluptatem. Aspernatur, at cumque delectus dicta dolor ipsam laudantium minus mollitia odit pariatur quia suscipit temporibus velit. Aliquid non officia quo sed vero! Aperiam, cupiditate deserunt earum eligendi, esse excepturi impedit ipsam molestias obcaecati odio quibusdam, tempore unde voluptatibus? Asperiores corporis deleniti doloribus dolorum, eius est eum exercitationem iste molestias obcaecati quae quibusdam quisquam recusandae saepe sequi suscipit, tempora? Odit, quia, voluptatem! Doloribus nemo provident quasi quia veniam? Ab, at deserunt distinctio earum eveniet facilis ipsa nisi officia possimus sed suscipit, tempora unde. Architecto corporis delectus fugit quasi rerum tenetur.
-                    <br><br>Ad alias aut commodi consectetur consequatur, cumque delectus deleniti, distinctio dolore dolorum enim et excepturi facere facilis fugiat impedit incidunt ipsum labore maiores modi molestiae nam necessitatibus nisi numquam, obcaecati odit officiis perferendis placeat praesentium quaerat quia quos tempora vel? Amet cupiditate labore porro temporibus velit? Assumenda deleniti, rem. Corporis nemo nihil nisi quae totam! Alias aut itaque nostrum qui quia quisquam reiciendis soluta voluptates? Atque aut consectetur dicta distinctio dolor, eum, eveniet ipsam, praesentium recusandae reiciendis sapiente tenetur. Ad alias atque commodi culpa debitis delectus doloribus eaque eligendi est expedita fuga illo ipsam laborum libero modi nemo nobis nulla pariatur porro.
-                    <br><br>Quasi quidem quo reiciendis repellendus rerum sequi suscipit, tempore unde velit voluptate voluptatibus? Aperiam architecto cupiditate delectus dolore dolores doloribus earum eius eos in mollitia, non nostrum quasi quidem ratione rem repellendus sequi tempore, velit vitae voluptatum. Cumque, dignissimos dolor ea enim et illo magni mollitia nam nemo omnis, perferendis praesentium quae quidem quo voluptates! Eius harum id in, ipsa libero molestiae omnis provident quasi quisquam saepe, similique voluptates. Ad culpa dolores et explicabo, illo ipsum iusto labore magni nesciunt nisi nobis officiis optio quam quo ullam. Id, inventore iste molestias natus odio officia optio pariatur ut? Animi autem beatae blanditiis cum deserunt dicta dolorum ea eligendi eveniet exercitationem explicabo impedit ipsum laudantium nam nesciunt odit officia pariatur placeat praesentium quam, quasi quia quis quisquam sint soluta tempore temporibus tenetur vero voluptatem voluptatum! Consequuntur ex maiores quam tempore. Aliquam consequatur consequuntur est ex facilis inventore itaque laborum provident quasi quidem, ut voluptas. Beatae consequatur delectus deserunt eligendi est et eveniet explicabo facilis hic illum incidunt ipsum iste magnam nesciunt nobis omnis perspiciatis possimus praesentium quas quia, quo quos recusandae saepe suscipit tempore veniam voluptates voluptatum.
+                    {{ movie.longDescription }}
+                </p>
             </div>
         </section>
         <section class="mt-9">
             <div class="max-w-3xl mx-auto">
                 <h2 class="text-lg font-medium text-black">Les <span class="font-bold text-red-600">commentaires</span></h2>
                 <ul class="space-y-4">
-                    <li class="mt-9">
-                        <div class="bg-gray-100 p-4 rounded-lg">
-                            <div class="flex items-center">
-                                <img src="https://random.imagecdn.app/100/100?a" class="w-10 h-10 rounded-full" alt="">
-                                <div class="ml-4 w-full">
-                                    <span class="font-medium">John Doe</span>
-                                    <span class="text-xs text-gray-500 flex items-center justify-between w-full">
+
+                    {% for comment in movie.comments %}
+                        <li class="mt-9">
+                            <div class="bg-gray-100 p-4 rounded-lg">
+                                <div class="flex items-center">
+                                    <img src="https://random.imagecdn.app/100/100?a" class="w-10 h-10 rounded-full" alt="">
+                                    <div class="ml-4 w-full">
+                                        <span class="font-medium">{{ comment.publisher.username }}</span>
+                                        <span class="text-xs text-gray-500 flex items-center justify-between w-full">
                                     <span>Il y a 2 jours</span>
                                     <span></span>
                                 </span>
+                                    </div>
                                 </div>
+                                <p class="mt-4 w-full">{{ comment.content }}</p>
                             </div>
-                            <p class="mt-4 w-full">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aliquam, consectetur deleniti deserunt ducimus harum iusto laboriosam minima nobis obcaecati odit officiis omnis quibusdam repellat repudiandae totam voluptas, voluptatem voluptatibus voluptatum.</p>
-                        </div>
-                    </li>
-                    <li class="mt-9 pl-9 border-l-4">
-                        <div class="bg-gray-100 p-4 rounded-lg">
-                            <div class="flex items-center">
-                                <img src="https://random.imagecdn.app/100/100?b" class="w-10 h-10 rounded-full" alt="">
-                                <div class="ml-4 w-full">
-                                    <span class="font-medium">Jane Doe</span>
-                                    <span class="text-xs text-gray-500 flex items-center justify-between w-full">
-                                    <span>Il y a 4 heures</span>
+                        </li>
+
+                        {% for childComment in comment.childComments %}
+                            <li class="mt-9 border-l-4 pl-4">
+                                <div class="bg-gray-100 p-4 rounded-lg">
+                                    <div class="flex items-center">
+                                        <img src="https://random.imagecdn.app/100/100?a" class="w-10 h-10 rounded-full" alt="">
+                                        <div class="ml-4 w-full">
+                                            <span class="font-medium">{{ childComment.publisher.username }}</span>
+                                            <span class="text-xs text-gray-500 flex items-center justify-between w-full">
+                                    <span>Il y a 2 jours</span>
                                     <span></span>
                                 </span>
+                                        </div>
+                                    </div>
+                                    <p class="mt-4 w-full">{{ childComment.content }}</p>
                                 </div>
-                            </div>
-                            <p class="mt-4 w-full">Lorem ipsum dolor sit amet, consectetur adipisicing elit. Aliquam, consectetur deleniti deserunt ducimus harum iusto laboriosam minima nobis obcaecati.</p>
-                        </div>
-                    </li>
-                    <li class="mt-9 pl-9 border-l-4">
-                        <div class="bg-gray-100 p-4 rounded-lg">
-                            <div class="flex items-center">
-                                <img src="https://random.imagecdn.app/100/100?c" class="w-10 h-10 rounded-full" alt="">
-                                <div class="ml-4 w-full">
-                                    <span class="font-medium">Marco Doe</span>
-                                    <span class="text-xs text-gray-500 flex items-center justify-between w-full">
-                                    <span>Il y a 1 heures</span>
-                                    <span></span>
-                                </span>
-                                </div>
-                            </div>
-                            <p class="mt-4 w-full">Lorem ipsum dolor sit amet !!</p>
-                        </div>
-                    </li>
-                    <li class="mt-9 pl-9 border-l-4 relative cursor-not-allowed">
-                        <span class="absolute top-2 right-2 px-3 py-1 bg-orange-100 rounded-md">En attente de vérification</span>
-                        <div class="bg-gray-100 p-4 rounded-lg opacity-40">
-                            <div class="flex items-center">
-                                <img src="https://random.imagecdn.app/100/100?c" class="w-10 h-10 rounded-full" alt="">
-                                <div class="ml-4 w-full">
-                                    <span class="font-medium">Harry Potter</span>
-                                    <span class="text-xs text-gray-500 flex items-center justify-between w-full">
-                                    <span>Il y a 1O secondes</span>
-                                    <span></span>
-                                </span>
-                                </div>
-                            </div>
-                            <p class="mt-4 w-full">Lorem ipsum dolor sit amet !!</p>
-                        </div>
-                    </li>
+                            </li>
+                        {% endfor %}
+
+                    {% endfor %}
                 </ul>
                 <form class="mt-9 bg-gray-100 p-4 rounded-lg">
                     <h3 class="text-center text-md font-bold my-4">Réagir / commenter le film ?</h3>

@@ -4,21 +4,32 @@ declare(strict_types=1);
 
 namespace App\Controller\Movie;
 
+use App\Entity\Category;
+use App\Repository\CategoryRepository;
+use Doctrine\ORM\EntityManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 
 class CategoryController extends AbstractController
 {
-    #[Route(path: '/category', name: 'page_category')]
-    public function category(): Response
+    #[Route(path: '/category/{id}', name: 'page_category')]
+    public function category(Category $category): Response
     {
-        return $this->render(view: 'movie/category.html.twig');
+        return $this->render('movie/category.html.twig', [
+            'category' => $category,
+        ]);
     }
 
     #[Route(path: '/discover', name: 'page_discover')]
-    public function discover(): Response
+    public function discover(
+        CategoryRepository $categoryRepository,
+    ): Response
     {
-        return $this->render(view: 'movie/discover.html.twig');
+        $categories = $categoryRepository->findAll();
+
+        return $this->render('movie/discover.html.twig', [
+            'categories' => $categories,
+        ]);
     }
 }

@@ -32,7 +32,7 @@
                 <span class="font-bold text-red-600 text-lg">Films <span class="font-medium text-black">dans la catégorie </span></span>
                 <nav class="flex space-x-6 text-gray-400 font-medium">
                     <a href="#" class="hover:text-gray-700">Action</a>
-                    <a href="#" class="text-gray-700 font-semibold">Aventure</a>
+                    <a href="#" class="text-gray-700 font-semibold">{{ category.label }}</a>
                     <a href="#" class="hover:text-gray-700 ">Comédie</a>
                     <a href="#" class="hover:text-gray-700 ">Science Fiction</a>
                 </nav>
@@ -74,13 +74,9 @@
             </div>
 
             <ul class="mt-4 grid grid-cols-2 gap-y-5 sm:grid-cols-3 gap-x-5">
-                {% include 'parts/movies/big-card-movie.html.twig' %}
-                {% include 'parts/movies/big-card-movie.html.twig' %}
-                {% include 'parts/movies/big-card-movie.html.twig' %}
-                {% include 'parts/movies/big-card-movie.html.twig' %}
-                {% include 'parts/movies/big-card-movie.html.twig' %}
-                {% include 'parts/movies/big-card-movie.html.twig' %}
-                {% include 'parts/movies/big-card-movie.html.twig' %}
+                {% for media in category.media %}
+                    {% include 'parts/movies/big-card-movie.html.twig' %}
+                {% endfor %}
             </ul>
             <button class="flex flex-col items-center mt-9 w-full">
                 <a class="relative flex w-full bg-red-600 flex-row p-3 items-center justify-center rounded-lg overflow-hidden border cursor-pointer transition hover:bg-red-700 text-white">

@@ -21,22 +21,28 @@
 
 - Fixtures
 - Point sur ce que sont les services, l'autowiring et l'autoconfiguration
-
-
-## Cours du 26 novembre 2024 :
-
+- Présentation projet de fin de formation
 - Fin des fixtures PHP
 - Intro des fixtures YAML
-- Injection des entités dans les controllers
-- Templating (affichage & boucles for)
-- Intro QueryBuilder
 
+
+## Cours du Mardi 26 novembre 2024 :
+
+- Injection des entités dans les controllers
+- Intro Repositories
+- Templating (affichage & boucles for)
+- Génération de liens
+- Sous templates
+
+## Cours du Mercredi 27 Novembre 2024 : 
+
+- Injection des entités dans les controllers (suite)
+- Templating (affichage & boucles for) (suite)
+- QCM Noté
 
 ## A suivre : 
 
-- Revisions
-- QCM Noté
-- Présentation projet de fin de formation
+- Intro QueryBuilder
 - Authentification (login, logout, forgot, reset), UserProvider, Firewall, Role Hierarchy, Voter simple
 - Evenements pour hasher le mot de passe
 - Envoi d'emails
