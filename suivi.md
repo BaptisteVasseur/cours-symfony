@@ -26,7 +26,7 @@
 - Intro des fixtures YAML
 
 
-## Cours du Mardi 26 novembre 2024 :
+## Cours du Mardi 26 novembre 2024 (2) :
 
 - Injection des entités dans les controllers
 - Intro Repositories
@@ -34,7 +34,7 @@
 - Génération de liens
 - Sous templates
 
-## Cours du Mercredi 27 Novembre 2024 : 
+## Cours du Mercredi 27 Novembre 2024 (1) : 
 
 - Injection des entités dans les controllers (suite)
 - Templating (affichage & boucles for) (suite)
