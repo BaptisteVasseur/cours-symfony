@@ -5,12 +5,12 @@
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Streemi - Mot de passe oublié</title>
+    <title>Streemi - Abonnements</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="font-montserrat text-sm bg-white">
-    <div class="flex min-h-screen">
+    <div class="flex min-h-screen  2xl:max-w-screen-2xl 2xl:mx-auto 2xl:border-x-2 2xl:border-gray-200">
         <!-- Left Menu -->
         <aside class="w-1/6 py-10 pl-10 min-w-min border-r border-gray-300  hidden md:block">
             <div class=" font-bold text-lg flex items-center gap-x-3">
@@ -88,32 +88,96 @@
         <!-- /Left Menu -->
 
         <!-- Main Content -->
-        <main class="flex-1">
-            <section class="h-full relative">
-                <div style="background-image: url('https://blog.compose.fr/wp-content/uploads/2024/05/Marathon-Cinema.webp')" class="bg-cover bg-no-repeat h-full before:bg-black/40 before:content-[''] before:top-0 before:left-0 before:right-0 before:absolute before:w-full before:h-full">
-                    <div class="p-8 lg:w-1/2 mx-auto h-full flex items-center justify-center">
-                        <div class="bg-white rounded-lg p-8 relative w-full">
-                            <h1 class="text-center text-lg font-bold">Mot de passe perdu ?</h1>
-                            <p class="text-center text-sm font-medium opacity-70 mt-5">Vous recevez un email pour réinitialiser votre mot de passe</p>
-                            <form class="mt-10">
-                                <div class="relative">
-                                    <input class="w-full px-8 py-4 rounded-lg font-medium bg-gray-100 border border-gray-200 placeholder-gray-500 text-sm focus:outline-none focus:border-gray-400 focus:bg-white" id="username" type="text" placeholder="Adresse Email"/>
-                                </div>
-                                <div class="flex items-center justify-center mt-8">
-                                    <button class="relative flex w-full bg-red-600 flex-row p-3 items-center justify-center rounded-lg overflow-hidden border cursor-pointer transition text-white hover:opacity-90 hover:scale-105">
-                                        <svg class="h-5 w-5 fill-current mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><title>email-arrow-right</title><path d="M13 19C13 15.69 15.69 13 19 13C20.1 13 21.12 13.3 22 13.81V6C22 4.89 21.1 4 20 4H4C2.89 4 2 4.89 2 6V18C2 19.11 2.9 20 4 20H13.09C13.04 19.67 13 19.34 13 19M4 8V6L12 11L20 6V8L12 13L4 8M20 22V20H16V18H20V16L23 19L20 22Z" /></svg>
-                                        Recevoir l'email de réinitialisation
-                                    </button>
-                                </div>
-                                <div class="flex items-center justify-center mt-16">
-                                    <a class="text-red-600 cursor-pointer transition hover:text-red-700 hover:scale-105">
-                                        Vous vous souvenez de votre mot de passe ? Connectez-vous
-                                    </a>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
+        <main class="flex-1 py-10 px-5 sm:px-10">
+            <section>
+                <h1 class="text-lg font-medium text-black">Nos <span class="font-bold text-red-600">abonnements</span></h1>
+                <p class="text-gray-400 text-lg mt-3">Profitez de notre catalogue exclusif de films & séries à prix concurentiel.</p>
+                <div class="flex items-center font-medium mt-8 bg-gray-100 border border-black/10 rounded-lg px-8 py-4">
+                    <svg class="h-5 w-5 fill-current opacity-50 mr-2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+                        <title>information</title>
+                        <path d="M13,9H11V7H13M13,17H11V11H13M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"/>
+                    </svg>
+                    Votre abonnement actuel : <span class="text-red-600 font-bold ml-2">Aucun</span>
                 </div>
+            </section>
+            <section class="mt-9">
+                <ul class="grid grid-cols-2 gap-y-5 gap-x-5">
+                    <!-- Subscription card -->
+                    <li class="relative flex">
+                        <a href="#" class="w-full border-4 border-red-600 rounded-lg py-4 px-7 transition hover:bg-black/5">
+                            <div class="flex flex-row items-center justify-between">
+                                <div class="flex flex-col items-start justify-center">
+                                    <h3 class="font-bold text-lg">Abonnement 1 mois - HD</h3>
+                                    <span class="font-medium text-gray-400 text-nowrap">Le moins chère</span>
+                                </div>
+                                <span class="text-3xl font-bold">3€</span>
+                            </div>
+                            <p class="flex items-start justify-between mt-5 mb-8 text-md pr-3">
+                                Lorem ipsum dolor sit amet, consectetur adipisicing elit. Doloremque in iure officiis suscipit vel. </p>
+                            <div>
+                                <button class="border-transparent bg-red-600 px-4 py-3 text-md text-white rounded-md">S'abonner</button>
+                            </div>
+                        </a>
+                    </li>
+                    <!-- /Subscription card -->
+
+                    <!-- Subscription card -->
+                    <li class="relative flex">
+                        <a href="#" class="w-full border-4 border-red-600 rounded-lg py-4 px-7 transition hover:bg-black/5">
+                            <div class="flex items-center justify-between">
+                                <div class="flex flex-col items-start justify-center">
+                                    <h3 class="font-bold text-lg">Abonnement 1 mois - 4K HDR</h3>
+                                    <span class="font-medium text-gray-400 text-nowrap">Parfait pour découvrir</span>
+                                </div>
+                                <span class="text-3xl font-bold">6€</span>
+                            </div>
+                            <p class="flex items-start justify-between mt-5 mb-8 text-md pr-3">
+                                Ad asperiores autem deleniti eius enim expedita possimus sed. Ea illo itaque quam soluta veritatis. </p>
+                            <div>
+                                <button class="border-transparent bg-red-600 px-4 py-3 text-md text-white rounded-md">S'abonner</button>
+                            </div>
+                        </a>
+                    </li>
+                    <!-- Subscription card -->
+
+                    <!-- /Subscription card -->
+                    <li class="relative flex">
+                        <a href="#" class="w-full border-4 border-red-600 rounded-lg py-4 px-7 transition hover:bg-black/5">
+                            <div class="flex items-center justify-between">
+                                <div class="flex flex-col items-start justify-center">
+                                    <h3 class="font-bold text-lg">Abonnement 12 mois - HD</h3>
+                                    <span class="font-medium text-gray-400 text-nowrap">Parfait pour découvrir</span>
+                                </div>
+                                <span class="text-3xl font-bold">30€</span>
+                            </div>
+                            <p class="flex items-start justify-between mt-5 mb-8 text-md pr-3">
+                                Blanditiis distinctio eaque et facilis id repellat saepe sint totam voluptas. Autem distinctio, esse laborum nam necessitatibus. </p>
+                            <div>
+                                <button class="border-transparent bg-red-600 px-4 py-3 text-md text-white rounded-md">S'abonner</button>
+                            </div>
+                        </a>
+                    </li>
+                    <!-- /Subscription card -->
+
+                    <!-- Subscription card -->
+                    <li class="relative flex">
+                        <a href="#" class="w-full border-4 border-red-600 rounded-lg py-4 px-7 transition hover:bg-black/5">
+                            <div class="flex items-center justify-between">
+                                <div class="flex flex-col items-start justify-center">
+                                    <h3 class="font-bold text-lg">Abonnement 12 mois - 4K HDR 3D</h3>
+                                    <span class="font-medium text-gray-400 text-nowrap">Parfait pour découvrir</span>
+                                </div>
+                                <span class="text-3xl font-bold">30€</span>
+                            </div>
+                            <p class="flex items-start justify-between mt-5 mb-8 text-md pr-3">
+                                Dicta expedita iste magni maiores maxime natus nemo perspiciatis praesentium ratione rem, repellendus sunt vero vitae? </p>
+                            <div>
+                                <button class="border-transparent bg-red-600 px-4 py-3 text-md text-white rounded-md">S'abonner</button>
+                            </div>
+                        </a>
+                    </li>
+                    <!-- /Subscription card -->
+                </ul>
             </section>
         </main>
         <!-- /Main Content -->

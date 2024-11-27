@@ -6,7 +6,6 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="author" content="Mazyar">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="style/style.css" rel="stylesheet">
     <meta name="author" content="Mazyar">
     <title>Streemi - Mes listes</title>
     <script src="https://cdn.tailwindcss.com"></script>
@@ -14,21 +13,19 @@
 
 <body class="font-montserrat text-sm bg-white">
 <div class="flex min-h-screen  2xl:max-w-screen-2xl 2xl:mx-auto 2xl:border-x-2 2xl:border-gray-200">
-    <aside class=" w-1/6 py-10 pl-10  min-w-min  border-r border-gray-300  hidden md:block ">
 
+    <!-- Left Menu -->
+    <aside class="w-1/6 py-10 pl-10 min-w-min border-r border-gray-300  hidden md:block">
         <div class=" font-bold text-lg flex items-center gap-x-3">
             <svg class="h-8 w-8 fill-red-600" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                 <path d="M10 15.5v-7c0-.41.47-.65.8-.4l4.67 3.5c.27.2.27.6 0 .8l-4.67 3.5c-.33.25-.8.01-.8-.4Zm11.96-4.45c.58 6.26-4.64 11.48-10.9 10.9 -4.43-.41-8.12-3.85-8.9-8.23 -.26-1.42-.19-2.78.12-4.04 .14-.58.76-.9 1.31-.7v0c.47.17.75.67.63 1.16 -.2.82-.27 1.7-.19 2.61 .37 4.04 3.89 7.25 7.95 7.26 4.79.01 8.61-4.21 7.94-9.12 -.51-3.7-3.66-6.62-7.39-6.86 -.83-.06-1.63.02-2.38.2 -.49.11-.99-.16-1.16-.64v0c-.2-.56.12-1.17.69-1.31 1.79-.43 3.75-.41 5.78.37 3.56 1.35 6.15 4.62 6.5 8.4ZM5.5 4C4.67 4 4 4.67 4 5.5 4 6.33 4.67 7 5.5 7 6.33 7 7 6.33 7 5.5 7 4.67 6.33 4 5.5 4Z"></path>
             </svg>
             <div class="tracking-wide">Streemi<span class="text-red-600">.</span></div>
         </div>
-
-        <!-- Menu -->
         <div class="mt-12 flex flex-col gap-y-4 text-gray-500 fill-gray-500 text-sm">
             <div class="text-gray-400/70  font-medium uppercase">Menu</div>
-
             <a class="flex items-center space-x-2 py-1font-semibold  border-r-4 border-r-red-600 pr-20 " href="#">
-                <svg class="h-5 w-5 fill-red-600 " xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" >
+                <svg class="h-5 w-5 fill-red-600 " xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path d="M5 22h14v0c1.1 0 2-.9 2-2v-9 0c0-.27-.11-.53-.29-.71l-8-8v0c-.4-.39-1.02-.39-1.41 0l-8 8h0c-.2.18-.3.44-.3.71v9 0c0 1.1.89 2 2 2Zm5-2v-5h4v5Zm-5-8.59l7-7 7 7V20h-3v-5 0c0-1.11-.9-2-2-2h-4v0c-1.11 0-2 .89-2 2v5H5Z"></path>
                 </svg>
                 <span>Accueil</span>
@@ -73,8 +70,8 @@
 
             <a class=" flex items-center space-x-2 py-1  group hover:border-r-4 hover:border-r-red-600 hover:font-semibold " href="#">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:stroke-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                 </svg>
                 <span>Paramètres</span>
             </a>
@@ -90,33 +87,13 @@
 
         </div><!-- /Menu -->
 
-    </aside><!-- /Left Sidebar -->
-    <main class=" flex-1 py-10  px-5 sm:px-10 ">
+    </aside>
+    <!-- /Left Menu -->
 
-        <header class=" font-bold text-lg flex items-center  gap-x-3 md:hidden mb-12 ">
-                <span class="mr-6">
-                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7 text-gray-700 " fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h7" />
-                      </svg>
-                </span>
-            <svg class="h-8 w-8 fill-red-600 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
-                <path d="M10 15.5v-7c0-.41.47-.65.8-.4l4.67 3.5c.27.2.27.6 0 .8l-4.67 3.5c-.33.25-.8.01-.8-.4Zm11.96-4.45c.58 6.26-4.64 11.48-10.9 10.9 -4.43-.41-8.12-3.85-8.9-8.23 -.26-1.42-.19-2.78.12-4.04 .14-.58.76-.9 1.31-.7v0c.47.17.75.67.63 1.16 -.2.82-.27 1.7-.19 2.61 .37 4.04 3.89 7.25 7.95 7.26 4.79.01 8.61-4.21 7.94-9.12 -.51-3.7-3.66-6.62-7.39-6.86 -.83-.06-1.63.02-2.38.2 -.49.11-.99-.16-1.16-.64v0c-.2-.56.12-1.17.69-1.31 1.79-.43 3.75-.41 5.78.37 3.56 1.35 6.15 4.62 6.5 8.4ZM5.5 4C4.67 4 4 4.67 4 5.5 4 6.33 4.67 7 5.5 7 6.33 7 7 6.33 7 5.5 7 4.67 6.33 4 5.5 4Z"></path>
-            </svg>
-            <div class="tracking-wide flex-1">MMovie<span class="text-red-600">.</span></div>
-
-            <div class="relative items-center content-center flex ml-2">
-                    <span class="text-gray-400 absolute left-4 cursor-pointer">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                    </span>
-                <input type="text" class="text-xs ring-1 bg-transparent ring-gray-200 focus:ring-red-300 pl-10 pr-5 text-gray-600 py-3 rounded-full w-full outline-none focus:ring-1" placeholder="Search ...">
-            </div>
-        </header>
-
+    <!-- Main Content -->
+    <main class="flex-1 py-10 px-5 sm:px-10">
         <section>
             <h1 class="font-medium text-black text-lg">Mes listes de <span class="font-bold text-red-600">films</span> et <span class="font-bold text-red-600">séries</span></h1>
-
             <div class="flex flex-col space-y-3 mt-9">
                 <div class="relative w-full flex space-x-3 text-gray-700 font-medium">
                     <button class="flex w-1/3 text-nowrap items-center p-3 rounded-md border hover:scale-105 cursor-pointer transition hover:bg-gray-100">
@@ -132,7 +109,6 @@
                         Partager une liste
                     </button>
                 </div>
-
                 <div class="relative w-full flex text-gray-700 font-medium">
                     <select class="appearance-none w-full bg-white border border-gray-200 px-7 py-3 rounded-md shadow transition">
                         <option>#1 - Ma liste custom (43 films & 12 séries)</option>
@@ -145,10 +121,9 @@
                 </div>
             </div>
         </section>
-
         <section class="mt-9">
             <ul class="grid grid-cols-2 gap-y-5 sm:grid-cols-3 gap-x-5">
-
+                <!-- Movie Card -->
                 <li class="relative flex flex-col rounded-xl overflow-hidden border hover:scale-105 transition cursor-pointer hover:opacity-90 hover:shadow-lg">
                     <a href="#" class="p-2.5 bg-gray-800/90 rounded-lg text-white self-end hover:bg-red-600/80 absolute top-2 right-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" data-darkreader-inline-fill="" style="--darkreader-inline-fill: currentColor;">
@@ -164,6 +139,9 @@
                         </div>
                     </div>
                 </li>
+                <!-- /Movie Card -->
+
+                <!-- Movie Card -->
                 <li class="relative flex flex-col rounded-xl overflow-hidden border hover:scale-105 transition cursor-pointer hover:opacity-90 hover:shadow-lg">
                     <a href="#" class="p-2.5 bg-gray-800/90 rounded-lg text-white self-end hover:bg-red-600/80 absolute top-2 right-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" data-darkreader-inline-fill="" style="--darkreader-inline-fill: currentColor;">
@@ -179,6 +157,9 @@
                         </div>
                     </div>
                 </li>
+                <!-- /Movie Card -->
+
+                <!-- Movie Card -->
                 <li class="relative flex flex-col rounded-xl overflow-hidden border hover:scale-105 transition cursor-pointer hover:opacity-90 hover:shadow-lg">
                     <a href="#" class="p-2.5 bg-gray-800/90 rounded-lg text-white self-end hover:bg-red-600/80 absolute top-2 right-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" data-darkreader-inline-fill="" style="--darkreader-inline-fill: currentColor;">
@@ -194,6 +175,9 @@
                         </div>
                     </div>
                 </li>
+                <!-- /Movie Card -->
+
+                <!-- Movie Card -->
                 <li class="relative flex flex-col rounded-xl overflow-hidden border hover:scale-105 transition cursor-pointer hover:opacity-90 hover:shadow-lg">
                     <a href="#" class="p-2.5 bg-gray-800/90 rounded-lg text-white self-end hover:bg-red-600/80 absolute top-2 right-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" data-darkreader-inline-fill="" style="--darkreader-inline-fill: currentColor;">
@@ -209,6 +193,9 @@
                         </div>
                     </div>
                 </li>
+                <!-- /Movie Card -->
+
+                <!-- Movie Card -->
                 <li class="relative flex flex-col rounded-xl overflow-hidden border hover:scale-105 transition cursor-pointer hover:opacity-90 hover:shadow-lg">
                     <a href="#" class="p-2.5 bg-gray-800/90 rounded-lg text-white self-end hover:bg-red-600/80 absolute top-2 right-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" data-darkreader-inline-fill="" style="--darkreader-inline-fill: currentColor;">
@@ -224,6 +211,9 @@
                         </div>
                     </div>
                 </li>
+                <!-- /Movie Card -->
+
+                <!-- Movie Card -->
                 <li class="relative flex flex-col rounded-xl overflow-hidden border hover:scale-105 transition cursor-pointer hover:opacity-90 hover:shadow-lg">
                     <a href="#" class="p-2.5 bg-gray-800/90 rounded-lg text-white self-end hover:bg-red-600/80 absolute top-2 right-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" data-darkreader-inline-fill="" style="--darkreader-inline-fill: currentColor;">
@@ -239,6 +229,9 @@
                         </div>
                     </div>
                 </li>
+                <!-- /Movie Card -->
+
+                <!-- Movie Card -->
                 <li class="relative flex flex-col rounded-xl overflow-hidden border hover:scale-105 transition cursor-pointer hover:opacity-90 hover:shadow-lg">
                     <a href="#" class="p-2.5 bg-gray-800/90 rounded-lg text-white self-end hover:bg-red-600/80 absolute top-2 right-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" data-darkreader-inline-fill="" style="--darkreader-inline-fill: currentColor;">
@@ -254,6 +247,9 @@
                         </div>
                     </div>
                 </li>
+                <!-- /Movie Card -->
+
+                <!-- Movie Card -->
                 <li class="relative flex flex-col rounded-xl overflow-hidden border hover:scale-105 transition cursor-pointer hover:opacity-90 hover:shadow-lg">
                     <a href="#" class="p-2.5 bg-gray-800/90 rounded-lg text-white self-end hover:bg-red-600/80 absolute top-2 right-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" data-darkreader-inline-fill="" style="--darkreader-inline-fill: currentColor;">
@@ -269,6 +265,9 @@
                         </div>
                     </div>
                 </li>
+                <!-- /Movie Card -->
+
+                <!-- Movie Card -->
                 <li class="relative flex flex-col rounded-xl overflow-hidden border hover:scale-105 transition cursor-pointer hover:opacity-90 hover:shadow-lg">
                     <a href="#" class="p-2.5 bg-gray-800/90 rounded-lg text-white self-end hover:bg-red-600/80 absolute top-2 right-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" data-darkreader-inline-fill="" style="--darkreader-inline-fill: currentColor;">
@@ -284,6 +283,9 @@
                         </div>
                     </div>
                 </li>
+                <!-- /Movie Card -->
+
+                <!-- Movie Card -->
                 <li class="relative flex flex-col rounded-xl overflow-hidden border hover:scale-105 transition cursor-pointer hover:opacity-90 hover:shadow-lg">
                     <a href="#" class="p-2.5 bg-gray-800/90 rounded-lg text-white self-end hover:bg-red-600/80 absolute top-2 right-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" data-darkreader-inline-fill="" style="--darkreader-inline-fill: currentColor;">
@@ -299,6 +301,9 @@
                         </div>
                     </div>
                 </li>
+                <!-- /Movie Card -->
+
+                <!-- Movie Card -->
                 <li class="relative flex flex-col rounded-xl overflow-hidden border hover:scale-105 transition cursor-pointer hover:opacity-90 hover:shadow-lg">
                     <a href="#" class="p-2.5 bg-gray-800/90 rounded-lg text-white self-end hover:bg-red-600/80 absolute top-2 right-2">
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" data-darkreader-inline-fill="" style="--darkreader-inline-fill: currentColor;">
@@ -314,6 +319,7 @@
                         </div>
                     </div>
                 </li>
+                <!-- /Movie Card -->
             </ul>
             <button class="flex flex-col items-center mt-9 w-full">
                 <div class="relative flex w-full bg-red-600 flex-row p-3 items-center justify-center rounded-lg overflow-hidden border cursor-pointer transition hover:bg-red-700 text-white">
@@ -325,7 +331,10 @@
             </button>
         </section>
     </main>
-    <aside class=" w-1/5 py-10 px-10  min-w-min  border-l border-gray-300 hidden lg:block ">
+    <!-- /Main Content -->
+
+    <!-- Right Sidebar -->
+    <aside class="w-1/5 py-10 px-10 min-w-min  border-l border-gray-300 hidden lg:block">
 
         <div class="relative items-center content-center flex">
                 <span class="text-gray-400 absolute left-4 cursor-pointer">
@@ -341,37 +350,37 @@
             <ul class="mt-4 text-gray-400 text-xs space-y-3">
                 <li class="flex space-x-3 transition cursor-pointer hover:bg-black/10 rounded">
                     <img src="https://upload.wikimedia.org/wikipedia/en/8/81/ShawshankRedemptionMoviePoster.jpg" class="w-1/3 rounded-md" alt="">
-                    <div class="flex flex-col justify-between  ">
+                    <div class="flex flex-col justify-between">
                         <div class="flex flex-col space-y-1">
                             <span class="text-gray-700 font-semibold mt-2">The Shawshank Redemption</span>
                             <span class="text-xxs hidden xl:block">Drama</span>
                         </div>
                         <div class="flex items-center">
-                            <a href="#" class="px-2 py-1 mb-2 text-white bg-red-600 hover:bg-red-700 rounded-lg text-xxs inline-block">Reprendre à <span>1h12</span></a>
+                            <a href="#" class="px-2 py-1 mb-2 text-white bg-red-600 hover:bg-red-700 rounded-lg text-xxs inline-block">Reprendre</a>
                         </div>
                     </div>
                 </li>
                 <li class="flex space-x-3 transition cursor-pointer hover:bg-black/10 rounded">
                     <img src="https://upload.wikimedia.org/wikipedia/en/1/1c/The_Dark_Knight_%282008_film%29.jpg" class="object-cover w-1/3 rounded-md" alt="">
-                    <div class="flex flex-col justify-between  ">
+                    <div class="flex flex-col justify-between">
                         <div class="flex flex-col space-y-1">
                             <span class="text-gray-700 font-semibold mt-2">The Dark Knight</span>
                             <span class="text-xxs hidden xl:block">Action, Crime, Drama</span>
                         </div>
                         <div class="flex items-center">
-                            <a href="#" class="px-2 py-1 mb-2 text-white bg-red-600 hover:bg-red-700 rounded-lg text-xxs inline-block">Reprendre à <span>42mins</span></a>
+                            <a href="#" class="px-2 py-1 mb-2 text-white bg-red-600 hover:bg-red-700 rounded-lg text-xxs inline-block">Reprendre</a>
                         </div>
                     </div>
                 </li>
                 <li class="flex space-x-3 transition cursor-pointer hover:bg-black/10 rounded">
                     <img src="https://m.media-amazon.com/images/I/81vZ6tNxuoL._SY500_.jpg" class="object-cover w-1/3 rounded-md" alt="">
-                    <div class="flex flex-col justify-between  ">
+                    <div class="flex flex-col justify-between">
                         <div class="flex flex-col space-y-1">
                             <span class="text-gray-700 font-semibold mt-2">John Wick 4</span>
                             <span class="text-xxs hidden xl:block">Action, Crime, Thriller</span>
                         </div>
                         <div class="flex items-center">
-                            <a href="#" class="px-2 py-1 mb-2 text-white bg-red-600 hover:bg-red-700 rounded-lg text-xxs inline-block">Reprendre à <span>12mins</span></a>
+                            <a href="#" class="px-2 py-1 mb-2 text-white bg-red-600 hover:bg-red-700 rounded-lg text-xxs inline-block">Reprendre</a>
                         </div>
                     </div>
                 </li>
@@ -385,7 +394,7 @@
             <ul class="mt-4 text-gray-400 text-xs space-y-3">
                 <li class="flex space-x-3 transition cursor-pointer hover:bg-black/10 rounded">
                     <img src="https://upload.wikimedia.org/wikipedia/en/c/c1/The_Matrix_Poster.jpg" class="object-cover w-1/3 rounded-md" alt="">
-                    <div class="flex flex-col justify-between  ">
+                    <div class="flex flex-col justify-between">
                         <div class="flex flex-col space-y-1">
                             <span class="text-gray-700 font-semibold mt-2">The Matrix</span>
                             <span class="text-xxs hidden xl:block">Action, Sci-Fi</span>
@@ -400,7 +409,7 @@
                     <img src="https://upload.wikimedia.org/wikipedia/en/b/bc/Interstellar_film_poster.jpg" class="object-cover w-1/3 rounded-md" alt="">
                     <div class="flex flex-col justify-between">
                         <div class="flex flex-col space-y-1">
-                            <span class="text-gray-700 font-semibold mt-2 ">Interstellar</span>
+                            <span class="text-gray-700 font-semibold mt-2">Interstellar</span>
                             <span class="text-xxs hidden xl:block">Adventure, Crime, Sci-Fi</span>
                         </div>
                         <div class="flex space-x-2 items-center mb-3">
@@ -429,9 +438,8 @@
             </ul>
         </div>
 
-    </aside><!-- /Right Sidebar -->
+    </aside>
+    <!-- /Right Sidebar -->
 </div>
-
 </body>
-
 </html>
