@@ -65,9 +65,6 @@ class User
     #[ORM\OneToMany(targetEntity: WatchHistory::class, mappedBy: 'watcher')]
     private Collection $watchHistories;
 
-    #[ORM\Column(nullable: true)]
-    private ?array $roles = [];
-
     /**
      * @var Collection<int, Upload>
      */
@@ -307,27 +304,6 @@ class User
                 $watchHistory->setWatcher(null);
             }
         }
-
-        return $this;
-    }
-
-    public function getRoles(): array
-    {
-        return $this->roles;
-    }
-
-    public function eraseCredentials(): void
-    {
-    }
-
-    public function getUserIdentifier(): string
-    {
-        return $this->getEmail();
-    }
-
-    public function setRoles(?array $roles): static
-    {
-        $this->roles = $roles;
 
         return $this;
     }
