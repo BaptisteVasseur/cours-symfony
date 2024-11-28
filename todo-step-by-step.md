@@ -7,7 +7,7 @@
 
 ## Installer les autres trucs
 
-- Installez **Github Copilot** (ou faites le demande dans un 1er temps)
+- Installez **Github Copilot** (ou faites la demande dans un 1er temps)
 - Installez **XDebug**
 
 ## Regarder les fichiers / dossiers
