@@ -2,7 +2,7 @@
 
 {% block title %}Log in!{% endblock %}
 
-{% block contenu_page %}
+{% block content %}
     <form method="post">
         {% if error %}
             <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
