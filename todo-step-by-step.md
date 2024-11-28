@@ -71,7 +71,6 @@
 
 > C'est quand même plus simple en YAML non ?
 
-
 # Templates
 
 ## Commencer à intégrer les templates
@@ -115,7 +114,7 @@
 - Maintenant la page pour voir **le détail d'une catégorie** : on identifie le controller qui affiche la page, on ajoute un paramètre dans l'URL : "id", on injecte l'entité qu'on souhaite récupérer et on passe le résultat dans le template twig. Dans le template : on affiche le nom de la catégorie en haut en gras et on affiche les medias de la catégorie grâce à la boucle for.
 - On retourne dans le fichier discover.html.twig et on génère une URL dynamiquement grâce à la fonction twig 'path()' dans le href du lien de la card 'parts/category/category-card.html.twig'
   <br><br>
-- **Faites pareil pour la page des abonnements** : injectez le repository des abonnements, récupérez les abonnements en BDD et passez les abonnements au template. Dans le template, bouclez sur les abonnements pour afficher le nom de l'abonnement et le prix. 
+- **Faites pareil pour la page des abonnements** : injectez le repository des abonnements, récupérez les abonnements en BDD et passez les abonnements au template. Dans le template, bouclez sur les abonnements pour afficher le nom de l'abonnement et le prix.
 - Pour les cards qui concernent les films, **ajoutez les liens dynamiques avec path()** pour pouvoir cliquer sur les cards et aller sur la page de détail
 - Rendez dynamique la page pour voir **le détail d'un film** (toutes les infos, le listing des commentaires, du staff, du casting, des catégories ...)
 
@@ -126,8 +125,6 @@
 - Si vous revenez sur la page sans le paramètre de query 'selectedPlaylist' vous devriez avoir une erreur, corrigez l'erreur en ajoutant quelques 'if' dans le code php et dans le template twig.
   <br><br>
 - Sur la page d'accueil, **ajoutez une feature pour afficher les films les plus populaires**. Pour ça, ouvrez le bon controller, injectez le MediaRepository. Dans le MediaRepository, ajoutez une methode personnalisée findPopular(). Faites la requête avec le QueryBuilder pour récupérer les médias les plus populaires (populaire = un film regardé beaucoup de fois, donc souvent dans WatchHistory). Utilisez votre methode et passez le résulat au template twig. Dans le template twig, utilisez un 'for' autour du sous template 'parts/movies/movie-card.html.twig' pour afficher les films les plus populaires.
-
-
 
 # Authentification
 
@@ -176,9 +173,9 @@
 
 ### 5éme étape
 
-- La page de login générée par Symfony n'est pas trop trop belle donc on va utiliser la nôtre. Pour ça, supprimez **NOTRE controller login** (créé au tout début du cours). Ensuite, dans **NOTRE template twig** 'login.html.twig', ajoutez **name="_username"** et **name="_password"** sur les inputs pour l'email et le mot de passe. Ajoutez aussi '**value="{{last_username}}"**' sur l'input pour l'email. Ajoutez dans notre fichier l'input '_**csrf_token**'. Oubliez-pas la **method="post"** sur le formulaire de la page.
+- La page de login générée par Symfony n'est pas trop trop belle donc on va utiliser la nôtre. Pour ça, supprimez **NOTRE controller login** (créé au tout début du cours). Ensuite, dans **NOTRE template twig** 'login.html.twig', ajoutez **name="\_username"** et **name="\_password"** sur les inputs pour l'email et le mot de passe. Ajoutez aussi '**value="{{last_username}}"**' sur l'input pour l'email. Ajoutez dans notre fichier l'input '\_**csrf_token**'. Oubliez-pas la **method="post"** sur le formulaire de la page.
 
-> Ajouter _username et _password c'est pour que Symfony comprenne bien comment récupérer les données du formulaire. Le csrf_token c'est pas empêcher un type de faille de sécurité sur les formulaires. Le last_username c'est pour pas avoir à retaper 15 fois son email si on se trompe de password.
+> Ajouter \_username et \_password c'est pour que Symfony comprenne bien comment récupérer les données du formulaire. Le csrf_token c'est pas empêcher un type de faille de sécurité sur les formulaires. Le last_username c'est pour pas avoir à retaper 15 fois son email si on se trompe de password.
 
 - Vous pouvez aussi ajouter le **{% if error %}...{% endif %}** dans le template de notre page login.
 
@@ -191,11 +188,13 @@
 
 ##### Feature de Forgot Password : L'utilisateur demande à réinitialiser son mot de passe
 
-- Allez sur la page qui affiche le template **forgot.html.twig**, et ouvrez le controller qui affiche la page. Ajoutez **name="_email"** sur l'input email dans le template twig. Le form doit envoyer le form en **"POST"**. Dans le controller, récupérez grâce à la request (en injectant la Request dans le controller) le paramètre 'email' (**$request->get('email')**). Cherchez en DB l'utilisateur avec l'adresse email correspondante. Si l'utilisateur n'est pas trouvé, **envoyer un message d'erreur** grâce à un message flash. S'il est trouvé, **généré un resetToken pour l'utilisateur** (grâce à la lib **UUID** de Symfony) et modifiez sa propriété. Sauvegardez le token en base de données grâce à l'EntityManager (que vous devez injecter en dépendance dans le controller).
+- Allez sur la page qui affiche le template **forgot.html.twig**, et ouvrez le controller qui affiche la page. Ajoutez **name="\_email"** sur l'input email dans le template twig. Le form doit envoyer le form en **"POST"**. Dans le controller, récupérez grâce à la request (en injectant la Request dans le controller) le paramètre 'email' (**$request->get('email')**). Cherchez en DB l'utilisateur avec l'adresse email correspondante. Si l'utilisateur n'est pas trouvé, **envoyer un message d'erreur** grâce à un message flash. S'il est trouvé, **généré un resetToken pour l'utilisateur** (grâce à la lib **UUID** de Symfony) et modifiez sa propriété. Sauvegardez le token en base de données grâce à l'EntityManager (que vous devez injecter en dépendance dans le controller).
   <br><br>
-- Après le flush, **envoyez un email à l'utilisateur** avec un lien pour réinitialiser son mot de passe. Pour envoyer un email, il faut configurer la variable MAILER_DSN dans le fichier **.env**. Pour envoyer un email, il faut utiliser le service **MailerInterface** (que vous devez injecter en dépendance dans le controller). Pour envoyer un email, il faut créer un **TemplatedEmail** et utiliser la méthode **send()** du service MailerInterface (à injecter en dépendance dans le controller). Pour le lien de réinitialisation, il faut utiliser la fonction **path()** de twig pour générer l'URL dynamiquement. Pour le context, il faut passer le **resetToken** et l'**email** de l'utilisateur. Pour le template de l'email, il faut créer un fichier **reset.html.twig** dans le dossier **templates/email**. 
+- Après le flush, **envoyez un email à l'utilisateur** avec un lien pour réinitialiser son mot de passe. Pour envoyer un email, il faut configurer la variable MAILER_DSN dans le fichier **.env**. Pour envoyer un email, il faut utiliser le service **MailerInterface** (que vous devez injecter en dépendance dans le controller). Pour envoyer un email, il faut créer un **TemplatedEmail** et utiliser la méthode **send()** du service MailerInterface (à injecter en dépendance dans le controller). Pour le lien de réinitialisation, il faut utiliser la fonction **path()** de twig pour générer l'URL dynamiquement. Pour le context, il faut passer le **resetToken** et l'**email** de l'utilisateur. Pour le template de l'email, il faut créer un fichier **reset.html.twig** dans le dossier **templates/email**.
 
 > L'avantage de passer par Twig pour envoyer un email, c'est qu'on peut envoyer un email en HTML avec du CSS et tout et tout. C'est plus joli pour l'utilisateur.
+
+En réalité, si l'utilisateur perds son mot de passe, il doit créer un nouveau compte et repayer donc plus de moula pour nous.
 
 ##### Feature de Reset Password : L'utilisateur clique sur le lien pour réinitialiser son mot de passe
 
@@ -209,7 +208,7 @@
 
 ### 7éme étape
 
-- On va maintenant protéger les pages de l'application. Pour ça, on va utiliser les **attributs** de Symfony. Pour protéger une page, il faut ajouter une annotation **@IsGranted()** au-dessus de la méthode du controller qui affiche la page. Pour les pages qui ne doivent être accessibles qu'aux utilisateurs connectés, on peut utiliser **@IsGranted("ROLE_USER")**. (car le rôle par défaut est ROLE_USER). Pour les pages qui ne doivent être accessibles qu'aux administrateurs, on peut utiliser **@IsGranted("ROLE_ADMIN")**.   
+- On va maintenant protéger les pages de l'application. Pour ça, on va utiliser les **attributs** de Symfony. Pour protéger une page, il faut ajouter une annotation **@IsGranted()** au-dessus de la méthode du controller qui affiche la page. Pour les pages qui ne doivent être accessibles qu'aux utilisateurs connectés, on peut utiliser **@IsGranted("ROLE_USER")**. (car le rôle par défaut est ROLE_USER). Pour les pages qui ne doivent être accessibles qu'aux administrateurs, on peut utiliser **@IsGranted("ROLE_ADMIN")**.
 - Ouvrez le controller qui affiche la page 'mes lists', ajoutez l'annotation **@IsGranted("ROLE_USER")**. Faites pareil pour la page 'mes abonnements'.
 - Pour la page 'administration', ajoutez l'annotation **@IsGranted("ROLE_ADMIN")**.
 
@@ -219,18 +218,17 @@
 
 - Dans le sous template 'parts/left-menu.html.twig', ajoutez un lien pour accéder à la page 'administration' si l'utilisateur connecté a le rôle 'ROLE_ADMIN'. Pour ça, utilisez la fonction twig **is_granted('ROLE_ADMIN')**. Si l'utilisateur connecté a le rôle 'ROLE_ADMIN', affichez le lien vers la page 'administration'.
 
-
-
 # Formulaires / CRUD (simple)
 
 - On va maintenant créer un **CRUD** (create, read, update, delete) pour les catégories et les langues. Pour ça, utilisez la commande **make:crud** de Symfony.
 - Générez le CRUD pour **Category** et pour **Language**. Pleins de fichiers ont été générés. Ouvrez le controller généré et regardez les différentes méthodes. Ouvrez les templates générés et regardez comment sont affichés les différents éléments.
 
-> Liste des fichiers générés lors de la création du CRUD pour **Category** : 
+> Liste des fichiers générés lors de la création du CRUD pour **Category** :
+>
 > - **src/Controller/CategoryController.php** → Le controller qui gère les différentes actions pour les catégories (afficher la liste, afficher le détail, ajouter, modifier, supprimer)
 > - **src/Form/Category1Type.php** → Le formulaire pour ajouter ou modifier une catégorie (celui-ci contient les champs que va avoir le formulaire)
-> - **templates/category/_delete_form.html.twig** → Le formulaire pour supprimer une catégorie
-> - **templates/category/_form.html.twig** → Le formulaire pour ajouter ou modifier une catégorie
+> - **templates/category/\_delete_form.html.twig** → Le formulaire pour supprimer une catégorie
+> - **templates/category/\_form.html.twig** → Le formulaire pour ajouter ou modifier une catégorie
 > - **templates/category/edit.html.twig** → Le template pour modifier une catégorie
 > - **templates/category/index.html.twig** → Le template pour afficher la liste des catégories
 > - **templates/category/new.html.twig** → Le template pour ajouter une catégorie
@@ -244,18 +242,16 @@
 > Vous pouvez utiliser des composants tailwind pour rendre les templates plus jolis.
 > Pour les formulaires, vous pouvez utiliser les classes tailwind pour les inputs, les labels, les boutons, les messages d'erreur...
 
-> Vous pouvez personnaliser l'affichage des formulaires en modifiant le fichier twig **_form.html.twig** ou le fichier php **CategoryType.php** (pour ajouter des champs, enlever des champs, changer le type d'un champ, ajouter des classes...) ([voir la doc](https://symfony.com/doc/current/forms.html))
+> Vous pouvez personnaliser l'affichage des formulaires en modifiant le fichier twig **\_form.html.twig** ou le fichier php **CategoryType.php** (pour ajouter des champs, enlever des champs, changer le type d'un champ, ajouter des classes...) ([voir la doc](https://symfony.com/doc/current/forms.html))
 > Si vous voulez définir **un thème pour les formulaires**, vous pouvez le faire dans le fichier **config/packages/twig.yaml** en appliquant un thème de formulaire par défaut ([voir la doc](https://symfony.com/doc/current/form/form_themes.html)) ou en créant le vôtre.
 
 - Utilisez les différentes pages créées pour **ajouter**, **modifier**, **supprimer** des catégories et des langues (afin de tester que tout fonctionne bien)
-- Remarquez que vous pouvez ajouter des catégories/langues avec un nom de 1 caractère, essayez de corriger ça en ajoutant **une contrainte de validation** sur le nom/label des catégories/langues. ([voir la doc](https://symfony.com/doc/current/validation.html)) 
+- Remarquez que vous pouvez ajouter des catégories/langues avec un nom de 1 caractère, essayez de corriger ça en ajoutant **une contrainte de validation** sur le nom/label des catégories/langues. ([voir la doc](https://symfony.com/doc/current/validation.html))
 - Pour empêcher ça, ajoutez un attribut **#[Assert\Length(min=3)]** sur le champ de l'entité Category/Language qui correspond au nom/label de la catégorie/langue. Ajoutez aussi une annotation **#[Assert\NotBlank]** pour que le champ ne soit pas vide.
 
-> Ce qu'il faut retenir : On peut créer des formulaires (**form**) ou des **CRUD** via des commandes Symfony pour gagner un max de temps. 
-> Ensuite, on ajoute **des contraintes de validation** sur les propriétés des entités pour éviter les erreurs de saisie. 
+> Ce qu'il faut retenir : On peut créer des formulaires (**form**) ou des **CRUD** via des commandes Symfony pour gagner un max de temps.
+> Ensuite, on ajoute **des contraintes de validation** sur les propriétés des entités pour éviter les erreurs de saisie.
 > On peut aussi personnaliser les formulaires en modifiant les fichiers twig ou les fichiers php générés.
-
-
 
 # Feature d'upload de fichiers
 
@@ -265,7 +261,7 @@
 
 > uploadedBy : l'utilisateur qui a uploadé l'image \
 > uploadedAt : la date d'upload \
-> url : l'url de l'image stockée sur le serveur 
+> url : l'url de l'image stockée sur le serveur
 
 - Générer une migration et exécutez-la. Ajoutez dans le constructeur de l'entité **$this->uploadedAt = new \DateTimeImmutable()** pour que la date d'upload soit automatiquement ajoutée à l'entité.
 - Allez dans le controller UploadController, dans la méthode qui existe déjà, injectez le repository UploadRepository et récupérez tous les uploads en BDD. Passez les uploads au template twig 'upload.html.twig' et modifiez le template pour afficher les images stockées en BDD. (pour l'instant, il n'y a rien, donc ça n'affiche rien)
@@ -295,7 +291,7 @@ public function uploadApi(
     return $this->json([
         'message' => 'Upload successful!',
     ]);
-    
+
     return $this->json([
         'message' => 'Upload failed!',
     ], Response::HTTP_BAD_REQUEST);
@@ -304,7 +300,7 @@ public function uploadApi(
 
 > Ce code permet de récupérer les fichiers envoyés par le formulaire en front, de les uploader sur le serveur, de les stocker en BDD et de retourner un message de succès ou d'erreur en JSON.
 > **FileUploader** n'existe pas encore, c'est un service qu'on va créer nous même pour gérer l'upload de fichier. (On vient dire que ce code est dépendant du service FileUploader qu'on va créer)
- 
+
 - Dans un nouveau fichier dans **src/service/FileUploader.php**, ajoutez le code suivant :
 
 ```php
@@ -338,7 +334,7 @@ public function upload(UploadedFile $file, $folder = '/uploads'): string
 > 4 - Retourner le chemin du fichier pour le stocker en BDD (chemin du fichier relatif au dossier public/)
 
 - Créez un dossier **public/uploads** à la racine du projet pour stocker les images uploadées.
-- Allez dans le fichier template '**upload.html.twig**' et dans le code JS à la toute fin dans **document.querySelector('form').addEventListener('submit')**, ajoutez 
+- Allez dans le fichier template '**upload.html.twig**' et dans le code JS à la toute fin dans **document.querySelector('form').addEventListener('submit')**, ajoutez
 
 ```js
 const formData = new FormData();
@@ -365,7 +361,7 @@ fetch('{{ path('api_upload') }}', {
 <br><br>
 <br><br>
 
-# Prochaines étapes : 
+# Prochaines étapes :
 
 - Utiliser le système **Serializer** de Symfony pour transformer des objets en JSON (API)
 - Utiliser le système de **Deserializer** de Symfony pour transformer du JSON en objet (API)
