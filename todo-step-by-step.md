@@ -219,16 +219,154 @@
 
 - Dans le sous template 'parts/left-menu.html.twig', ajoutez un lien pour accéder à la page 'administration' si l'utilisateur connecté a le rôle 'ROLE_ADMIN'. Pour ça, utilisez la fonction twig **is_granted('ROLE_ADMIN')**. Si l'utilisateur connecté a le rôle 'ROLE_ADMIN', affichez le lien vers la page 'administration'.
 
+
+
+# Formulaires / CRUD (simple)
+
+- On va maintenant créer un **CRUD** (create, read, update, delete) pour les catégories et les langues. Pour ça, utilisez la commande **make:crud** de Symfony.
+- Générez le CRUD pour **Category** et pour **Language**. Pleins de fichiers ont été générés. Ouvrez le controller généré et regardez les différentes méthodes. Ouvrez les templates générés et regardez comment sont affichés les différents éléments.
+
+> Liste des fichiers générés lors de la création du CRUD pour **Category** : 
+> - **src/Controller/CategoryController.php** → Le controller qui gère les différentes actions pour les catégories (afficher la liste, afficher le détail, ajouter, modifier, supprimer)
+> - **src/Form/Category1Type.php** → Le formulaire pour ajouter ou modifier une catégorie (celui-ci contient les champs que va avoir le formulaire)
+> - **templates/category/_delete_form.html.twig** → Le formulaire pour supprimer une catégorie
+> - **templates/category/_form.html.twig** → Le formulaire pour ajouter ou modifier une catégorie
+> - **templates/category/edit.html.twig** → Le template pour modifier une catégorie
+> - **templates/category/index.html.twig** → Le template pour afficher la liste des catégories
+> - **templates/category/new.html.twig** → Le template pour ajouter une catégorie
+> - **templates/category/show.html.twig** → Le template pour afficher le détail d'une catégorie
+
+> On n'aura pas besoin de tous les fichiers générés, on va en supprimer certains. On va aussi modifier les templates pour qu'ils soient plus jolis.
+
+- Supprimez **templates/category/show.html.twig** (on n'en a pas besoin, on a déjà la page de détail des catégories)
+- Modifiez les templates '**edit**', '**index**', '**new**', '**delete**' pour qu'ils soient plus jolis. Pour ça, vous pouvez vous inspirer des autres templates de l'application (admin_films.html.twig, admin_users.html.twig, admin_add_films_form.html.twig...). (**C'est du HTML/Tailwind après, plus trop du Symfony**)
+
+> Vous pouvez utiliser des composants tailwind pour rendre les templates plus jolis.
+> Pour les formulaires, vous pouvez utiliser les classes tailwind pour les inputs, les labels, les boutons, les messages d'erreur...
+
+> Vous pouvez personnaliser l'affichage des formulaires en modifiant le fichier twig **_form.html.twig** ou le fichier php **CategoryType.php** (pour ajouter des champs, enlever des champs, changer le type d'un champ, ajouter des classes...) ([voir la doc](https://symfony.com/doc/current/forms.html))
+> Si vous voulez définir **un thème pour les formulaires**, vous pouvez le faire dans le fichier **config/packages/twig.yaml** en appliquant un thème de formulaire par défaut ([voir la doc](https://symfony.com/doc/current/form/form_themes.html)) ou en créant le vôtre.
+
+- Utilisez les différentes pages créées pour **ajouter**, **modifier**, **supprimer** des catégories et des langues (afin de tester que tout fonctionne bien)
+- Remarquez que vous pouvez ajouter des catégories/langues avec un nom de 1 caractère, essayez de corriger ça en ajoutant **une contrainte de validation** sur le nom/label des catégories/langues. ([voir la doc](https://symfony.com/doc/current/validation.html)) 
+- Pour empêcher ça, ajoutez un attribut **#[Assert\Length(min=3)]** sur le champ de l'entité Category/Language qui correspond au nom/label de la catégorie/langue. Ajoutez aussi une annotation **#[Assert\NotBlank]** pour que le champ ne soit pas vide.
+
+> Ce qu'il faut retenir : On peut créer des formulaires (**form**) ou des **CRUD** via des commandes Symfony pour gagner un max de temps. 
+> Ensuite, on ajoute **des contraintes de validation** sur les propriétés des entités pour éviter les erreurs de saisie. 
+> On peut aussi personnaliser les formulaires en modifiant les fichiers twig ou les fichiers php générés.
+
+
+
+# Feature d'upload de fichiers
+
+- On va créer un endroit sur le site pour qu'un admin puisse uploader une image (template : **upload.html.twig**). Il pourra ensuite se servir des images partout sur le site en copiant le lien de l'image.
+
+- Ajouter une entitée '**Upload**' (propriété à ajouter : uploadedBy, uploadedAt, url)
+
+> uploadedBy : l'utilisateur qui a uploadé l'image \
+> uploadedAt : la date d'upload \
+> url : l'url de l'image stockée sur le serveur 
+
+- Générer une migration et exécutez-la. Ajoutez dans le constructeur de l'entité **$this->uploadedAt = new \DateTimeImmutable()** pour que la date d'upload soit automatiquement ajoutée à l'entité.
+- Allez dans le controller UploadController, dans la méthode qui existe déjà, injectez le repository UploadRepository et récupérez tous les uploads en BDD. Passez les uploads au template twig 'upload.html.twig' et modifiez le template pour afficher les images stockées en BDD. (pour l'instant, il n'y a rien, donc ça n'affiche rien)
+- Ajoutez une autre méthode uploadApi disponible via l'url '/api/upload' avec comme nom 'api_upload'
+
+```php
+#[Route(path: '/api/upload', name: 'api_upload')]
+public function uploadApi(
+    Request $request,
+    FileUploader $fileUploader,
+    EntityManagerInterface $entityManager
+): Response
+{
+    /** @var UploadedFile[] $files */
+    $files = $request->files->all()['files'];
+
+    foreach ($files as $file) {
+        $fileName = $fileUploader->upload($file);
+        $upload = new Upload();
+        $upload->setUploadedBy($this->getUser());
+        $upload->setUrl($fileName);
+        $entityManager->persist($upload);
+    }
+
+    $entityManager->flush();
+
+    return $this->json([
+        'message' => 'Upload successful!',
+    ]);
+    
+    return $this->json([
+        'message' => 'Upload failed!',
+    ], Response::HTTP_BAD_REQUEST);
+}
+```
+
+> Ce code permet de récupérer les fichiers envoyés par le formulaire en front, de les uploader sur le serveur, de les stocker en BDD et de retourner un message de succès ou d'erreur en JSON.
+> **FileUploader** n'existe pas encore, c'est un service qu'on va créer nous même pour gérer l'upload de fichier. (On vient dire que ce code est dépendant du service FileUploader qu'on va créer)
+ 
+- Dans un nouveau fichier dans **src/service/FileUploader.php**, ajoutez le code suivant :
+
+```php
+public function __construct(
+    #[Autowire('%kernel.project_dir%/public')] private string $targetDirectory,
+    private SluggerInterface $slugger,
+    private LoggerInterface  $logger,
+) {
+}
+
+public function upload(UploadedFile $file, $folder = '/uploads'): string
+{
+    $originalFilename = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+    $safeFilename = strtolower($this->slugger->slug($originalFilename));
+    $fileName = $safeFilename.'-'.uniqid().'.'.$file->guessExtension();
+
+    try {
+        $file->move($this->targetDirectory . $folder, $fileName);
+    } catch (FileException $e) {
+        $this->logger->error('An error occurred while uploading the file: '.$e->getMessage());
+    }
+
+    return $folder . '/' . $fileName;
+}
+```
+
+> Ce code permet de : \
+> 1 - Récupérer le nom du fichier uploadé \
+> 2 - Générer un nom de fichier sécurisé (grâce à une dépendance : le Slugger Symfony et un id unique aléatoire) \
+> 3 - Déplacer le fichier dans le dossier public/uploads (chemin absolu du dossier) \
+> 4 - Retourner le chemin du fichier pour le stocker en BDD (chemin du fichier relatif au dossier public/)
+
+- Créez un dossier **public/uploads** à la racine du projet pour stocker les images uploadées.
+- Allez dans le fichier template '**upload.html.twig**' et dans le code JS à la toute fin dans **document.querySelector('form').addEventListener('submit')**, ajoutez 
+
+```js
+const formData = new FormData();
+uploadedFiles.forEach(file => {
+    formData.append('files[]', file);
+});
+
+fetch('{{ path('api_upload') }}', {
+    method: 'POST',
+    body: formData
+}).then(response => {
+    window.location.reload();
+}).catch(error => {
+    console.error(error);
+    alert('Une erreur est survenue');
+});
+```
+
+> Ce code permet de récupérer les fichiers uploadés dans le formulaire, de les envoyer en POST à l'API uploadApi, de recharger la page si l'upload est réussi et d'afficher une alerte si l'upload a échoué. A noté : On gère l'upload multiple de fichiers
+
+- **Testez** l'upload d'images sur la page 'upload.html.twig'. Vous devriez voir les images uploadées s'afficher sur la page.
+
 <br><br>
 <br><br>
 <br><br>
 
 # Prochaines étapes : 
 
-- Créer un **formulaire** pour ajouter une catégorie ou une langue (CRUD avec la commande Symfony)
-- Créer un **formulaire** pour ajouter un film ou une série
-- Utiliser le système de **Validation** de Symfony pour valider les données des formulaires
-- Utiliser le système de **File** de Symfony pour uploader des images
 - Utiliser le système **Serializer** de Symfony pour transformer des objets en JSON (API)
 - Utiliser le système de **Deserializer** de Symfony pour transformer du JSON en objet (API)
 - Utiliser le système d'**événements** de Symfony pour hasher le mot de passe avant de le sauvegarder en BDD
