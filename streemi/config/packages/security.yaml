@@ -5,13 +5,41 @@ security:
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
         users_in_memory: { memory: null }
+        users_in_database:
+            entity:
+                class: App\Entity\User
+                property: email
+
+    role_hierarchy:
+        ROLE_SUPER_ADMIN: ROLE_ADMIN
+        ROLE_ADMIN: ROLE_USER_WITH_SUBSCRIPTION
+        ROLE_USER_WITH_SUBSCRIPTION: ROLE_USER
+        ROLE_USER:
+        ROLE_GROS_SOUS_CACA:
+
+    # Quand l'utilisateur s'inscrits : ROLE_USER
+    # Quand il prends l'abo payant : ROLE_USER_WITH_SUBSCRIPTION
+
+    # Pour limiter le mauvais boug : ROLE_GROS_SOUS_CACA
+
+    # Pour vous : ROLE_SUPER_ADMIN
+    # Pour les sous-admins : ROLE_ADMIN
+
     firewalls:
         dev:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
         main:
             lazy: true
-            provider: users_in_memory
+            provider: users_in_database
+            form_login:
+                login_path: app_login
+                check_path: app_login
+                enable_csrf: true
+            logout:
+                path: app_logout
+                target: page_homepage
+                # where to redirect after logout
 
             # activate different ways to authenticate
             # https://symfony.com/doc/current/security.html#the-firewall

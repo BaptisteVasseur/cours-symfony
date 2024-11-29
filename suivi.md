@@ -47,11 +47,12 @@
 
 ## Cours du Vendredi 29 Novembre
 
-- Intro QueryBuilder
 - Correction sur la sécurité (UserProvider, Firewall, Role Hierarchy, Voter simple php et twig)
 - Evenements pour hasher le mot de passe
 
 ## A suivre : 
+
+- Intro QueryBuilder
 
 - Authentification (forgot, reset)
 - Envoi d'emails

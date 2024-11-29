@@ -1,4 +1,11 @@
 <aside class=" w-1/5 py-10 px-10  min-w-min  border-l border-gray-300 hidden lg:block ">
+
+    {% if app.user %}
+        <div class="pb-4 text-center font-bold">
+            Bonjour {{ app.user.username }}
+        </div>
+    {% endif %}
+
     <div class="relative items-center content-center flex">
                 <span class="text-gray-400 absolute left-4 cursor-pointer">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

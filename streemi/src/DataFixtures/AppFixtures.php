@@ -22,6 +22,7 @@ use DateTime;
 use DateTimeImmutable;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Persistence\ObjectManager;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
 class AppFixtures extends Fixture
 {
@@ -38,6 +39,12 @@ class AppFixtures extends Fixture
     public const MAX_SUBSCRIPTIONS_HISTORY_PER_USER = 3;
     public const MAX_COMMENTS_PER_MEDIA = 10;
     public const MAX_PLAYLIST_SUBSCRIPTION_PER_USERS = 3;
+
+    public function __construct(
+        protected UserPasswordHasherInterface $passwordHasher,
+    )
+    {
+    }
 
     public function load(ObjectManager $manager): void
     {
@@ -126,12 +133,30 @@ class AppFixtures extends Fixture
             $user = new User();
             $user->setEmail(email: "test_$i@example.com");
             $user->setUsername(username: "test_$i");
-            $user->setPassword(password: 'coucou');
+            $user->setRoles(['ROLE_USER']);
+            $user->setPlainPassword('coucou');
             $user->setAccountStatus(accountStatus: UserAccountStatusEnum::ACTIVE);
             $users[] = $user;
-
             $manager->persist(object: $user);
         }
+
+        $admin = new User();
+        $admin->setEmail(email: "admin@example.com");
+        $admin->setUsername(username: "admin");
+        $hashedPassword = $this->passwordHasher->hashPassword($admin, 'admin');
+        $admin->setPassword(password: $hashedPassword);
+        $admin->setRoles(['ROLE_ADMIN']);
+        $admin->setAccountStatus(accountStatus: UserAccountStatusEnum::ACTIVE);
+        $manager->persist(object: $admin);
+
+        $caca = new User();
+        $caca->setEmail(email: "caca@example.com");
+        $caca->setUsername(username: "caca");
+        $hashedPassword = $this->passwordHasher->hashPassword($caca, 'caca');
+        $caca->setPassword(password: $hashedPassword);
+        $caca->setRoles(['ROLE_USER', 'ROLE_GROS_SOUS_CACA']);
+        $caca->setAccountStatus(accountStatus: UserAccountStatusEnum::ACTIVE);
+        $manager->persist(object: $caca);
     }
 
     public function createPlaylists(ObjectManager $manager, array $users, array &$playlists): void
