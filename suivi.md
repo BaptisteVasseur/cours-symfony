@@ -40,11 +40,20 @@
 - Templating (affichage & boucles for) (suite)
 - QCM Noté
 
-## A suivre : 
+## Cours du Jeudi 28 Novembre
+
+- Travail en autonomie sur Streemi (finir d'intégrer les pages)
+- Essayer d'implémenter l'authentification
+
+## Cours du Vendredi 29 Novembre
 
 - Intro QueryBuilder
-- Authentification (login, logout, forgot, reset), UserProvider, Firewall, Role Hierarchy, Voter simple
+- Correction sur la sécurité (UserProvider, Firewall, Role Hierarchy, Voter simple php et twig)
 - Evenements pour hasher le mot de passe
+
+## A suivre : 
+
+- Authentification (forgot, reset)
 - Envoi d'emails
 - Formulaires basiques (CRUD) pour les Catégories et les Langues
 - Formulaires avancés (CRUD)
