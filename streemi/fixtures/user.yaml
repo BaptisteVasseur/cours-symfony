@@ -1,0 +1,17 @@
+App\Entity\User:
+
+  user_template (template):
+    email: '<email()>'
+    username: '<userName()>'
+    password: 'coucou'
+    # profilePicture: 'https://picsum.photos/400/400?random=<numberBetween(1, 100)>'
+
+  user_admin (extends user_template):
+    email: 'admin\@example.com'
+    password: 'motdepasse'
+
+  user_with_subscription_{1..5} (extends user_template):
+    email: '<email()>'
+    currentSubscription: '@subscription_*'
+
+  user_without_subscription_{1..5} (extends user_template):

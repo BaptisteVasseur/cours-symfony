@@ -44,6 +44,8 @@ class Playlist
     {
         $this->playlistSubscriptions = new ArrayCollection();
         $this->playlistMedia = new ArrayCollection();
+
+        $this->createdAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int

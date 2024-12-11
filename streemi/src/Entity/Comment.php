@@ -46,6 +46,8 @@ class Comment
     public function __construct()
     {
         $this->childComments = new ArrayCollection();
+
+        $this->createdAt = new \DateTimeImmutable();
     }
 
     public function getId(): ?int

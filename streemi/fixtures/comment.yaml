@@ -1,0 +1,12 @@
+App\Entity\Comment:
+
+  comment_template (template):
+    content: '<sentence()>'
+    status: !php/const \App\Enum\CommentStatusEnum::VALIDATED
+    publisher: '@user_*'
+    media: '@media_*'
+
+  comment_{1..200} (extends comment_template):
+
+  comment_with_parent_{1..20} (extends comment_template):
+    parentComment: '@comment_*'

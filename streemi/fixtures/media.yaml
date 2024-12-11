@@ -1,0 +1,43 @@
+App\Entity\Media:
+  media (template):
+    title: 'Media <current()>'
+    shortDescription: 'short description'
+    longDescription: '<realText()>'
+    releaseDate: '<datetime()>'
+    coverImage: 'https://picsum.photos/400/550?random=<numberBetween(1, 100)>'
+
+App\Entity\Movie:
+  media_movie_{1..50} (extends media):
+    title: 'Movie <current()>'
+    duration: '<numberBetween(90, 180)>'
+
+App\Entity\Serie:
+  media_serie_{1..50} (extends media):
+    title: 'Serie <current()>'
+
+
+App\Entity\Season:
+  season_1_{@media_serie*}:
+    number: '<numberBetween(1, 10)>'
+    serie: '<current()>'
+  season_2_{@media_serie*}:
+    number: '<numberBetween(1, 10)>'
+    serie: '<current()>'
+  season_3_{@media_serie*}:
+    number: '<numberBetween(1, 10)>'
+    serie: '<current()>'
+
+App\Entity\Episode:
+  episode_{1..500}:
+    title: '<sentence()>'
+    duration: '<numberBetween(45, 90)>'
+    releasedAt: "<dateTimeBetween('-1 week', '+1 week')>"
+    season: '@season_*'
+
+
+App\Entity\WatchHistory:
+    watch_history_{1..500}:
+      lastWatchedAt: "<dateTimeBetween('-1 week', '+1 week')>"
+      numberOfViews: '<numberBetween(1, 100)>'
+      watcher: '@user_*'
+      media: '@media_*'
