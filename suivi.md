@@ -38,11 +38,18 @@
 - QueryBuilder
 - Authentification, UserProvider, Firewall, Role Hierarchy, Voter simple
 
-## A venir :
+## Cours du 09 décembre (1,75)
 
+- Avancé jusqu'à l'authentification
 - Authentification (login, logout, forgot, reset)
 - Evenements pour hasher le mot de passe
+
+## Cours du 13 décembre (5,25)
+
 - Envoi d'emails
+
+## A venir :
+
 - Formulaires basiques (CRUD) pour les Catégories et les Langues
 - Autre formulaire (CRUD)
 - Call API Externe
