@@ -18,11 +18,11 @@ security:
             lazy: true
             provider: users_in_database
             form_login:
-                login_path: app_login
-                check_path: app_login
+                login_path: page_login
+                check_path: page_login
                 enable_csrf: true
             logout:
-                path: app_logout
+                path: page_logout
                 # where to redirect after logout
                 target: homepage
 

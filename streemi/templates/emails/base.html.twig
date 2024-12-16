@@ -1,0 +1,12 @@
+<html>
+    <head>
+        <title>
+            {% if title is defined %}{{ title }}{% else %}Streemi{% endif %}
+        </title>
+        {% block stylesheets %}{% endblock %}
+    </head>
+    <body>
+        {% block body %}{% endblock %}
+        {% block javascripts %}{% endblock %}
+    </body>
+</html>

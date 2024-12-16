@@ -48,7 +48,6 @@
 ## A suivre :
 
 - QueryBuilder
-- QCM Noté
 - Evenements pour hasher le mot de passe
 - Envoi d'emails
 - Formulaires basiques (CRUD) pour les Catégories et les Langues
