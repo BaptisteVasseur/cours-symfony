@@ -6,6 +6,7 @@ use App\Repository\CategoryRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: CategoryRepository::class)]
 class Category
@@ -15,15 +16,18 @@ class Category
     #[ORM\Column]
     private ?int $id = null;
 
+    #[Groups(['groupCategory'])]
     #[ORM\Column(length: 255)]
     private ?string $nom = null;
 
+    #[Groups(['groupCategory'])]
     #[ORM\Column(length: 255)]
     private ?string $label = null;
 
     /**
      * @var Collection<int, Media>
      */
+    #[Groups(['groupCategory'])]
     #[ORM\ManyToMany(targetEntity: Media::class, mappedBy: 'categories')]
     private Collection $medias;
 

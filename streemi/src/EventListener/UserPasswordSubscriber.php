@@ -31,8 +31,15 @@ class UserPasswordSubscriber
 
     private function encodePassword(User $user): void
     {
-        $encodedPassword = $this->passwordHasher->hashPassword($user, $user->getPassword());
+        $plainPassword = $user->getPlainPassword();
+
+        if (empty($plainPassword)) {
+            return;
+        }
+
+        $encodedPassword = $this->passwordHasher->hashPassword($user, $plainPassword);
 
         $user->setPassword($encodedPassword);
+        $user->eraseCredentials();
     }
 }

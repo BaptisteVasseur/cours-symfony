@@ -12,6 +12,7 @@ use Doctrine\ORM\Mapping\DiscriminatorColumn;
 use Doctrine\ORM\Mapping\DiscriminatorMap;
 use Doctrine\ORM\Mapping\InheritanceType;
 use \App\Enum\MediaTypeEnum;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[InheritanceType('JOINED')]
 #[DiscriminatorColumn(name: 'discr', type: 'string')]
@@ -60,12 +61,15 @@ class Media
     #[ORM\Column(type: Types::TEXT)]
     private ?string $longDescription = null;
 
+    #[Groups(['groupCategory'])]
     #[ORM\Column(length: 255)]
     private ?string $title = null;
 
+    #[Groups(['groupCategory'])]
     #[ORM\Column(type: Types::DATETIME_MUTABLE)]
     private ?\DateTimeInterface $releaseDate = null;
 
+    #[Groups(['groupCategory'])]
     #[ORM\Column(length: 255)]
     private ?string $coverImage = null;
 

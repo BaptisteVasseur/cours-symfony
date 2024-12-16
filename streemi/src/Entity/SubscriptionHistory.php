@@ -4,6 +4,7 @@ namespace App\Entity;
 
 use App\Repository\SubscriptionHistoryRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 
 #[ORM\Entity(repositoryClass: SubscriptionHistoryRepository::class)]
 class SubscriptionHistory
@@ -14,15 +15,18 @@ class SubscriptionHistory
     private ?int $id = null;
 
     #[ORM\Column]
+    #[Groups(['groupA'])]
     private ?\DateTimeImmutable $startAt = null;
 
     #[ORM\Column]
+    #[Groups(['groupA'])]
     private ?\DateTimeImmutable $endAt = null;
 
     #[ORM\ManyToOne(inversedBy: 'subscriptionHistories')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $subscriber = null;
 
+    #[Groups(['groupA'])]
     #[ORM\ManyToOne(inversedBy: 'subscriptionHistories')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Subscription $subscription = null;

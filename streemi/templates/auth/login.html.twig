@@ -24,7 +24,7 @@
                     </button>
                 </div>
                 <p class="text-center text-sm font-medium mt-10"> Ou connectez-vous avec vos identifiants </p>
-                <form class="mt-10" method="POST">
+                <form class="mt-10" method="POST" action="{{ path('forgot_password_api') }}">
 
                     <input type="hidden" name="_csrf_token"
                            value="{{ csrf_token('authenticate') }}"

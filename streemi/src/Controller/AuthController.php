@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Repository\UserRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Authentication\AuthenticationUtils;
 
@@ -39,8 +43,29 @@ class AuthController extends AbstractController
     }
 
     #[Route('/forgot', name: 'forgot_password')]
-    public function forgotPassword(): Response
+    public function forgotPassword(
+        Request $request,
+        UserRepository $userRepository,
+        MailerInterface $mailer
+    ): Response
     {
+        $email = $request->get('email');
+
+        if ($email) {
+            $user = $userRepository->findOneBy(['email' => $email]);
+
+            if ($user) {
+                $email = (new Email())
+                    ->from('contact@streemi.com')
+                    ->to($user->getEmail())
+                    ->subject('Reset your password')
+                    ->text('Click here to reset your password')
+                    ->html('<a href="http://localhost:8000/reset?token=toto">Click here to reset your password</a>');
+
+                $mailer->send($email);
+            }
+        }
+
         return $this->render('auth/forgot.html.twig');
     }
 
