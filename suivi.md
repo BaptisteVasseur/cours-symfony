@@ -53,7 +53,6 @@
 ## A suivre : 
 
 - Intro QueryBuilder
-
 - Authentification (forgot, reset)
 - Envoi d'emails
 - Formulaires basiques (CRUD) pour les Catégories et les Langues
