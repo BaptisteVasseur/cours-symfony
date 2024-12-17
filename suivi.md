@@ -45,12 +45,16 @@
 - QCM Noté
 - Authentification (forgot, reset), Voter simple
 
+## Cours du 17 décembre (2) :
+
+- Authentification (forgot, reset),
+- Envoi d'emails
+- Evenements pour hasher le mot de passe
+- Formulaires basiques (CRUD) pour les Catégories et les Langues
+
 ## A suivre :
 
 - QueryBuilder
-- Evenements pour hasher le mot de passe
-- Envoi d'emails
-- Formulaires basiques (CRUD) pour les Catégories et les Langues
 - Formulaires avancés (CRUD)
 - Validation des données
 - Call API Externe
