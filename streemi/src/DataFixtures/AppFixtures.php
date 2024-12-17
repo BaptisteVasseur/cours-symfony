@@ -126,7 +126,7 @@ class AppFixtures extends Fixture
             $user = new User();
             $user->setEmail(email: "test_$i@example.com");
             $user->setUsername(username: "test_$i");
-            $user->setPassword(password: 'coucou');
+            $user->setPlainPassword(plainPassword: 'coucou');
             $user->setAccountStatus(accountStatus: UserAccountStatusEnum::ACTIVE);
             $user->setRoles(['ROLE_USER']);
             $users[] = $user;

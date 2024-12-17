@@ -31,14 +31,21 @@
 - Templating (affichage & boucles for)
 - Intro QueryBuilder
 
-## A suivre :
+## Cours du ?? Novembre (2) :
 
 - Revisions
 - QCM Noté
-- Authentification (login, logout, forgot, reset), UserProvider, Firewall, Role Hierarchy, Voter simple
+- Authentification (login, logout), UserProvider, Firewall, Role Hierarchy, Voter simple
+
+## cours du 17 Décembre (2) :
+
+- Authentification (forgot, reset)
 - Evenements pour hasher le mot de passe
 - Envoi d'emails
 - Formulaires basiques (CRUD) pour les Catégories et les Langues
+
+## A suivre :
+
 - Formulaires avancés (CRUD)
 - Validation des données
 - Call API Externe

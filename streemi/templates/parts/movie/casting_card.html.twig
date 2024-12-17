@@ -1,0 +1,9 @@
+<li class="relative rounded-xl overflow-hidden transition cursor-pointer hover:scale-105 hover:opacity-90 hover:shadow-md">
+    <img src="{{ user.image }}" class="object-cover h-full w-full -z-10" alt="Image of {{ user.name }}">
+    <div class="absolute top-0 h-full w-full bg-gradient-to-t from-black/50 p-3 flex flex-col justify-end">
+        <div class="self-center flex flex-col items-center space-y-2">
+            <span class="capitalize text-white font-medium drop-shadow-md">{{ user.name }}</span>
+            <span class="text-gray-100 text-xs">{{ user.role }}</span>
+        </div>
+    </div>
+</li>

@@ -1,0 +1,15 @@
+<li class="mt-9 {% if isSubComment|default(false) %}pl-9 border-l-4{% endif %}">
+    <div class="bg-gray-100 p-4 rounded-lg">
+        <div class="flex items-center">
+            <img src="https://random.imagecdn.app/100/100?{{ comment.publisher.username }}" class="w-10 h-10 rounded-full" alt="">
+            <div class="ml-4 w-full">
+                <span class="font-medium">{{ comment.publisher.username }}</span>
+                <span class="text-xs text-gray-500 flex items-center justify-between w-full">
+                    <span>Il y a 2 jours</span>
+                    <span></span>
+                </span>
+            </div>
+        </div>
+        <p class="mt-4 w-full">{{ comment.content }}</p>
+    </div>
+</li>
