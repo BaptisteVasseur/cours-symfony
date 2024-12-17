@@ -28,7 +28,7 @@ class CategoryController extends AbstractController
         ]);
     }
 
-    #[Route('/category/{id}', name: 'show_category')]
+    #[Route('/discover/{id}', name: 'show_category')]
     public function show(
         Category $category
     ): Response

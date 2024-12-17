@@ -1,0 +1,30 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Language{% endblock %}
+
+{% block content %}
+    <h1>Language</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Id</th>
+                <td>{{ language.id }}</td>
+            </tr>
+            <tr>
+                <th>Nom</th>
+                <td>{{ language.nom }}</td>
+            </tr>
+            <tr>
+                <th>Code</th>
+                <td>{{ language.code }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_language_index') }}">back to list</a>
+
+    <a href="{{ path('app_language_edit', {'id': language.id}) }}">edit</a>
+
+    {{ include('language/_delete_form.html.twig') }}
+{% endblock %}

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Security;
 
+use App\Form\PasswordResetType;
 use App\Repository\UserRepository;
 use App\Service\Mailer\AuthMailer;
 use Doctrine\ORM\EntityManagerInterface;
@@ -43,23 +44,18 @@ class AuthController extends AbstractController
         AuthMailer $authMailer,
         EntityManagerInterface $entityManager,
     ): Response {
-        $username = $request->get('username');
+        $username = $request->get('toto');
         if ($username) {
-            try {
-                $user = $userRepository->findOneBy(['email' => $username]);
-                if (!$user) {
-                    $this->addFlash('error', 'Aucun utilisateur trouvé avec cet email');
-                } else {
-                    $resetPasswordToken = Uuid::v4()->toRfc4122();
-                    $user->setResetPasswordToken($resetPasswordToken);
-                    $entityManager->flush();
-                    $authMailer->sendForgotEmail($user);
+            $user = $userRepository->findOneBy(['email' => $username]);
+            if (!$user) {
+                $this->addFlash('error', 'Aucun utilisateur trouvé avec cet email');
+            } else {
+                $resetPasswordToken = Uuid::v4()->toRfc4122();
+                $user->setResetPasswordToken($resetPasswordToken);
+                $entityManager->flush();
+                $authMailer->sendForgotEmail($user);
 
-                    $this->addFlash('success', 'Email envoyé !');
-                }
-
-            } catch (Exception $e) {
-                $this->addFlash('error', $e->getMessage());
+                $this->addFlash('success', 'Email envoyé !');
             }
         }
 
@@ -81,27 +77,27 @@ class AuthController extends AbstractController
             return $this->redirectToRoute('page_forgot');
         }
 
-//        $form = $this->createForm(PasswordResetType::class);
-//        $form->setData(['email' => $user->getEmail()]);
-//        $form->handleRequest($request);
-//
-//        if ($form->isSubmitted() && $form->isValid()) {
-//
-//            $data = $form->getData();
-//            $plainPassword = $data['plainPassword'];
-//            $repeatPassword = $data['repeatPassword'];
-//
-//            if ($plainPassword === $repeatPassword) {
-//                $user->setResetPasswordToken(null);
-//                $user->setPlainPassword($plainPassword);
-//                $entityManager->flush();
-//
-//                $this->addFlash('success', 'Mot de passe réinitialisé');
-//                return $this->redirectToRoute('page_login');
-//            }
-//
-//            $this->addFlash('error', 'Les mots de passe ne correspondent pas');
-//        }
+        $form = $this->createForm(PasswordResetType::class);
+        $form->setData(['email' => $user->getEmail()]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+
+            $data = $form->getData();
+            $plainPassword = $data['plainPassword'];
+            $repeatPassword = $data['repeatPassword'];
+
+            if ($plainPassword === $repeatPassword) {
+                $user->setResetPasswordToken(null);
+                $user->setPlainPassword($plainPassword);
+                $entityManager->flush();
+
+                $this->addFlash('success', 'Mot de passe réinitialisé');
+                return $this->redirectToRoute('page_login');
+            }
+
+            $this->addFlash('error', 'Les mots de passe ne correspondent pas');
+        }
 
         return $this->render(view: 'auth/reset.html.twig', parameters: [
             'user' => $user,
