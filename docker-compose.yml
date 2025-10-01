@@ -1,0 +1,26 @@
+version: '3.8'
+
+services:
+  # Base de données PostgreSQL
+  postgres:
+    image: postgres:15-alpine
+    container_name: airbnb_postgres
+    environment:
+      POSTGRES_DB: airbnb
+      POSTGRES_USER: airbnb
+      POSTGRES_PASSWORD: airbnb
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # Serveur SMTP de test (MailHog)
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: airbnb_mailhog
+    ports:
+      - "1025:1025"  # SMTP
+      - "8025:8025"  # Interface web
+  
+volumes:
+  postgres_data:
