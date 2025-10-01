@@ -46,6 +46,8 @@ Temporary Items
 .idea/**/dictionaries
 .idea/**/shelf
 
+.vscode/
+
 # AWS User-specific
 .idea/**/aws.xml
 
