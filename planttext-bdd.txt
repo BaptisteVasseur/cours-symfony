@@ -1,0 +1,221 @@
+@startuml
+
+entity user {
+  +id : int
+  email : varchar(255)
+  password_hash : varchar(255)
+  first_name : varchar(100)
+  last_name : varchar(100)
+  phone : varchar(20)
+  profile_picture_url : varchar(500)
+  bio : text
+  language : varchar(10)
+  currency : varchar(3)
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity property {
+  +id : int
+  host_id : int
+  title : varchar(255)
+  description : text
+  property_type : varchar(50)
+  address : varchar(255)
+  city : varchar(100)
+  country : varchar(100)
+  postal_code : varchar(20)
+  latitude : decimal(10,8)
+  longitude : decimal(11,8)
+  max_guests : int
+  bedrooms : int
+  beds : int
+  bathrooms : decimal(3,1)
+  price_per_night : decimal(10,2)
+  cleaning_fee : decimal(10,2)
+  status : varchar(20)
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity property_amenity {
+  +id : int
+  property_id : int
+  amenity_id : int
+}
+
+entity amenity {
+  +id : int
+  name : varchar(100)
+  icon : varchar(100)
+  category : varchar(50)
+}
+
+entity property_photo {
+  +id : int
+  property_id : int
+  photo_url : varchar(500)
+  display_order : int
+  is_cover : boolean
+  uploaded_at : timestamp
+}
+
+entity availability {
+  +id : int
+  property_id : int
+  date : date
+  is_available : boolean
+  price_override : decimal(10,2)
+}
+
+entity booking {
+  +id : int
+  property_id : int
+  guest_id : int
+  check_in_date : date
+  check_out_date : date
+  number_of_guests : int
+  total_price : decimal(10,2)
+  commission_amount : decimal(10,2)
+  status : varchar(20)
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity payment {
+  +id : int
+  booking_id : int
+  amount : decimal(10,2)
+  currency : varchar(3)
+  payment_method : varchar(50)
+  status : varchar(20)
+  transaction_id : varchar(255)
+  paid_at : timestamp
+  released_at : timestamp
+  created_at : timestamp
+}
+
+entity review {
+  +id : int
+  booking_id : int
+  reviewer_id : int
+  reviewee_id : int
+  rating : int
+  comment : text
+  is_from_guest : boolean
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity message {
+  +id : int
+  sender_id : int
+  recipient_id : int
+  booking_id : int
+  content : text
+  is_read : boolean
+  sent_at : timestamp
+}
+
+entity gamification_user_stats {
+  +id : int
+  user_id : int
+  total_points : int
+  level : int
+  bookings_count : int
+  reviews_count : int
+  countries_visited : int
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity badge {
+  +id : int
+  name : varchar(100)
+  description : text
+  icon_url : varchar(500)
+  category : varchar(50)
+  requirement_type : varchar(50)
+  requirement_value : int
+}
+
+entity user_badge {
+  +id : int
+  user_id : int
+  badge_id : int
+  earned_at : timestamp
+}
+
+entity challenge {
+  +id : int
+  name : varchar(100)
+  description : text
+  challenge_type : varchar(50)
+  target_value : int
+  points_reward : int
+  start_date : date
+  end_date : date
+  is_active : boolean
+  created_at : timestamp
+}
+
+entity user_challenge {
+  +id : int
+  user_id : int
+  challenge_id : int
+  current_progress : int
+  is_completed : boolean
+  completed_at : timestamp
+  started_at : timestamp
+}
+
+entity reward {
+  +id : int
+  name : varchar(100)
+  description : text
+  reward_type : varchar(50)
+  discount_percentage : decimal(5,2)
+  discount_amount : decimal(10,2)
+  points_required : int
+  is_active : boolean
+  created_at : timestamp
+}
+
+entity user_reward {
+  +id : int
+  user_id : int
+  reward_id : int
+  status : varchar(20)
+  redeemed_at : timestamp
+  expires_at : timestamp
+  earned_at : timestamp
+}
+
+user ||--o{ property : hosts
+user ||--o{ booking : makes
+user ||--o{ review : writes
+user ||--o{ message : sends
+user ||--o{ message : receives
+user ||--|| gamification_user_stats : has
+
+property ||--o{ property_amenity : has
+property ||--o{ property_photo : has
+property ||--o{ availability : has
+property ||--o{ booking : receives
+
+amenity ||--o{ property_amenity : belongs_to
+
+booking ||--|| payment : has
+booking ||--o{ review : generates
+booking ||--o{ message : relates_to
+
+user ||--o{ user_badge : earns
+badge ||--o{ user_badge : awarded_to
+
+user ||--o{ user_challenge : participates_in
+challenge ||--o{ user_challenge : assigned_to
+
+user ||--o{ user_reward : receives
+reward ||--o{ user_reward : granted_to
+
+@enduml

@@ -1,0 +1,82 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Airbnb - Locations de vacances, maisons, appartements{% endblock %}
+
+{% block stylesheets %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'game-purple': '#8B5CF6',
+                        'game-cyan': '#06B6D4',
+                        'game-pink': '#EC4899',
+                        'game-gold': '#F59E0B',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+        }
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .property-card {
+            transition: all 0.3s ease;
+        }
+        .property-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(139, 92, 246, 0.15);
+        }
+        .heart-icon:hover {
+            fill: #FF385C;
+            stroke: #FF385C;
+            transform: scale(1.2);
+        }
+        .points-badge {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        .fade-in {
+            animation: slideIn 0.6s ease-out;
+        }
+        .hover-lift {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hover-lift:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="min-h-screen bg-white">
+        {% include 'layout/header.html.twig' %}
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="px-4 py-3 rounded-lg shadow-md text-sm {{ label == 'success' ? 'bg-green-100 text-green-800' : (label == 'error' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') }}">
+                        {{ message }}
+                    </div>
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        {% block body %}{% endblock %}
+
+
+        {% include 'layout/footer.html.twig' %}
+    </div>
+{% endblock %}
