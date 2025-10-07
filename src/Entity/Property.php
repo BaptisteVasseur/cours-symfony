@@ -62,11 +62,16 @@ class Property
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'property')]
     private Collection $reviews;
 
+    #[ORM\Column(length: 255)]
+    private ?string $note = null;
+
     public function __construct()
     {
-        $this->createdAt = new \DateTimeImmutable();
         $this->bookings = new ArrayCollection();
         $this->reviews = new ArrayCollection();
+
+        $this->createdAt = new \DateTimeImmutable();
+        $this->isActive = false;
     }
 
     public function getId(): ?int
@@ -265,4 +270,17 @@ class Property
 
         return $this;
     }
+
+    public function getNote(): ?string
+    {
+        return $this->note;
+    }
+
+    public function setNote(string $note): static
+    {
+        $this->note = $note;
+
+        return $this;
+    }
+
 }

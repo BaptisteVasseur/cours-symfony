@@ -58,11 +58,23 @@ class User
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'guest')]
     private Collection $reviews;
 
+    #[ORM\Column(length: 255)]
+    private ?string $adress = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $city = null;
+
+    #[ORM\Column(length: 255)]
+    private ?string $postalCode = null;
+
     public function __construct()
     {
         $this->properties = new ArrayCollection();
         $this->bookings = new ArrayCollection();
         $this->reviews = new ArrayCollection();
+
+        $this->createdAt = new \DateTimeImmutable();
+        $this->isVerified = true;
     }
 
     public function getId(): ?int
@@ -252,6 +264,42 @@ class User
                 $review->setGuest(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getAdress(): ?string
+    {
+        return $this->adress;
+    }
+
+    public function setAdress(string $adress): static
+    {
+        $this->adress = $adress;
+
+        return $this;
+    }
+
+    public function getCity(): ?string
+    {
+        return $this->city;
+    }
+
+    public function setCity(string $city): static
+    {
+        $this->city = $city;
+
+        return $this;
+    }
+
+    public function getPostalCode(): ?string
+    {
+        return $this->postalCode;
+    }
+
+    public function setPostalCode(string $postalCode): static
+    {
+        $this->postalCode = $postalCode;
 
         return $this;
     }
