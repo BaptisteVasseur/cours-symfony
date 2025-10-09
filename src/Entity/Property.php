@@ -63,7 +63,7 @@ class Property
     private Collection $reviews;
 
     #[ORM\Column(length: 255)]
-    private ?string $note = null;
+    private int $note = 0;
 
     public function __construct()
     {

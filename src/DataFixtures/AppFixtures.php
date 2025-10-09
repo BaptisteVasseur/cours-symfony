@@ -68,7 +68,7 @@ class AppFixtures extends Fixture
             $maxGuests  = max(1, $bedrooms * $faker->numberBetween(1, 2));
 
             $p = (new Property())
-                ->setTitle($faker->streetName() . ' • ' . $faker->randomElement(['Studio', 'Appartement', 'Maison', 'Loft', 'Chalet']))
+                ->setTitle($faker->randomElement(['Studio', 'Appartement', 'Maison', 'Loft', 'Chalet']) . ' • ' .$faker->streetName())
                 ->setDescription($faker->paragraphs(3, true))
                 ->setAddress($faker->streetAddress())
                 ->setCity($faker->city())
@@ -79,7 +79,7 @@ class AppFixtures extends Fixture
                 ->setIsActive($faker->boolean(85))
                 ->setCreatedAt(\DateTimeImmutable::createFromMutable($faker->dateTimeBetween('-10 months', 'now')))
                 ->setHost($host)
-                ->setNote($faker->sentence());
+                ->setNote($faker->numberBetween(1, 5));
 
             $manager->persist($p);
             $properties[] = $p;

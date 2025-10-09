@@ -1,0 +1,11 @@
+<a href="{{ url('app_property_detail', {'id': property.id}) }}" class="property-card">
+    <div class="property-image">
+        <img src="https://picsum.photos/400/300?random={{ property.id }}" alt="Maison provençale" />
+    </div>
+    <div class="property-info">
+        <div class="property-name">{{ property.title }}</div>
+        <div class="property-location">{{ property.city }}, France</div>
+        <div class="property-capacity">{{ property.maxGuests }} voyageurs - {{ property.note }} ⭐️</div>
+        <div class="property-price">{{ property.pricePerNight }}€ par nuit</div>
+    </div>
+</a>
