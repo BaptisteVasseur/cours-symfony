@@ -1,13 +1,6 @@
-{% extends 'base.html.twig' %}
+{% extends 'layout.html.twig' %}
 
-{% block title %}Airbnb Clone - Trouvez votre logement de rêve{% endblock %}
-
-{% block body %}
-
-{% include 'parts/_header.html.twig' %}
-
-<!-- Main Content -->
-<main class="main-content">
+{% block layout %}
     <!-- Hero Section -->
     <section class="hero">
         <h1>Trouvez votre prochaine escapade</h1>
@@ -25,8 +18,5 @@
             {% endfor %}
         </div>
     </section>
-</main>
-
-{% include 'parts/_footer.html.twig' %}
 
 {% endblock %}

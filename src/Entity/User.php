@@ -6,39 +6,49 @@ use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
-class User
+#[UniqueEntity(fields: ['email'])]
+class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
+    #[Assert\Email()]
     #[ORM\Column(length: 255)]
     private ?string $email = null;
 
+    #[Assert\NotBlank(), Assert\Length(min: 5), Assert\PasswordStrength()]
     #[ORM\Column(length: 255)]
     private ?string $password = null;
 
+    #[Assert\NotBlank(), Assert\Length(min: 3)]
     #[ORM\Column(length: 255)]
     private ?string $firstname = null;
 
+    #[Assert\NotBlank(), Assert\Length(min: 3)]
     #[ORM\Column(length: 255)]
     private ?string $lastname = null;
 
+    #[Assert\Regex('/^((\+)33|0)[1-9](\d{2}){4}$/', message: "Format invalide")]
     #[ORM\Column(length: 255)]
     private ?string $phone = null;
 
     #[ORM\Column]
-    private array $roles = [];
+    private array $roles = ['ROLE_CLIENT'];
 
     #[ORM\Column]
-    private ?\DateTimeImmutable $createdAt = null;
+    private ?\DateTimeImmutable $createdAt;
 
     #[ORM\Column]
-    private ?bool $isVerified = null;
+    private ?bool $isVerified;
 
     /**
      * @var Collection<int, Property>
@@ -59,13 +69,16 @@ class User
     private Collection $reviews;
 
     #[ORM\Column(length: 255)]
-    private ?string $adress = null;
+    private ?string $adress = '';
 
     #[ORM\Column(length: 255)]
-    private ?string $city = null;
+    private ?string $city = '';
 
     #[ORM\Column(length: 255)]
-    private ?string $postalCode = null;
+    private ?string $postalCode = '';
+
+    #[Assert\EqualTo(propertyPath: 'password')]
+    public ?string $repeatPassword = null;
 
     public function __construct()
     {
@@ -74,7 +87,7 @@ class User
         $this->reviews = new ArrayCollection();
 
         $this->createdAt = new \DateTimeImmutable();
-        $this->isVerified = true;
+        $this->isVerified = false;
     }
 
     public function getId(): ?int
@@ -302,5 +315,15 @@ class User
         $this->postalCode = $postalCode;
 
         return $this;
+    }
+
+    public function eraseCredentials(): void
+    {
+        // TODO: Implement eraseCredentials() method.
+    }
+
+    public function getUserIdentifier(): string
+    {
+        return $this->email;
     }
 }

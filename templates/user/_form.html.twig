@@ -1,0 +1,18 @@
+{{ form_start(form) }}
+
+    <div style="display: flex; gap: 5px;">
+        {{ form_row(form.firstname) }}
+        {{ form_row(form.lastname) }}
+    </div>
+    <div style="display: flex; gap: 5px;">
+        {{ form_row(form.email) }}
+        {{ form_row(form.phone) }}
+    </div>
+    <div style="display: flex; gap: 5px;">
+        {{ form_row(form.password) }}
+        {{ form_row(form.repeatPassword) }}
+    </div>
+
+    {{ form_widget(form) }}
+    <button class="btn">{{ button_label|default('Save') }}</button>
+{{ form_end(form) }}

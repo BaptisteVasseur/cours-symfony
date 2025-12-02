@@ -18,24 +18,21 @@ class PropertyType extends AbstractType
         $builder
             ->add('title')
             ->add('description')
-            ->add('address')
-            ->add('city')
-            ->add('pricePerNight', TextType::class, [
-                'label' => 'Toto',
-                'required' => false,
-            ])
-            ->add('maxGuests')
-            ->add('bedrooms')
-            ->add('bathrooms')
-            ->add('isActive')
-            ->add('createdAt', null, [
-                'widget' => 'single_text',
-            ])
-            ->add('note')
-            ->add('host', EntityType::class, [
-                'class' => User::class,
-                'choice_label' => 'id',
-            ])
+//            ->add('address')
+//            ->add('city')
+//            ->add('pricePerNight')
+//            ->add('maxGuests')
+//            ->add('bedrooms')
+//            ->add('bathrooms')
+//            ->add('isActive')
+//            ->add('createdAt', null, [
+//                'widget' => 'single_text',
+//            ])
+//            ->add('note')
+//            ->add('host', EntityType::class, [
+//                'class' => User::class,
+//                'choice_label' => 'id',
+//            ])
             ->add('submit', SubmitType::class)
         ;
     }

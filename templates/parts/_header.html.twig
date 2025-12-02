@@ -22,12 +22,21 @@
             <div class="search-icon">🔍</div>
         </div>
 
-        <div class="user-menu">
-            <a href="#" class="become-host">Devenez hôte</a>
-            <div class="user-actions">
-                <span>🌐</span>
-                <div class="user-icon">👤</div>
+        {% if is_granted('ROLE_ADMIN') %}
+            <button>Administration</button>
+        {% endif %}
+
+        {% if is_granted('ROLE_USER') %}
+            Vous êtes connecté
+        {% else %}
+            <div class="user-menu">
+                <a href="{{ path('app_user_new') }}" class="become-host">Devenez hôte</a>
+                <a href="{{ path('app_login') }}" class="user-actions">
+                    <span>🌐</span>
+                    <div class="user-icon">👤</div>
+                </a>
             </div>
-        </div>
+        {% endif %}
+
     </div>
 </header>

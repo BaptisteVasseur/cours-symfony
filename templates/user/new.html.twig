@@ -1,0 +1,9 @@
+{% extends 'layout.html.twig' %}
+
+{% block layout %}
+    <h1>Create new User</h1>
+
+    {{ include('user/_form.html.twig') }}
+
+    <a href="{{ path('app_user_index') }}">back to list</a>
+{% endblock %}
