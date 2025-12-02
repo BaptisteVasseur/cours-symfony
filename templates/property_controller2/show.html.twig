@@ -1,0 +1,66 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Property{% endblock %}
+
+{% block body %}
+    <h1>Property</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>Id</th>
+                <td>{{ property.id }}</td>
+            </tr>
+            <tr>
+                <th>Title</th>
+                <td>{{ property.title }}</td>
+            </tr>
+            <tr>
+                <th>Description</th>
+                <td>{{ property.description }}</td>
+            </tr>
+            <tr>
+                <th>Address</th>
+                <td>{{ property.address }}</td>
+            </tr>
+            <tr>
+                <th>City</th>
+                <td>{{ property.city }}</td>
+            </tr>
+            <tr>
+                <th>PricePerNight</th>
+                <td>{{ property.pricePerNight }}</td>
+            </tr>
+            <tr>
+                <th>MaxGuests</th>
+                <td>{{ property.maxGuests }}</td>
+            </tr>
+            <tr>
+                <th>Bedrooms</th>
+                <td>{{ property.bedrooms }}</td>
+            </tr>
+            <tr>
+                <th>Bathrooms</th>
+                <td>{{ property.bathrooms }}</td>
+            </tr>
+            <tr>
+                <th>IsActive</th>
+                <td>{{ property.isActive ? 'Yes' : 'No' }}</td>
+            </tr>
+            <tr>
+                <th>CreatedAt</th>
+                <td>{{ property.createdAt ? property.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+            <tr>
+                <th>Note</th>
+                <td>{{ property.note }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_property_controller2_index') }}">back to list</a>
+
+    <a href="{{ path('app_property_controller2_edit', {'id': property.id}) }}">edit</a>
+
+    {{ include('property_controller2/_delete_form.html.twig') }}
+{% endblock %}

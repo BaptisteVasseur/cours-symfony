@@ -1,0 +1,55 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Property index{% endblock %}
+
+{% block body %}
+    <h1>Property index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Title</th>
+                <th>Description</th>
+                <th>Address</th>
+                <th>City</th>
+                <th>PricePerNight</th>
+                <th>MaxGuests</th>
+                <th>Bedrooms</th>
+                <th>Bathrooms</th>
+                <th>IsActive</th>
+                <th>CreatedAt</th>
+                <th>Note</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for property in properties %}
+            <tr>
+                <td>{{ property.id }}</td>
+                <td>{{ property.title }}</td>
+                <td>{{ property.description }}</td>
+                <td>{{ property.address }}</td>
+                <td>{{ property.city }}</td>
+                <td>{{ property.pricePerNight }}</td>
+                <td>{{ property.maxGuests }}</td>
+                <td>{{ property.bedrooms }}</td>
+                <td>{{ property.bathrooms }}</td>
+                <td>{{ property.isActive ? 'Yes' : 'No' }}</td>
+                <td>{{ property.createdAt ? property.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ property.note }}</td>
+                <td>
+                    <a href="{{ path('app_property_controller2_show', {'id': property.id}) }}">show</a>
+                    <a href="{{ path('app_property_controller2_edit', {'id': property.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="13">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_property_controller2_new') }}">Create new</a>
+{% endblock %}

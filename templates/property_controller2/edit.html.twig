@@ -1,0 +1,13 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Edit Property{% endblock %}
+
+{% block body %}
+    <h1>Edit Property</h1>
+
+    {{ include('property_controller2/_form.html.twig', {'button_label': 'Update'}) }}
+
+    <a href="{{ path('app_property_controller2_index') }}">back to list</a>
+
+    {{ include('property_controller2/_delete_form.html.twig') }}
+{% endblock %}

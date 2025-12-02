@@ -1,0 +1,23 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Airbnb Clone - Trouvez votre logement de rêve{% endblock %}
+
+{% block body %}
+
+    {% include 'parts/_header.html.twig' %}
+
+    <!-- Main Content -->
+    <main class="main-content">
+
+        <h1 style="text-align: center;">Ajouter une propriété</h1>
+
+        <div style="display: flex; flex-direction: column; gap: 10px; text-align: center; justify-content: center;">
+            {{ form_start(form.title) }}
+
+            {{ form_end(form) }}
+        </div>
+    </main>
+
+    {% include 'parts/_footer.html.twig' %}
+
+{% endblock %}
