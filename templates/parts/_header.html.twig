@@ -28,6 +28,13 @@
 
         {% if is_granted('ROLE_USER') %}
             Vous êtes connecté
+
+            <div class="user-menu">
+                <a href="{{ path('app_logout') }}" class="user-actions">
+                    <span>Déco</span>
+                </a>
+            </div>
+
         {% else %}
             <div class="user-menu">
                 <a href="{{ path('app_user_new') }}" class="become-host">Devenez hôte</a>
