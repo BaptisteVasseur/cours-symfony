@@ -82,26 +82,26 @@ class AppFixtures extends Fixture
     private function createAmenities(ObjectManager $manager): array
     {
         $amenitiesData = [
-            ['WiFi', 'wifi', 'Essentials'],
-            ['Kitchen', 'kitchen', 'Essentials'],
-            ['Washer', 'washer', 'Essentials'],
-            ['Dryer', 'dryer', 'Essentials'],
-            ['Air conditioning', 'ac', 'Comfort'],
-            ['Heating', 'heating', 'Comfort'],
-            ['TV', 'tv', 'Entertainment'],
-            ['Parking', 'parking', 'Location'],
-            ['Pool', 'pool', 'Facilities'],
-            ['Hot tub', 'hot-tub', 'Facilities'],
-            ['Gym', 'gym', 'Facilities'],
-            ['Fireplace', 'fireplace', 'Comfort'],
-            ['Balcony', 'balcony', 'Location'],
-            ['Garden', 'garden', 'Location'],
-            ['Pet friendly', 'pets', 'Rules'],
-            ['Smoking allowed', 'smoking', 'Rules'],
-            ['Wheelchair accessible', 'accessible', 'Accessibility'],
-            ['Elevator', 'elevator', 'Accessibility'],
-            ['Breakfast', 'breakfast', 'Services'],
-            ['Concierge', 'concierge', 'Services'],
+            ['WiFi', 'wifi', 'Essentiels'],
+            ['Cuisine', 'kitchen', 'Essentiels'],
+            ['Lave-linge', 'washer', 'Essentiels'],
+            ['Sèche-linge', 'dryer', 'Essentiels'],
+            ['Climatisation', 'ac', 'Confort'],
+            ['Chauffage', 'heating', 'Confort'],
+            ['Télévision', 'tv', 'Divertissement'],
+            ['Parking', 'parking', 'Localisation'],
+            ['Piscine', 'pool', 'Équipements'],
+            ['Jacuzzi', 'hot-tub', 'Équipements'],
+            ['Salle de sport', 'gym', 'Équipements'],
+            ['Cheminée', 'fireplace', 'Confort'],
+            ['Balcon', 'balcony', 'Localisation'],
+            ['Jardin', 'garden', 'Localisation'],
+            ['Animaux acceptés', 'pets', 'Règles'],
+            ['Fumeur accepté', 'smoking', 'Règles'],
+            ['Accessible fauteuil roulant', 'accessible', 'Accessibilité'],
+            ['Ascenseur', 'elevator', 'Accessibilité'],
+            ['Petit-déjeuner', 'breakfast', 'Services'],
+            ['Conciergerie', 'concierge', 'Services'],
         ];
 
         $amenities = [];
@@ -120,7 +120,7 @@ class AppFixtures extends Fixture
     private function createProperties(ObjectManager $manager, array $users, array $amenities): array
     {
         $properties = [];
-        $propertyTypes = ['Apartment', 'House', 'Villa', 'Condo', 'Studio', 'Loft', 'Cottage', 'Cabin'];
+        $propertyTypes = ['Appartement', 'Maison', 'Villa', 'Copropriété', 'Studio', 'Loft', 'Cottage', 'Chalet'];
         $cities = ['Paris', 'Lyon', 'Marseille', 'Toulouse', 'Nice', 'Nantes', 'Strasbourg', 'Montpellier', 'Bordeaux', 'Lille', 'Cannes', 'Biarritz', 'Annecy', 'Avignon', 'Aix-en-Provence'];
         $addresses = ['Rue de la République', 'Avenue des Champs-Élysées', 'Boulevard Saint-Michel', 'Place de la Bastille', 'Rue du Faubourg Saint-Antoine', 'Avenue Montaigne', 'Rue de Rivoli', 'Boulevard Haussmann'];
 
@@ -165,7 +165,7 @@ class AppFixtures extends Fixture
             $property->setBathrooms((string)(rand(1, 4) + rand(0, 1) * 0.5));
             $property->setPricePerNight((string)(rand(50, 500) + rand(0, 99) / 100));
             $property->setCleaningFee((string)(rand(20, 100) + rand(0, 99) / 100));
-            $property->setStatus(['active', 'inactive', 'pending'][rand(0, 2)]);
+            $property->setStatus(['actif', 'inactif', 'en_attente'][rand(0, 2)]);
             $property->setCreatedAt(new \DateTimeImmutable('-' . rand(60, 730) . ' days'));
             $property->setUpdatedAt(new \DateTimeImmutable('-' . rand(1, 60) . ' days'));
             $manager->persist($property);
@@ -215,7 +215,7 @@ class AppFixtures extends Fixture
     private function createBookings(ObjectManager $manager, array $properties, array $users): array
     {
         $bookings = [];
-        $statuses = ['pending', 'confirmed', 'completed', 'cancelled'];
+        $statuses = ['en_attente', 'confirmé', 'terminé', 'annulé'];
 
         for ($i = 0; $i < 50; $i++) {
             $property = $properties[array_rand($properties)];
@@ -254,11 +254,11 @@ class AppFixtures extends Fixture
 
     private function createPayments(ObjectManager $manager, array $bookings): void
     {
-        $paymentMethods = ['credit_card', 'paypal', 'bank_transfer', 'stripe'];
-        $statuses = ['pending', 'completed', 'failed', 'refunded'];
+        $paymentMethods = ['carte_bancaire', 'paypal', 'virement_bancaire', 'stripe'];
+        $statuses = ['en_attente', 'terminé', 'échoué', 'remboursé'];
 
         foreach ($bookings as $booking) {
-            if ($booking->getStatus() === 'cancelled') {
+            if ($booking->getStatus() === 'annulé') {
                 continue;
             }
 
@@ -269,7 +269,7 @@ class AppFixtures extends Fixture
             $payment->setPaymentMethod($paymentMethods[array_rand($paymentMethods)]);
             $payment->setStatus($statuses[array_rand($statuses)]);
             $payment->setTransactionId('TXN' . strtoupper(uniqid()));
-            if ($payment->getStatus() === 'completed') {
+            if ($payment->getStatus() === 'terminé') {
                 $payment->setPaidAt(new \DateTimeImmutable('-' . rand(1, 10) . ' days'));
                 if (rand(0, 3) === 0) {
                     $payment->setReleasedAt(new \DateTimeImmutable('-' . rand(1, 5) . ' days'));
@@ -284,7 +284,7 @@ class AppFixtures extends Fixture
     private function createReviews(ObjectManager $manager, array $bookings, array $users): void
     {
         foreach ($bookings as $booking) {
-            if ($booking->getStatus() !== 'completed') {
+            if ($booking->getStatus() !== 'terminé') {
                 continue;
             }
 
@@ -349,13 +349,13 @@ class AppFixtures extends Fixture
     private function createBadges(ObjectManager $manager): array
     {
         $badgesData = [
-            ['Premier voyage', 'Complétez votre première réservation', 'first-trip', 'achievement', 'first_booking', 1],
-            ['Explorateur', 'Réservez 5 propriétés', 'explorer', 'achievement', 'bookings', 5],
-            ['Voyageur expérimenté', 'Réservez 10 propriétés', 'traveler', 'achievement', 'bookings', 10],
-            ['Hôte confirmé', 'Listez votre première propriété', 'host', 'hosting', 'properties', 1],
-            ['Super hôte', 'Listez 3 propriétés', 'super-host', 'hosting', 'properties', 3],
-            ['Évaluateur', 'Laissez 5 avis', 'reviewer', 'social', 'reviews', 5],
-            ['Ambassadeur', 'Visitez 3 pays différents', 'ambassador', 'travel', 'countries', 3],
+            ['Premier voyage', 'Complétez votre première réservation', 'first-trip', 'accomplissement', 'premiere_reservation', 1],
+            ['Explorateur', 'Réservez 5 propriétés', 'explorer', 'accomplissement', 'reservations', 5],
+            ['Voyageur expérimenté', 'Réservez 10 propriétés', 'traveler', 'accomplissement', 'reservations', 10],
+            ['Hôte confirmé', 'Listez votre première propriété', 'host', 'hébergement', 'proprietes', 1],
+            ['Super hôte', 'Listez 3 propriétés', 'super-host', 'hébergement', 'proprietes', 3],
+            ['Évaluateur', 'Laissez 5 avis', 'reviewer', 'social', 'avis', 5],
+            ['Ambassadeur', 'Visitez 3 pays différents', 'ambassador', 'voyage', 'pays', 3],
         ];
 
         $badges = [];
@@ -398,10 +398,10 @@ class AppFixtures extends Fixture
     private function createChallenges(ObjectManager $manager): array
     {
         $challengesData = [
-            ['Défi du mois', 'Réservez 2 propriétés ce mois-ci', 'monthly_booking', 2, 100, true],
-            ['Explorateur de l\'été', 'Réservez une propriété en été', 'seasonal', 1, 150, true],
-            ['Hôte actif', 'Listez une nouvelle propriété', 'hosting', 1, 200, true],
-            ['Communautaire', 'Laissez 3 avis ce mois-ci', 'reviews', 3, 75, true],
+            ['Défi du mois', 'Réservez 2 propriétés ce mois-ci', 'reservation_mensuelle', 2, 100, true],
+            ['Explorateur de l\'été', 'Réservez une propriété en été', 'saisonnier', 1, 150, true],
+            ['Hôte actif', 'Listez une nouvelle propriété', 'hébergement', 1, 200, true],
+            ['Communautaire', 'Laissez 3 avis ce mois-ci', 'avis', 3, 75, true],
         ];
 
         $challenges = [];
@@ -447,10 +447,10 @@ class AppFixtures extends Fixture
     private function createRewards(ObjectManager $manager): array
     {
         $rewardsData = [
-            ['Réduction 10%', 'Obtenez 10% de réduction sur votre prochaine réservation', 'discount_percentage', 10.0, null, 500],
-            ['Réduction 20%', 'Obtenez 20% de réduction sur votre prochaine réservation', 'discount_percentage', 20.0, null, 1000],
-            ['Crédit 50€', 'Obtenez un crédit de 50€ pour votre prochaine réservation', 'discount_amount', null, 50.0, 750],
-            ['Nuit gratuite', 'Obtenez une nuit gratuite', 'free_night', null, null, 2000],
+            ['Réduction 10%', 'Obtenez 10% de réduction sur votre prochaine réservation', 'reduction_pourcentage', 10.0, null, 500],
+            ['Réduction 20%', 'Obtenez 20% de réduction sur votre prochaine réservation', 'reduction_pourcentage', 20.0, null, 1000],
+            ['Crédit 50€', 'Obtenez un crédit de 50€ pour votre prochaine réservation', 'reduction_montant', null, 50.0, 750],
+            ['Nuit gratuite', 'Obtenez une nuit gratuite', 'nuit_gratuite', null, null, 2000],
         ];
 
         $rewards = [];
@@ -479,10 +479,10 @@ class AppFixtures extends Fixture
                 $userReward = new UserReward();
                 $userReward->setUser($user);
                 $userReward->setReward($reward);
-                $userReward->setStatus(['earned', 'redeemed', 'expired'][rand(0, 2)]);
+                $userReward->setStatus(['gagné', 'utilisé', 'expiré'][rand(0, 2)]);
                 $earnedAt = new \DateTimeImmutable('-' . rand(1, 90) . ' days');
                 $userReward->setEarnedAt($earnedAt);
-                if ($userReward->getStatus() === 'redeemed') {
+                if ($userReward->getStatus() === 'utilisé') {
                     $userReward->setRedeemedAt(new \DateTimeImmutable('-' . rand(1, 30) . ' days'));
                 }
                 $userReward->setExpiresAt($earnedAt->modify('+90 days'));

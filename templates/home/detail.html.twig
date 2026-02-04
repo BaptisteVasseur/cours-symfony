@@ -1,0 +1,538 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Détail de la propriété - Airbnb{% endblock %}
+
+{% block stylesheets %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    'game-purple': '#8B5CF6',
+                    'game-cyan': '#06B6D4',
+                    'game-pink': '#EC4899',
+                    'game-gold': '#F59E0B',
+                }
+            }
+        }
+    }
+</script>
+<style>
+    @keyframes float {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+    @keyframes glow {
+        0%, 100% { box-shadow: 0 0 20px rgba(139, 92, 246, 0.5); }
+        50% { box-shadow: 0 0 30px rgba(139, 92, 246, 0.8); }
+    }
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateY(20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse-glow {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+        50% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+    }
+
+    .image-gallery img {
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .image-gallery img:hover {
+        transform: scale(1.05);
+        box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+    }
+
+    .booking-card {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(255, 255, 255, 0.98) 100%);
+        border: 2px solid rgba(139, 92, 246, 0.2);
+        backdrop-filter: blur(10px);
+        transition: all 0.3s ease;
+    }
+    .booking-card:hover {
+        border-color: rgba(139, 92, 246, 0.4);
+        box-shadow: 0 20px 40px rgba(139, 92, 246, 0.15);
+    }
+
+    .amenity-item {
+        transition: all 0.3s ease;
+    }
+    .amenity-item:hover {
+        transform: translateX(5px);
+        background: rgba(139, 92, 246, 0.1);
+    }
+
+    .badge-animation {
+        animation: float 3s ease-in-out infinite;
+    }
+
+    .points-glow {
+        animation: pulse-glow 2s ease-in-out infinite;
+    }
+
+    .fade-in {
+        animation: slideIn 0.6s ease-out;
+    }
+
+    .hover-lift {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .hover-lift:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="min-h-screen bg-white">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center">
+                    <a href="{{ path('app_home') }}" class="flex items-center space-x-2 group">
+                        <span class="text-2xl font-bold text-[#FF385C]">airbnb</span>
+                        <span class="text-xs px-2 py-1 bg-gradient-to-r from-game-purple to-game-pink text-white rounded-full font-semibold">GAMIFIÉ</span>
+                    </a>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-game-purple/10 to-game-pink/10 rounded-full border border-game-purple/20">
+                        <span class="text-2xl">⚡</span>
+                        <span class="text-sm font-semibold text-game-purple">1,250 pts</span>
+                    </div>
+                    <a href="#" class="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">Devenez hôte</a>
+                    <div class="flex items-center border border-gray-300 rounded-full px-4 py-2 hover:shadow-md transition-all cursor-pointer hover:border-game-purple/50">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                        <div class="relative">
+                            <svg class="w-8 h-8 rounded-full bg-gray-500 text-white p-1" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                            </svg>
+                            <div class="absolute -top-1 -right-1 w-5 h-5 bg-game-gold rounded-full border-2 border-white flex items-center justify-center">
+                                <span class="text-xs font-bold text-white">5</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Property Detail -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {% set property = {
+            id: id,
+            title: 'Appartement cosy au cœur de Paris',
+            city: 'Paris',
+            country: 'France',
+            address: '15 Rue de la République, 75001 Paris',
+            propertyType: 'Appartement',
+            description: 'Magnifique appartement situé dans un quartier calme et résidentiel au cœur de Paris. Parfait pour un séjour en famille ou entre amis. L\'appartement est entièrement équipé avec une cuisine moderne, un salon spacieux et deux chambres confortables. À proximité des transports en commun et des commerces.',
+            pricePerNight: 89,
+            cleaningFee: 25,
+            rating: 4.8,
+            reviewsCount: 127,
+            pointsReward: 150,
+            host: {
+                name: 'Marie Dupont',
+                avatar: 'https://i.pravatar.cc/150?img=1',
+                joined: 'Membre depuis 2019',
+                verified: true,
+                level: 15,
+                badges: ['Super hôte', 'Réponse rapide', 'Ambassadeur']
+            },
+            bedrooms: 2,
+            beds: 3,
+            bathrooms: 1.5,
+            maxGuests: 4,
+            images: [
+                'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&h=600&fit=crop',
+                'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&h=600&fit=crop',
+                'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&h=600&fit=crop',
+                'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&h=600&fit=crop',
+                'https://images.unsplash.com/photo-1560448075-cbc16bf4d123?w=800&h=600&fit=crop'
+            ],
+            amenities: [
+                {name: 'WiFi', icon: 'wifi'},
+                {name: 'Cuisine', icon: 'kitchen'},
+                {name: 'Chauffage', icon: 'heating'},
+                {name: 'Lave-linge', icon: 'washer'},
+                {name: 'Sèche-linge', icon: 'dryer'},
+                {name: 'Climatisation', icon: 'ac'},
+                {name: 'Télévision', icon: 'tv'},
+                {name: 'Parking', icon: 'parking'},
+                {name: 'Ascenseur', icon: 'elevator'},
+                {name: 'Animaux acceptés', icon: 'pets'}
+            ],
+            houseRules: [
+                'Arrivée après 15h',
+                'Départ avant 11h',
+                'Maximum 4 voyageurs',
+                'Pas de fête ni d\'événement',
+                'Pas de fumeur'
+            ],
+            reviews: [
+                {
+                    name: 'Thomas Martin',
+                    avatar: 'https://i.pravatar.cc/150?img=5',
+                    date: 'Mars 2024',
+                    rating: 5,
+                    comment: 'Excellent séjour ! L\'appartement est parfaitement situé et très bien équipé. Marie est une hôte très accueillante et réactive. Je recommande vivement !'
+                },
+                {
+                    name: 'Sophie Bernard',
+                    avatar: 'https://i.pravatar.cc/150?img=9',
+                    date: 'Février 2024',
+                    rating: 5,
+                    comment: 'Très bon accueil, appartement conforme aux photos. Emplacement parfait pour visiter Paris. Nous avons passé un excellent week-end !'
+                },
+                {
+                    name: 'Pierre Dubois',
+                    avatar: 'https://i.pravatar.cc/150?img=12',
+                    date: 'Janvier 2024',
+                    rating: 4,
+                    comment: 'Séjour agréable dans un quartier calme. L\'appartement est propre et bien équipé. Seul petit bémol : le bruit de la rue le matin.'
+                }
+            ]
+        } %}
+
+        <!-- Images Gallery -->
+        <div class="mb-8">
+            <div class="grid grid-cols-4 gap-2 h-[500px]">
+                <div class="col-span-2 row-span-2 rounded-2xl overflow-hidden">
+                    <img src="{{ property.images[0] }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                </div>
+                <div class="col-span-2 rounded-2xl overflow-hidden">
+                    <img src="{{ property.images[1] }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                </div>
+                <div class="rounded-2xl overflow-hidden">
+                    <img src="{{ property.images[2] }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                </div>
+                <div class="rounded-2xl overflow-hidden relative">
+                    <img src="{{ property.images[3] }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                    <button class="absolute bottom-4 right-4 bg-white px-4 py-2 rounded-lg font-medium text-sm hover:bg-gray-100">
+                        Afficher toutes les photos
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Left Column -->
+            <div class="lg:col-span-2">
+                <!-- Title and Location -->
+                <div class="mb-6">
+                    <h1 class="text-3xl font-semibold text-gray-900 mb-2">{{ property.title }}</h1>
+                    <div class="flex items-center space-x-2 text-gray-600">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        <span>{{ property.address }}</span>
+                        <a href="#" class="text-[#FF385C] hover:underline font-medium">Afficher la carte</a>
+                    </div>
+                </div>
+
+                <!-- Host Info -->
+                <div class="flex items-center justify-between border-b border-gray-200 pb-6 mb-6 fade-in">
+                    <div class="flex items-center space-x-4">
+                        <div class="relative">
+                            <img src="{{ property.host.avatar }}" alt="{{ property.host.name }}" class="w-16 h-16 rounded-full border-2 border-game-purple/30">
+                            <div class="absolute -bottom-1 -right-1 w-6 h-6 bg-gradient-to-r from-game-purple to-game-pink rounded-full border-2 border-white flex items-center justify-center badge-animation">
+                                <span class="text-xs font-bold text-white">{{ property.host.level }}</span>
+                            </div>
+                        </div>
+                        <div>
+                            <h3 class="font-semibold text-lg">Hébergé par {{ property.host.name }}</h3>
+                            <p class="text-sm text-gray-600">{{ property.host.joined }}</p>
+                            <div class="flex items-center space-x-2 mt-1">
+                                {% for badge in property.host.badges %}
+                                    <span class="text-xs px-2 py-0.5 bg-game-cyan/10 text-game-cyan rounded-full border border-game-cyan/20">{{ badge }}</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                    {% if property.host.verified %}
+                        <div class="flex items-center space-x-2 text-sm text-gray-600">
+                            <svg class="w-5 h-5 text-[#FF385C]" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                            </svg>
+                            <span>Hôte vérifié</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Property Details -->
+                <div class="border-b border-gray-200 pb-6 mb-6">
+                    <div class="grid grid-cols-3 gap-6">
+                        <div>
+                            <div class="flex items-center space-x-2 mb-1">
+                                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                                </svg>
+                                <span class="font-semibold">{{ property.propertyType }}</span>
+                            </div>
+                            <p class="text-sm text-gray-600">Type de logement</p>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2 mb-1">
+                                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                                </svg>
+                                <span class="font-semibold">{{ property.maxGuests }} voyageurs</span>
+                            </div>
+                            <p class="text-sm text-gray-600">Capacité</p>
+                        </div>
+                        <div>
+                            <div class="flex items-center space-x-2 mb-1">
+                                <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                                </svg>
+                                <span class="font-semibold">{{ property.bedrooms }} chambres</span>
+                            </div>
+                            <p class="text-sm text-gray-600">{{ property.beds }} lits, {{ property.bathrooms }} salle(s) de bain</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                <div class="border-b border-gray-200 pb-6 mb-6">
+                    <p class="text-gray-700 leading-relaxed">{{ property.description }}</p>
+                </div>
+
+                <!-- Amenities -->
+                <div class="border-b border-gray-200 pb-6 mb-6 fade-in">
+                    <h2 class="text-2xl font-semibold mb-4">Ce que propose ce logement</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        {% for amenity in property.amenities %}
+                            <div class="flex items-center space-x-3 amenity-item p-3 rounded-lg bg-gray-50 border border-gray-100 hover-lift">
+                                <div class="w-6 h-6 flex items-center justify-center">
+                                    <svg class="w-5 h-5 text-game-purple" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                                    </svg>
+                                </div>
+                                <span class="text-gray-700 font-medium">{{ amenity.name }}</span>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- House Rules -->
+                <div class="border-b border-gray-200 pb-6 mb-6">
+                    <h2 class="text-2xl font-semibold mb-4">Règles de la maison</h2>
+                    <ul class="space-y-2">
+                        {% for rule in property.houseRules %}
+                            <li class="flex items-start space-x-3">
+                                <svg class="w-5 h-5 text-gray-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                </svg>
+                                <span class="text-gray-700">{{ rule }}</span>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <!-- Reviews -->
+                <div class="mb-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-2xl font-semibold mb-2">
+                                <svg class="w-5 h-5 inline mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                </svg>
+                                {{ property.rating }} ({{ property.reviewsCount }} avis)
+                            </h2>
+                        </div>
+                    </div>
+                    <div class="space-y-8">
+                        {% for review in property.reviews %}
+                            <div>
+                                <div class="flex items-center space-x-4 mb-3">
+                                    <img src="{{ review.avatar }}" alt="{{ review.name }}" class="w-12 h-12 rounded-full">
+                                    <div>
+                                        <h4 class="font-semibold">{{ review.name }}</h4>
+                                        <p class="text-sm text-gray-600">{{ review.date }}</p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center mb-2">
+                                    {% for i in 1..5 %}
+                                        <svg class="w-4 h-4 {% if i <= review.rating %}text-[#FF385C]{% else %}text-gray-300{% endif %}" fill="currentColor" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                        </svg>
+                                    {% endfor %}
+                                </div>
+                                <p class="text-gray-700">{{ review.comment }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Column - Booking Card -->
+            <div class="lg:col-span-1">
+                <div class="sticky top-24 booking-card rounded-2xl p-6 fade-in">
+                    <div class="flex items-center justify-between mb-4">
+                        <div>
+                            <span class="text-3xl font-bold text-gray-900">{{ property.pricePerNight }} €</span>
+                            <span class="text-gray-600"> / nuit</span>
+                        </div>
+                    </div>
+
+                    <!-- Points Reward -->
+                    <div class="mb-4 p-4 rounded-xl bg-gradient-to-r from-game-purple/10 to-game-pink/10 border-2 border-game-purple/30 points-glow">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-3xl">⚡</span>
+                            <div>
+                                <p class="text-sm font-bold text-game-purple">Gagnez {{ property.pointsReward }} points</p>
+                                <p class="text-xs text-gray-600">en réservant ce logement</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border border-gray-300 rounded-lg p-4 mb-4 bg-white">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="border-r border-gray-300 pr-4">
+                                <label class="text-xs font-semibold text-gray-700 uppercase">Arrivée</label>
+                                <input type="text" placeholder="Ajouter une date" class="w-full border-none outline-none text-sm mt-1">
+                            </div>
+                            <div>
+                                <label class="text-xs font-semibold text-gray-700 uppercase">Départ</label>
+                                <input type="text" placeholder="Ajouter une date" class="w-full border-none outline-none text-sm mt-1">
+                            </div>
+                        </div>
+                        <div class="border-t border-gray-300 mt-4 pt-4">
+                            <label class="text-xs font-semibold text-gray-700 uppercase">Voyageurs</label>
+                            <input type="text" placeholder="Ajouter des voyageurs" class="w-full border-none outline-none text-sm mt-1">
+                        </div>
+                    </div>
+                    <button class="w-full bg-gradient-to-r from-[#FF385C] to-[#E61E4D] text-white rounded-lg py-4 font-bold hover:from-[#E61E4D] hover:to-[#FF385C] transition-all transform hover:scale-105 mb-4 text-lg shadow-lg hover:shadow-xl">
+                        Réserver
+                    </button>
+                    <p class="text-center text-sm text-gray-600 mb-4">Vous ne serez pas débité pour le moment</p>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">{{ property.pricePerNight }} € x 5 nuits</span>
+                            <span class="font-semibold">{{ property.pricePerNight * 5 }} €</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Frais de nettoyage</span>
+                            <span class="font-semibold">{{ property.cleaningFee }} €</span>
+                        </div>
+                        <div class="flex justify-between">
+                            <span class="text-gray-600">Frais de service Airbnb</span>
+                            <span class="font-semibold">{{ ((property.pricePerNight * 5) * 0.12)|round }} €</span>
+                        </div>
+                        <div class="border-t border-gray-300 pt-3 flex justify-between font-bold text-lg">
+                            <span>Total</span>
+                            <span class="bg-gradient-to-r from-game-purple to-game-pink bg-clip-text text-transparent">{{ (property.pricePerNight * 5 + property.cleaningFee + (property.pricePerNight * 5 * 0.12))|round }} €</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-gray-50 border-t border-gray-200 mt-16">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-4 text-lg">Assistance</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-[#FF385C] transition-colors">Centre d'aide</a></li>
+                        <li><a href="#" class="hover:text-[#FF385C] transition-colors">Informations de sécurité</a></li>
+                        <li><a href="#" class="hover:text-[#FF385C] transition-colors">Options d'annulation</a></li>
+                        <li><a href="#" class="hover:text-[#FF385C] transition-colors">Nos mesures face au COVID-19</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-4 text-lg">Communauté</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-[#FF385C] transition-colors">Airbnb.org : réponse aux catastrophes</a></li>
+                        <li><a href="#" class="hover:text-[#FF385C] transition-colors">Soutenir les réfugiés</a></li>
+                        <li><a href="#" class="hover:text-[#FF385C] transition-colors">Lutte contre la discrimination</a></li>
+                        <li><a href="#" class="hover:text-[#FF385C] transition-colors">Programme de parrainage</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-4 text-lg">Accueil de voyageurs</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-[#FF385C] transition-colors">Mettez votre logement sur Airbnb</a></li>
+                        <li><a href="#" class="hover:text-[#FF385C] transition-colors">AirCover pour les hôtes</a></li>
+                        <li><a href="#" class="hover:text-[#FF385C] transition-colors">Ressources pour les hôtes</a></li>
+                        <li><a href="#" class="hover:text-[#FF385C] transition-colors">Forum communautaire</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 mb-4 text-lg flex items-center space-x-2">
+                        <span>Gamification</span>
+                        <span class="text-2xl">🎮</span>
+                    </h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-game-purple transition-colors flex items-center space-x-1">
+                            <span>🏆</span>
+                            <span>Badges et récompenses</span>
+                        </a></li>
+                        <li><a href="#" class="hover:text-game-purple transition-colors flex items-center space-x-1">
+                            <span>⚡</span>
+                            <span>Défis mensuels</span>
+                        </a></li>
+                        <li><a href="#" class="hover:text-game-purple transition-colors flex items-center space-x-1">
+                            <span>📊</span>
+                            <span>Classements</span>
+                        </a></li>
+                        <li><a href="#" class="hover:text-game-purple transition-colors flex items-center space-x-1">
+                            <span>💎</span>
+                            <span>Comment gagner des points</span>
+                        </a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 pt-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="flex flex-wrap items-center gap-6 text-sm text-gray-600 mb-4 md:mb-0">
+                        <span>© 2024 Airbnb, Inc.</span>
+                        <a href="#" class="hover:text-[#FF385C] transition-colors">Confidentialité</a>
+                        <a href="#" class="hover:text-[#FF385C] transition-colors">Conditions</a>
+                        <a href="#" class="hover:text-[#FF385C] transition-colors">Plan du site</a>
+                        <a href="#" class="hover:text-[#FF385C] transition-colors">Cookies</a>
+                    </div>
+                    <div class="flex items-center space-x-6">
+                        <button class="flex items-center space-x-2 text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                            </svg>
+                            <span>Français (FR)</span>
+                        </button>
+                        <button class="text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors">
+                            € EUR
+                        </button>
+                        <div class="flex items-center space-x-3">
+                            <a href="#" class="text-gray-400 hover:text-[#FF385C] transition-colors">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                </svg>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-[#FF385C] transition-colors">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                                </svg>
+                            </a>
+                            <a href="#" class="text-gray-400 hover:text-[#FF385C] transition-colors">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
+</div>
+{% endblock %}
