@@ -2,6 +2,10 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
@@ -9,7 +13,19 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Attribute\Groups;
 
+#[ApiResource(
+    operations: [
+        new GetCollection(),
+        new Patch(
+            normalizationContext: ['groups' => ['groupe-supprimer-user']]
+        ),
+    ],
+    normalizationContext: ['groups' => ['groupeA']],
+    denormalizationContext: ['groups' => ['creer-user']],
+    security: 'is_granted("ROLE_ADMIN")'
+)]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: '`user`')]
 #[ORM\HasLifecycleCallbacks]
@@ -20,18 +36,22 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private ?int $id = null;
 
+    #[Groups(['groupeA', 'creer-user'])]
     #[ORM\Column(length: 255, unique: true)]
     private ?string $email = null;
 
     #[ORM\Column(length: 255)]
     private ?string $passwordHash = null;
 
+    #[Groups(['groupeA', 'creer-user'])]
     #[ORM\Column(length: 100)]
     private ?string $firstName = null;
 
+    #[Groups(['groupeA', 'creer-user'])]
     #[ORM\Column(length: 100)]
     private ?string $lastName = null;
 
+    #[Groups(['creer-user'])]
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $phone = null;
 
@@ -56,6 +76,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'json')]
     private array $roles = [];
 
+    #[Groups(['groupeA'])]
     #[ORM\OneToMany(targetEntity: Property::class, mappedBy: 'host')]
     private Collection $properties;
 
@@ -86,6 +107,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: UserReward::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $userRewards;
 
+    /** @var string|null waiting, active, suspended, deleted */
+    #[ORM\Column(length: 255)]
+    private ?string $state = 'waiting';
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $activationToken = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $resetPasswordToken = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $resetPasswordAt = null;
+
     public function __construct()
     {
         $this->properties = new ArrayCollection();
@@ -97,6 +131,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->userBadges = new ArrayCollection();
         $this->userChallenges = new ArrayCollection();
         $this->userRewards = new ArrayCollection();
+
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = new \DateTimeImmutable();
     }
@@ -360,5 +395,53 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function getUserRewards(): Collection
     {
         return $this->userRewards;
+    }
+
+    public function getState(): ?string
+    {
+        return $this->state;
+    }
+
+    public function setState(string $state): static
+    {
+        $this->state = $state;
+
+        return $this;
+    }
+
+    public function getActivationToken(): ?string
+    {
+        return $this->activationToken;
+    }
+
+    public function setActivationToken(?string $activationToken): static
+    {
+        $this->activationToken = $activationToken;
+
+        return $this;
+    }
+
+    public function getResetPasswordToken(): ?string
+    {
+        return $this->resetPasswordToken;
+    }
+
+    public function setResetPasswordToken(?string $resetPasswordToken): static
+    {
+        $this->resetPasswordToken = $resetPasswordToken;
+
+        return $this;
+    }
+
+    public function getResetPasswordAt(): ?\DateTimeImmutable
+    {
+        return $this->resetPasswordAt;
+    }
+
+    public function setResetPasswordAt(?\DateTimeImmutable $resetPasswordAt): static
+    {
+        $this->resetPasswordAt = $resetPasswordAt;
+
+        return $this;
     }
 }

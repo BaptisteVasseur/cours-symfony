@@ -1,0 +1,223 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon compte - Airbnb{% endblock %}
+
+{% block stylesheets %}
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'game-purple': '#8B5CF6',
+                        'game-cyan': '#06B6D4',
+                        'game-pink': '#EC4899',
+                        'game-gold': '#F59E0B',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.7); }
+            50% { box-shadow: 0 0 0 10px rgba(139, 92, 246, 0); }
+        }
+        .points-badge {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        .menu-link {
+            transition: all 0.2s ease;
+        }
+        .menu-link:hover {
+            background: rgba(139, 92, 246, 0.1);
+            transform: translateX(4px);
+        }
+        .menu-link.active {
+            background: linear-gradient(135deg, #8B5CF6 0%, #EC4899 100%);
+            color: white;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div class="min-h-screen bg-gray-50">
+        <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between h-16">
+                    <div class="flex items-center">
+                        <a href="{{ path('app_home') }}" class="flex items-center space-x-2 group">
+                            <span class="text-2xl font-bold text-[#FF385C]">airbnb</span>
+                            <span class="text-xs px-2 py-1 bg-gradient-to-r from-game-purple to-game-pink text-white rounded-full font-semibold">GAMIFIÉ</span>
+                        </a>
+                    </div>
+
+                    <div class="flex items-center space-x-4">
+                        {% if app.user and app.user.gamificationStats %}
+                            <div class="flex items-center space-x-2 px-3 py-1.5 bg-gradient-to-r from-game-purple/10 to-game-pink/10 rounded-full border border-game-purple/20 points-badge">
+                                <span class="text-2xl">⚡</span>
+                                <span class="text-sm font-semibold text-game-purple">{{ app.user.gamificationStats.totalPoints|number_format(0, ',', ' ') }} pts</span>
+                            </div>
+                        {% endif %}
+                        <a href="#" class="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">Devenez hôte</a>
+                        <div class="flex items-center border border-gray-300 rounded-full px-4 py-2 hover:shadow-md transition-all cursor-pointer hover:border-game-purple/50">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                            </svg>
+                            <div class="relative">
+                                {% if app.user and app.user.profilePictureUrl %}
+                                    <img src="{{ app.user.profilePictureUrl }}" alt="{{ app.user.firstName }}" class="w-8 h-8 rounded-full">
+                                {% else %}
+                                    <svg class="w-8 h-8 rounded-full bg-gray-500 text-white p-1" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                    </svg>
+                                {% endif %}
+                                {% if app.user and app.user.userBadges|length > 0 %}
+                                    <div class="absolute -top-1 -right-1 w-5 h-5 bg-game-gold rounded-full border-2 border-white flex items-center justify-center">
+                                        <span class="text-xs font-bold text-white">{{ app.user.userBadges|length }}</span>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <aside class="lg:col-span-1">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden sticky top-24">
+                        <div class="p-6 bg-gradient-to-r from-game-purple to-game-pink">
+                            <div class="flex items-center space-x-4">
+                                {% if app.user %}
+                                    <div class="relative">
+                                        {% if app.user.profilePictureUrl %}
+                                            <img src="{{ app.user.profilePictureUrl }}" alt="{{ app.user.firstName }}" class="w-16 h-16 rounded-full border-4 border-white">
+                                        {% else %}
+                                            <div class="w-16 h-16 rounded-full border-4 border-white bg-white flex items-center justify-center">
+                                                <span class="text-game-purple font-bold text-xl">{{ app.user.firstName|first|upper }}{{ app.user.lastName|first|upper }}</span>
+                                            </div>
+                                        {% endif %}
+                                        {% if app.user.userBadges|length > 0 %}
+                                            <div class="absolute -bottom-1 -right-1 w-7 h-7 bg-game-gold rounded-full border-2 border-white flex items-center justify-center">
+                                                <span class="text-xs font-bold text-white">{{ app.user.userBadges|length }}</span>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="text-white">
+                                        <h2 class="font-bold text-lg">{{ app.user.firstName }}</h2>
+                                        <p class="text-sm opacity-90">{{ app.user.email }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+
+                        <nav class="p-4 space-y-1">
+                            <a href="#" class="menu-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                                </svg>
+                                <span class="font-medium">Mon profil</span>
+                            </a>
+
+                            <a href="#" class="menu-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                </svg>
+                                <span class="font-medium">Mes réservations</span>
+                            </a>
+
+                            <a href="#" class="menu-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                </svg>
+                                <span class="font-medium">Mes favoris</span>
+                            </a>
+
+                            <a href="#" class="menu-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path>
+                                </svg>
+                                <span class="font-medium">Mes propriétés</span>
+                            </a>
+
+                            <div class="border-t border-gray-200 my-2"></div>
+
+                            <a href="#" class="menu-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                                </svg>
+                                <span class="font-medium">Mes badges</span>
+                                {% if app.user and app.user.userBadges|length > 0 %}
+                                    <span class="ml-auto bg-game-gold text-white text-xs font-bold px-2 py-1 rounded-full">{{ app.user.userBadges|length }}</span>
+                                {% endif %}
+                            </a>
+
+                            <a href="#" class="menu-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700">
+                                <span class="text-xl">⚡</span>
+                                <span class="font-medium">Mes points</span>
+                                {% if app.user and app.user.gamificationStats %}
+                                    <span class="ml-auto bg-gradient-to-r from-game-purple to-game-pink text-white text-xs font-bold px-2 py-1 rounded-full">{{ app.user.gamificationStats.totalPoints|number_format(0, ',', ' ') }}</span>
+                                {% endif %}
+                            </a>
+
+                            <a href="#" class="menu-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                                </svg>
+                                <span class="font-medium">Mes statistiques</span>
+                            </a>
+
+                            <div class="border-t border-gray-200 my-2"></div>
+
+                            <a href="#" class="menu-link flex items-center space-x-3 px-4 py-3 rounded-lg text-gray-700">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                </svg>
+                                <span class="font-medium">Paramètres</span>
+                            </a>
+
+                            <a href="#" class="menu-link flex items-center space-x-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                                </svg>
+                                <span class="font-medium">Déconnexion</span>
+                            </a>
+                        </nav>
+                    </div>
+                </aside>
+
+                <main class="lg:col-span-3">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                        {% block body %}{% endblock %}
+                    </div>
+                </main>
+            </div>
+        </div>
+
+        <footer class="bg-white border-t border-gray-200 mt-16">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="flex flex-col md:flex-row justify-between items-center">
+                    <div class="flex space-x-6 text-sm text-gray-600 mb-4 md:mb-0">
+                        <span>© 2024 Airbnb, Inc.</span>
+                        <a href="#" class="hover:text-[#FF385C] transition-colors">Confidentialité</a>
+                        <a href="#" class="hover:text-[#FF385C] transition-colors">Conditions</a>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button class="flex items-center space-x-2 text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"></path>
+                            </svg>
+                            <span>Français (FR)</span>
+                        </button>
+                        <button class="text-sm font-semibold text-gray-700 hover:text-gray-900 transition-colors">
+                            € EUR
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </footer>
+    </div>
+{% endblock %}

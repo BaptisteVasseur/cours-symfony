@@ -1,0 +1,197 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Compte activé - Airbnb{% endblock %}
+
+{% block stylesheets %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    'game-purple': '#8B5CF6',
+                    'game-cyan': '#06B6D4',
+                    'game-pink': '#EC4899',
+                    'game-gold': '#F59E0B',
+                }
+            }
+        }
+    }
+</script>
+<style>
+    @keyframes scaleIn {
+        0% {
+            transform: scale(0);
+            opacity: 0;
+        }
+        50% {
+            transform: scale(1.1);
+        }
+        100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+    }
+    @keyframes slideUp {
+        from {
+            transform: translateY(30px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    @keyframes checkmark {
+        0% {
+            stroke-dashoffset: 100;
+        }
+        100% {
+            stroke-dashoffset: 0;
+        }
+    }
+    .animate-scale-in {
+        animation: scaleIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .animate-slide-up {
+        animation: slideUp 0.6s ease-out;
+    }
+    .checkmark-circle {
+        animation: scaleIn 0.5s ease-out;
+    }
+    .checkmark-check {
+        stroke-dasharray: 100;
+        stroke-dashoffset: 100;
+        animation: checkmark 0.5s 0.3s ease-out forwards;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-green-50 via-white to-blue-50 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-2xl w-full">
+        <div class="text-center mb-8">
+            <a href="{{ path('app_home') }}" class="inline-block mb-6">
+                <span class="text-4xl font-bold text-[#FF385C]">airbnb</span>
+            </a>
+        </div>
+
+        <div class="bg-white rounded-3xl shadow-2xl p-12 border border-gray-100 animate-slide-up">
+            <div class="text-center">
+                <div class="inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-br from-green-400 to-green-600 mb-8 animate-scale-in shadow-lg">
+                    <svg class="w-20 h-20 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <circle class="checkmark-circle" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/>
+                        <path class="checkmark-check" stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 12l2 2 4-4"/>
+                    </svg>
+                </div>
+
+                <h1 class="text-4xl font-bold text-gray-900 mb-4">
+                    Félicitations ! 🎉
+                </h1>
+                
+                <h2 class="text-2xl font-semibold text-gray-700 mb-6">
+                    Votre compte a été activé avec succès
+                </h2>
+
+                <p class="text-lg text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed">
+                    Bienvenue dans la communauté Airbnb ! Vous pouvez maintenant explorer des milliers de logements exceptionnels et commencer votre aventure.
+                </p>
+
+                <div class="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+                    <a href="{{ path('app_home') }}" class="px-8 py-4 bg-gradient-to-r from-[#FF385C] to-[#E61E4D] text-white rounded-xl font-bold text-lg hover:shadow-xl transition-all hover:scale-105 inline-flex items-center justify-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        </svg>
+                        Explorer les logements
+                    </a>
+                    
+                    <a href="#" class="px-8 py-4 border-2 border-gray-900 text-gray-900 rounded-xl font-bold text-lg hover:bg-gray-900 hover:text-white transition-all inline-flex items-center justify-center gap-2">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                        </svg>
+                        Mon profil
+                    </a>
+                </div>
+            </div>
+
+            <div class="border-t border-gray-200 pt-8 mt-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-6 text-center">Prochaines étapes</h3>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="text-center p-6 bg-gradient-to-br from-blue-50 to-blue-100 rounded-2xl border-2 border-blue-200 hover:shadow-lg transition-all">
+                        <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <span class="text-3xl">🔍</span>
+                        </div>
+                        <h4 class="font-bold text-gray-900 mb-2">Explorez</h4>
+                        <p class="text-sm text-gray-600">Découvrez des logements uniques partout dans le monde</p>
+                    </div>
+
+                    <div class="text-center p-6 bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl border-2 border-purple-200 hover:shadow-lg transition-all">
+                        <div class="w-16 h-16 bg-gradient-to-br from-purple-500 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <span class="text-3xl">📅</span>
+                        </div>
+                        <h4 class="font-bold text-gray-900 mb-2">Réservez</h4>
+                        <p class="text-sm text-gray-600">Trouvez et réservez votre prochain séjour en quelques clics</p>
+                    </div>
+
+                    <div class="text-center p-6 bg-gradient-to-br from-pink-50 to-pink-100 rounded-2xl border-2 border-pink-200 hover:shadow-lg transition-all">
+                        <div class="w-16 h-16 bg-gradient-to-br from-pink-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                            <span class="text-3xl">⭐</span>
+                        </div>
+                        <h4 class="font-bold text-gray-900 mb-2">Partagez</h4>
+                        <p class="text-sm text-gray-600">Laissez des avis et aidez la communauté</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="mt-8 bg-gradient-to-br from-game-purple/10 to-game-pink/10 rounded-2xl p-6 border-2 border-game-purple/20">
+                <div class="flex items-start gap-4">
+                    <div class="flex-shrink-0">
+                        <div class="w-14 h-14 bg-gradient-to-br from-game-purple to-game-pink rounded-xl flex items-center justify-center">
+                            <span class="text-3xl">🎮</span>
+                        </div>
+                    </div>
+                    <div class="flex-1">
+                        <h4 class="text-lg font-bold text-gray-900 mb-2">Système de gamification activé !</h4>
+                        <p class="text-sm text-gray-600 mb-3">
+                            Votre compte est maintenant configuré avec notre système de points et badges. Commencez à gagner des récompenses dès votre première réservation !
+                        </p>
+                        <div class="flex flex-wrap gap-3">
+                            <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-game-purple/20">
+                                <span class="text-xl">⚡</span>
+                                <div>
+                                    <p class="text-xs text-gray-600">Points de départ</p>
+                                    <p class="text-sm font-bold text-game-purple">100 points</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-game-gold/20">
+                                <span class="text-xl">🏆</span>
+                                <div>
+                                    <p class="text-xs text-gray-600">Badge obtenu</p>
+                                    <p class="text-sm font-bold text-game-gold">Nouveau membre</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-lg border border-game-cyan/20">
+                                <span class="text-xl">📊</span>
+                                <div>
+                                    <p class="text-xs text-gray-600">Niveau actuel</p>
+                                    <p class="text-sm font-bold text-game-cyan">1</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 text-center">
+            <p class="text-sm text-gray-600">
+                Besoin d'aide ? Consultez notre 
+                <a href="#" class="text-[#FF385C] hover:text-[#E61E4D] font-semibold">centre d'assistance</a>
+                ou 
+                <a href="#" class="text-[#FF385C] hover:text-[#E61E4D] font-semibold">contactez-nous</a>
+            </p>
+        </div>
+    </div>
+</div>
+{% endblock %}

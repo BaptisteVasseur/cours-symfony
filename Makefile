@@ -12,6 +12,10 @@ down:
 	docker compose down
 	# Stop and remove the Docker containers
 
+stop:
+	docker compose stop
+	# Stop the Docker containers without removing them
+
 restart: down up
 	# Restart the Docker containers
 

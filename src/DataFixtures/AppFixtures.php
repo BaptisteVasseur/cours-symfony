@@ -168,6 +168,7 @@ class AppFixtures extends Fixture
             $property->setStatus(['actif', 'inactif', 'en_attente'][rand(0, 2)]);
             $property->setCreatedAt(new \DateTimeImmutable('-' . rand(60, 730) . ' days'));
             $property->setUpdatedAt(new \DateTimeImmutable('-' . rand(1, 60) . ' days'));
+            $property->setImage('https://picsum.photos/400/300?random=' . $i);
             $manager->persist($property);
 
             if (count($amenities) > 0) {

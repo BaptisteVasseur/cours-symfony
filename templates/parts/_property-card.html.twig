@@ -1,0 +1,54 @@
+<div class="group">
+    <a href="{{ path('app_property_detail', {id: property.id}) }}" class="block">
+        <div class="relative w-full h-64 rounded-2xl overflow-hidden mb-3">
+            <img src="{{ property.image }}"
+                 alt="{{ property.title }}"
+                 class="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110">
+            
+            <div class="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+            
+            <button class="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur-sm rounded-full hover:bg-white hover:scale-110 transition-all duration-200" onclick="event.preventDefault();">
+                <svg class="w-5 h-5 text-gray-700 hover:text-[#FF385C] transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                </svg>
+            </button>
+        </div>
+
+        <div class="space-y-2">
+            <div class="flex items-start justify-between gap-2">
+                <div class="flex-1 min-w-0">
+                    <h3 class="font-semibold text-gray-900 truncate group-hover:text-[#FF385C] transition-colors">
+                        {{ property.city }}, {{ property.country }}
+                    </h3>
+                    <p class="text-sm text-gray-500 truncate">{{ property.propertyType }}</p>
+                </div>
+                <div class="flex items-center gap-1 text-sm flex-shrink-0">
+                    <svg class="w-4 h-4 fill-current text-gray-900" viewBox="0 0 20 20">
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                    </svg>
+                    <span class="font-medium text-gray-900">4.8</span>
+                </div>
+            </div>
+
+            <div class="flex items-baseline gap-1">
+                <span class="font-semibold text-gray-900">{{ property.pricePerNight }} €</span>
+                <span class="text-sm text-gray-500">par nuit</span>
+            </div>
+
+            {% if property.amenities|length > 0 %}
+                <div class="flex flex-wrap gap-1.5 pt-1">
+                    {% for amenity in property.amenities|slice(0, 3) %}
+                        <span class="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-xs font-medium">
+                            {{ amenity.name }}
+                        </span>
+                    {% endfor %}
+                    {% if property.amenities|length > 3 %}
+                        <span class="inline-flex items-center px-2 py-1 bg-gradient-to-r from-game-purple/10 to-game-pink/10 text-game-purple rounded-md text-xs font-medium">
+                            +{{ property.amenities|length - 3 }}
+                        </span>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </a>
+</div>

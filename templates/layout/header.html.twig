@@ -1,0 +1,85 @@
+<header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16 gap-4">
+            <div class="flex items-center flex-shrink-0">
+                <a href="{{ path('app_home') }}" class="flex items-center space-x-2 group">
+                    <span class="text-2xl font-bold text-[#FF385C]">airbnb</span>
+                    <span class="hidden sm:inline-block text-xs px-2 py-1 bg-gradient-to-r from-game-purple to-game-pink text-white rounded-full font-semibold">GAMIFIÉ</span>
+                </a>
+            </div>
+
+            <div class="hidden lg:flex items-center flex-1 max-w-xl mx-4">
+                <div class="w-full group">
+                    <form method="get" action="{{ path('search_property') }}"  class="flex items-center border border-gray-300 rounded-full px-4 py-2 hover:shadow-md transition-all group-hover:border-gray-400">
+                        <input type="text"
+                               placeholder="Où allez-vous ?"
+                               class="flex-1 border-none outline-none text-sm text-gray-900 placeholder-gray-500 bg-transparent min-w-0">
+                        <div class="h-6 w-px bg-gray-300 mx-3"></div>
+                        <input type="text"
+                               placeholder="Dates"
+                               class="w-24 border-none outline-none text-sm text-gray-900 placeholder-gray-500 bg-transparent">
+                        <div class="h-6 w-px bg-gray-300 mx-3"></div>
+                        <input type="text"
+                               placeholder="Voyageurs"
+                               class="w-24 border-none outline-none text-sm text-gray-900 placeholder-gray-500 bg-transparent">
+                        <button class="ml-2 bg-[#FF385C] text-white rounded-full p-2 hover:bg-[#E61E4D] transition-colors flex-shrink-0">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <button class="lg:hidden p-2 border border-gray-300 rounded-full hover:shadow-md transition-all">
+                <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                </svg>
+            </button>
+
+            <div class="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                {% if app.user and app.user.gamificationStats %}
+                    <div class="hidden sm:flex items-center gap-1.5 px-2.5 py-1.5 bg-gradient-to-r from-game-purple/10 to-game-pink/10 rounded-full border border-game-purple/20 points-badge">
+                        <span class="text-lg">⚡</span>
+                        <span class="text-xs font-semibold text-game-purple">{{ app.user.gamificationStats.totalPoints|number_format(0, ',', ' ') }}</span>
+                    </div>
+                {% endif %}
+
+                <a href="{{ path('register') }}" class="hidden md:block text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors whitespace-nowrap">
+                    Devenez hôte
+                </a>
+
+                {% if is_granted('ROLE_USER') %}
+                    <div class="flex items-center border border-gray-300 rounded-full px-3 py-1.5 hover:shadow-md transition-all cursor-pointer hover:border-game-purple/50 gap-2">
+                        <svg class="w-4 h-4 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                        </svg>
+                        <div class="relative">
+                            {% if app.user and app.user.profilePictureUrl %}
+                                <img src="{{ app.user.profilePictureUrl }}" alt="{{ app.user.firstName }}" class="w-7 h-7 rounded-full object-cover">
+                            {% else %}
+                                <div class="w-7 h-7 rounded-full bg-gray-500 text-white flex items-center justify-center">
+                                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path>
+                                    </svg>
+                                </div>
+                            {% endif %}
+                            {% if app.user and app.user.userBadges|length > 0 %}
+                                <div class="absolute -top-1 -right-1 w-4 h-4 bg-game-gold rounded-full border-2 border-white flex items-center justify-center">
+                                    <span class="text-[10px] font-bold text-white leading-none">{{ app.user.userBadges|length }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <a href="{{ path('app_logout') }}" class="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors whitespace-nowrap">
+                        Se déconnecter
+                    </a>
+                {% else %}
+                    <a href="{{ path('app_login') }}" class="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors whitespace-nowrap">
+                        Se connecter
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</header>

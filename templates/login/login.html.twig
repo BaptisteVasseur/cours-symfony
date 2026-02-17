@@ -1,0 +1,123 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Connexion - Airbnb{% endblock %}
+
+{% block stylesheets %}
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+    tailwind.config = {
+        theme: {
+            extend: {
+                colors: {
+                    'airbnb-red': '#FF385C',
+                    'airbnb-dark': '#E61E4D',
+                }
+            }
+        }
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full">
+        <div class="text-center mb-8">
+            <a href="{{ path('app_home') }}" class="inline-block mb-6">
+                <span class="text-4xl font-bold text-airbnb-red">airbnb</span>
+            </a>
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">Bon retour</h1>
+            <p class="text-gray-600">Connectez-vous pour accéder à votre compte</p>
+        </div>
+
+        {% if error %}
+            <div class="mb-4 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm flex items-start gap-2">
+                <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
+                </svg>
+                <span>{{ error.messageKey|trans(error.messageData, 'security') }}</span>
+            </div>
+        {% endif %}
+
+        {% if app.user %}
+            <div class="mb-4 px-4 py-3 rounded-xl bg-green-50 border border-green-200 text-green-800 text-sm">
+                Vous êtes connecté en tant que <strong>{{ app.user.userIdentifier }}</strong>.
+                <a href="{{ logout_path() }}" class="text-airbnb-red hover:text-airbnb-dark font-semibold ml-1">Déconnexion</a>
+            </div>
+        {% endif %}
+
+        <div class="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+            <form method="post" class="space-y-5">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                <div>
+                    <label for="username" class="block text-sm font-semibold text-gray-700 mb-2">Email</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207"/>
+                            </svg>
+                        </div>
+                        <input
+                            type="email"
+                            id="username"
+                            name="_username"
+                            value="{{ last_username }}"
+                            required
+                            autofocus
+                            autocomplete="email"
+                            placeholder="vous@exemple.com"
+                            class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-airbnb-red focus:border-transparent outline-none transition-all hover:border-gray-400"
+                        >
+                    </div>
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-semibold text-gray-700 mb-2">Mot de passe</label>
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                            </svg>
+                        </div>
+                        <input
+                            type="password"
+                            id="password"
+                            name="_password"
+                            required
+                            autocomplete="current-password"
+                            placeholder="••••••••"
+                            class="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-airbnb-red focus:border-transparent outline-none transition-all hover:border-gray-400"
+                        >
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-2 cursor-pointer group">
+                        <input
+                            type="checkbox"
+                            name="_remember_me"
+                            id="_remember_me"
+                            class="w-4 h-4 border-gray-300 rounded text-airbnb-red focus:ring-airbnb-red cursor-pointer"
+                        >
+                        <span class="text-sm text-gray-700 group-hover:text-gray-900">Rester connecté</span>
+                    </label>
+                </div>
+
+                <button
+                    type="submit"
+                    class="w-full bg-gradient-to-r from-airbnb-red to-airbnb-dark text-white py-4 rounded-xl font-bold text-lg hover:shadow-xl transition-all hover:scale-[1.02] focus:outline-none focus:ring-2 focus:ring-airbnb-red focus:ring-offset-2"
+                >
+                    Se connecter
+                </button>
+            </form>
+
+            <div class="mt-6 text-center">
+                <p class="text-sm text-gray-600">
+                    Vous n'avez pas de compte ?
+                    <a href="{{ path('register') }}" class="text-airbnb-red hover:text-airbnb-dark font-semibold">Créer un compte</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

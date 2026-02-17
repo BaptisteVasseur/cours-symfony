@@ -1,0 +1,418 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ host.firstName }} {{ host.lastName }} - Profil de l'hôte{% endblock %}
+
+{% block body %}
+{% set hostReviews = host.reviewsReceived|filter(r => not r.isFromGuest) %}
+{% set ratings = hostReviews|map(r => r.rating) %}
+{% set averageRating = hostReviews|length > 0 ? ((ratings|sum) / hostReviews|length)|round(1) : 0 %}
+{% set hostBadgesCount = host.userBadges|length %}
+{% set activeProperties = host.properties %}
+
+{% set allBookings = [] %}
+{% for property in host.properties %}
+    {% set allBookings = allBookings|merge(property.bookings|default([])) %}
+{% endfor %}
+{% set completedBookings = allBookings|filter(b => b.status == 'completed') %}
+{% set totalRevenue = completedBookings|reduce((carry, b) => carry + b.totalPrice, 0) %}
+
+{% set activeChallenges = host.userChallenges|filter(c => not c.isCompleted and c.challenge.isActive) %}
+{% set completedChallenges = host.userChallenges|filter(c => c.isCompleted) %}
+{% set activeRewards = host.userRewards|filter(r => r.status == 'active') %}
+
+{% set languageMap = {
+    'fr': '🇫🇷 Français',
+    'en': '🇬🇧 English',
+    'es': '🇪🇸 Español',
+    'de': '🇩🇪 Deutsch',
+    'it': '🇮🇹 Italiano'
+} %}
+
+<div class="bg-gray-50 min-h-screen">
+    <div class="relative bg-white">
+        <div class="h-64 bg-gradient-to-br from-[#FF385C] via-[#E61E4D] to-game-purple relative overflow-hidden">
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-10 left-20 w-72 h-72 bg-white rounded-full blur-3xl"></div>
+                <div class="absolute bottom-10 right-20 w-96 h-96 bg-white rounded-full blur-3xl"></div>
+            </div>
+        </div>
+
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="relative -mt-32 pb-12">
+                <div class="bg-white rounded-3xl shadow-xl p-8 border border-gray-100">
+                    <div class="flex flex-col md:flex-row gap-8">
+                        <div class="relative flex-shrink-0 mx-auto md:mx-0">
+                            {% if host.profilePictureUrl %}
+                                <img src="{{ host.profilePictureUrl }}" alt="{{ host.firstName }}" class="w-40 h-40 rounded-3xl object-cover shadow-lg ring-4 ring-white">
+                            {% else %}
+                                <div class="w-40 h-40 rounded-3xl shadow-lg ring-4 ring-white bg-gradient-to-br from-game-purple to-game-pink flex items-center justify-center">
+                                    <span class="text-white font-bold text-5xl">{{ host.firstName|first|upper }}{{ host.lastName|first|upper }}</span>
+                                </div>
+                            {% endif %}
+                            {% if hostBadgesCount > 0 %}
+                                <div class="absolute -bottom-3 -right-3 w-14 h-14 bg-gradient-to-br from-game-gold to-yellow-500 rounded-2xl flex items-center justify-center shadow-lg ring-4 ring-white">
+                                    <span class="text-white font-bold text-xl">{{ hostBadgesCount }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="flex-1 text-center md:text-left">
+                            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
+                                <div>
+                                    <h1 class="text-4xl font-bold text-gray-900 mb-3">{{ host.firstName }} {{ host.lastName }}</h1>
+
+                                    <div class="flex flex-wrap items-center justify-center md:justify-start gap-4 text-gray-600 mb-4">
+                                        {% if hostReviews|length > 0 %}
+                                            <div class="flex items-center gap-1.5 bg-gray-50 px-3 py-1.5 rounded-full">
+                                                <svg class="w-5 h-5 text-[#FF385C]" fill="currentColor" viewBox="0 0 20 20">
+                                                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                </svg>
+                                                <span class="font-semibold text-gray-900">{{ averageRating }}</span>
+                                                <span class="text-sm">({{ hostReviews|length }})</span>
+                                            </div>
+                                        {% endif %}
+
+                                        {% if averageRating >= 4.8 and hostReviews|length >= 10 %}
+                                            <div class="bg-gradient-to-r from-[#FF385C] to-[#E61E4D] text-white px-4 py-1.5 rounded-full text-sm font-bold shadow-md">
+                                                ⭐ Superhôte
+                                            </div>
+                                        {% endif %}
+
+                                        <span class="text-sm">• Membre depuis {{ host.createdAt|date('Y') }}</span>
+                                    </div>
+
+                                    <div class="flex flex-wrap gap-2 justify-center md:justify-start">
+                                        {% if host.language %}
+                                            <span class="inline-flex items-center px-3 py-1.5 bg-gray-50 text-gray-700 rounded-full text-sm font-medium border border-gray-200">
+                                                {{ languageMap[host.language]|default('🌍 ' ~ host.language|upper) }}
+                                            </span>
+                                        {% endif %}
+                                        <span class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-700 rounded-full text-sm font-medium border border-green-200">
+                                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path>
+                                            </svg>
+                                            Identité vérifiée
+                                        </span>
+                                        {% if host.gamificationStats %}
+                                            <span class="inline-flex items-center px-3 py-1.5 bg-gradient-to-r from-game-purple/10 to-game-pink/10 text-game-purple rounded-full text-sm font-bold border border-game-purple/20">
+                                                ⚡ {{ host.gamificationStats.totalPoints|number_format(0, ',', ' ') }} points
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <button class="px-8 py-3 bg-gradient-to-r from-[#FF385C] to-[#E61E4D] text-white rounded-xl font-semibold hover:shadow-xl transition-all hover:scale-105 flex items-center gap-2 mx-auto md:mx-0">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path>
+                                    </svg>
+                                    Contacter
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if completedBookings|length > 0 or host.gamificationStats %}
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="text-[#FF385C] text-3xl mb-3">🏠</div>
+                        <div class="text-3xl font-bold text-gray-900 mb-1">{{ completedBookings|length }}</div>
+                        <div class="text-sm text-gray-600">Séjours réussis</div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="text-green-500 text-3xl mb-3">💰</div>
+                        <div class="text-3xl font-bold text-gray-900 mb-1">{{ totalRevenue|number_format(0, ',', ' ') }}€</div>
+                        <div class="text-sm text-gray-600">Revenus générés</div>
+                    </div>
+
+
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="text-yellow-500 text-3xl mb-3">⭐</div>
+                        <div class="text-3xl font-bold text-gray-900 mb-1">{{ averageRating }}/5</div>
+                        <div class="text-sm text-gray-600">Note moyenne</div>
+                    </div>
+
+
+                {% if activeProperties|length > 0 %}
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+                        <div class="text-blue-500 text-3xl mb-3">🏡</div>
+                        <div class="text-3xl font-bold text-gray-900 mb-1">{{ activeProperties|length }}</div>
+                        <div class="text-sm text-gray-600">{{ activeProperties|length > 1 ? 'Logements' : 'Logement' }}</div>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-8">
+                {% if host.bio %}
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">À propos de {{ host.firstName }}</h2>
+                        <p class="text-gray-700 leading-relaxed text-lg whitespace-pre-line">{{ host.bio }}</p>
+                    </div>
+                {% endif %}
+
+                {% if host.userBadges|length > 0 %}
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-2xl font-bold text-gray-900">Badges obtenus</h2>
+                            <span class="px-4 py-2 bg-gradient-to-r from-game-gold/20 to-yellow-500/20 text-game-gold font-bold rounded-full text-sm">
+                                {{ hostBadgesCount }} badge{{ hostBadgesCount > 1 ? 's' : '' }}
+                            </span>
+                        </div>
+                        <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-4">
+                            {% for userBadge in host.userBadges %}
+                                {% if userBadge.badge %}
+                                    <div class="group relative">
+                                        <div class="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-4 border-2 border-gray-100 hover:border-game-purple hover:shadow-lg transition-all cursor-pointer">
+                                            <div class="text-center">
+                                                <div class="text-3xl mb-2">
+                                                    {% if userBadge.badge.iconUrl %}
+                                                        <img src="{{ userBadge.badge.iconUrl }}" alt="{{ userBadge.badge.name }}" class="w-10 h-10 mx-auto">
+                                                    {% else %}
+                                                        🏆
+                                                    {% endif %}
+                                                </div>
+                                                <p class="text-xs font-semibold text-gray-900 line-clamp-2">{{ userBadge.badge.name }}</p>
+                                            </div>
+                                        </div>
+                                        <div class="absolute inset-x-0 bottom-full mb-2 hidden group-hover:block z-20">
+                                            <div class="bg-gray-900 text-white text-xs rounded-xl py-3 px-4 text-center mx-2 shadow-xl">
+                                                <p class="font-semibold mb-1">{{ userBadge.badge.name }}</p>
+                                                <p class="opacity-90">{{ userBadge.badge.description }}</p>
+                                                <p class="text-game-gold mt-2 text-xs">Obtenu le {{ userBadge.earnedAt|date('d/m/Y') }}</p>
+                                                <div class="absolute top-full left-1/2 -translate-x-1/2 -mt-1">
+                                                    <div class="w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-gray-900"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if activeChallenges|length > 0 %}
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                        <h2 class="text-2xl font-bold text-gray-900 mb-6">Défis en cours</h2>
+                        <div class="grid gap-4">
+                            {% for userChallenge in activeChallenges %}
+                                {% if userChallenge.challenge %}
+                                    {% set progressPercent = (userChallenge.currentProgress / userChallenge.challenge.targetValue * 100)|round %}
+                                    <div class="bg-gradient-to-br from-game-purple/5 to-game-pink/5 rounded-xl p-6 border border-game-purple/20 hover:border-game-purple/40 transition-all">
+                                        <div class="flex items-start justify-between mb-4">
+                                            <div class="flex-1">
+                                                <h3 class="font-bold text-lg text-gray-900 mb-1">{{ userChallenge.challenge.name }}</h3>
+                                                <p class="text-sm text-gray-600">{{ userChallenge.challenge.description }}</p>
+                                            </div>
+                                            <div class="ml-4 px-3 py-1.5 bg-game-gold/20 text-game-gold rounded-full text-sm font-bold">
+                                                +{{ userChallenge.challenge.pointsReward }} pts
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div class="flex items-center justify-between text-sm mb-2">
+                                                <span class="text-gray-600 font-medium">Progression</span>
+                                                <span class="font-bold text-game-purple">{{ userChallenge.currentProgress }}/{{ userChallenge.challenge.targetValue }}</span>
+                                            </div>
+                                            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                                                <div class="bg-gradient-to-r from-game-purple to-game-pink h-3 rounded-full transition-all duration-500" style="width: {{ progressPercent > 100 ? 100 : progressPercent }}%"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if activeProperties|length > 0 %}
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                        <div class="flex items-center justify-between mb-6">
+                            <h2 class="text-2xl font-bold text-gray-900">Logements proposés</h2>
+                            <span class="text-sm text-gray-600">{{ activeProperties|length }} {{ activeProperties|length > 1 ? 'logements' : 'logement' }}</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                            {% for property in activeProperties %}
+                                {% set propertyBookings = property.bookings|filter(b => b.status == 'completed') %}
+                                {% set propertyReviews = [] %}
+                                {% for booking in property.bookings %}
+                                    {% for review in booking.reviews %}
+                                        {% if review.isFromGuest %}
+                                            {% set propertyReviews = propertyReviews|merge([review]) %}
+                                        {% endif %}
+                                    {% endfor %}
+                                {% endfor %}
+                                {% set propertyRatings = propertyReviews|map(r => r.rating) %}
+                                {% set propertyAvgRating = propertyReviews|length > 0 ? ((propertyRatings|sum) / propertyReviews|length)|round(1) : 0 %}
+
+                                <a href="{{ path('app_property_detail', {id: property.id}) }}" class="group block">
+                                    <div class="relative w-full aspect-[4/3] rounded-2xl overflow-hidden mb-3">
+                                        <img src="{{ property.image }}" alt="{{ property.title }}" class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110">
+                                        <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+                                        {% if propertyBookings|length > 0 %}
+                                            <div class="absolute top-3 left-3 px-3 py-1.5 bg-white/95 backdrop-blur-sm text-gray-900 text-xs font-bold rounded-full shadow-lg">
+                                                ✅ {{ propertyBookings|length }} séjour{{ propertyBookings|length > 1 ? 's' : '' }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="space-y-1">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <h3 class="font-semibold text-gray-900 group-hover:text-[#FF385C] transition-colors">{{ property.city }}, {{ property.country }}</h3>
+                                            {% if propertyAvgRating > 0 %}
+                                                <div class="flex items-center gap-1 flex-shrink-0">
+                                                    <svg class="w-4 h-4 text-[#FF385C]" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                    </svg>
+                                                    <span class="text-sm font-semibold text-gray-900">{{ propertyAvgRating }}</span>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-sm text-gray-600">{{ property.propertyType }}</p>
+                                        <p class="text-gray-900 font-semibold pt-1">{{ property.pricePerNight }} € <span class="font-normal text-gray-600">/ nuit</span></p>
+                                    </div>
+                                </a>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% if hostReviews|length > 0 %}
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-gray-100">
+                        <div class="flex items-center justify-between mb-8">
+                            <h2 class="text-2xl font-bold text-gray-900">Avis reçus</h2>
+                            <span class="text-sm text-gray-600">{{ hostReviews|length }} avis</span>
+                        </div>
+                        <div class="space-y-8">
+                            {% for review in hostReviews|slice(0, 6) %}
+                                <div class="flex gap-4">
+                                    {% if review.reviewer.profilePictureUrl %}
+                                        <img src="{{ review.reviewer.profilePictureUrl }}" alt="{{ review.reviewer.firstName }}" class="w-12 h-12 rounded-full flex-shrink-0 object-cover">
+                                    {% else %}
+                                        <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center flex-shrink-0">
+                                            <span class="text-gray-600 font-semibold text-sm">{{ review.reviewer.firstName|first|upper }}{{ review.reviewer.lastName|first|upper }}</span>
+                                        </div>
+                                    {% endif %}
+                                    <div class="flex-1 min-w-0">
+                                        <div class="flex items-center justify-between mb-2">
+                                            <div>
+                                                <h4 class="font-semibold text-gray-900">{{ review.reviewer.firstName }} {{ review.reviewer.lastName }}</h4>
+                                                <p class="text-sm text-gray-500">{{ review.createdAt|date('F Y') }}</p>
+                                            </div>
+                                            <div class="flex items-center gap-1">
+                                                {% for i in 1..review.rating %}
+                                                    <svg class="w-4 h-4 text-[#FF385C]" fill="currentColor" viewBox="0 0 20 20">
+                                                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
+                                                    </svg>
+                                                {% endfor %}
+                                            </div>
+                                        </div>
+                                        {% if review.comment %}
+                                            <p class="text-gray-700 leading-relaxed">{{ review.comment }}</p>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        {% if hostReviews|length > 6 %}
+                            <div class="mt-8 text-center">
+                                <button class="px-6 py-3 border-2 border-gray-900 text-gray-900 rounded-xl font-semibold hover:bg-gray-900 hover:text-white transition-all">
+                                    Voir tous les avis ({{ hostReviews|length }})
+                                </button>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="lg:col-span-1">
+                <div class="sticky top-24 space-y-6">
+                    {% if host.gamificationStats %}
+                        <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                            <h3 class="text-lg font-bold text-gray-900 mb-6">Gamification</h3>
+                            <div class="space-y-3">
+                                <div class="bg-gradient-to-br from-game-purple/10 to-game-pink/10 rounded-xl p-4">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">Points</span>
+                                        <span class="text-2xl">⚡</span>
+                                    </div>
+                                    <p class="text-2xl font-bold text-game-purple mt-1">{{ host.gamificationStats.totalPoints|number_format(0, ',', ' ') }}</p>
+                                </div>
+
+                                {% if host.gamificationStats.level %}
+                                    <div class="bg-gradient-to-br from-game-gold/10 to-yellow-500/10 rounded-xl p-4">
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-sm text-gray-600">Niveau</span>
+                                            <span class="text-2xl">🏆</span>
+                                        </div>
+                                        <p class="text-2xl font-bold text-game-gold mt-1">{{ host.gamificationStats.level }}</p>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-bold text-gray-900 mb-6">Statistiques</h3>
+                        <div class="space-y-4">
+                            {% if host.gamificationStats and host.gamificationStats.bookingsCount %}
+                                <div class="flex items-center justify-between py-2">
+                                    <span class="text-gray-600 text-sm">Réservations</span>
+                                    <span class="font-bold text-gray-900">{{ host.gamificationStats.bookingsCount }}</span>
+                                </div>
+                            {% endif %}
+
+                            {% if host.gamificationStats and host.gamificationStats.reviewsCount %}
+                                <div class="flex items-center justify-between py-2 border-t border-gray-100">
+                                    <span class="text-gray-600 text-sm">Avis donnés</span>
+                                    <span class="font-bold text-gray-900">{{ host.gamificationStats.reviewsCount }}</span>
+                                </div>
+                            {% endif %}
+
+                            {% if host.gamificationStats and host.gamificationStats.countriesVisited %}
+                                <div class="flex items-center justify-between py-2 border-t border-gray-100">
+                                    <span class="text-gray-600 text-sm">Pays visités</span>
+                                    <span class="font-bold text-gray-900">{{ host.gamificationStats.countriesVisited }}</span>
+                                </div>
+                            {% endif %}
+
+                            {% if completedChallenges|length > 0 %}
+                                <div class="flex items-center justify-between py-2 border-t border-gray-100">
+                                    <span class="text-gray-600 text-sm">Défis complétés</span>
+                                    <span class="font-bold text-game-purple">{{ completedChallenges|length }}</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    {% if activeRewards|length > 0 %}
+                        <div class="bg-gradient-to-br from-game-cyan/5 to-blue-50 rounded-2xl p-6 border border-game-cyan/20">
+                            <h3 class="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+                                <span>🎁</span>
+                                <span>Récompenses actives</span>
+                            </h3>
+                            <div class="space-y-3">
+                                {% for userReward in activeRewards|slice(0, 3) %}
+                                    {% if userReward.reward %}
+                                        <div class="bg-white rounded-lg p-3 border border-game-cyan/20">
+                                            <p class="font-semibold text-sm text-gray-900">{{ userReward.reward.name }}</p>
+                                            <p class="text-xs text-gray-600 mt-1">{{ userReward.reward.description }}</p>
+                                        </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

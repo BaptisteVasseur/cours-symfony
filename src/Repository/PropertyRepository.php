@@ -16,6 +16,48 @@ class PropertyRepository extends ServiceEntityRepository
         parent::__construct($registry, Property::class);
     }
 
+    public function search(?string $city, ?string $startAt, ?string $endAt, ?int $travelers, ?int $page = 1, ?int $numberOfElementsPerPage = 10): array
+    {
+        $qb = $this->createQueryBuilder('p');
+
+        if ($city) {
+            $qb
+                ->where('p.city LIKE :city')
+                ->setParameter('city', '%' . $city . '%');
+        }
+
+        if ($travelers) {
+            $qb
+                ->andWhere('p.maxGuests >= :travelers')
+                ->setParameter('travelers', $travelers);;
+        }
+
+
+        if ($startAt || $endAt) {
+            $qb->innerJoin('p.availabilities', 'a');
+
+            if ($startAt) {
+                $qb
+                    ->andWhere('a.startAt <= :startAt')
+                    ->setParameter('startAt', $startAt);
+            }
+
+            if ($endAt) {
+                $qb
+                    ->andWhere('a.endAt >= :endAt')
+                    ->setParameter('endAt', $endAt);
+            }
+        }
+
+        if ($page) {
+            $qb
+                ->setFirstResult(($page - 1) * $numberOfElementsPerPage)
+                ->setMaxResults($numberOfElementsPerPage);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
 //    /**
 //     * @return Property[] Returns an array of Property objects
 //     */
