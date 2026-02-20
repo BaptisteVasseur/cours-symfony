@@ -1,0 +1,45 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Modifier {{ property.title }} - Airbnb{% endblock %}
+
+{% block stylesheets %}
+    {{ parent() }}
+    <style>
+        .property-form .form-control, .property-form input:not([type="hidden"]):not([type="checkbox"]), .property-form select, .property-form textarea {
+            width: 100%;
+            padding: 0.5rem 1rem;
+            border: 1px solid #d1d5db;
+            border-radius: 0.75rem;
+            font-size: 1rem;
+        }
+        .property-form input:focus, .property-form select:focus, .property-form textarea:focus {
+            outline: none;
+            border-color: #FF385C;
+            box-shadow: 0 0 0 2px rgba(255, 56, 92, 0.2);
+        }
+        .property-form label { display: block; font-size: 0.875rem; font-weight: 500; color: #374151; margin-bottom: 0.25rem; }
+        .property-form .invalid-feedback { color: #dc2626; font-size: 0.875rem; margin-top: 0.25rem; }
+    </style>
+{% endblock %}
+
+{% block body %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <nav class="flex items-center gap-2 text-sm text-gray-500 mb-8">
+        <a href="{{ path('app_property_index') }}" class="hover:text-[#FF385C] transition-colors">Annonces</a>
+        <span>/</span>
+        <a href="{{ path('app_property_show', {id: property.id}) }}" class="hover:text-[#FF385C] transition-colors truncate">{{ property.title }}</a>
+        <span>/</span>
+        <span class="text-gray-900 font-medium">Modifier</span>
+    </nav>
+
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Modifier l'annonce</h1>
+            <p class="text-gray-500 mt-1">{{ property.title }}</p>
+        </div>
+        {{ include('property/_delete_form.html.twig') }}
+    </div>
+
+    {{ include('property/_form.html.twig', { button_label: 'Enregistrer les modifications' }) }}
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ property.title }} - Airbnb{% endblock %}
+
+{% block body %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+        <nav class="flex items-center gap-2 text-sm text-gray-500">
+            <a href="{{ path('app_property_index') }}" class="hover:text-[#FF385C] transition-colors">Annonces</a>
+            <span>/</span>
+            <span class="text-gray-900 font-medium truncate">{{ property.title }}</span>
+        </nav>
+        <div class="flex items-center gap-2">
+            <a href="{{ path('app_property_edit', {id: property.id}) }}" class="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+                Modifier
+            </a>
+            {{ include('property/_delete_form.html.twig') }}
+        </div>
+    </div>
+
+    <div class="space-y-6">
+        {# Image & statut #}
+        <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+            <div class="relative aspect-[21/9] bg-gray-100">
+                {% if property.image %}
+                    <img src="{{ property.image }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-gray-400">
+                        <svg class="w-20 h-20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                        </svg>
+                    </div>
+                {% endif %}
+                <span class="absolute top-4 right-4 px-3 py-1.5 rounded-lg text-sm font-medium {{ property.status == 'active' ? 'bg-green-500 text-white' : 'bg-gray-500 text-white' }}">
+                    {{ property.status }}
+                </span>
+            </div>
+            <div class="p-6 border-t border-gray-100">
+                <h1 class="text-2xl font-bold text-gray-900">{{ property.title }}</h1>
+                <p class="text-gray-500 mt-1">{{ property.propertyType }}</p>
+            </div>
+        </div>
+
+        {# Description #}
+        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-3">Description</h2>
+            <p class="text-gray-600 whitespace-pre-line">{{ property.description }}</p>
+        </div>
+
+        {# Adresse & localisation #}
+        <div class="bg-white rounded-2xl border border-gray-200 p-6">
+            <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                </svg>
+                Adresse
+            </h2>
+            <dl class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                <div><dt class="text-gray-500 font-medium">Adresse</dt><dd class="text-gray-900">{{ property.address }}</dd></div>
+                <div><dt class="text-gray-500 font-medium">Ville</dt><dd class="text-gray-900">{{ property.city }}</dd></div>
+                <div><dt class="text-gray-500 font-medium">Pays</dt><dd class="text-gray-900">{{ property.country }}</dd></div>
+                <div><dt class="text-gray-500 font-medium">Code postal</dt><dd class="text-gray-900">{{ property.postalCode ?? '—' }}</dd></div>
+                {% if property.latitude and property.longitude %}
+                    <div class="sm:col-span-2"><dt class="text-gray-500 font-medium">Coordonnées</dt><dd class="text-gray-900">{{ property.latitude }}, {{ property.longitude }}</dd></div>
+                {% endif %}
+            </dl>
+        </div>
+
+        {# Capacité & tarifs #}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-2xl border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    Capacité
+                </h2>
+                <dl class="space-y-2 text-sm">
+                    <div class="flex justify-between"><dt class="text-gray-500">Voyageurs max</dt><dd class="font-medium text-gray-900">{{ property.maxGuests }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-500">Chambres</dt><dd class="font-medium text-gray-900">{{ property.bedrooms }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-500">Lits</dt><dd class="font-medium text-gray-900">{{ property.beds }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-500">Salles de bain</dt><dd class="font-medium text-gray-900">{{ property.bathrooms }}</dd></div>
+                </dl>
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    Tarifs
+                </h2>
+                <dl class="space-y-2 text-sm">
+                    <div class="flex justify-between"><dt class="text-gray-500">Prix / nuit</dt><dd class="font-medium text-gray-900">{{ property.pricePerNight }} €</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-500">Frais de ménage</dt><dd class="font-medium text-gray-900">{{ property.cleaningFee ?? '—' }}{% if property.cleaningFee %} €{% endif %}</dd></div>
+                </dl>
+            </div>
+        </div>
+
+        {# Hôte & dates #}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="bg-white rounded-2xl border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">Hôte</h2>
+                <p class="text-gray-600">{% if property.host %}{{ property.host.firstName }} {{ property.host.lastName }} ({{ property.host.email }}){% else %}—{% endif %}</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-3">Dates</h2>
+                <dl class="space-y-2 text-sm">
+                    <div class="flex justify-between"><dt class="text-gray-500">Créée le</dt><dd class="text-gray-900">{{ property.createdAt ? property.createdAt|date('d/m/Y H:i') : '—' }}</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-500">Modifiée le</dt><dd class="text-gray-900">{{ property.updatedAt ? property.updatedAt|date('d/m/Y H:i') : '—' }}</dd></div>
+                </dl>
+            </div>
+        </div>
+
+        {# Équipements #}
+        {% if property.amenities is defined and property.amenities|length > 0 %}
+            <div class="bg-white rounded-2xl border border-gray-200 p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Équipements</h2>
+                <div class="flex flex-wrap gap-2">
+                    {% for amenity in property.amenities %}
+                        <span class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium">{{ amenity.name }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="flex flex-wrap gap-3 pt-4">
+            <a href="{{ path('app_property_index') }}" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 font-medium">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+                </svg>
+                Retour à la liste
+            </a>
+            <a href="{{ path('app_property_detail', {id: property.id}) }}" class="inline-flex items-center gap-2 text-[#FF385C] hover:text-[#E61E4D] font-medium" target="_blank">
+                Voir la fiche publique
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

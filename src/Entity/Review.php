@@ -3,6 +3,7 @@
 namespace App\Entity;
 
 use App\Repository\ReviewRepository;
+use App\Validator\Insult;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -30,6 +31,7 @@ class Review
     #[ORM\Column]
     private ?int $rating = null;
 
+    #[Insult]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $comment = null;
 
