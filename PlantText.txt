@@ -1,0 +1,418 @@
+@startuml
+
+hide circle
+skinparam linetype ortho
+
+' =====================================================
+' USERS & AUTH
+' =====================================================
+
+entity users {
+  *id : uuid <<PK>>
+  --
+  email : varchar
+  password_hash : varchar
+  phone : varchar
+  status : varchar
+  is_email_verified : boolean
+  is_2fa_enabled : boolean
+  preferred_language : varchar
+  preferred_currency : varchar
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity roles {
+  *id : int <<PK>>
+  --
+  code : varchar
+  label : varchar
+}
+
+entity user_roles {
+  *user_id : uuid <<FK>>
+  *role_id : int <<FK>>
+}
+
+entity user_profiles {
+  *id : uuid <<PK>>
+  --
+  user_id : uuid <<FK>>
+  first_name : varchar
+  last_name : varchar
+  birth_date : date
+  avatar_url : text
+  bio : text
+  identity_status : varchar
+  created_at : timestamp
+}
+
+entity oauth_accounts {
+  *id : uuid <<PK>>
+  --
+  user_id : uuid <<FK>>
+  provider : varchar
+  provider_user_id : varchar
+  access_token : text
+  refresh_token : text
+  created_at : timestamp
+}
+
+entity user_documents {
+  *id : uuid <<PK>>
+  --
+  user_id : uuid <<FK>>
+  type : varchar
+  file_url : text
+  verification_status : varchar
+  created_at : timestamp
+}
+
+users ||--o{ user_roles
+roles ||--o{ user_roles
+
+users ||--|| user_profiles
+users ||--o{ oauth_accounts
+users ||--o{ user_documents
+
+' =====================================================
+' PROPERTIES
+' =====================================================
+
+entity properties {
+  *id : uuid <<PK>>
+  --
+  host_id : uuid <<FK>>
+  title : varchar
+  description : text
+  property_type : varchar
+  status : varchar
+  max_guests : int
+  bedrooms : int
+  beds : int
+  bathrooms : int
+  price_per_night : numeric
+  cleaning_fee : numeric
+  security_deposit : numeric
+  checkin_time : time
+  checkout_time : time
+  cancellation_policy_id : uuid <<FK>>
+  instant_booking : boolean
+  created_at : timestamp
+  updated_at : timestamp
+}
+
+entity property_addresses {
+  *id : uuid <<PK>>
+  --
+  property_id : uuid <<FK>>
+  country : varchar
+  city : varchar
+  postal_code : varchar
+  address_line1 : varchar
+  address_line2 : varchar
+  latitude : decimal
+  longitude : decimal
+}
+
+entity amenities {
+  *id : uuid <<PK>>
+  --
+  code : varchar
+  label : varchar
+  category : varchar
+}
+
+entity property_amenities {
+  *property_id : uuid <<FK>>
+  *amenity_id : uuid <<FK>>
+}
+
+entity property_rules {
+  *id : uuid <<PK>>
+  --
+  property_id : uuid <<FK>>
+  pets_allowed : boolean
+  smoking_allowed : boolean
+  parties_allowed : boolean
+  additional_rules : text
+}
+
+entity property_media {
+  *id : uuid <<PK>>
+  --
+  property_id : uuid <<FK>>
+  media_type : varchar
+  file_url : text
+  sort_order : int
+  is_cover : boolean
+  created_at : timestamp
+}
+
+entity property_availability {
+  *id : uuid <<PK>>
+  --
+  property_id : uuid <<FK>>
+  available_date : date
+  is_available : boolean
+  price_override : numeric
+  minimum_stay : int
+}
+
+entity property_iCal_sync {
+  *id : uuid <<PK>>
+  --
+  property_id : uuid <<FK>>
+  provider_name : varchar
+  iCal_url : text
+  last_sync_at : timestamp
+}
+
+users ||--o{ properties
+properties ||--|| property_addresses
+properties ||--|| property_rules
+properties ||--o{ property_media
+properties ||--o{ property_availability
+properties ||--o{ property_iCal_sync
+
+properties ||--o{ property_amenities
+amenities ||--o{ property_amenities
+
+' =====================================================
+' BOOKINGS
+' =====================================================
+
+entity cancellation_policies {
+  *id : uuid <<PK>>
+  --
+  code : varchar
+  label : varchar
+  description : text
+}
+
+entity reservations {
+  *id : uuid <<PK>>
+  --
+  property_id : uuid <<FK>>
+  guest_id : uuid <<FK>>
+  checkin_date : date
+  checkout_date : date
+  guests_count : int
+  status : varchar
+  total_price : numeric
+  cleaning_fee : numeric
+  service_fee : numeric
+  security_deposit : numeric
+  currency : varchar
+  cancellation_reason : text
+  created_at : timestamp
+}
+
+entity reservation_status_history {
+  *id : uuid <<PK>>
+  --
+  reservation_id : uuid <<FK>>
+  old_status : varchar
+  new_status : varchar
+  changed_by : uuid <<FK>>
+  created_at : timestamp
+}
+
+entity invoices {
+  *id : uuid <<PK>>
+  --
+  reservation_id : uuid <<FK>>
+  invoice_number : varchar
+  pdf_url : text
+  total_amount : numeric
+  created_at : timestamp
+}
+
+properties }o--|| cancellation_policies
+
+reservations }o--|| properties
+reservations }o--|| users
+
+reservations ||--o{ reservation_status_history
+reservations ||--|| invoices
+
+' =====================================================
+' PAYMENTS
+' =====================================================
+
+entity payment_methods {
+  *id : uuid <<PK>>
+  --
+  user_id : uuid <<FK>>
+  provider : varchar
+  provider_payment_method_id : varchar
+  brand : varchar
+  last4 : varchar
+  expiration_month : int
+  expiration_year : int
+}
+
+entity payments {
+  *id : uuid <<PK>>
+  --
+  reservation_id : uuid <<FK>>
+  payer_id : uuid <<FK>>
+  provider : varchar
+  provider_payment_intent : varchar
+  amount : numeric
+  currency : varchar
+  status : varchar
+  paid_at : timestamp
+  created_at : timestamp
+}
+
+entity payouts {
+  *id : uuid <<PK>>
+  --
+  host_id : uuid <<FK>>
+  reservation_id : uuid <<FK>>
+  amount : numeric
+  currency : varchar
+  status : varchar
+  paid_at : timestamp
+}
+
+entity refunds {
+  *id : uuid <<PK>>
+  --
+  payment_id : uuid <<FK>>
+  amount : numeric
+  reason : text
+  status : varchar
+  created_at : timestamp
+}
+
+users ||--o{ payment_methods
+reservations ||--o{ payments
+payments ||--o{ refunds
+reservations ||--o{ payouts
+
+' =====================================================
+' CHAT
+' =====================================================
+
+entity conversations {
+  *id : uuid <<PK>>
+  --
+  reservation_id : uuid <<FK>>
+  created_at : timestamp
+}
+
+entity conversation_participants {
+  *conversation_id : uuid <<FK>>
+  *user_id : uuid <<FK>>
+}
+
+entity messages {
+  *id : uuid <<PK>>
+  --
+  conversation_id : uuid <<FK>>
+  sender_id : uuid <<FK>>
+  message_type : varchar
+  content : text
+  attachment_url : text
+  is_flagged : boolean
+  created_at : timestamp
+}
+
+conversations ||--o{ messages
+conversations ||--o{ conversation_participants
+
+' =====================================================
+' REVIEWS
+' =====================================================
+
+entity reviews {
+  *id : uuid <<PK>>
+  --
+  reservation_id : uuid <<FK>>
+  reviewer_id : uuid <<FK>>
+  reviewed_user_id : uuid <<FK>>
+  property_id : uuid <<FK>>
+  rating : int
+  comment : text
+  created_at : timestamp
+}
+
+entity review_media {
+  *id : uuid <<PK>>
+  --
+  review_id : uuid <<FK>>
+  file_url : text
+}
+
+entity review_reports {
+  *id : uuid <<PK>>
+  --
+  review_id : uuid <<FK>>
+  reported_by : uuid <<FK>>
+  reason : text
+  status : varchar
+}
+
+reviews ||--o{ review_media
+reviews ||--o{ review_reports
+
+' =====================================================
+' NOTIFICATIONS
+' =====================================================
+
+entity notifications {
+  *id : uuid <<PK>>
+  --
+  user_id : uuid <<FK>>
+  type : varchar
+  title : varchar
+  content : text
+  channel : varchar
+  is_read : boolean
+  created_at : timestamp
+}
+
+users ||--o{ notifications
+
+' =====================================================
+' ADMIN / MODERATION
+' =====================================================
+
+entity reports {
+  *id : uuid <<PK>>
+  --
+  reporter_id : uuid <<FK>>
+  target_type : varchar
+  target_id : uuid
+  reason : text
+  status : varchar
+  created_at : timestamp
+}
+
+entity disputes {
+  *id : uuid <<PK>>
+  --
+  reservation_id : uuid <<FK>>
+  opened_by : uuid <<FK>>
+  status : varchar
+  resolution : text
+  created_at : timestamp
+}
+
+entity audit_logs {
+  *id : uuid <<PK>>
+  --
+  user_id : uuid <<FK>>
+  action : varchar
+  entity_type : varchar
+  entity_id : uuid
+  ip_address : varchar
+  created_at : timestamp
+}
+
+reservations ||--o{ disputes
+users ||--o{ audit_logs
+
+@enduml
