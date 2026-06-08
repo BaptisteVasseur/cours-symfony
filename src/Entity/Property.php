@@ -497,4 +497,32 @@ class Property
 
         return $this;
     }
+
+    public function getCoverMedia(): ?PropertyMedia
+    {
+        foreach ($this->media as $medium) {
+            if ($medium->isCover()) {
+                return $medium;
+            }
+        }
+
+        $sorted = $this->media->toArray();
+        usort($sorted, static fn (PropertyMedia $a, PropertyMedia $b): int => $a->getSortOrder() <=> $b->getSortOrder());
+
+        return $sorted[0] ?? null;
+    }
+
+    public function getAverageRating(): ?float
+    {
+        if ($this->reviews->isEmpty()) {
+            return null;
+        }
+
+        $total = 0;
+        foreach ($this->reviews as $review) {
+            $total += $review->getRating() ?? 0;
+        }
+
+        return round($total / $this->reviews->count(), 2);
+    }
 }

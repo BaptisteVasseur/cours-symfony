@@ -1,0 +1,149 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block page_title %}Gestion des Utilisateurs{% endblock %}
+
+{% block content %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-gray-400 uppercase">Total Utilisateurs</p>
+                <h4 class="text-2xl font-bold text-gray-900 mt-1">118 420</h4>
+                <span class="text-xs text-emerald-500 font-semibold"><i class="fa-solid fa-arrow-up text-[10px] mr-1"></i>+5.2% ce mois</span>
+            </div>
+            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-gray-400 uppercase">Hôtes actifs</p>
+                <h4 class="text-2xl font-bold text-gray-900 mt-1">8 340</h4>
+                <span class="text-xs text-gray-400 font-normal">Propriétaires avec annonces</span>
+            </div>
+            <div class="w-12 h-12 bg-rose-50 text-brand rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-house-user"></i></div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-gray-400 uppercase">En attente de validation</p>
+                <h4 class="text-2xl font-bold text-gray-900 mt-1">23</h4>
+                <span class="text-xs text-amber-600 font-semibold"><i class="fa-solid fa-clock text-[10px] mr-1"></i>Identité à vérifier</span>
+            </div>
+            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-id-card"></i></div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-gray-400 uppercase">Comptes suspendus</p>
+                <h4 class="text-2xl font-bold text-gray-900 mt-1">47</h4>
+                <span class="text-xs text-gray-400 font-normal">Litiges ou signalements</span>
+            </div>
+            <div class="w-12 h-12 bg-gray-100 text-gray-600 rounded-xl flex items-center justify-center text-xl"><i class="fa-solid fa-user-slash"></i></div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-3 lg:space-y-0">
+            <h3 class="font-bold text-gray-900">Liste des utilisateurs</h3>
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center space-y-2 sm:space-y-0 sm:space-x-2">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input type="text" placeholder="Rechercher par nom ou email..." class="text-sm border border-gray-200 rounded-lg pl-8 pr-3 py-1.5 focus:outline-none focus:border-gray-400 w-full sm:w-64">
+                </div>
+                <select class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-gray-400 text-gray-600">
+                    <option>Tous les rôles</option>
+                    <option>Voyageur</option>
+                    <option>Hôte</option>
+                    <option>Administrateur</option>
+                </select>
+                <select class="text-sm border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:border-gray-400 text-gray-600">
+                    <option>Tous les statuts</option>
+                    <option>Actif</option>
+                    <option>En attente</option>
+                    <option>Suspendu</option>
+                </select>
+                <button class="bg-gray-100 text-gray-700 font-semibold text-xs px-3 py-2 rounded-lg hover:bg-gray-200 transition whitespace-nowrap">Exporter (.csv)</button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-400 font-semibold border-b border-gray-200 uppercase text-[11px] tracking-wider">
+                        <th class="px-6 py-3">Utilisateur</th>
+                        <th class="px-6 py-3">Rôle</th>
+                        <th class="px-6 py-3">Statut</th>
+                        <th class="px-6 py-3">Inscription</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% include 'admin/parts/user_row.html.twig' with {
+                        initials: 'JM',
+                        name: 'Jean-Marc Dupont',
+                        email: 'jeanmarc.dupont@email.com',
+                        role: 'Hôte',
+                        role_class: 'bg-rose-50 text-brand border border-rose-200',
+                        status: 'Actif',
+                        status_class: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+                        status_icon: 'fa-check',
+                        registered_at: '12 janv. 2024'
+                    } %}
+                    {% include 'admin/parts/user_row.html.twig' with {
+                        initials: 'EK',
+                        name: 'Elena Kowalski',
+                        email: 'elena.k@email.com',
+                        role: 'Voyageur',
+                        role_class: 'bg-blue-50 text-blue-700 border border-blue-200',
+                        status: 'Actif',
+                        status_class: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+                        status_icon: 'fa-check',
+                        registered_at: '3 mars 2024'
+                    } %}
+                    {% include 'admin/parts/user_row.html.twig' with {
+                        initials: 'PL',
+                        name: 'Pierre Lambert',
+                        email: 'pierre.lambert@email.com',
+                        role: 'Hôte',
+                        role_class: 'bg-rose-50 text-brand border border-rose-200',
+                        status: 'En attente',
+                        status_class: 'bg-amber-50 text-amber-800 border border-amber-200',
+                        status_icon: 'fa-clock',
+                        registered_at: '28 mai 2026'
+                    } %}
+                    {% include 'admin/parts/user_row.html.twig' with {
+                        initials: 'SC',
+                        name: 'Sophie Chen',
+                        email: 'sophie.chen@email.com',
+                        role: 'Voyageur',
+                        role_class: 'bg-blue-50 text-blue-700 border border-blue-200',
+                        status: 'Suspendu',
+                        status_class: 'bg-gray-100 text-gray-700 border border-gray-200',
+                        status_icon: 'fa-ban',
+                        registered_at: '8 nov. 2023'
+                    } %}
+                    {% include 'admin/parts/user_row.html.twig' with {
+                        initials: 'AD',
+                        name: 'Alexandre Dupuis',
+                        email: 'admin@airbnb-clone.fr',
+                        role: 'Super Admin',
+                        role_class: 'bg-purple-50 text-purple-700 border border-purple-200',
+                        status: 'Actif',
+                        status_class: 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+                        status_icon: 'fa-check',
+                        registered_at: '1 sept. 2022'
+                    } %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="px-6 py-4 border-t border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0 text-sm text-gray-500">
+            <span>Affichage de 1 à 5 sur 118 420 utilisateurs</span>
+            <div class="flex items-center space-x-1">
+                <button class="px-3 py-1.5 rounded-lg border border-gray-200 text-gray-400 cursor-not-allowed" disabled><i class="fa-solid fa-chevron-left text-xs"></i></button>
+                <button class="px-3 py-1.5 rounded-lg bg-gray-900 text-white font-semibold text-xs">1</button>
+                <button class="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs">2</button>
+                <button class="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs">3</button>
+                <span class="px-2 text-xs">…</span>
+                <button class="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-xs">23 684</button>
+                <button class="px-3 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 text-gray-700"><i class="fa-solid fa-chevron-right text-xs"></i></button>
+            </div>
+        </div>
+    </div>
+{% endblock %}

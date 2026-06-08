@@ -1,0 +1,42 @@
+{% extends 'layout/user.html.twig' %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8">
+{#        {% include 'parts/search_bar.html.twig' with {#}
+{#            destination: destination,#}
+{#            checkin: checkin,#}
+{#            checkout: checkout,#}
+{#            guests: guests,#}
+{#        } %}#}
+
+        <div class="mb-8">
+            <h2 class="text-xl font-semibold text-gray-900">
+{#                {% if destination %}#}
+{#                    Logements à {{ destination }}#}
+{#                {% else %}#}
+{#                    Tous les logements#}
+{#                {% endif %}#}
+            </h2>
+{#            {% if checkin or checkout or guests %}#}
+{#                <p class="text-sm text-gray-500 mt-1">#}
+{#                    {% if checkin and checkout %}#}
+{#                        Du {{ checkin|date('d M Y') }} au {{ checkout|date('d M Y') }}#}
+{#                    {% endif %}#}
+{#                    {% if guests %}· {{ guests }} voyageur{{ guests > 1 ? 's' : '' }}{% endif %}#}
+{#                </p>#}
+{#            {% endif %}#}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+            {% for property in properties %}
+                {% include 'parts/card.html.twig' with {
+                    property: property,
+                    checkin: checkin,
+                    checkout: checkout,
+                } %}
+            {% else %}
+                <p class="col-span-full text-gray-500 text-sm">Aucun logement trouvé.</p>
+            {% endfor %}
+        </div>
+    </main>
+{% endblock %}

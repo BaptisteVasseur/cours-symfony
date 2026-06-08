@@ -1,0 +1,5 @@
+App\Entity\User:
+  mon_user_{1..100}:
+    email: '<safeEmail()>'
+    phone: '<phoneNumber()>'
+    passwordHash: '<password()>'
