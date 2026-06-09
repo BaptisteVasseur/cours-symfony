@@ -1,0 +1,63 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Modifier — {{ property.title }}{% endblock %}
+
+{% block body %}
+<div class="max-w-2xl mx-auto px-4 py-10">
+    <div class="mb-6">
+        <a href="{{ path('app_property_show', { id: property.id }) }}" class="text-sm text-gray-500 hover:underline">&larr; Retour au logement</a>
+    </div>
+
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Modifier le logement</h1>
+
+    {{ form_start(form, { attr: { class: 'space-y-6' } }) }}
+
+    <div>
+        {{ form_label(form.title, 'Titre', { label_attr: { class: 'block text-sm font-medium text-gray-700 mb-1' } }) }}
+        {{ form_widget(form.title) }}
+    </div>
+
+    <div>
+        {{ form_label(form.description, 'Description', { label_attr: { class: 'block text-sm font-medium text-gray-700 mb-1' } }) }}
+        {{ form_widget(form.description) }}
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            {{ form_label(form.city, 'Ville', { label_attr: { class: 'block text-sm font-medium text-gray-700 mb-1' } }) }}
+            {{ form_widget(form.city) }}
+        </div>
+        <div>
+            {{ form_label(form.country, 'Pays', { label_attr: { class: 'block text-sm font-medium text-gray-700 mb-1' } }) }}
+            {{ form_widget(form.country) }}
+        </div>
+    </div>
+
+    <div>
+        {{ form_label(form.address, 'Adresse', { label_attr: { class: 'block text-sm font-medium text-gray-700 mb-1' } }) }}
+        {{ form_widget(form.address) }}
+    </div>
+
+    <div class="grid grid-cols-2 gap-4">
+        <div>
+            {{ form_label(form.pricePerNight, 'Prix / nuit (€)', { label_attr: { class: 'block text-sm font-medium text-gray-700 mb-1' } }) }}
+            {{ form_widget(form.pricePerNight) }}
+        </div>
+        <div>
+            {{ form_label(form.maxGuests, 'Nb. voyageurs max', { label_attr: { class: 'block text-sm font-medium text-gray-700 mb-1' } }) }}
+            {{ form_widget(form.maxGuests) }}
+        </div>
+    </div>
+
+    <div>
+        {{ form_label(form.status, 'Statut', { label_attr: { class: 'block text-sm font-medium text-gray-700 mb-1' } }) }}
+        {{ form_widget(form.status) }}
+    </div>
+
+    <button type="submit" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-semibold py-3 rounded-xl transition">
+        Sauvegarder
+    </button>
+
+    {{ form_end(form) }}
+</div>
+{% endblock %}

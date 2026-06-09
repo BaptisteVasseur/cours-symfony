@@ -1,0 +1,14 @@
+<footer class="border-t border-gray-200 bg-white mt-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-4">
+            <p class="text-sm text-gray-500">&copy; {{ "now"|date("Y") }} Airbnb clone — Projet ESGI</p>
+            <div class="flex gap-6 text-sm text-gray-500">
+                <a href="{{ path('app_home') }}" class="hover:text-gray-900">Accueil</a>
+                <a href="{{ path('app_property_index') }}" class="hover:text-gray-900">Logements</a>
+                {% if app.user %}
+                    <a href="{{ path('app_booking_index') }}" class="hover:text-gray-900">Mes réservations</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</footer>

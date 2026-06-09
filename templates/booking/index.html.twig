@@ -1,0 +1,54 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Mes réservations{% endblock %}
+
+{% block body %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Mes réservations</h1>
+
+    {% if bookings is empty %}
+        <div class="text-center py-20 bg-gray-50 rounded-2xl">
+            <p class="text-xl text-gray-400 mb-4">Aucune réservation pour l'instant</p>
+            <a href="{{ path('app_property_index') }}" class="inline-block bg-rose-500 text-white px-6 py-3 rounded-xl hover:bg-rose-600 transition">
+                Explorer les logements
+            </a>
+        </div>
+    {% else %}
+        <div class="space-y-4">
+            {% for booking in bookings %}
+                <a href="{{ path('app_booking_show', { id: booking.id }) }}" class="flex gap-4 bg-white border border-gray-200 rounded-2xl p-4 hover:shadow-md transition">
+                    <div class="w-24 h-24 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0">
+                        {% if booking.property.images.first %}
+                            <img src="{{ booking.property.images.first.imageUrl }}" alt="" class="w-full h-full object-cover">
+                        {% else %}
+                            <div class="w-full h-full flex items-center justify-center">
+                                <svg class="w-8 h-8 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                                </svg>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-gray-900 truncate">{{ booking.property.title }}</p>
+                        <p class="text-sm text-gray-500">{{ booking.property.city }}, {{ booking.property.country }}</p>
+                        <p class="text-sm text-gray-600 mt-1">
+                            {{ booking.checkIn|date('d M Y') }} → {{ booking.checkOut|date('d M Y') }}
+                            · {{ booking.nights }} nuit(s)
+                        </p>
+                    </div>
+                    <div class="flex flex-col items-end gap-2">
+                        <span class="text-sm font-semibold text-gray-900">{{ booking.totalPrice }} €</span>
+                        <span class="text-xs px-3 py-1 rounded-full font-medium
+                            {% if booking.status.value == 'CONFIRMED' %}bg-green-100 text-green-700
+                            {% elseif booking.status.value == 'PENDING' %}bg-yellow-100 text-yellow-700
+                            {% elseif booking.status.value == 'CANCELLED' %}bg-red-100 text-red-700
+                            {% else %}bg-gray-100 text-gray-700{% endif %}">
+                            {{ booking.status.value|lower|capitalize }}
+                        </span>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

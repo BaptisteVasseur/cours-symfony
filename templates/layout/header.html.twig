@@ -1,0 +1,54 @@
+<nav class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <a href="{{ path('app_home') }}" class="flex items-center gap-2">
+                <svg class="w-8 h-8 text-rose-500" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z"/>
+                </svg>
+                <span class="text-rose-500 font-bold text-xl tracking-tight">airbnb</span>
+            </a>
+
+            <form method="GET" action="{{ path('app_property_index') }}" class="hidden md:flex items-center border border-gray-300 rounded-full px-4 py-2 gap-3 shadow-sm hover:shadow-md transition">
+                <input type="text" name="city" value="{{ app.request.query.get('city') }}" placeholder="Destination" class="outline-none text-sm w-32">
+                <span class="text-gray-300">|</span>
+                <input type="number" name="guests" value="{{ app.request.query.get('guests') }}" placeholder="Voyageurs" min="1" class="outline-none text-sm w-24">
+                <button type="submit" class="bg-rose-500 text-white rounded-full p-1.5 hover:bg-rose-600 transition">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </button>
+            </form>
+
+            <div class="flex items-center gap-2">
+                {% if is_granted('ROLE_HOST') %}
+                    <a href="{{ path('app_property_new') }}" class="hidden md:block text-sm font-medium text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-full transition">
+                        Ajouter un logement
+                    </a>
+                {% endif %}
+
+                {% if app.user %}
+                    <div class="relative group">
+                        <button class="flex items-center gap-2 border border-gray-300 rounded-full px-3 py-2 hover:shadow-md transition">
+                            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                            <div class="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                                {{ app.user.firstName|first|upper }}
+                            </div>
+                        </button>
+                        <div class="absolute right-0 mt-1 w-48 bg-white border border-gray-200 rounded-xl shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                            <div class="px-4 py-3 border-b border-gray-100">
+                                <p class="font-medium text-sm">{{ app.user.firstName }} {{ app.user.lastName }}</p>
+                                <p class="text-xs text-gray-500">{{ app.user.role.value|lower|capitalize }}</p>
+                            </div>
+                            <a href="{{ path('app_booking_index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Mes réservations</a>
+                            {% if is_granted('ROLE_HOST') %}
+                                <a href="{{ path('app_property_new') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Ajouter un logement</a>
+                            {% endif %}
+                            <a href="{{ path('app_logout') }}" class="block px-4 py-2 text-sm text-rose-500 hover:bg-gray-50 rounded-b-xl">Déconnexion</a>
+                        </div>
+                    </div>
+                {% else %}
+                    <a href="{{ path('app_login') }}" class="text-sm font-medium text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-full transition">Connexion</a>
+                    <a href="{{ path('app_register') }}" class="text-sm font-medium bg-rose-500 text-white px-4 py-2 rounded-full hover:bg-rose-600 transition">S'inscrire</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</nav>

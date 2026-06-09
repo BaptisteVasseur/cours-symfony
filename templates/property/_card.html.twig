@@ -1,0 +1,33 @@
+<a href="{{ path('app_property_show', { id: property.id }) }}" class="property-card block rounded-2xl overflow-hidden hover:shadow-lg transition-shadow">
+    <div class="relative aspect-square bg-gray-200">
+        {% if property.images.first %}
+            <img src="{{ property.images.first.imageUrl }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+        {% else %}
+            <div class="w-full h-full flex items-center justify-center bg-gray-100">
+                <svg class="w-12 h-12 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+                </svg>
+            </div>
+        {% endif %}
+        <button class="heart-icon absolute top-3 right-3 bg-white bg-opacity-80 rounded-full p-1.5 shadow transition">
+            <svg class="w-5 h-5 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+        </button>
+    </div>
+    <div class="pt-3 pb-1">
+        <div class="flex justify-between items-start">
+            <div>
+                <p class="font-medium text-gray-900 truncate">{{ property.city }}, {{ property.country }}</p>
+                <p class="text-sm text-gray-500 truncate">{{ property.title }}</p>
+            </div>
+            {% if property.averageRating %}
+                <div class="flex items-center gap-1 text-sm">
+                    <svg class="w-4 h-4 text-gray-800" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+                    <span class="font-medium text-gray-800">{{ property.averageRating }}</span>
+                </div>
+            {% endif %}
+        </div>
+        <p class="mt-1 text-gray-900"><span class="font-semibold">{{ property.pricePerNight }} €</span> <span class="text-gray-500 text-sm">/ nuit</span></p>
+    </div>
+</a>

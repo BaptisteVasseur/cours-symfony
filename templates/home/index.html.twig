@@ -1,0 +1,39 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Airbnb — Trouvez votre logement{% endblock %}
+
+{% block body %}
+<section class="bg-gradient-to-b from-rose-50 to-white py-16 px-4">
+    <div class="max-w-3xl mx-auto text-center">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">Trouvez votre prochain séjour</h1>
+        <p class="text-gray-500 mb-8">Des milliers de logements uniques vous attendent</p>
+
+        <form method="GET" action="{{ path('app_property_index') }}" class="flex flex-col sm:flex-row items-center bg-white rounded-full shadow-lg border border-gray-200 overflow-hidden">
+            <input type="text" name="city" value="{{ city }}" placeholder="Où voulez-vous aller ?" class="flex-1 px-6 py-4 outline-none text-gray-800 placeholder-gray-400">
+            <span class="hidden sm:block w-px h-8 bg-gray-200"></span>
+            <input type="number" name="guests" value="{{ guests }}" placeholder="Voyageurs" min="1" class="w-full sm:w-36 px-6 py-4 outline-none text-gray-800 placeholder-gray-400">
+            <button type="submit" class="w-full sm:w-auto bg-rose-500 hover:bg-rose-600 text-white font-medium px-8 py-4 transition">
+                Rechercher
+            </button>
+        </form>
+    </div>
+</section>
+
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    {% if properties is empty %}
+        <div class="text-center py-20">
+            <p class="text-2xl text-gray-400">Aucun logement trouvé</p>
+            <p class="text-gray-400 mt-2">Essayez une autre destination</p>
+        </div>
+    {% else %}
+        <h2 class="text-2xl font-semibold text-gray-800 mb-6">
+            {% if city %}Logements à {{ city }}{% else %}Tous les logements{% endif %}
+        </h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for property in properties %}
+                {% include 'property/_card.html.twig' with { property: property } %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
