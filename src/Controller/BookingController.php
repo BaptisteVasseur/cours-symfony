@@ -61,11 +61,20 @@ class BookingController extends AbstractController
             $em->persist($booking);
             $em->flush();
 
-            $this->addFlash('success', 'Réservation confirmée !');
-            return $this->redirectToRoute('app_booking_show', ['id' => $booking->getId()]);
+            return $this->redirectToRoute('app_booking_confirmation', ['id' => $booking->getId()]);
         }
 
         return $this->redirectToRoute('app_property_show', ['id' => $property->getId()]);
+    }
+
+    #[Route('/{id}/confirmation', name: 'app_booking_confirmation')]
+    public function confirmation(Booking $booking): Response
+    {
+        if ($booking->getTraveler() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        return $this->render('booking/confirmation.html.twig', ['booking' => $booking]);
     }
 
     #[Route('/{id}', name: 'app_booking_show')]

@@ -46,7 +46,7 @@ class RegisterType extends AbstractType
                 'mapped' => false,
                 'first_options' => [
                     'label' => 'Mot de passe',
-                    'constraints' => [new NotBlank(), new Length(['min' => 8])],
+                    'constraints' => [new NotBlank(), new Length(min: 8)],
                     'attr' => ['class' => $inputClass],
                 ],
                 'second_options' => [
