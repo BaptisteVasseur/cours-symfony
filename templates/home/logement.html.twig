@@ -1,0 +1,16 @@
+{% extends 'layout/user.html.twig' %}
+
+{% block content %}
+    Ma page de détail du logement : {{ mon_logement.title }}
+
+    Le logement se situe {{ mon_logement.address.city }}, {{ mon_logement.address.country }}
+
+    Les avis de nos clients ({{ mon_logement.reviews | length }} avis) :
+
+    {% for review in mon_logement.reviews %}
+        {{ review.comment }} - {{ review.rating }} étoiles
+
+        Review par {{ review.reviewer.profile.firstName }}
+    {% endfor %}
+
+{% endblock %}

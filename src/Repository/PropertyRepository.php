@@ -18,17 +18,15 @@ class PropertyRepository extends ServiceEntityRepository
         parent::__construct($registry, Property::class);
     }
 
+
     /**
-     * @return Property[]
+     * @return array<Property>
      */
-    public function findForListing(): array
+    public function findMostPopular(): array
     {
         return $this->createQueryBuilder('p')
-            ->addSelect('m', 'a', 'r')
-            ->leftJoin('p.media', 'm')
-            ->leftJoin('p.address', 'a')
-            ->leftJoin('p.reviews', 'r')
             ->orderBy('p.createdAt', 'DESC')
+            ->setMaxResults(6)
             ->getQuery()
             ->getResult();
     }
