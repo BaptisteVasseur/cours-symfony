@@ -1,0 +1,51 @@
+{% extends 'layout/user.html.twig' %}
+
+{% block content %}
+    <div class="px-6 md:px-12 py-8 max-w-2xl mx-auto">
+        <div class="text-center mb-8">
+            <div class="w-16 h-16 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+            <h1 class="text-2xl font-bold text-gray-900">Réservation confirmée</h1>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 space-y-4">
+            <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+                <span class="text-sm text-gray-500">Logement</span>
+                <a href="{{ path('app_property_show', {id: booking.property.id}) }}" class="text-sm font-semibold text-brand hover:underline">{{ booking.property.title }}</a>
+            </div>
+            <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+                <span class="text-sm text-gray-500">Arrivée</span>
+                <span class="text-sm font-semibold">{{ booking.checkinDate|date('d/m/Y') }}</span>
+            </div>
+            <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+                <span class="text-sm text-gray-500">Départ</span>
+                <span class="text-sm font-semibold">{{ booking.checkoutDate|date('d/m/Y') }}</span>
+            </div>
+            <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+                <span class="text-sm text-gray-500">Nuits</span>
+                <span class="text-sm font-semibold">{{ booking.checkinDate.diff(booking.checkoutDate).days }}</span>
+            </div>
+            <div class="flex justify-between items-center pb-4 border-b border-gray-100">
+                <span class="text-sm text-gray-500">Total</span>
+                <span class="text-sm font-bold">{{ booking.totalPrice }} €</span>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-sm text-gray-500">Statut</span>
+                <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+                    {{ booking.status == 'confirmed' ? 'bg-emerald-50 text-emerald-700' : '' }}
+                    {{ booking.status == 'pending' ? 'bg-amber-50 text-amber-700' : '' }}
+                ">
+                    {{ booking.status == 'confirmed' ? 'Confirmée' : '' }}
+                    {{ booking.status == 'pending' ? 'En attente' : '' }}
+                    {{ booking.status == 'cancelled' ? 'Annulée' : '' }}
+                    {{ booking.status == 'completed' ? 'Terminée' : '' }}
+                </span>
+            </div>
+        </div>
+
+        <div class="mt-6 text-center">
+            <a href="{{ path('app_booking_history') }}" class="text-sm text-brand font-semibold hover:underline">Retour à mes réservations</a>
+        </div>
+    </div>
+{% endblock %}

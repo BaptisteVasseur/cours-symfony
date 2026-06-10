@@ -63,7 +63,7 @@
                         <div class="flex flex-col sm:flex-row">
                             <div class="sm:w-48 h-40 sm:h-auto shrink-0">
                                 <img
-                                    src="{{ cover ? cover.fileUrl : placeholderImage }}"
+                                    src="{{ cover ? asset(cover.fileUrl) : placeholderImage }}"
                                     alt="{{ property.title }}"
                                     class="w-full h-full object-cover"
                                 >

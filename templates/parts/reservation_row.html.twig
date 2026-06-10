@@ -19,7 +19,7 @@
 <a href="{{ path('app_reservation_show', { id: reservation.id }) }}" class="flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-xl hover:shadow-md transition bg-white">
     <div class="w-full sm:w-40 h-32 sm:h-28 shrink-0 rounded-lg overflow-hidden">
         <img
-            src="{{ cover ? cover.fileUrl : placeholderImage }}"
+            src="{{ cover ? asset(cover.fileUrl) : placeholderImage }}"
             alt="{{ property ? property.title : 'Logement' }}"
             class="w-full h-full object-cover"
         >
