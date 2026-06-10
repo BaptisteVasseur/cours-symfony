@@ -25,6 +25,7 @@ final class FixtureReferences
     public const USER_GUEST_1 = 'user_guest_1';
     public const USER_GUEST_2 = 'user_guest_2';
     public const USER_GUEST_3 = 'user_guest_3';
+    public const USER_GUEST_4 = 'user_guest_4';
 
     public const PROPERTY_1 = 'property_1';
     public const PROPERTY_2 = 'property_2';

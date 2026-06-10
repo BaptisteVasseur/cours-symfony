@@ -1,0 +1,12 @@
+{% for type, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="mx-6 md:mx-12 mt-4 px-4 py-3 rounded-xl text-sm font-medium
+            {{ type == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : '' }}
+            {{ type == 'error' ? 'bg-red-50 text-red-800 border border-red-200' : '' }}
+            {{ type == 'warning' ? 'bg-amber-50 text-amber-800 border border-amber-200' : '' }}
+            {{ type == 'info' ? 'bg-blue-50 text-blue-800 border border-blue-200' : '' }}
+        ">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endfor %}

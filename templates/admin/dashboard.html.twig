@@ -1,0 +1,42 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block page_title %}Vue d'ensemble{% endblock %}
+
+{% block content %}
+    <h1 class="text-xl font-bold text-gray-900 mb-6">Tableau de bord administration</h1>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <a href="{{ path('admin_property_index') }}" class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition group">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-brand/10 text-brand rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition">
+                    <i class="fa-solid fa-house"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Annonces</p>
+                    <p class="text-lg font-bold text-gray-900">Gérer les annonces</p>
+                </div>
+            </div>
+        </a>
+        <a href="{{ path('admin_user_index') }}" class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition group">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition">
+                    <i class="fa-solid fa-users"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Utilisateurs</p>
+                    <p class="text-lg font-bold text-gray-900">Gérer les utilisateurs</p>
+                </div>
+            </div>
+        </a>
+        <a href="{{ path('admin_booking_index') }}" class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition group">
+            <div class="flex items-center space-x-4">
+                <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl group-hover:scale-110 transition">
+                    <i class="fa-solid fa-credit-card"></i>
+                </div>
+                <div>
+                    <p class="text-sm text-gray-500">Réservations</p>
+                    <p class="text-lg font-bold text-gray-900">Gérer les réservations</p>
+                </div>
+            </div>
+        </a>
+    </div>
+{% endblock %}
