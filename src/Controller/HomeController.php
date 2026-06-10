@@ -13,22 +13,18 @@ use Symfony\Component\Routing\Attribute\Route;
 
 class HomeController extends AbstractController
 {
-    #[Route('/', name: 'app_home')]
+    #[Route('/', name: 'app_home', methods: ['GET'])]
     public function index(PropertyRepository $propertyRepository): Response
     {
         return $this->render('home/index.html.twig', [
-            'properties' => $propertyRepository->findForListing(),
+            'properties' => $propertyRepository->findActiveProperties(),
         ]);
     }
 
-    #[Route('/logement/{id}', name: 'app_logement_detail')]
-    public function detail(Property $property, PropertyRepository $propertyRepository): Response
+    #[Route('/logement/{id}', name: 'app_logement_detail', methods: ['GET'])]
+    public function detail(Property $property): Response
     {
-        $property = $propertyRepository->findOneForDetail($property) ?? $property;
-
-        return $this->render('home/logement.html.twig', [
-            'property' => $property,
-        ]);
+        return $this->redirectToRoute('app_property_show', ['id' => $property->getId()]);
     }
 
     #[Route('/search', name: 'app_search', methods: ['GET'])]
@@ -38,18 +34,12 @@ class HomeController extends AbstractController
         $checkout = $this->parseDate($request->query->get('checkout'));
 
         return $this->render('home/search.html.twig', [
-            'properties' => $propertyRepository->findForListing(),
+            'properties' => $propertyRepository->findActiveProperties(),
             'checkin' => $checkin,
             'checkout' => $checkout,
             'guests' => $request->query->getInt('guests'),
             'destination' => $request->query->get('destination'),
         ]);
-    }
-
-    #[Route('/register', name: 'app_register')]
-    public function register(): Response
-    {
-        return $this->render('home/register.html.twig');
     }
 
     private function parseDate(?string $value): ?\DateTimeImmutable

@@ -17,7 +17,8 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_ADMIN')]
 class HomeController extends AbstractController
 {
-    #[Route('', name: 'app_admin_home')]
+    #[Route('', name: 'app_admin_home', methods: ['GET'])]
+    #[Route('', name: 'admin_dashboard', methods: ['GET'])]
     public function index(
         PropertyRepository $propertyRepository,
         ReservationRepository $reservationRepository,
