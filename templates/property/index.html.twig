@@ -44,10 +44,15 @@
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <h3 class="font-bold text-gray-900">Liste des annonces</h3>
-            <a href="{{ path('app_property_new') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brandHover text-white font-semibold text-sm px-4 py-2 rounded-lg transition">
-                <i class="fa-solid fa-plus text-xs"></i>
-                Nouvelle annonce
-            </a>
+            <div class="flex items-center gap-2 flex-wrap">
+                <a href="{{ path('app_property_index') }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter is null ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">Toutes</a>
+                <a href="{{ path('app_property_index', { status: 'published' }) }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter == 'published' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">Publiées</a>
+                <a href="{{ path('app_property_index', { status: 'pending' }) }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter == 'pending' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">En attente</a>
+                <a href="{{ path('app_property_new') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brandHover text-white font-semibold text-sm px-4 py-2 rounded-lg transition ml-auto">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    Nouvelle annonce
+                </a>
+            </div>
         </div>
 
         <div class="overflow-x-auto">

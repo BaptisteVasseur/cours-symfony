@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
 use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -12,23 +13,38 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
+#[ApiResource]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     use UuidEntityTrait;
 
+    #[Groups(['mon-groupe'])]
+    #[Assert\NotBlank(message: 'L\'adresse email est obligatoire.')]
+    #[Assert\Email(message: 'L\'adresse email n\'est pas valide.')]
+    #[Assert\Length(max: 255, maxMessage: 'L\'adresse email ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 255, unique: true)]
     private ?string $email = null;
 
+    #[Assert\NotBlank(message: 'Le mot de passe est obligatoire.', groups: ['create'])]
     #[ORM\Column(length: 255)]
     private ?string $passwordHash = null;
 
+    #[Groups(['mon-groupe'])]
+    #[Assert\Length(max: 50, maxMessage: 'Le numéro de téléphone ne peut pas dépasser {{ limit }} caractères.')]
+    #[Assert\Regex(pattern: '/^\+?[0-9\s\-().]{6,20}$/', message: 'Le numéro de téléphone n\'est pas valide.')]
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $phone = null;
 
+    #[Assert\NotBlank(message: 'Le statut du compte est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['active', 'pending', 'suspended'],
+        message: 'Le statut sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $status = 'pending';
 
@@ -38,9 +54,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private bool $is2faEnabled = false;
 
+    #[Assert\Choice(
+        choices: ['fr', 'en', 'es'],
+        message: 'La langue sélectionnée n\'est pas valide.',
+    )]
+    #[Assert\Length(max: 10, maxMessage: 'La langue ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $preferredLanguage = null;
 
+    #[Assert\Choice(
+        choices: ['EUR', 'USD', 'GBP'],
+        message: 'La devise sélectionnée n\'est pas valide.',
+    )]
+    #[Assert\Length(max: 10, maxMessage: 'La devise ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $preferredCurrency = null;
 
@@ -50,6 +76,8 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[Groups(['mon-groupe'])]
+    #[Assert\Valid]
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: UserProfile::class, cascade: ['persist', 'remove'])]
     private ?UserProfile $profile = null;
 

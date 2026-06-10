@@ -12,10 +12,21 @@ use Symfony\Component\Form\Extension\Core\Type\EmailType;
 use Symfony\Component\Form\Extension\Core\Type\PasswordType;
 use Symfony\Component\Form\Extension\Core\Type\TelType;
 use Symfony\Component\Form\FormBuilderInterface;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
+use Symfony\Component\Form\FormInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
+use Symfony\Component\Validator\Constraints\Length;
+use Symfony\Component\Validator\Constraints\NotBlank;
 
 class UserType extends AbstractType
 {
+    public function __construct(
+        private readonly UserPasswordHasherInterface $passwordHasher,
+    ) {
+    }
+
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
@@ -30,6 +41,24 @@ class UserType extends AbstractType
                 'attr' => [
                     'autocomplete' => 'new-password',
                 ],
+                'constraints' => $options['is_creation']
+                    ? [
+                        new NotBlank(message: 'Le mot de passe est obligatoire.'),
+                        new Length(
+                            min: 8,
+                            max: 128,
+                            minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères.',
+                            maxMessage: 'Le mot de passe ne peut pas dépasser {{ limit }} caractères.',
+                        ),
+                    ]
+                    : [
+                        new Length(
+                            min: 8,
+                            max: 128,
+                            minMessage: 'Le mot de passe doit contenir au moins {{ limit }} caractères.',
+                            maxMessage: 'Le mot de passe ne peut pas dépasser {{ limit }} caractères.',
+                        ),
+                    ],
             ])
             ->add('phone', TelType::class, [
                 'label' => 'Téléphone',
@@ -73,6 +102,18 @@ class UserType extends AbstractType
                 'label' => false,
             ])
         ;
+
+        $builder->addEventListener(FormEvents::SUBMIT, function (FormEvent $event): void {
+            $user = $event->getData();
+            if (!$user instanceof User) {
+                return;
+            }
+
+            $plainPassword = $event->getForm()->get('plainPassword')->getData();
+            if (is_string($plainPassword) && $plainPassword !== '') {
+                $user->setPasswordHash($this->passwordHasher->hashPassword($user, $plainPassword));
+            }
+        });
     }
 
     public function configureOptions(OptionsResolver $resolver): void
@@ -80,6 +121,11 @@ class UserType extends AbstractType
         $resolver->setDefaults([
             'data_class' => User::class,
             'is_creation' => false,
+            'validation_groups' => function (FormInterface $form): array {
+                return $form->getConfig()->getOption('is_creation')
+                    ? ['Default', 'create']
+                    : ['Default'];
+            },
         ]);
 
         $resolver->setAllowedTypes('is_creation', 'bool');

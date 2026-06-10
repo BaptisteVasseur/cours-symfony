@@ -21,9 +21,13 @@
                 <i class="fa-solid fa-credit-card"></i>
                 <span>Réservations & Revenus</span>
             </a>
-            <a href="#" class="flex items-center space-x-3 text-gray-400 hover:bg-gray-800 hover:text-white px-4 py-3 rounded-lg text-sm font-medium transition">
+            <a href="{{ path('app_admin_report_index') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') starts with 'app_admin_report' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
                 <i class="fa-solid fa-triangle-exclamation"></i>
                 <span>Signalements</span>
+            </a>
+            <a href="{{ path('app_admin_review_index') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') starts with 'app_admin_review' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
+                <i class="fa-solid fa-star"></i>
+                <span>Modération avis</span>
             </a>
         </nav>
     </div>

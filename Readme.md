@@ -8,7 +8,6 @@
 4. Créer les entités Doctrine en fonction du schéma de BDD
 5. Générer les migrations et les exécuter pour créer la BDD
 6. Créer des fixtures (php ou YAML) pour peupler la BDD avec des données de test
-
 7. Générer un premier controller + générer un layout user
 8. Découper le template (héritage + sous-templates)
 9. Créer les controllers et 4 pages pour : 
@@ -27,5 +26,5 @@
     Un bouton pour se déconnecter si on est connecté
 13. Afficher que les réservations du user connecté sur la page d'historique
 
-14. Créer un formulaire pour ajouter une propriété
-15. Ajouter les containtes de validation
+14. Créer un CRUD pour ajouter des propriétés, des users, des résas
+15. Ajouter les contraintes de validation sur les entités

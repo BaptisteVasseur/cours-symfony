@@ -22,16 +22,63 @@ class PropertyRepository extends ServiceEntityRepository
     /**
      * @return list<Property>
      */
-    public function findForListing(): array
+    /**
+     * @return list<Property>
+     */
+    public function findForListing(?string $status = null): array
     {
-        return $this->createQueryBuilder('p')
-            ->addSelect('m', 'a', 'r')
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
             ->leftJoin('p.media', 'm')
             ->leftJoin('p.address', 'a')
             ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($status !== null && $status !== '') {
+            $qb->andWhere('p.status = :status')
+                ->setParameter('status', $status);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
+    public function findPendingForModeration(int $limit = 10): array
+    {
+        return $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'pending')
             ->orderBy('p.createdAt', 'DESC')
+            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    public function countByStatus(string $status): int
+    {
+        return (int) $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', $status)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    public function countAll(): int
+    {
+        return (int) $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 
     /**

@@ -8,6 +8,8 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\UserProfileRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserProfileRepository::class)]
 #[ORM\Table(name: 'user_profiles')]
@@ -19,21 +21,29 @@ class UserProfile
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
+    #[Assert\Length(max: 100, maxMessage: 'Le prénom ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $firstName = null;
 
+    #[Assert\Length(max: 100, maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $lastName = null;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $birthDate = null;
 
+    #[Assert\Url(requireTld: false, message: 'L\'URL de l\'avatar n\'est pas valide.')]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $avatarUrl = null;
 
+    #[Assert\Length(max: 1000, maxMessage: 'La bio ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $bio = null;
 
+    #[Assert\Choice(
+        choices: ['unverified', 'pending', 'verified', 'rejected'],
+        message: 'Le statut d\'identité sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $identityStatus = null;
 

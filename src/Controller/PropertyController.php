@@ -12,20 +12,25 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/property')]
+#[IsGranted('ROLE_ADMIN')]
 final class PropertyController extends AbstractController
 {
     #[Route(name: 'app_property_index', methods: ['GET'])]
-    public function index(PropertyRepository $propertyRepository): Response
+    public function index(Request $request, PropertyRepository $propertyRepository): Response
     {
-        $properties = $propertyRepository->findForListing();
+        $statusFilter = $request->query->getString('status');
+        $statusFilter = $statusFilter !== '' ? $statusFilter : null;
+        $properties = $propertyRepository->findForListing($statusFilter);
 
         return $this->render('property/index.html.twig', [
             'properties' => $properties,
-            'total' => count($properties),
-            'published' => count(array_filter($properties, static fn (Property $p): bool => $p->getStatus() === 'published')),
-            'pending' => count(array_filter($properties, static fn (Property $p): bool => $p->getStatus() === 'pending')),
+            'total' => $propertyRepository->countAll(),
+            'published' => $propertyRepository->countByStatus('published'),
+            'pending' => $propertyRepository->countByStatus('pending'),
+            'statusFilter' => $statusFilter,
         ]);
     }
 
@@ -93,5 +98,39 @@ final class PropertyController extends AbstractController
         }
 
         return $this->redirectToRoute('app_property_index', [], Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/{id}/publish', name: 'app_property_publish', methods: ['POST'])]
+    public function publish(Request $request, Property $property, EntityManagerInterface $entityManager): Response
+    {
+        if ($this->isCsrfTokenValid('publish'.$property->getId(), $request->getPayload()->getString('_token'))) {
+            $property->setStatus('published');
+            $property->setUpdatedAt(new \DateTimeImmutable());
+            $entityManager->flush();
+            $this->addFlash('success', 'Annonce publiée.');
+        }
+
+        $redirect = $request->headers->get('referer');
+
+        return $redirect
+            ? $this->redirect($redirect)
+            : $this->redirectToRoute('app_property_show', ['id' => $property->getId()], Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/{id}/reject', name: 'app_property_reject', methods: ['POST'])]
+    public function reject(Request $request, Property $property, EntityManagerInterface $entityManager): Response
+    {
+        if ($this->isCsrfTokenValid('reject'.$property->getId(), $request->getPayload()->getString('_token'))) {
+            $property->setStatus('draft');
+            $property->setUpdatedAt(new \DateTimeImmutable());
+            $entityManager->flush();
+            $this->addFlash('success', 'Annonce refusée et repassée en brouillon.');
+        }
+
+        $redirect = $request->headers->get('referer');
+
+        return $redirect
+            ? $this->redirect($redirect)
+            : $this->redirectToRoute('app_property_show', ['id' => $property->getId()], Response::HTTP_SEE_OTHER);
     }
 }
