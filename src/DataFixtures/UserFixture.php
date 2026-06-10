@@ -6,17 +6,15 @@ namespace App\DataFixtures;
 
 use App\Entity\OauthAccount;
 use App\Entity\PaymentMethod;
-use App\Entity\Role;
 use App\Entity\User;
 use App\Entity\UserDocument;
 use App\Entity\UserProfile;
-use App\Entity\UserRole;
+use App\Security\Roles;
 use Doctrine\Bundle\FixturesBundle\Fixture;
-use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
 
-class UserFixture extends Fixture implements DependentFixtureInterface
+class UserFixture extends Fixture
 {
     public function __construct(
         private readonly UserPasswordHasherInterface $passwordHasher,
@@ -25,10 +23,6 @@ class UserFixture extends Fixture implements DependentFixtureInterface
 
     public function load(ObjectManager $manager): void
     {
-        $roleHost = $this->getReference(FixtureReferences::ROLE_HOST, Role::class);
-        $roleAdmin = $this->getReference(FixtureReferences::ROLE_ADMIN, Role::class);
-        $roleSuperAdmin = $this->getReference(FixtureReferences::ROLE_SUPER_ADMIN, Role::class);
-
         $users = [
             [
                 FixtureReferences::USER_SUPER_ADMIN,
@@ -37,7 +31,7 @@ class UserFixture extends Fixture implements DependentFixtureInterface
                 'Dupuis',
                 'active',
                 true,
-                [$roleSuperAdmin, $roleAdmin],
+                [Roles::SUPER_ADMIN, Roles::ADMIN],
                 'verified',
                 true,
             ],
@@ -48,7 +42,7 @@ class UserFixture extends Fixture implements DependentFixtureInterface
                 'Martin',
                 'active',
                 true,
-                [$roleAdmin],
+                [Roles::ADMIN],
                 'verified',
                 false,
             ],
@@ -59,7 +53,7 @@ class UserFixture extends Fixture implements DependentFixtureInterface
                 'Dupont',
                 'active',
                 true,
-                [$roleHost],
+                [Roles::HOST],
                 'verified',
                 true,
             ],
@@ -70,7 +64,7 @@ class UserFixture extends Fixture implements DependentFixtureInterface
                 'Kowalski',
                 'active',
                 true,
-                [$roleHost],
+                [Roles::HOST],
                 'verified',
                 false,
             ],
@@ -81,7 +75,7 @@ class UserFixture extends Fixture implements DependentFixtureInterface
                 'Lambert',
                 'pending',
                 false,
-                [$roleHost],
+                [Roles::HOST],
                 'pending',
                 false,
             ],
@@ -121,7 +115,7 @@ class UserFixture extends Fixture implements DependentFixtureInterface
         ];
 
         foreach ($users as [$reference, $email, $firstName, $lastName, $status, $verified, $roles, $identityStatus, $withOauth]) {
-            $user = $this->createUser($email, $status, $verified);
+            $user = $this->createUser($email, $status, $verified, $roles);
             $manager->persist($user);
 
             $profile = new UserProfile();
@@ -134,13 +128,6 @@ class UserFixture extends Fixture implements DependentFixtureInterface
             $profile->setIdentityStatus($identityStatus);
             $manager->persist($profile);
             $user->setProfile($profile);
-
-            foreach ($roles as $role) {
-                $userRole = new UserRole();
-                $userRole->setUser($user);
-                $userRole->setRole($role);
-                $manager->persist($userRole);
-            }
 
             if ($withOauth) {
                 $oauth = new OauthAccount();
@@ -175,7 +162,7 @@ class UserFixture extends Fixture implements DependentFixtureInterface
         }
 
         for ($i = 1; $i <= 20; $i++) {
-            $user = $this->createUser(sprintf('guest%d@example.com', $i), 'active', $i % 3 !== 0);
+            $user = $this->createUser(sprintf('guest%d@example.com', $i), 'active', $i % 3 !== 0, []);
             $manager->persist($user);
 
             $profile = new UserProfile();
@@ -188,7 +175,7 @@ class UserFixture extends Fixture implements DependentFixtureInterface
         }
 
         for ($i = 1; $i <= 10; $i++) {
-            $user = $this->createUser(sprintf('host%d@example.com', $i), 'active', true);
+            $user = $this->createUser(sprintf('host%d@example.com', $i), 'active', true, [Roles::HOST]);
             $manager->persist($user);
 
             $profile = new UserProfile();
@@ -198,22 +185,13 @@ class UserFixture extends Fixture implements DependentFixtureInterface
             $profile->setIdentityStatus('verified');
             $manager->persist($profile);
             $user->setProfile($profile);
-
-            $userRole = new UserRole();
-            $userRole->setUser($user);
-            $userRole->setRole($roleHost);
-            $manager->persist($userRole);
         }
 
         $manager->flush();
     }
 
-    public function getDependencies(): array
-    {
-        return [RoleFixture::class];
-    }
-
-    private function createUser(string $email, string $status, bool $verified): User
+    /** @param list<string> $roles */
+    private function createUser(string $email, string $status, bool $verified, array $roles): User
     {
         $user = new User();
         $user->setEmail($email);
@@ -223,6 +201,7 @@ class UserFixture extends Fixture implements DependentFixtureInterface
         $user->setIsEmailVerified($verified);
         $user->setPreferredLanguage('fr');
         $user->setPreferredCurrency('EUR');
+        $user->setAssignedRoles($roles);
 
         return $user;
     }

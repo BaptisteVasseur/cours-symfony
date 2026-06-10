@@ -1,0 +1,49 @@
+{% set statusLabels = {
+    'open': 'Ouvert',
+    'pending': 'En attente',
+    'dismissed': 'Classé sans suite',
+    'upheld': 'Confirmé',
+} %}
+{% set statusClasses = {
+    'open': 'bg-amber-50 text-amber-800 border border-amber-200',
+    'pending': 'bg-amber-50 text-amber-800 border border-amber-200',
+    'dismissed': 'bg-gray-100 text-gray-700 border border-gray-200',
+    'upheld': 'bg-rose-50 text-rose-800 border border-rose-200',
+} %}
+{% set review = report.review %}
+
+<tr class="hover:bg-gray-50/70 transition">
+    <td class="px-6 py-4">
+        {% if review %}
+            <p class="font-semibold text-gray-900">{{ review.rating }}/5</p>
+            <p class="text-xs text-gray-500 truncate max-w-[200px]">{{ review.comment|default('—') }}</p>
+        {% else %}
+            —
+        {% endif %}
+    </td>
+    <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{{ report.reason }}</td>
+    <td class="px-6 py-4 text-sm text-gray-500">{{ report.reportedBy ? report.reportedBy.email : '—' }}</td>
+    <td class="px-6 py-4">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ statusClasses[report.status]|default('bg-gray-100 text-gray-700 border border-gray-200') }}">
+            {{ statusLabels[report.status]|default(report.status) }}
+        </span>
+    </td>
+    <td class="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+        {% if report.status not in ['dismissed', 'upheld'] %}
+            <form method="post" action="{{ path('app_admin_review_dismiss', { id: report.id }) }}" class="inline">
+                <input type="hidden" name="_token" value="{{ csrf_token('review_dismiss' ~ report.id) }}">
+                <button type="submit" class="text-xs bg-gray-100 text-gray-700 font-semibold px-2.5 py-1.5 rounded-lg hover:bg-gray-200 transition">
+                    Classer
+                </button>
+            </form>
+            <form method="post" action="{{ path('app_admin_review_uphold', { id: report.id }) }}" class="inline">
+                <input type="hidden" name="_token" value="{{ csrf_token('review_uphold' ~ report.id) }}">
+                <button type="submit" class="text-xs bg-rose-50 text-brand font-semibold px-2.5 py-1.5 rounded-lg hover:bg-rose-100 transition">
+                    Confirmer
+                </button>
+            </form>
+        {% else %}
+            <span class="text-xs text-gray-400">Traité</span>
+        {% endif %}
+    </td>
+</tr>

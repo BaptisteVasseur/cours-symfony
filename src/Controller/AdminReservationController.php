@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Entity\Dispute;
 use App\Entity\Reservation;
 use App\Form\ReservationType;
 use App\Repository\ReservationRepository;
@@ -12,8 +13,10 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/admin/reservation')]
+#[IsGranted('ROLE_ADMIN')]
 final class AdminReservationController extends AbstractController
 {
     #[Route(name: 'app_admin_reservation_index', methods: ['GET'])]
@@ -105,5 +108,24 @@ final class AdminReservationController extends AbstractController
         }
 
         return $this->redirectToRoute('app_admin_reservation_index', [], Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/dispute/{id}/resolve', name: 'app_admin_dispute_resolve', methods: ['POST'])]
+    public function resolveDispute(Request $request, Dispute $dispute, EntityManagerInterface $entityManager): Response
+    {
+        $reservation = $dispute->getReservation();
+        if ($reservation === null || !$this->isCsrfTokenValid('dispute'.$dispute->getId(), $request->getPayload()->getString('_token'))) {
+            return $this->redirectToRoute('app_admin_reservation_index', [], Response::HTTP_SEE_OTHER);
+        }
+
+        $resolution = trim($request->getPayload()->getString('resolution'));
+        if ($resolution !== '') {
+            $dispute->setResolution($resolution);
+            $dispute->setStatus('resolved');
+            $entityManager->flush();
+            $this->addFlash('success', 'Litige résolu.');
+        }
+
+        return $this->redirectToRoute('app_admin_reservation_show', ['id' => $reservation->getId()], Response::HTTP_SEE_OTHER);
     }
 }

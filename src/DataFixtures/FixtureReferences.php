@@ -6,10 +6,6 @@ namespace App\DataFixtures;
 
 final class FixtureReferences
 {
-    public const ROLE_HOST = 'role_host';
-    public const ROLE_ADMIN = 'role_admin';
-    public const ROLE_SUPER_ADMIN = 'role_super_admin';
-
     public const POLICY_FLEXIBLE = 'policy_flexible';
     public const POLICY_MODERATE = 'policy_moderate';
     public const POLICY_STRICT = 'policy_strict';

@@ -1,8 +1,7 @@
 {% extends 'layout/admin.html.twig' %}
 
 {% set profile = user.profile %}
-{% set primaryUserRole = user.userRoles|first %}
-{% set role = primaryUserRole ? primaryUserRole.role : null %}
+{% set roleLabel = user.assignedRoles|length > 0 ? roleLabels[user.assignedRoles|first]|default('Voyageur') : 'Voyageur' %}
 {% set displayName = profile and (profile.firstName or profile.lastName) ? (profile.firstName ~ ' ' ~ profile.lastName)|trim : user.email %}
 {% set initials = profile and profile.firstName ? profile.firstName|first|upper ~ (profile.lastName ? profile.lastName|first|upper : '') : user.email|first|upper %}
 
@@ -20,6 +19,14 @@
 {% block page_title %}{{ displayName }}{% endblock %}
 
 {% block content %}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
     <div class="mb-6">
         <a href="{{ path('app_user_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition">
             <i class="fa-solid fa-arrow-left text-xs"></i>
@@ -64,7 +71,7 @@
                     </div>
                     <div>
                         <dt class="text-gray-400 text-xs uppercase mb-1">Rôle principal</dt>
-                        <dd class="font-medium text-gray-900">{{ role ? role.label : 'Voyageur' }}</dd>
+                        <dd class="font-medium text-gray-900">{{ roleLabel }}</dd>
                     </div>
                     <div>
                         <dt class="text-gray-400 text-xs uppercase mb-1">Email vérifié</dt>
@@ -101,6 +108,8 @@
                 </div>
             {% endif %}
 
+            {{ include('user/_documents_section.html.twig') }}
+
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-5 text-center">
                     <p class="text-2xl font-bold text-gray-900">{{ user.properties|length }}</p>
@@ -134,21 +143,7 @@
                 </dl>
             </div>
 
-            {% if user.userRoles|length > 0 %}
-                <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
-                    <h3 class="font-bold text-gray-900 mb-4">Rôles assignés</h3>
-                    <ul class="space-y-2">
-                        {% for userRole in user.userRoles %}
-                            {% if userRole.role %}
-                                <li class="text-sm font-medium text-gray-700 flex items-center gap-2">
-                                    <i class="fa-solid fa-shield-halved text-xs text-gray-400"></i>
-                                    {{ userRole.role.label }}
-                                </li>
-                            {% endif %}
-                        {% endfor %}
-                    </ul>
-                </div>
-            {% endif %}
+            {{ include('user/_roles_section.html.twig') }}
 
             <div class="flex flex-col gap-2">
                 <a href="{{ path('app_user_edit', { id: user.id }) }}" class="w-full text-center bg-gray-900 hover:bg-gray-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition">

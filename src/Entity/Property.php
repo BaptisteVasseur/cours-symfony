@@ -4,57 +4,107 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
 use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PropertyRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
+#[ApiResource(
+    normalizationContext: ['groups' => ['mon-groupe']],
+    denormalizationContext: ['groups' => ['mon-groupe-2']],
+)]
 #[ORM\Entity(repositoryClass: PropertyRepository::class)]
 #[ORM\Table(name: 'properties')]
 class Property
 {
     use UuidEntityTrait;
 
+    #[Groups(['mon-groupe'])]
+    #[Assert\NotNull(message: 'L\'hôte est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'properties')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $host = null;
 
+    #[Assert\NotNull(message: 'La politique d\'annulation est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'properties')]
     #[ORM\JoinColumn(nullable: false)]
     private ?CancellationPolicy $cancellationPolicy = null;
 
+    #[Groups(['mon-groupe', 'mon-groupe-2'])]
+    #[Assert\NotBlank(message: 'Le titre est obligatoire.')]
+    #[Assert\Length(
+        min: 5,
+        max: 255,
+        minMessage: 'Le titre doit contenir au moins {{ limit }} caractères.',
+        maxMessage: 'Le titre ne peut pas dépasser {{ limit }} caractères.',
+    )]
     #[ORM\Column(length: 255)]
     private ?string $title = null;
 
+    #[Groups(['mon-groupe'])]
+    #[Assert\Length(
+        min: 10,
+        max: 5000,
+        minMessage: 'La description doit contenir au moins {{ limit }} caractères.',
+        maxMessage: 'La description ne peut pas dépasser {{ limit }} caractères.',
+    )]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 
+    #[Assert\NotBlank(message: 'Le type de logement est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['villa', 'loft', 'apartment', 'house', 'chalet'],
+        message: 'Le type de logement sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $propertyType = null;
 
+    #[Assert\NotBlank(message: 'Le statut est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['draft', 'pending', 'published'],
+        message: 'Le statut sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $status = 'pending';
 
+    #[Assert\NotNull(message: 'Le nombre de voyageurs est obligatoire.')]
+    #[Assert\GreaterThanOrEqual(value: 1, message: 'Il doit y avoir au moins {{ compared_value }} voyageur.')]
     #[ORM\Column]
     private ?int $maxGuests = null;
 
+    #[Assert\NotNull(message: 'Le nombre de chambres est obligatoire.')]
+    #[Assert\GreaterThanOrEqual(value: 0, message: 'Le nombre de chambres ne peut pas être négatif.')]
     #[ORM\Column]
     private ?int $bedrooms = null;
 
+    #[Assert\NotNull(message: 'Le nombre de lits est obligatoire.')]
+    #[Assert\GreaterThanOrEqual(value: 1, message: 'Il doit y avoir au moins {{ compared_value }} lit.')]
     #[ORM\Column]
     private ?int $beds = null;
 
+    #[Assert\NotNull(message: 'Le nombre de salles de bain est obligatoire.')]
+    #[Assert\GreaterThanOrEqual(value: 1, message: 'Il doit y avoir au moins {{ compared_value }} salle de bain.')]
     #[ORM\Column]
     private ?int $bathrooms = null;
 
+    #[Assert\NotBlank(message: 'Le prix par nuit est obligatoire.')]
+    #[Assert\Type(type: 'numeric', message: 'Le prix par nuit doit être un nombre.')]
+    #[Assert\Positive(message: 'Le prix par nuit doit être supérieur à 0.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $pricePerNight = null;
 
+    #[Assert\Type(type: 'numeric', message: 'Les frais de ménage doivent être un nombre.')]
+    #[Assert\GreaterThanOrEqual(value: 0, message: 'Les frais de ménage ne peuvent pas être négatifs.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $cleaningFee = null;
 
+    #[Assert\Type(type: 'numeric', message: 'La caution doit être un nombre.')]
+    #[Assert\GreaterThanOrEqual(value: 0, message: 'La caution ne peut pas être négative.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $securityDeposit = null;
 

@@ -72,7 +72,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-200">
                     {% for user in users %}
-                        {% include 'user/_user_row.html.twig' with { user: user } %}
+                        {% include 'user/_user_row.html.twig' with { user: user, roleLabels: roleLabels } %}
                     {% else %}
                         <tr>
                             <td colspan="5" class="px-6 py-12 text-center text-gray-400">

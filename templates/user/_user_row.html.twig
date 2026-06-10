@@ -1,6 +1,5 @@
 {% set profile = user.profile %}
-{% set primaryUserRole = user.userRoles|first %}
-{% set role = primaryUserRole ? primaryUserRole.role : null %}
+{% set roleLabel = roleLabels is defined and user.assignedRoles|length > 0 ? roleLabels[user.assignedRoles|first]|default('Voyageur') : 'Voyageur' %}
 
 {% set initials = profile and profile.firstName ? profile.firstName|first|upper ~ (profile.lastName ? profile.lastName|first|upper : '') : user.email|first|upper %}
 {% set displayName = profile and (profile.firstName or profile.lastName) ? (profile.firstName ~ ' ' ~ profile.lastName)|trim : user.email %}
@@ -44,7 +43,6 @@
         </div>
     </td>
     <td class="px-6 py-4">
-        {% set roleLabel = role ? role.label : 'Voyageur' %}
         <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ roleClasses[roleLabel]|default('bg-blue-50 text-blue-700 border border-blue-200') }}">
             {{ roleLabel }}
         </span>

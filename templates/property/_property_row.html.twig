@@ -57,6 +57,9 @@
         {{ property.maxGuests }} pers. · {{ property.bedrooms }} ch.
     </td>
     <td class="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+        {% if property.status == 'pending' %}
+            {{ include('property/_moderation_actions.html.twig') }}
+        {% endif %}
         <a href="{{ path('app_property_show', { id: property.id }) }}" class="text-xs text-gray-600 hover:text-gray-900 font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition inline-block">
             Voir
         </a>

@@ -24,10 +24,8 @@ class UserRepository extends ServiceEntityRepository
     public function findForListing(): array
     {
         return $this->createQueryBuilder('u')
-            ->addSelect('p', 'ur', 'r')
+            ->addSelect('p')
             ->leftJoin('u.profile', 'p')
-            ->leftJoin('u.userRoles', 'ur')
-            ->leftJoin('ur.role', 'r')
             ->orderBy('u.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
@@ -36,10 +34,8 @@ class UserRepository extends ServiceEntityRepository
     public function findOneForDetail(User $user): ?User
     {
         return $this->createQueryBuilder('u')
-            ->addSelect('p', 'ur', 'r', 'prop', 'res', 'doc')
+            ->addSelect('p', 'prop', 'res', 'doc')
             ->leftJoin('u.profile', 'p')
-            ->leftJoin('u.userRoles', 'ur')
-            ->leftJoin('ur.role', 'r')
             ->leftJoin('u.properties', 'prop')
             ->leftJoin('u.reservations', 'res')
             ->leftJoin('u.documents', 'doc')
@@ -47,5 +43,15 @@ class UserRepository extends ServiceEntityRepository
             ->setParameter('user', $user)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    public function countActive(): int
+    {
+        return (int) $this->createQueryBuilder('u')
+            ->select('COUNT(u.id)')
+            ->andWhere('u.status = :status')
+            ->setParameter('status', 'active')
+            ->getQuery()
+            ->getSingleScalarResult();
     }
 }

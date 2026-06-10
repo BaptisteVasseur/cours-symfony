@@ -38,7 +38,7 @@ class ReservationRepository extends ServiceEntityRepository
     public function findOneForDetail(Reservation $reservation): ?Reservation
     {
         return $this->createQueryBuilder('r')
-            ->addSelect('p', 'm', 'a', 'g', 'gp', 'host', 'hostProfile', 'h', 'changedBy', 'pay')
+            ->addSelect('p', 'm', 'a', 'g', 'gp', 'host', 'hostProfile', 'h', 'changedBy', 'pay', 'ref', 'inv', 'payo', 'disp', 'openedBy', 'payer')
             ->leftJoin('r.property', 'p')
             ->leftJoin('p.media', 'm')
             ->leftJoin('p.address', 'a')
@@ -49,9 +49,27 @@ class ReservationRepository extends ServiceEntityRepository
             ->leftJoin('r.statusHistory', 'h')
             ->leftJoin('h.changedBy', 'changedBy')
             ->leftJoin('r.payments', 'pay')
+            ->leftJoin('pay.refunds', 'ref')
+            ->leftJoin('pay.payer', 'payer')
+            ->leftJoin('r.invoice', 'inv')
+            ->leftJoin('r.payouts', 'payo')
+            ->leftJoin('r.disputes', 'disp')
+            ->leftJoin('disp.openedBy', 'openedBy')
             ->andWhere('r = :reservation')
             ->setParameter('reservation', $reservation)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    public function sumCompletedRevenue(): float
+    {
+        $result = $this->createQueryBuilder('r')
+            ->select('SUM(r.totalPrice)')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result !== null ? (float) $result : 0.0;
     }
 }

@@ -1,38 +1,115 @@
 {% extends 'layout/user.html.twig' %}
 
-{% block title %}Log in!{% endblock %}
+{% block title %}Connexion{% endblock %}
 
 {% block content %}
-    <form method="post">
-        {% if error %}
-            <div class="alert alert-danger">{{ error.messageKey|trans(error.messageData, 'security') }}</div>
-        {% endif %}
+    <div class="flex-grow flex items-center justify-center px-4 py-12 md:py-16">
+        <div class="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
 
-        {% if app.user %}
-            <div class="mb-3">
-                You are logged in as {{ app.user.userIdentifier }}, <a href="{{ logout_path() }}">Logout</a>
+            <div class="hidden lg:block relative rounded-3xl overflow-hidden shadow-2xl h-[560px]">
+                <img
+                    src="https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=900&q=80"
+                    alt="Logement"
+                    class="absolute inset-0 w-full h-full object-cover"
+                >
+                <div class="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 right-0 p-10 text-white">
+                    <p class="text-sm font-semibold uppercase tracking-wider text-white/80 mb-2">Bienvenue</p>
+                    <h2 class="text-3xl font-bold leading-tight">Des logements uniques,<br>des expériences inoubliables.</h2>
+                </div>
             </div>
-        {% endif %}
 
-        <h1 class="h3 mb-3 font-weight-normal">Please sign in</h1>
-        <label for="username">Email</label>
-        <input type="email" value="{{ last_username }}" name="_username" id="username" class="form-control" autocomplete="email" required autofocus>
-        <label for="password">Password</label>
-        <input type="password" name="_password" id="password" class="form-control" autocomplete="current-password" required>
-        <input type="hidden" name="_csrf_token" data-controller="csrf-protection" value="{{ csrf_token('authenticate') }}">
+            <div class="w-full max-w-md mx-auto lg:max-w-none">
+                <div class="text-center lg:text-left mb-8">
+                    <div class="inline-flex items-center text-brand text-3xl font-bold mb-6 lg:hidden">
+                        <i class="fa-brands fa-airbnb mr-2"></i>
+                        <span class="text-gray-900">airbnb</span>
+                    </div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Bon retour parmi nous</h1>
+                    <p class="text-gray-500 text-sm mt-2">Connectez-vous pour gérer vos réservations et vos annonces.</p>
+                </div>
 
-        {#
-            Uncomment this section and add a remember_me option below your firewall to activate remember me functionality.
-            See https://symfony.com/doc/current/security/remember_me.html
+                {% if app.user %}
+                    <div class="bg-white rounded-2xl border border-gray-200 shadow-xl p-8 text-center">
+                        <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-4">
+                            <i class="fa-solid fa-circle-check"></i>
+                        </div>
+                        <p class="text-gray-900 font-semibold mb-1">Vous êtes déjà connecté</p>
+                        <p class="text-sm text-gray-500 mb-6">{{ app.user.userIdentifier }}</p>
+                        <div class="flex flex-col sm:flex-row gap-3 justify-center">
+                            <a href="{{ path('app_home') }}" class="px-6 py-3 bg-brand hover:bg-brandHover text-white font-semibold text-sm rounded-xl transition">
+                                Retour à l'accueil
+                            </a>
+                            <a href="{{ path('app_logout') }}" class="px-6 py-3 border border-gray-300 hover:bg-gray-50 text-gray-900 font-semibold text-sm rounded-xl transition">
+                                Se déconnecter
+                            </a>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="bg-white rounded-2xl border border-gray-200 shadow-xl p-8">
+                        {% if error %}
+                            <div class="mb-6 px-4 py-3 rounded-xl text-sm font-medium bg-red-50 text-red-800 border border-red-200 flex items-start gap-2">
+                                <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0"></i>
+                                <span>{{ error.messageKey|trans(error.messageData, 'security') }}</span>
+                            </div>
+                        {% endif %}
 
-            <div class="checkbox mb-3">
-                <input type="checkbox" name="_remember_me" id="_remember_me">
-                <label for="_remember_me">Remember me</label>
+                        <form method="post" class="space-y-5">
+                            <div>
+                                <label for="username" class="block text-sm font-semibold text-gray-900 mb-2">Email</label>
+                                <input
+                                    type="email"
+                                    id="username"
+                                    name="_username"
+                                    value="{{ last_username }}"
+                                    required
+                                    autofocus
+                                    autocomplete="email"
+                                    placeholder="vous@exemple.com"
+                                    class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
+                                >
+                            </div>
+
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label for="password" class="block text-sm font-semibold text-gray-900">Mot de passe</label>
+                                    <a href="#" class="text-xs font-semibold text-gray-600 hover:text-gray-900 hover:underline">Mot de passe oublié ?</a>
+                                </div>
+                                <input
+                                    type="password"
+                                    id="password"
+                                    name="_password"
+                                    required
+                                    autocomplete="current-password"
+                                    placeholder="••••••••"
+                                    class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
+                                >
+                            </div>
+
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                            <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold text-sm px-4 py-3.5 rounded-xl transition shadow-sm">
+                                Se connecter
+                            </button>
+                        </form>
+
+                        <div class="relative my-6">
+                            <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-gray-200"></div></div>
+                            <div class="relative flex justify-center text-xs uppercase"><span class="bg-white px-3 text-gray-400 font-medium">ou</span></div>
+                        </div>
+
+                        <button type="button" disabled class="w-full flex items-center justify-center gap-3 border border-gray-300 rounded-xl px-4 py-3 text-sm font-semibold text-gray-400 cursor-not-allowed">
+                            <i class="fa-brands fa-google text-lg"></i>
+                            Continuer avec Google
+                        </button>
+                    </div>
+
+                    <p class="text-center lg:text-left mt-6 text-sm text-gray-600">
+                        Pas encore de compte ?
+                        <a href="{{ path('app_register') }}" class="font-semibold text-brand hover:underline">Inscrivez-vous</a>
+                    </p>
+                {% endif %}
             </div>
-        #}
-
-        <button class="btn btn-lg btn-primary" type="submit">
-            Sign in
-        </button>
-    </form>
+        </div>
+    </div>
 {% endblock %}
