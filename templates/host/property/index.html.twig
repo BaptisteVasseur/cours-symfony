@@ -1,0 +1,93 @@
+{% extends 'layout/host.html.twig' %}
+
+{% block page_title %}Mes Annonces{% endblock %}
+
+{% block content %}
+    <div class="mb-6 flex justify-between items-center">
+        <h2 class="text-xl font-bold text-gray-900">Gérer mes logements</h2>
+        <a href="{{ path('app_host_property_new') }}" class="bg-brand hover:bg-brandHover text-white font-semibold py-2 px-4 rounded-lg transition inline-flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> Créer une annonce
+        </a>
+    </div>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-400 font-semibold border-b border-gray-200 uppercase text-[11px] tracking-wider">
+                        <th class="px-6 py-3">Hébergement</th>
+                        <th class="px-6 py-3">Type</th>
+                        <th class="px-6 py-3">Prix / nuit</th>
+                        <th class="px-6 py-3">Statut</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for property in properties %}
+                        {% set cover = property.coverMedia %}
+                        <tr class="hover:bg-gray-50/70 transition">
+                            <td class="px-6 py-4">
+                                <div class="flex items-center space-x-3">
+                                    <img src="{{ cover ? asset(cover.fileUrl) : 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=80&q=80' }}" alt="{{ property.title }}" class="w-12 h-12 object-cover rounded-lg">
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ property.title }}</p>
+                                        {% if property.address %}
+                                            <span class="text-xs text-gray-400">{{ property.address.city }}, {{ property.address.country }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 capitalize text-gray-600">{{ property.propertyType }}</td>
+                            <td class="px-6 py-4 font-medium text-gray-900">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</td>
+                            <td class="px-6 py-4">
+                                {% if property.status == 'published' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-circle-check text-[8px] mr-1.5"></i> Publié</span>
+                                {% elseif property.status == 'pending' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200"><i class="fa-solid fa-clock text-[8px] mr-1.5"></i> En attente modération</span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-800 border border-gray-200"><i class="fa-solid fa-circle-xmark text-[8px] mr-1.5"></i> Brouillon</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-right space-x-2">
+                                <div class="flex items-center justify-end gap-2">
+                                    {% if property.status == 'draft' %}
+                                        <form method="post" action="{{ path('app_host_property_publish', { id: property.id }) }}" class="inline">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('publish' ~ property.id) }}">
+                                            <button type="submit" class="text-xs text-emerald-600 hover:text-emerald-900 font-semibold px-2.5 py-1.5 rounded-lg border border-emerald-200 hover:bg-emerald-50 transition">Publier</button>
+                                        </form>
+                                    {% elseif property.status == 'published' %}
+                                        <form method="post" action="{{ path('app_host_property_draft', { id: property.id }) }}" class="inline">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('draft' ~ property.id) }}">
+                                            <button type="submit" class="text-xs text-amber-600 hover:text-amber-900 font-semibold px-2.5 py-1.5 rounded-lg border border-amber-200 hover:bg-amber-50 transition">Retirer</button>
+                                        </form>
+                                    {% endif %}
+
+                                    <a href="{{ path('app_host_property_edit', { id: property.id }) }}" class="text-xs text-gray-600 hover:text-gray-900 font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition">Modifier</a>
+                                    
+                                    <form method="post" action="{{ path('app_host_property_delete', { id: property.id }) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer cette annonce ?');" class="inline">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ property.id) }}">
+                                        <button type="submit" class="text-xs text-rose-600 hover:text-rose-900 font-semibold px-2.5 py-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 transition">Supprimer</button>
+                                    </form>
+
+                                    <a href="{{ path('app_property_show', { id: property.id }) }}" class="text-xs bg-gray-900 hover:bg-black text-white font-semibold px-2.5 py-1.5 rounded-lg transition" target="_blank">Voir fiche</a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-8 text-center text-gray-400">Vous n'avez créé aucune annonce pour le moment.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

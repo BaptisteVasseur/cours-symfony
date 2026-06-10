@@ -1,0 +1,146 @@
+{% extends 'layout/host.html.twig' %}
+
+{% block page_title %}Réservations reçues{% endblock %}
+
+{% block content %}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-gray-400 uppercase">Total</p>
+                <h4 class="text-2xl font-bold text-gray-900 mt-1">{{ total }}</h4>
+            </div>
+            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl">
+                <i class="fa-solid fa-calendar-check"></i>
+            </div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-gray-400 uppercase">Confirmées</p>
+                <h4 class="text-2xl font-bold text-gray-900 mt-1">{{ confirmed }}</h4>
+            </div>
+            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl">
+                <i class="fa-solid fa-circle-check"></i>
+            </div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-gray-400 uppercase">En attente</p>
+                <h4 class="text-2xl font-bold text-gray-900 mt-1">{{ pending }}</h4>
+            </div>
+            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl">
+                <i class="fa-solid fa-clock"></i>
+            </div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-gray-400 uppercase">Annulées</p>
+                <h4 class="text-2xl font-bold text-gray-900 mt-1">{{ cancelled }}</h4>
+            </div>
+            <div class="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center text-xl">
+                <i class="fa-solid fa-circle-xmark"></i>
+            </div>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
+            <div>
+                <p class="text-xs font-medium text-gray-400 uppercase">Volume d'affaires</p>
+                <h4 class="text-2xl font-bold text-gray-900 mt-1">{{ revenue|number_format(0, ',', ' ') }} €</h4>
+            </div>
+            <div class="w-12 h-12 bg-rose-50 text-brand rounded-xl flex items-center justify-center text-xl">
+                <i class="fa-solid fa-euro-sign"></i>
+            </div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="font-bold text-gray-900">Demandes de réservation</h3>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-400 font-semibold border-b border-gray-200 uppercase text-[11px] tracking-wider">
+                        <th class="px-6 py-3">Hébergement</th>
+                        <th class="px-6 py-3">Voyageur</th>
+                        <th class="px-6 py-3">Dates du séjour</th>
+                        <th class="px-6 py-3">Prix total</th>
+                        <th class="px-6 py-3">Statut</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for reservation in reservations %}
+                        {% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
+                        <tr class="hover:bg-gray-50/70 transition">
+                            <td class="px-6 py-4 font-semibold text-gray-900">
+                                {{ reservation.property.title }}
+                                <div class="text-xs text-gray-400 font-normal">
+                                    {% if reservation.property.address %}
+                                        {{ reservation.property.address.city }}, {{ reservation.property.address.country }}
+                                    {% endif %}
+                                </div>
+                            </td>
+                            <td class="px-6 py-4">
+                                {% if guestProfile and (guestProfile.firstName or guestProfile.lastName) %}
+                                    <div class="font-medium text-gray-900">{{ guestProfile.firstName }} {{ guestProfile.lastName }}</div>
+                                {% endif %}
+                                <div class="text-xs text-gray-500">{{ reservation.guest ? reservation.guest.email : '—' }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="text-gray-900">Du {{ reservation.checkinDate|date('d/m/Y') }}</div>
+                                <div class="text-gray-500 text-xs">au {{ reservation.checkoutDate|date('d/m/Y') }}</div>
+                            </td>
+                            <td class="px-6 py-4 font-medium text-gray-900">{{ reservation.totalPrice|number_format(0, ',', ' ') }} €</td>
+                            <td class="px-6 py-4">
+                                {% if reservation.status == 'pending' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200"><i class="fa-solid fa-clock text-[8px] mr-1.5"></i> En attente</span>
+                                {% elseif reservation.status == 'confirmed' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 text-emerald-800 border border-emerald-200"><i class="fa-solid fa-circle-check text-[8px] mr-1.5"></i> Confirmée</span>
+                                {% elseif reservation.status == 'completed' %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-800 border border-blue-200"><i class="fa-solid fa-circle-check text-[8px] mr-1.5"></i> Terminée</span>
+                                {% else %}
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-50 text-gray-800 border border-gray-200" title="{{ reservation.cancellationReason }}"><i class="fa-solid fa-circle-xmark text-[8px] mr-1.5"></i> Annulée</span>
+                                    {% if reservation.cancellationReason %}
+                                        <div class="text-[10px] text-gray-400 mt-0.5 italic max-w-xs truncate">{{ reservation.cancellationReason }}</div>
+                                    {% endif %}
+                                {% endif %}
+                            </td>
+                            <td class="px-6 py-4 text-right space-x-2">
+                                {% if reservation.status == 'pending' %}
+                                    <div class="flex items-center justify-end gap-2">
+                                        <form method="post" action="{{ path('app_host_booking_approve', { id: reservation.id }) }}" class="inline" onsubmit="return confirm('Confirmer cette réservation ?');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('approve' ~ reservation.id) }}">
+                                            <button type="submit" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-2.5 py-1.5 rounded-lg transition">Accepter</button>
+                                        </form>
+                                        <form method="post" action="{{ path('app_host_booking_reject', { id: reservation.id }) }}" class="inline" onsubmit="return confirm('Refuser cette réservation ?');">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('reject' ~ reservation.id) }}">
+                                            <input type="hidden" name="cancellationReason" value="Refusée par l'hôte">
+                                            <button type="submit" class="text-xs bg-rose-600 hover:bg-rose-700 text-white font-semibold px-2.5 py-1.5 rounded-lg transition">Refuser</button>
+                                        </form>
+                                    </div>
+                                {% else %}
+                                    <span class="text-xs text-gray-400">—</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-400">
+                                <i class="fa-solid fa-calendar-xmark text-3xl mb-3 block"></i>
+                                Aucune réservation reçue pour le moment.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
