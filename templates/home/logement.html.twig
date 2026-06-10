@@ -28,14 +28,14 @@
         <div class="grid grid-cols-1 md:grid-cols-4 gap-2 rounded-xl overflow-hidden mb-10 h-[300px] md:h-[480px]">
             <div class="md:col-span-2 md:row-span-2 relative">
                 <img
-                    src="{{ cover ? cover.fileUrl : placeholderImage }}"
+                    src="{{ cover ? asset(cover.fileUrl) : placeholderImage }}"
                     alt="{{ property.title }}"
                     class="w-full h-full object-cover"
                 >
             </div>
             {% for medium in property.media|slice(1, 4) %}
                 <div class="hidden md:block relative">
-                    <img src="{{ medium.fileUrl }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                    <img src="{{ asset(medium.fileUrl) }}" alt="{{ property.title }}" class="w-full h-full object-cover">
                 </div>
             {% endfor %}
         </div>
