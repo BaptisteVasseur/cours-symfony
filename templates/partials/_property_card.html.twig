@@ -1,0 +1,21 @@
+<article class="group cursor-pointer">
+    <div class="aspect-square rounded-xl overflow-hidden mb-3 bg-gray-100">
+        {% if property.coverMedia %}
+            <img src="{{ asset(property.coverMedia.fileUrl) }}" alt="{{ property.title }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+        {% else %}
+            <div class="w-full h-full flex items-center justify-center text-gray-300">
+                <i class="fa-solid fa-image text-4xl"></i>
+            </div>
+        {% endif %}
+    </div>
+    <h3 class="font-semibold text-sm text-gray-900 truncate">{{ property.title }}</h3>
+    <p class="text-sm text-gray-500">
+        {% if property.address %}
+            {{ property.address.city }}, {{ property.address.country }}
+        {% endif %}
+    </p>
+    <p class="text-sm font-semibold text-gray-900 mt-1">{{ property.pricePerNight }} €<span class="font-normal text-gray-500"> /nuit</span></p>
+    <a href="{{ path('app_property_show', {id: property.id}) }}" class="mt-2 inline-block text-sm text-brand font-semibold hover:underline">
+        Voir l'annonce
+    </a>
+</article>

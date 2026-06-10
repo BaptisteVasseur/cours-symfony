@@ -1,0 +1,57 @@
+{% extends 'layout/user.html.twig' %}
+
+{% block content %}
+    <div class="px-6 md:px-12 py-8">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">Mes réservations</h1>
+        {% if bookings is empty %}
+            <div class="text-center py-16">
+                <i class="fa-solid fa-calendar-xmark text-4xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500">Aucune réservation pour le moment.</p>
+                <a href="{{ path('app_home') }}" class="mt-4 inline-block text-sm text-brand font-semibold hover:underline">Découvrir les logements</a>
+            </div>
+        {% else %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead>
+                        <tr class="border-b border-gray-200 text-left text-gray-500 font-medium">
+                            <th class="pb-3 pr-4">Logement</th>
+                            <th class="pb-3 pr-4">Du</th>
+                            <th class="pb-3 pr-4">Au</th>
+                            <th class="pb-3 pr-4">Nuits</th>
+                            <th class="pb-3 pr-4">Total</th>
+                            <th class="pb-3">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for booking in bookings %}
+                            <tr class="border-b border-gray-100 hover:bg-gray-50 transition">
+                                <td class="py-4 pr-4">
+                                    <a href="{{ path('app_property_show', {id: booking.property.id}) }}" class="text-brand font-semibold hover:underline">
+                                        {{ booking.property.title }}
+                                    </a>
+                                </td>
+                                <td class="py-4 pr-4 text-gray-600">{{ booking.checkinDate|date('d/m/Y') }}</td>
+                                <td class="py-4 pr-4 text-gray-600">{{ booking.checkoutDate|date('d/m/Y') }}</td>
+                                <td class="py-4 pr-4 text-gray-600">{{ booking.checkinDate.diff(booking.checkoutDate).days }}</td>
+                                <td class="py-4 pr-4 font-semibold">{{ booking.totalPrice }} €</td>
+                                <td class="py-4">
+                                    <span class="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium
+                                        {{ booking.status == 'confirmed' ? 'bg-emerald-50 text-emerald-700' : '' }}
+                                        {{ booking.status == 'pending' ? 'bg-amber-50 text-amber-700' : '' }}
+                                        {{ booking.status == 'cancelled' ? 'bg-red-50 text-red-700' : '' }}
+                                        {{ booking.status == 'completed' ? 'bg-blue-50 text-blue-700' : '' }}
+                                    ">
+                                        {{ booking.status == 'confirmed' ? 'Confirmée' : '' }}
+                                        {{ booking.status == 'pending' ? 'En attente' : '' }}
+                                        {{ booking.status == 'cancelled' ? 'Annulée' : '' }}
+                                        {{ booking.status == 'completed' ? 'Terminée' : '' }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+{% endblock %}

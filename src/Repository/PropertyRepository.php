@@ -47,6 +47,25 @@ class PropertyRepository extends ServiceEntityRepository
     /**
      * @return list<Property>
      */
+    public function findActiveProperties(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->join('p.host', 'h')
+            ->addSelect('h')
+            ->leftJoin('p.address', 'a')
+            ->addSelect('a')
+            ->leftJoin('p.media', 'm')
+            ->addSelect('m')
+            ->where('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
     public function findPendingForModeration(int $limit = 10): array
     {
         return $this->createQueryBuilder('p')
