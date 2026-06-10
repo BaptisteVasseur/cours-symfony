@@ -24,98 +24,18 @@ class UserFixture extends Fixture
     public function load(ObjectManager $manager): void
     {
         $users = [
-            [
-                FixtureReferences::USER_SUPER_ADMIN,
-                'admin@airbnb-clone.fr',
-                'Alexandre',
-                'Dupuis',
-                'active',
-                true,
-                [Roles::SUPER_ADMIN, Roles::ADMIN],
-                'verified',
-                true,
-            ],
-            [
-                FixtureReferences::USER_ADMIN,
-                'moderation@airbnb-clone.fr',
-                'Claire',
-                'Martin',
-                'active',
-                true,
-                [Roles::ADMIN],
-                'verified',
-                false,
-            ],
-            [
-                FixtureReferences::USER_HOST_1,
-                'jeanmarc.dupont@email.com',
-                'Jean-Marc',
-                'Dupont',
-                'active',
-                true,
-                [Roles::HOST],
-                'verified',
-                true,
-            ],
-            [
-                FixtureReferences::USER_HOST_2,
-                'elena.k@email.com',
-                'Elena',
-                'Kowalski',
-                'active',
-                true,
-                [Roles::HOST],
-                'verified',
-                false,
-            ],
-            [
-                FixtureReferences::USER_HOST_3,
-                'pierre.lambert@email.com',
-                'Pierre',
-                'Lambert',
-                'pending',
-                false,
-                [Roles::HOST],
-                'pending',
-                false,
-            ],
-            [
-                FixtureReferences::USER_GUEST_1,
-                'sophie.chen@email.com',
-                'Sophie',
-                'Chen',
-                'active',
-                true,
-                [],
-                'verified',
-                false,
-            ],
-            [
-                FixtureReferences::USER_GUEST_2,
-                'lucas.bernard@email.com',
-                'Lucas',
-                'Bernard',
-                'active',
-                true,
-                [],
-                'verified',
-                false,
-            ],
-            [
-                FixtureReferences::USER_GUEST_3,
-                'marie.dubois@email.com',
-                'Marie',
-                'Dubois',
-                'suspended',
-                true,
-                [],
-                'rejected',
-                false,
-            ],
+            [FixtureReferences::USER_SUPER_ADMIN, 'superadmin@airbnb.dev', 'Super', 'Admin', 'Admin1234!', [Roles::SUPER_ADMIN, Roles::ADMIN], 'active', true, 'verified', true],
+            [FixtureReferences::USER_ADMIN, 'admin@airbnb.dev', 'Admin', 'Airbnb', 'Admin1234!', [Roles::ADMIN], 'active', true, 'verified', false],
+            [FixtureReferences::USER_HOST_1, 'host1@airbnb.dev', 'Camille', 'Durand', 'Host1234!', [Roles::HOST], 'active', true, 'verified', true],
+            [FixtureReferences::USER_HOST_2, 'host2@airbnb.dev', 'Nicolas', 'Moreau', 'Host1234!', [Roles::HOST], 'active', true, 'verified', false],
+            [FixtureReferences::USER_GUEST_1, 'user1@airbnb.dev', 'Sophie', 'Chen', 'User1234!', [], 'active', true, 'verified', false],
+            [FixtureReferences::USER_GUEST_2, 'user2@airbnb.dev', 'Lucas', 'Bernard', 'User1234!', [], 'active', true, 'verified', false],
+            [FixtureReferences::USER_GUEST_3, 'user3@airbnb.dev', 'Marie', 'Dubois', 'User1234!', [], 'suspended', true, 'rejected', false],
+            [FixtureReferences::USER_GUEST_4, 'user4@airbnb.dev', 'Yanis', 'Leroy', 'User1234!', [], 'active', false, 'pending', false],
         ];
 
-        foreach ($users as [$reference, $email, $firstName, $lastName, $status, $verified, $roles, $identityStatus, $withOauth]) {
-            $user = $this->createUser($email, $status, $verified, $roles);
+        foreach ($users as [$reference, $email, $firstName, $lastName, $password, $roles, $status, $verified, $identityStatus, $withOauth]) {
+            $user = $this->createUser($email, $password, $status, $verified, $roles);
             $manager->persist($user);
 
             $profile = new UserProfile();
@@ -124,7 +44,7 @@ class UserFixture extends Fixture
             $profile->setLastName($lastName);
             $profile->setBirthDate(new \DateTimeImmutable(sprintf('-%d years', random_int(25, 55))));
             $profile->setAvatarUrl(sprintf('https://i.pravatar.cc/150?u=%s', urlencode($email)));
-            $profile->setBio(sprintf('Profil de %s %s sur la plateforme.', $firstName, $lastName));
+            $profile->setBio(sprintf('Profil de %s %s sur Airbnb.', $firstName, $lastName));
             $profile->setIdentityStatus($identityStatus);
             $manager->persist($profile);
             $user->setProfile($profile);
@@ -161,41 +81,14 @@ class UserFixture extends Fixture
             $this->addReference($reference, $user);
         }
 
-        for ($i = 1; $i <= 20; $i++) {
-            $user = $this->createUser(sprintf('guest%d@example.com', $i), 'active', $i % 3 !== 0, []);
-            $manager->persist($user);
-
-            $profile = new UserProfile();
-            $profile->setUser($user);
-            $profile->setFirstName('Voyageur');
-            $profile->setLastName((string) $i);
-            $profile->setIdentityStatus('verified');
-            $manager->persist($profile);
-            $user->setProfile($profile);
-        }
-
-        for ($i = 1; $i <= 10; $i++) {
-            $user = $this->createUser(sprintf('host%d@example.com', $i), 'active', true, [Roles::HOST]);
-            $manager->persist($user);
-
-            $profile = new UserProfile();
-            $profile->setUser($user);
-            $profile->setFirstName('Hôte');
-            $profile->setLastName((string) $i);
-            $profile->setIdentityStatus('verified');
-            $manager->persist($profile);
-            $user->setProfile($profile);
-        }
-
         $manager->flush();
     }
 
-    /** @param list<string> $roles */
-    private function createUser(string $email, string $status, bool $verified, array $roles): User
+    private function createUser(string $email, string $password, string $status, bool $verified, array $roles): User
     {
         $user = new User();
         $user->setEmail($email);
-        $user->setPasswordHash($this->passwordHasher->hashPassword($user, 'password'));
+        $user->setPasswordHash($this->passwordHasher->hashPassword($user, $password));
         $user->setPhone('+336' . random_int(10000000, 99999999));
         $user->setStatus($status);
         $user->setIsEmailVerified($verified);

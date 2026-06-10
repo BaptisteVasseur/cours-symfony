@@ -1,5 +1,11 @@
 # Appli Symfony Clone Airbnb
 
+## testing accounts
+
+admin@airbnb.dev / Admin1234!
+host1@airbnb.dev, host2@airbnb.dev / Host1234!
+user1@airbnb.dev à user4@airbnb.dev / User1234!
+
 ## Etapes suivies pour le développement
 
 1. Lire le cahier des charges
@@ -10,18 +16,17 @@
 6. Créer des fixtures (php ou YAML) pour peupler la BDD avec des données de test
 7. Générer un premier controller + générer un layout user
 8. Découper le template (héritage + sous-templates)
-9. Créer les controllers et 4 pages pour : 
-   - Page d'accueil (listing des annonces) -> Repository
-   - Page d'historique des reservations -> Repository
-   - Page de détail d'une annonce -> Entité
-   - Page de confirmation de reservation -> Entité
+9. Créer les controllers et 4 pages pour :
+    - Page d'accueil (listing des annonces) -> Repository
+    - Page d'historique des reservations -> Repository
+    - Page de détail d'une annonce -> Entité
+    - Page de confirmation de reservation -> Entité
 
-
-10. Faire l'authentification 
-11. Bloquer l'accés à certaines pages en fonction des roles 
+10. Faire l'authentification
+11. Bloquer l'accés à certaines pages en fonction des roles
     - Role user
     - Role admin
-    - Tout bloquer pour un utilisateur banni 
+    - Tout bloquer pour un utilisateur banni
 12. Afficher dynamiquement un bouton pour se connecter si on est pas connecté
     Un bouton pour se déconnecter si on est connecté
 13. Afficher que les réservations du user connecté sur la page d'historique
