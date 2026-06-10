@@ -27,7 +27,7 @@
     <td class="px-6 py-4">
         <div class="flex items-center space-x-3">
             <div class="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-100">
-                <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property ? property.title : 'Logement' }}" class="w-full h-full object-cover">
+                <img src="{{ cover ? asset(cover.fileUrl) : placeholderImage }}" alt="{{ property ? property.title : 'Logement' }}" class="w-full h-full object-cover">
             </div>
             <div class="min-w-0">
                 <p class="font-semibold text-gray-900 truncate max-w-[200px]">{{ property ? property.title : 'Logement supprimé' }}</p>

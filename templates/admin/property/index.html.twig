@@ -1,0 +1,62 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block page_title %}Annonces{% endblock %}
+
+{% block content %}
+    {% include 'partials/_flash_messages.html.twig' %}
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-3">
+            <h2 class="font-bold text-gray-900">Liste des annonces</h2>
+            <a href="{{ path('admin_property_new') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brandHover text-white font-semibold text-sm px-4 py-2 rounded-lg transition">
+                <i class="fa-solid fa-plus text-xs"></i>
+                Nouvelle annonce
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 uppercase text-xs">
+                        <th class="px-6 py-3">Titre</th>
+                        <th class="px-6 py-3">Ville</th>
+                        <th class="px-6 py-3">Prix / nuit</th>
+                        <th class="px-6 py-3">Hôte</th>
+                        <th class="px-6 py-3">Statut</th>
+                        <th class="px-6 py-3">Images</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for property in properties %}
+                        <tr>
+                            <td class="px-6 py-4 font-semibold text-gray-900">{{ property.title }}</td>
+                            <td class="px-6 py-4 text-gray-600">{{ property.address ? property.address.city : '-' }}</td>
+                            <td class="px-6 py-4">{{ property.pricePerNight }} €</td>
+                            <td class="px-6 py-4 text-gray-600">{{ property.host ? property.host.email : '-' }}</td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold {{ property.active ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700' }}">
+                                    {{ property.active ? 'Active' : 'Inactive' }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">{{ property.media|length }}</td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="{{ path('admin_property_edit', {id: property.id}) }}" class="text-xs bg-gray-900 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-700 transition">Modifier</a>
+                                    <form method="post" action="{{ path('admin_property_delete', {id: property.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ property.id) }}">
+                                        <button type="submit" onclick="return confirm('Supprimer cette annonce ?')" class="text-xs text-red-700 bg-red-50 font-semibold px-3 py-1.5 rounded-lg hover:bg-red-100 transition">Supprimer</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="7" class="px-6 py-12 text-center text-gray-500">Aucune annonce.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

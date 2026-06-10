@@ -1,0 +1,61 @@
+{% extends 'layout/admin.html.twig' %}
+{% form_theme form 'form/admin_theme.html.twig' %}
+
+{% block page_title %}{{ title }}{% endblock %}
+
+{% block content %}
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+        {{ form_start(form, { attr: { class: 'space-y-6' } }) }}
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <section class="space-y-2">
+                    <h2 class="text-sm font-bold text-gray-900 pb-2 border-b border-gray-100">Annonce</h2>
+                    {{ form_row(form.title) }}
+                    {{ form_row(form.description) }}
+                    {{ form_row(form.owner) }}
+                    {{ form_row(form.cancellationPolicy) }}
+                    {{ form_row(form.propertyType) }}
+                    {{ form_row(form.isActive) }}
+                </section>
+
+                <section class="space-y-2">
+                    <h2 class="text-sm font-bold text-gray-900 pb-2 border-b border-gray-100">Adresse et capacité</h2>
+                    {{ form_row(form.address) }}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {{ form_row(form.city) }}
+                        {{ form_row(form.country) }}
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        {{ form_row(form.maxGuests) }}
+                        {{ form_row(form.bedrooms) }}
+                        {{ form_row(form.beds) }}
+                        {{ form_row(form.bathrooms) }}
+                    </div>
+                    {{ form_row(form.pricePerNight) }}
+                </section>
+            </div>
+
+            <section class="space-y-3 pt-4 border-t border-gray-200">
+                <h2 class="text-sm font-bold text-gray-900">Images existantes</h2>
+                {% if property.media is empty %}
+                    <p class="text-sm text-gray-500">Aucune image.</p>
+                {% else %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                        {% for medium in property.media %}
+                            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                <img src="{{ asset(medium.fileUrl) }}" alt="{{ property.title }}" class="h-32 w-full object-cover">
+                                <p class="px-3 py-2 text-xs text-gray-500 truncate">{{ medium.filename }}</p>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {{ form_row(form.imageFiles) }}
+            </section>
+
+            <div class="flex items-center gap-3 pt-4 border-t border-gray-200">
+                <button type="submit" class="bg-brand hover:bg-brandHover text-white font-semibold text-sm px-5 py-2.5 rounded-lg transition">{{ button_label|default('Enregistrer') }}</button>
+                <a href="{{ path('admin_property_index') }}" class="text-sm font-semibold text-gray-600 hover:text-gray-900 px-4 py-2.5 rounded-lg hover:bg-gray-100 transition">Annuler</a>
+            </div>
+        {{ form_end(form) }}
+    </div>
+{% endblock %}

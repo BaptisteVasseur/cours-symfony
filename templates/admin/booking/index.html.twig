@@ -1,0 +1,64 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block page_title %}Réservations{% endblock %}
+
+{% block content %}
+    {% include 'partials/_flash_messages.html.twig' %}
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-3">
+            <h2 class="font-bold text-gray-900">Liste des réservations</h2>
+            <a href="{{ path('admin_booking_new') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brandHover text-white font-semibold text-sm px-4 py-2 rounded-lg transition">
+                <i class="fa-solid fa-plus text-xs"></i>
+                Nouvelle réservation
+            </a>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left text-sm">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-500 uppercase text-xs">
+                        <th class="px-6 py-3">Annonce</th>
+                        <th class="px-6 py-3">Voyageur</th>
+                        <th class="px-6 py-3">Dates</th>
+                        <th class="px-6 py-3">Total</th>
+                        <th class="px-6 py-3">Statut</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for booking in bookings %}
+                        <tr>
+                            <td class="px-6 py-4 font-semibold text-gray-900">{{ booking.property ? booking.property.title : '-' }}</td>
+                            <td class="px-6 py-4 text-gray-600">{{ booking.guest ? booking.guest.email : '-' }}</td>
+                            <td class="px-6 py-4 text-gray-600">{{ booking.checkinDate|date('d/m/Y') }} - {{ booking.checkoutDate|date('d/m/Y') }}</td>
+                            <td class="px-6 py-4">{{ booking.totalPrice }} €</td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold
+                                    {{ booking.status == 'confirmed' ? 'bg-emerald-50 text-emerald-700' : '' }}
+                                    {{ booking.status == 'pending' ? 'bg-amber-50 text-amber-700' : '' }}
+                                    {{ booking.status == 'cancelled' ? 'bg-red-50 text-red-700' : '' }}
+                                    {{ booking.status == 'completed' ? 'bg-blue-50 text-blue-700' : '' }}">
+                                    {{ booking.status }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="flex items-center justify-end gap-2">
+                                    <a href="{{ path('admin_booking_edit', {id: booking.id}) }}" class="text-xs bg-gray-900 text-white font-semibold px-3 py-1.5 rounded-lg hover:bg-gray-700 transition">Modifier</a>
+                                    <form method="post" action="{{ path('admin_booking_delete', {id: booking.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ booking.id) }}">
+                                        <button type="submit" onclick="return confirm('Supprimer cette réservation ?')" class="text-xs text-red-700 bg-red-50 font-semibold px-3 py-1.5 rounded-lg hover:bg-red-100 transition">Supprimer</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-500">Aucune réservation.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}
