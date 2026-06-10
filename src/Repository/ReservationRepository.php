@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Reservation;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -31,6 +32,21 @@ class ReservationRepository extends ServiceEntityRepository
             ->leftJoin('r.guest', 'g')
             ->leftJoin('g.profile', 'gp')
             ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findByGuestWithProperty(User $user): array
+    {
+        return $this->createQueryBuilder('r')
+            ->join('r.property', 'p')
+            ->addSelect('p')
+            ->where('r.guest = :user')
+            ->setParameter('user', $user)
+            ->orderBy('r.checkinDate', 'DESC')
             ->getQuery()
             ->getResult();
     }
@@ -66,6 +82,37 @@ class ReservationRepository extends ServiceEntityRepository
         $result = $this->createQueryBuilder('r')
             ->select('SUM(r.totalPrice)')
             ->andWhere('r.status IN (:statuses)')
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result !== null ? (float) $result : 0.0;
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findByHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->join('r.property', 'p')
+            ->addSelect('p', 'g')
+            ->leftJoin('r.guest', 'g')
+            ->andWhere('p.host = :host')
+            ->setParameter('host', $host)
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function sumCompletedRevenueByHost(User $host): float
+    {
+        $result = $this->createQueryBuilder('r')
+            ->select('SUM(r.totalPrice)')
+            ->join('r.property', 'p')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('host', $host)
             ->setParameter('statuses', ['confirmed', 'completed'])
             ->getQuery()
             ->getSingleScalarResult();
