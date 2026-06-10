@@ -135,6 +135,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return array_values(array_unique([...$this->roles, 'ROLE_USER']));
     }
 
+    /**
+     * @param list<string> $roles
+     */
+    public function setRoles(array $roles): static
+    {
+        return $this->setAssignedRoles($roles);
+    }
+
     /** @return list<string> */
     public function getAssignedRoles(): array
     {
@@ -316,6 +324,34 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $profile->setUser($this);
         }
         $this->profile = $profile;
+
+        return $this;
+    }
+
+    public function getFirstName(): ?string
+    {
+        return $this->profile?->getFirstName();
+    }
+
+    public function setFirstName(string $firstName): static
+    {
+        $profile = $this->profile ?? new UserProfile();
+        $profile->setFirstName($firstName);
+        $this->setProfile($profile);
+
+        return $this;
+    }
+
+    public function getLastName(): ?string
+    {
+        return $this->profile?->getLastName();
+    }
+
+    public function setLastName(string $lastName): static
+    {
+        $profile = $this->profile ?? new UserProfile();
+        $profile->setLastName($lastName);
+        $this->setProfile($profile);
 
         return $this;
     }

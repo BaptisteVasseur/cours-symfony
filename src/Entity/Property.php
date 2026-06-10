@@ -47,8 +47,9 @@ class Property
     private ?string $title = null;
 
     #[Groups(['mon-groupe'])]
+    #[Assert\NotBlank(message: 'La description est obligatoire.')]
     #[Assert\Length(
-        min: 10,
+        min: 20,
         max: 5000,
         minMessage: 'La description doit contenir au moins {{ limit }} caractères.',
         maxMessage: 'La description ne peut pas dépasser {{ limit }} caractères.',
@@ -74,6 +75,7 @@ class Property
 
     #[Assert\NotNull(message: 'Le nombre de voyageurs est obligatoire.')]
     #[Assert\GreaterThanOrEqual(value: 1, message: 'Il doit y avoir au moins {{ compared_value }} voyageur.')]
+    #[Assert\LessThanOrEqual(value: 50, message: 'Le logement ne peut pas accueillir plus de {{ compared_value }} voyageurs.')]
     #[ORM\Column]
     private ?int $maxGuests = null;
 
@@ -176,6 +178,16 @@ class Property
         return $this;
     }
 
+    public function getOwner(): ?User
+    {
+        return $this->host;
+    }
+
+    public function setOwner(?User $owner): static
+    {
+        return $this->setHost($owner);
+    }
+
     public function getCancellationPolicy(): ?CancellationPolicy
     {
         return $this->cancellationPolicy;
@@ -232,6 +244,18 @@ class Property
     public function setStatus(string $status): static
     {
         $this->status = $status;
+
+        return $this;
+    }
+
+    public function isActive(): bool
+    {
+        return $this->status === 'published';
+    }
+
+    public function setIsActive(bool $isActive): static
+    {
+        $this->status = $isActive ? 'published' : 'pending';
 
         return $this;
     }
@@ -454,6 +478,22 @@ class Property
         $this->media->removeElement($medium);
 
         return $this;
+    }
+
+    /** @return Collection<int, PropertyMedia> */
+    public function getImages(): Collection
+    {
+        return $this->media;
+    }
+
+    public function addImage(PropertyMedia $image): static
+    {
+        return $this->addMedium($image);
+    }
+
+    public function removeImage(PropertyMedia $image): static
+    {
+        return $this->removeMedium($image);
     }
 
     /** @return Collection<int, PropertyAvailability> */

@@ -75,6 +75,22 @@ class PropertyMedia
         return $this;
     }
 
+    public function getFilename(): ?string
+    {
+        if ($this->fileUrl === null) {
+            return null;
+        }
+
+        return basename(parse_url($this->fileUrl, PHP_URL_PATH) ?: $this->fileUrl);
+    }
+
+    public function setFilename(string $filename): static
+    {
+        $this->fileUrl = '/uploads/property-images/' . ltrim($filename, '/');
+
+        return $this;
+    }
+
     public function getSortOrder(): int
     {
         return $this->sortOrder;
