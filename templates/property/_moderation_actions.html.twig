@@ -1,11 +1,11 @@
 {% if property.status == 'pending' %}
-    <form method="post" action="{{ path('app_property_publish', { id: property.id }) }}" class="inline">
+    <form method="post" action="{{ path('admin_property_publish', { id: property.id }) }}" class="inline">
         <input type="hidden" name="_token" value="{{ csrf_token('publish' ~ property.id) }}">
         <button type="submit" class="text-xs bg-emerald-50 text-emerald-600 font-bold px-2.5 py-1.5 rounded-lg hover:bg-emerald-100 transition">
             Approuver
         </button>
     </form>
-    <form method="post" action="{{ path('app_property_reject', { id: property.id }) }}" class="inline">
+    <form method="post" action="{{ path('admin_property_reject', { id: property.id }) }}" class="inline">
         <input type="hidden" name="_token" value="{{ csrf_token('reject' ~ property.id) }}">
         <button type="submit" class="text-xs bg-rose-50 text-brand font-bold px-2.5 py-1.5 rounded-lg hover:bg-rose-100 transition">
             Refuser
