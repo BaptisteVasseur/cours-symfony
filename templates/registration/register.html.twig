@@ -1,0 +1,52 @@
+{% extends 'layout/user.html.twig' %}
+
+{% block content %}
+    <div class="flex-grow flex items-center justify-center px-4 py-12">
+        <div class="w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Créer un compte</h1>
+                <p class="text-gray-500 text-sm mt-2">Rejoignez Airbnb pour réserver des logements uniques.</p>
+            </div>
+
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-xl p-8">
+                {{ form_start(form, {'attr': {'class': 'space-y-5'}}) }}
+
+                    <div>
+                        {{ form_label(form.email, 'Email', {'label_attr': {'class': 'block text-sm font-semibold text-gray-900 mb-2'}}) }}
+                        {{ form_widget(form.email, {'attr': {'class': 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition', 'placeholder': 'vous@exemple.com'}}) }}
+                        {{ form_errors(form.email) }}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            {{ form_label(form.firstName, 'Prénom', {'label_attr': {'class': 'block text-sm font-semibold text-gray-900 mb-2'}}) }}
+                            {{ form_widget(form.firstName, {'attr': {'class': 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition'}}) }}
+                            {{ form_errors(form.firstName) }}
+                        </div>
+                        <div>
+                            {{ form_label(form.lastName, 'Nom', {'label_attr': {'class': 'block text-sm font-semibold text-gray-900 mb-2'}}) }}
+                            {{ form_widget(form.lastName, {'attr': {'class': 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition'}}) }}
+                            {{ form_errors(form.lastName) }}
+                        </div>
+                    </div>
+
+                    <div>
+                        {{ form_label(form.plainPassword, 'Mot de passe', {'label_attr': {'class': 'block text-sm font-semibold text-gray-900 mb-2'}}) }}
+                        {{ form_widget(form.plainPassword, {'attr': {'class': 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition', 'placeholder': '8 caractères minimum'}}) }}
+                        {{ form_errors(form.plainPassword) }}
+                    </div>
+
+                    <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold text-sm px-4 py-3.5 rounded-xl transition shadow-sm">
+                        Créer mon compte
+                    </button>
+
+                {{ form_end(form) }}
+            </div>
+
+            <p class="text-center mt-6 text-sm text-gray-600">
+                Déjà un compte ?
+                <a href="{{ path('app_login') }}" class="font-semibold text-brand hover:underline">Se connecter</a>
+            </p>
+        </div>
+    </div>
+{% endblock %}
