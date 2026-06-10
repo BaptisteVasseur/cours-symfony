@@ -25,8 +25,12 @@ final class FixtureReferences
     public const USER_GUEST_1 = 'user_guest_1';
     public const USER_GUEST_2 = 'user_guest_2';
     public const USER_GUEST_3 = 'user_guest_3';
+    public const USER_TEST = 'user_test';
 
     public const PROPERTY_1 = 'property_1';
+    public const PROPERTY_TEST_MAIN = 'property_test_main';
+    public const PROPERTY_TEST_SECOND = 'property_test_second';
+    public const PROPERTY_TEST_PENDING = 'property_test_pending';
     public const PROPERTY_2 = 'property_2';
     public const PROPERTY_3 = 'property_3';
 
@@ -38,4 +42,10 @@ final class FixtureReferences
     public const PAYMENT_CONFIRMED = 'payment_confirmed';
     public const REVIEW_1 = 'review_1';
     public const CONVERSATION_1 = 'conversation_1';
+    public const CONVERSATION_TEST = 'conversation_test';
+
+    public const RESERVATION_TEST_AS_GUEST = 'reservation_test_as_guest';
+    public const RESERVATION_TEST_AS_GUEST_COMPLETED = 'reservation_test_as_guest_completed';
+    public const RESERVATION_TEST_ON_LISTING = 'reservation_test_on_listing';
+    public const RESERVATION_TEST_ON_LISTING_PENDING = 'reservation_test_on_listing_pending';
 }

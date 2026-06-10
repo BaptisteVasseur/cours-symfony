@@ -1,0 +1,13 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block body %}
+    <body class="text-gray-800 font-sans antialiased bg-white flex flex-col min-h-screen">
+
+    {% include 'layout/partials/app/header.html.twig' %}
+
+    {% block content %}{% endblock %}
+
+    {% include 'layout/partials/app/footer.html.twig' %}
+
+    </body>
+{% endblock %}

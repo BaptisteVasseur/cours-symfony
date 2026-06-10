@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Property;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -114,5 +115,21 @@ class PropertyRepository extends ServiceEntityRepository
             ->setParameter('property', $property)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
+    public function findByHost(User $host): array
+    {
+        return $this->createQueryBuilder('p')
+            ->addSelect('m', 'a')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->andWhere('p.host = :host')
+            ->setParameter('host', $host)
+            ->orderBy('p.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
     }
 }

@@ -1,0 +1,23 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-3xl mx-auto w-full">
+        <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i>
+            Retour au logement
+        </a>
+
+        <h1 class="text-2xl font-semibold text-gray-900 mb-2">Avis sur {{ property.title }}</h1>
+        <p class="text-sm text-gray-500 mb-8">{{ reviews|length }} avis</p>
+
+        {% if reviews|length > 0 %}
+            <div class="space-y-6">
+                {% for review in reviews %}
+                    {% include 'front/property/partials/review_item.html.twig' with { review: review } %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-gray-500 text-sm">Aucun avis pour le moment.</p>
+        {% endif %}
+    </main>
+{% endblock %}

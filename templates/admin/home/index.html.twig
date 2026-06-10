@@ -83,7 +83,7 @@
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 text-amber-800 border border-amber-200"><i class="fa-solid fa-clock text-[8px] mr-1.5"></i> En attente</span>
                             </td>
                             <td class="px-6 py-4 text-right space-x-2">
-                                {{ include('property/_moderation_actions.html.twig') }}
+                                {{ include('admin/property/partials/moderation_actions.html.twig') }}
                                 <a href="{{ path('app_property_show', { id: property.id }) }}" class="text-xs text-gray-600 hover:text-gray-900 font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition inline-block">Voir</a>
                             </td>
                         </tr>

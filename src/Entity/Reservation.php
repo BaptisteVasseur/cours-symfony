@@ -5,6 +5,12 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\ReservationRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -13,7 +19,19 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
-#[ApiResource]
+#[ApiResource(
+    operations: [
+        new GetCollection(security: "is_granted('ROLE_ADMIN')"),
+        new Get(security: "is_granted('RESERVATION_VIEW', object)"),
+        new Post(
+            security: "is_granted('ROLE_USER')",
+            securityPostDenormalize: "object.getGuest() == user",
+        ),
+        new Put(security: "is_granted('ROLE_ADMIN')"),
+        new Patch(security: "is_granted('ROLE_ADMIN')"),
+        new Delete(security: "is_granted('ROLE_ADMIN')"),
+    ],
+)]
 #[Assert\Expression(
     expression: "this.getStatus() != 'cancelled' or (this.getCancellationReason() !== null and this.getCancellationReason() !== '')",
     message: 'Le motif d\'annulation est obligatoire pour une réservation annulée.',

@@ -101,7 +101,7 @@ class UserType extends AbstractType
             ])
             ->add('assignedRoles', ChoiceType::class, [
                 'label' => 'Rôles',
-                'choices' => Roles::ASSIGNABLE,
+                'choices' => $this->availableRoles($options),
                 'multiple' => true,
                 'expanded' => true,
                 'required' => false,
@@ -129,6 +129,8 @@ class UserType extends AbstractType
         $resolver->setDefaults([
             'data_class' => User::class,
             'is_creation' => false,
+            'manage_elevated_roles' => false,
+            'csrf_token_id' => 'admin_user',
             'validation_groups' => function (FormInterface $form): array {
                 return $form->getConfig()->getOption('is_creation')
                     ? ['Default', 'create']
@@ -137,5 +139,24 @@ class UserType extends AbstractType
         ]);
 
         $resolver->setAllowedTypes('is_creation', 'bool');
+        $resolver->setAllowedTypes('manage_elevated_roles', 'bool');
+    }
+
+    /**
+     * @param array<string, mixed> $options
+     *
+     * @return array<string, string>
+     */
+    private function availableRoles(array $options): array
+    {
+        if ($options['manage_elevated_roles']) {
+            return Roles::ASSIGNABLE;
+        }
+
+        return array_filter(
+            Roles::ASSIGNABLE,
+            static fn (string $role): bool => !in_array($role, [Roles::ADMIN, Roles::SUPER_ADMIN], true),
+            ARRAY_FILTER_USE_KEY,
+        );
     }
 }

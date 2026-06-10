@@ -3,10 +3,10 @@
 {% block body %}
     <body class="bg-gray-50 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
 
-    {% include 'layout/parts/admin_sidebar.html.twig' %}
+    {% include 'layout/partials/admin/sidebar.html.twig' %}
 
     <div class="flex-grow flex flex-col overflow-hidden">
-        {% embed 'layout/parts/admin_header.html.twig' %}
+        {% embed 'layout/partials/admin/header.html.twig' %}
             {% block page_title %}{% endblock %}
         {% endembed %}
 
