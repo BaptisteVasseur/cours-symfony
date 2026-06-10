@@ -1,0 +1,19 @@
+<nav class="bg-white border-b border-gray-200 px-6 md:px-12 py-4 flex items-center justify-between">
+    <a href="{{ path('app_home') }}" class="text-brand text-2xl font-bold tracking-tight flex items-center">
+        <i class="fa-solid fa-house-chimney mr-2 text-3xl"></i>
+        <span>Airbnb</span>
+    </a>
+
+    <div class="flex items-center space-x-4">
+        {% if app.user %}
+            <a href="{{ path('app_booking_history') }}" class="text-sm font-semibold py-2 px-4 hover:bg-gray-50 rounded-full">Mes réservations</a>
+            {% if is_granted('ROLE_ADMIN') %}
+                <a href="{{ path('admin_dashboard') }}" class="text-sm font-semibold py-2 px-4 hover:bg-gray-50 rounded-full text-brand">Interface admin</a>
+            {% endif %}
+            <a href="{{ path('app_logout') }}" class="text-sm font-semibold py-2 px-4 border border-gray-200 rounded-full hover:shadow-md transition">Se déconnecter</a>
+        {% else %}
+            <a href="{{ path('app_login') }}" class="text-sm font-semibold py-2 px-4 border border-gray-200 rounded-full hover:shadow-md transition">Se connecter</a>
+            <a href="{{ path('app_register') }}" class="text-sm font-semibold py-2 px-4 bg-brand text-white rounded-full hover:bg-brandHover transition">S'inscrire</a>
+        {% endif %}
+    </div>
+</nav>

@@ -1,28 +1,33 @@
 <!DOCTYPE html>
 <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Airbnb Clone - Vacances & Hébergements</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <script>
-            tailwind.config = {
-                theme: {
-                    extend: {
-                        colors: {
-                            brand: '#FF385C',
-                            brandHover: '#E61E4D'
-                        }
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Airbnb{% endblock %}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ asset('styles/app.css') }}">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: '#FF385C',
+                        brandHover: '#E61E4D'
                     }
                 }
             }
-        </script>
-        {% block javascripts %}
-            {{ importmap('app') }}
-        {% endblock %}
-    </head>
-
-    {% block body %}{% endblock %}
-
+        }
+    </script>
+    {% block stylesheets %}{% endblock %}
+    {% block javascripts %}{{ importmap('app') }}{% endblock %}
+</head>
+{% block body %}
+    <body class="text-gray-800 font-sans antialiased bg-white flex flex-col min-h-screen">
+        {% block navbar %}{% include 'partials/_navbar.html.twig' %}{% endblock %}
+        {% block flash %}{% include 'partials/_flash_messages.html.twig' %}{% endblock %}
+        <main class="flex-grow">{% block content %}{% endblock %}</main>
+        {% block footer %}{% include 'partials/_footer.html.twig' %}{% endblock %}
+    </body>
+{% endblock %}
 </html>

@@ -1,23 +1,23 @@
 <aside class="w-64 bg-gray-900 text-white flex flex-col justify-between hidden md:flex shrink-0">
     <div>
         <div class="p-5 border-b border-gray-800 flex items-center space-x-2 text-brand text-xl font-bold">
-            <i class="fa-brands fa-airbnb text-2xl"></i>
+            <i class="fa-solid fa-house-chimney text-2xl"></i>
             <span class="text-white text-sm tracking-wider uppercase font-semibold">Admin Panel</span>
         </div>
         <nav class="p-4 space-y-1">
-            <a href="{{ path('app_admin_home') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') == 'app_admin_home' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
+            <a href="{{ path('admin_dashboard') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') in ['app_admin_home', 'admin_dashboard'] ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
                 <i class="fa-solid fa-chart-pie text-brand"></i>
                 <span>Vue d'ensemble</span>
             </a>
-            <a href="{{ path('app_property_index') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') starts with 'app_property' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
+            <a href="{{ path('admin_property_index') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') starts with 'admin_property' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
                 <i class="fa-solid fa-house"></i>
                 <span>Annonces (Logements)</span>
             </a>
-            <a href="{{ path('app_user_index') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') starts with 'app_user' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
+            <a href="{{ path('admin_user_index') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') starts with 'admin_user' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
                 <i class="fa-solid fa-users"></i>
                 <span>Utilisateurs</span>
             </a>
-            <a href="{{ path('app_admin_reservation_index') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') starts with 'app_admin_reservation' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
+            <a href="{{ path('admin_booking_index') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') starts with 'admin_booking' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
                 <i class="fa-solid fa-credit-card"></i>
                 <span>Réservations & Revenus</span>
             </a>
@@ -34,11 +34,11 @@
 
     <div class="p-4 border-t border-gray-800 flex items-center space-x-3">
         <div class="w-9 h-9 bg-brand text-white rounded-full flex items-center justify-center font-bold text-sm">
-            AD
+            {{ app.user ? app.user.email|first|upper : 'A' }}
         </div>
         <div>
-            <p class="text-xs font-semibold text-white">Alexandre Dupuis</p>
-            <span class="text-[10px] text-emerald-400 font-medium"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Super Admin</span>
+            <p class="text-xs font-semibold text-white">{{ app.user ? app.user.email : '' }}</p>
+            <span class="text-[10px] text-emerald-400 font-medium"><i class="fa-solid fa-circle text-[8px] mr-1"></i> Admin</span>
         </div>
     </div>
 </aside>

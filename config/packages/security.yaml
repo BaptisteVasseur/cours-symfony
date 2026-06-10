@@ -1,64 +1,54 @@
 security:
-    # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
-        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        App\Entity\User:
+            algorithm: auto
 
-    # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
-        users_in_memory: { memory: null }
-        users_in_database:
+        app_user_provider:
             entity:
                 class: App\Entity\User
                 property: email
 
     firewalls:
         dev:
-            # Ensure dev tools and static assets are always allowed
-            pattern: ^/(_profiler|_wdt|assets|build)/
+            pattern: ^/(_(profiler|wdt)|css|images|js|assets|build)/
             security: false
-            # Configure your API authentication method here (e.g., JWT, OAuth)
         main:
             lazy: true
-            provider: users_in_database
+            provider: app_user_provider
             form_login:
                 login_path: app_login
                 check_path: app_login
+                success_handler: App\Security\LoginSuccessHandler
+                default_target_path: app_home
+                username_parameter: _username
+                password_parameter: _password
+                enable_csrf: true
             logout:
                 path: app_logout
-                # where to redirect after logout
-                # target: app_any_route
-                # where to redirect after logout
-                # target: app_any_route
-            # Activate different ways to authenticate:
-            # https://symfony.com/doc/current/security.html#the-firewall
-
-            # https://symfony.com/doc/current/security/impersonating_user.html
-            # switch_user: true
+                target: app_home
+            remember_me:
+                secret: '%kernel.secret%'
+                lifetime: 604800
 
     role_hierarchy:
-        ROLE_BANNI:
-        ROLE_USER:
-        ROLE_HOST: ROLE_USER
-        ROLE_SUPER_HOST: ROLE_HOST
-
-        ROLE_MODERATEUR: ROLE_USER
-        ROLE_ADMIN: [ROLE_MODERATEUR, ROLE_SUPER_HOST]
+        ROLE_HOST:       ROLE_USER
+        ROLE_ADMIN:      ROLE_HOST
         ROLE_SUPER_ADMIN: ROLE_ADMIN
 
-    # Note: Only the *first* matching rule is applied
     access_control:
         - { path: ^/(login|register), roles: PUBLIC_ACCESS }
-        - { path: ^/admin, roles: ROLE_ADMIN }
-        - { path: ^/property, roles: ROLE_ADMIN }
-        - { path: ^/user, roles: ROLE_ADMIN }
+        - { path: ^/admin,        roles: ROLE_ADMIN }
+        - { path: ^/host,         roles: ROLE_HOST }
+        - { path: ^/property/[^/]+, roles: ROLE_USER }
+        - { path: ^/reservations, roles: ROLE_USER }
+        - { path: ^/booking,      roles: ROLE_USER }
 
 when@test:
     security:
         password_hashers:
-            # Password hashers are resource-intensive by design to ensure security.
-            # In tests, it's safe to reduce their cost to improve performance.
             Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface:
                 algorithm: auto
-                cost: 4 # Lowest possible value for bcrypt
-                time_cost: 3 # Lowest possible value for argon
-                memory_cost: 10 # Lowest possible value for argon
+                cost: 4
+                time_cost: 3
+                memory_cost: 10
