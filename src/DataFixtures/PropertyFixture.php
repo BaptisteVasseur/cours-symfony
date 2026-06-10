@@ -25,7 +25,6 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         $hosts = [
             $this->getReference(FixtureReferences::USER_HOST_1, User::class),
             $this->getReference(FixtureReferences::USER_HOST_2, User::class),
-            $this->getReference(FixtureReferences::USER_HOST_3, User::class),
         ];
 
         $policies = [
@@ -43,50 +42,20 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
             FixtureReferences::AMENITY_WASHER,
         ];
 
-        $featured = [
-            [
-                FixtureReferences::PROPERTY_1,
-                'Villa Luxe avec Piscine Privée',
-                'Magnifique villa avec vue montagne et piscine chauffée.',
-                'villa',
-                'pending',
-                '145.00',
-                'Chamonix',
-                'France',
-                '74400',
-                46.2572,
-                6.8012,
-            ],
-            [
-                FixtureReferences::PROPERTY_2,
-                'Loft Industriel Vue Mer',
-                'Loft design face à la caldeira, idéal pour un séjour romantique.',
-                'loft',
-                'published',
-                '280.00',
-                'Santorin',
-                'Grèce',
-                '84700',
-                36.3932,
-                25.4615,
-            ],
-            [
-                FixtureReferences::PROPERTY_3,
-                'Appartement Cosy Centre-Ville',
-                'Studio moderne à deux pas des commerces et transports.',
-                'apartment',
-                'published',
-                '89.00',
-                'Lyon',
-                'France',
-                '69002',
-                45.7578,
-                4.8320,
-            ],
+        $properties = [
+            [FixtureReferences::PROPERTY_1, 'Villa lumineuse avec piscine', 'Grande villa familiale avec jardin, terrasse et piscine chauffée près du centre.', 'villa', 'published', '220.00', 'Nice', 'France', '06000', 43.7102, 7.2620, 5],
+            [FixtureReferences::PROPERTY_2, 'Loft design sur les quais', 'Loft spacieux avec vue sur la Garonne, cuisine équipée et espace bureau.', 'loft', 'published', '160.00', 'Bordeaux', 'France', '33000', 44.8378, -0.5792, 4],
+            [FixtureReferences::PROPERTY_3, 'Appartement cosy Presqu’île', 'Appartement rénové au calme, idéal pour découvrir Lyon à pied en quelques jours.', 'apartment', 'published', '95.00', 'Lyon', 'France', '69002', 45.7640, 4.8357, 3],
+            [null, 'Maison de pêcheur rénovée', 'Maison chaleureuse proche du port, parfaite pour un séjour en famille en Normandie.', 'house', 'published', '130.00', 'Honfleur', 'France', '14600', 49.4199, 0.2329, 2],
+            [null, 'Chalet alpin familial', 'Chalet confortable avec cheminée, grand balcon et accès rapide aux pistes.', 'chalet', 'published', '210.00', 'Annecy', 'France', '74000', 45.8992, 6.1294, 5],
+            [null, 'Studio calme près de la plage', 'Studio fonctionnel avec terrasse, à quelques minutes à pied du bassin.', 'apartment', 'pending', '75.00', 'Arcachon', 'France', '33120', 44.6614, -1.1722, 2],
+            [null, 'Penthouse avec vue parisienne', 'Penthouse élégant avec terrasse panoramique et accès direct aux transports.', 'apartment', 'published', '340.00', 'Paris', 'France', '75009', 48.8566, 2.3522, 4],
+            [null, 'Gîte provençal avec cour', 'Gîte authentique au calme avec cour ombragée et cuisine extérieure.', 'house', 'pending', '115.00', 'Aix-en-Provence', 'France', '13100', 43.5297, 5.4474, 3],
         ];
 
-        foreach ($featured as $index => $data) {
-            [$reference, $title, $description, $type, $status, $price, $city, $country, $postalCode, $lat, $lng] = $data;
+        foreach ($properties as $index => $data) {
+            [$reference, $title, $description, $type, $status, $price, $city, $country, $postalCode, $latitude, $longitude, $imageCount] = $data;
+
             $property = $this->createProperty(
                 $hosts[$index % count($hosts)],
                 $policies[$index % count($policies)],
@@ -98,44 +67,20 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
                 $city,
                 $country,
                 $postalCode,
-                $lat,
-                $lng,
+                $latitude,
+                $longitude,
                 $amenityRefs,
                 $manager,
-                $index === 0
+                $index + 1,
+                $imageCount,
+                $index === 0,
             );
-            $manager->persist($property);
-            $this->addReference($reference, $property);
-        }
 
-        $extraTitles = [
-            ['Maison de Campagne Normande', 'house', 'published', '120.00', 'Deauville', 'France'],
-            ['Chalet Alpin Familial', 'chalet', 'published', '195.00', 'Megève', 'France'],
-            ['Studio Plage Bordeaux', 'apartment', 'draft', '75.00', 'Arcachon', 'France'],
-            ['Penthouse Parisien', 'apartment', 'published', '350.00', 'Paris', 'France'],
-            ['Gîte Rural Provence', 'house', 'published', '110.00', 'Aix-en-Provence', 'France'],
-            ['Bungalow Tropical', 'house', 'pending', '160.00', 'Bali', 'Indonésie'],
-        ];
-
-        foreach ($extraTitles as $i => [$title, $type, $status, $price, $city, $country]) {
-            $property = $this->createProperty(
-                $hosts[$i % count($hosts)],
-                $policies[$i % count($policies)],
-                $title,
-                'Description complète pour ' . $title,
-                $type,
-                $status,
-                $price,
-                $city,
-                $country,
-                sprintf('%05d', random_int(10000, 99999)),
-                48.8566 + ($i * 0.1),
-                2.3522 + ($i * 0.1),
-                $amenityRefs,
-                $manager,
-                false
-            );
             $manager->persist($property);
+
+            if (is_string($reference)) {
+                $this->addReference($reference, $property);
+            }
         }
 
         $manager->flush();
@@ -146,9 +91,6 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         return [UserFixture::class, CancellationPolicyFixture::class, AmenityFixture::class];
     }
 
-    /**
-     * @param list<string> $amenityRefs
-     */
     private function createProperty(
         User $host,
         CancellationPolicy $policy,
@@ -164,6 +106,8 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         float $longitude,
         array $amenityRefs,
         ObjectManager $manager,
+        int $propertyNumber,
+        int $imageCount,
         bool $withICal,
     ): Property {
         $property = new Property();
@@ -188,7 +132,7 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         $address->setCountry($country);
         $address->setCity($city);
         $address->setPostalCode($postalCode);
-        $address->setAddressLine1(sprintf('%d rue de la Plage', random_int(1, 120)));
+        $address->setAddressLine1(sprintf('%d rue des Voyageurs', random_int(1, 120)));
         $address->setLatitude((string) $latitude);
         $address->setLongitude((string) $longitude);
         $property->setAddress($address);
@@ -207,23 +151,16 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
             $manager->persist($propertyAmenity);
         }
 
-        $images = FixtureImageProvider::forProperty($type, $title);
-
-        $cover = new PropertyMedia();
-        $cover->setProperty($property);
-        $cover->setMediaType('image');
-        $cover->setFileUrl($images[0]);
-        $cover->setSortOrder(0);
-        $cover->setIsCover(true);
-        $manager->persist($cover);
-
-        $gallery = new PropertyMedia();
-        $gallery->setProperty($property);
-        $gallery->setMediaType('image');
-        $gallery->setFileUrl($images[1]);
-        $gallery->setSortOrder(1);
-        $gallery->setIsCover(false);
-        $manager->persist($gallery);
+        $images = FixtureImageProvider::forProperty($type, $title, $imageCount);
+        foreach ($images as $i => $imageUrl) {
+            $media = new PropertyMedia();
+            $media->setProperty($property);
+            $media->setMediaType('image');
+            $media->setFileUrl($imageUrl);
+            $media->setSortOrder($i);
+            $media->setIsCover($i === 0);
+            $manager->persist($media);
+        }
 
         for ($day = 0; $day < 30; $day++) {
             $availability = new PropertyAvailability();

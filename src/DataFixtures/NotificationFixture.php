@@ -19,7 +19,6 @@ class NotificationFixture extends Fixture implements DependentFixtureInterface
             FixtureReferences::USER_GUEST_2,
             FixtureReferences::USER_HOST_1,
             FixtureReferences::USER_HOST_2,
-            FixtureReferences::USER_HOST_3,
             FixtureReferences::USER_ADMIN,
         ];
 

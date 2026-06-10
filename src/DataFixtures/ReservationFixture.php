@@ -24,6 +24,7 @@ class ReservationFixture extends Fixture implements DependentFixtureInterface
         $guest1 = $this->getReference(FixtureReferences::USER_GUEST_1, User::class);
         $guest2 = $this->getReference(FixtureReferences::USER_GUEST_2, User::class);
         $guest3 = $this->getReference(FixtureReferences::USER_GUEST_3, User::class);
+        $guest4 = $this->getReference(FixtureReferences::USER_GUEST_4, User::class);
         $admin = $this->getReference(FixtureReferences::USER_ADMIN, User::class);
 
         $reservations = [
@@ -70,6 +71,28 @@ class ReservationFixture extends Fixture implements DependentFixtureInterface
                 'cancelled',
                 '840.00',
                 'Changement de programme personnel',
+            ],
+            [
+                'reservation_pending_family',
+                $property3,
+                $guest4,
+                '+32 days',
+                '+36 days',
+                3,
+                'pending',
+                '380.00',
+                null,
+            ],
+            [
+                'reservation_confirmed_weekend',
+                $property1,
+                $guest1,
+                '+45 days',
+                '+47 days',
+                2,
+                'confirmed',
+                '440.00',
+                null,
             ],
         ];
 
