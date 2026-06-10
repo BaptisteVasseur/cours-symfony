@@ -9,15 +9,15 @@
                 <i class="fa-solid fa-chart-pie text-brand"></i>
                 <span>Vue d'ensemble</span>
             </a>
-            <a href="#" class="flex items-center space-x-3 text-gray-400 hover:bg-gray-800 hover:text-white px-4 py-3 rounded-lg text-sm font-medium transition">
+            <a href="{{ path('app_property_index') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') starts with 'app_property' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
                 <i class="fa-solid fa-house"></i>
                 <span>Annonces (Logements)</span>
             </a>
-            <a href="{{ path('app_admin_users') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') == 'app_admin_users' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
+            <a href="{{ path('app_user_index') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') starts with 'app_user' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
                 <i class="fa-solid fa-users"></i>
                 <span>Utilisateurs</span>
             </a>
-            <a href="#" class="flex items-center space-x-3 text-gray-400 hover:bg-gray-800 hover:text-white px-4 py-3 rounded-lg text-sm font-medium transition">
+            <a href="{{ path('app_admin_reservation_index') }}" class="flex items-center space-x-3 {{ app.request.attributes.get('_route') starts with 'app_admin_reservation' ? 'bg-gray-800 text-white' : 'text-gray-400 hover:bg-gray-800 hover:text-white' }} px-4 py-3 rounded-lg text-sm font-medium transition">
                 <i class="fa-solid fa-credit-card"></i>
                 <span>Réservations & Revenus</span>
             </a>

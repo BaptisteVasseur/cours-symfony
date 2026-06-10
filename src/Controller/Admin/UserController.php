@@ -14,6 +14,6 @@ class UserController extends AbstractController
     #[Route('', name: 'app_admin_users')]
     public function index(): Response
     {
-        return $this->render('admin/user/index.html.twig');
+        return $this->redirectToRoute('app_user_index');
     }
 }

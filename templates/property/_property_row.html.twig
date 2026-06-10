@@ -1,0 +1,70 @@
+{% set cover = property.coverMedia %}
+{% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=200&q=80' %}
+
+{% set statusLabels = {
+    'published': 'Publiée',
+    'pending': 'En attente',
+    'draft': 'Brouillon',
+} %}
+{% set statusClasses = {
+    'published': 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+    'pending': 'bg-amber-50 text-amber-800 border border-amber-200',
+    'draft': 'bg-gray-100 text-gray-700 border border-gray-200',
+} %}
+{% set statusIcons = {
+    'published': 'fa-check',
+    'pending': 'fa-clock',
+    'draft': 'fa-pen',
+} %}
+
+{% set typeLabels = {
+    'villa': 'Villa',
+    'loft': 'Loft',
+    'apartment': 'Appartement',
+    'house': 'Maison',
+    'chalet': 'Chalet',
+} %}
+
+<tr class="hover:bg-gray-50/70 transition">
+    <td class="px-6 py-4">
+        <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+            </div>
+            <div class="min-w-0">
+                <p class="font-semibold text-gray-900 truncate max-w-[220px]">{{ property.title }}</p>
+                {% if property.address %}
+                    <span class="text-xs text-gray-400">{{ property.address.city }}, {{ property.address.country }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+    <td class="px-6 py-4">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-50 text-blue-700 border border-blue-200">
+            {{ typeLabels[property.propertyType]|default(property.propertyType) }}
+        </span>
+    </td>
+    <td class="px-6 py-4">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ statusClasses[property.status]|default('bg-gray-100 text-gray-700 border border-gray-200') }}">
+            <i class="fa-solid {{ statusIcons[property.status]|default('fa-circle') }} text-[8px] mr-1.5"></i>
+            {{ statusLabels[property.status]|default(property.status) }}
+        </span>
+    </td>
+    <td class="px-6 py-4 font-semibold text-gray-900">
+        {{ property.pricePerNight|number_format(0, ',', ' ') }} €
+    </td>
+    <td class="px-6 py-4 text-gray-500">
+        {{ property.maxGuests }} pers. · {{ property.bedrooms }} ch.
+    </td>
+    <td class="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+        <a href="{{ path('app_property_show', { id: property.id }) }}" class="text-xs text-gray-600 hover:text-gray-900 font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition inline-block">
+            Voir
+        </a>
+        <a href="{{ path('app_property_edit', { id: property.id }) }}" class="text-xs bg-gray-900 text-white font-semibold px-2.5 py-1.5 rounded-lg hover:bg-gray-700 transition inline-block">
+            Modifier
+        </a>
+        <a href="{{ path('app_logement_detail', { id: property.id }) }}" target="_blank" class="text-xs text-brand font-semibold px-2.5 py-1.5 rounded-lg border border-rose-200 hover:bg-rose-50 transition inline-block">
+            <i class="fa-solid fa-arrow-up-right-from-square text-[10px]"></i>
+        </a>
+    </td>
+</tr>

@@ -18,8 +18,14 @@
    - Page de confirmation de reservation -> Entité
 
 
+10. Faire l'authentification 
+11. Bloquer l'accés à certaines pages en fonction des roles 
+    - Role user
+    - Role admin
+    - Tout bloquer pour un utilisateur banni 
+12. Afficher dynamiquement un bouton pour se connecter si on est pas connecté
+    Un bouton pour se déconnecter si on est connecté
+13. Afficher que les réservations du user connecté sur la page d'historique
 
-
-10. Faire l'authentification, mot de passe oublié, etc
-11. API, Asynchrone, Events, etc
-12. Tests unitaires, fonctionnels, etc
+14. Créer un formulaire pour ajouter une propriété
+15. Ajouter les containtes de validation

@@ -1,0 +1,72 @@
+{% set profile = user.profile %}
+{% set primaryUserRole = user.userRoles|first %}
+{% set role = primaryUserRole ? primaryUserRole.role : null %}
+
+{% set initials = profile and profile.firstName ? profile.firstName|first|upper ~ (profile.lastName ? profile.lastName|first|upper : '') : user.email|first|upper %}
+{% set displayName = profile and (profile.firstName or profile.lastName) ? (profile.firstName ~ ' ' ~ profile.lastName)|trim : user.email %}
+
+{% set statusLabels = {
+    'active': 'Actif',
+    'pending': 'En attente',
+    'suspended': 'Suspendu',
+} %}
+{% set statusClasses = {
+    'active': 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+    'pending': 'bg-amber-50 text-amber-800 border border-amber-200',
+    'suspended': 'bg-gray-100 text-gray-700 border border-gray-200',
+} %}
+{% set statusIcons = {
+    'active': 'fa-check',
+    'pending': 'fa-clock',
+    'suspended': 'fa-ban',
+} %}
+
+{% set roleClasses = {
+    'Hôte': 'bg-rose-50 text-brand border border-rose-200',
+    'Administrateur': 'bg-purple-50 text-purple-700 border border-purple-200',
+    'Super Administrateur': 'bg-purple-50 text-purple-700 border border-purple-200',
+} %}
+
+<tr class="hover:bg-gray-50/70 transition">
+    <td class="px-6 py-4">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-gray-200 text-gray-600 rounded-full flex items-center justify-center font-bold text-sm shrink-0 overflow-hidden">
+                {% if profile and profile.avatarUrl %}
+                    <img src="{{ profile.avatarUrl }}" alt="{{ displayName }}" class="w-full h-full object-cover">
+                {% else %}
+                    {{ initials }}
+                {% endif %}
+            </div>
+            <div class="min-w-0">
+                <p class="font-semibold text-gray-900 truncate max-w-[220px]">{{ displayName }}</p>
+                <span class="text-xs text-gray-400">{{ user.email }}</span>
+            </div>
+        </div>
+    </td>
+    <td class="px-6 py-4">
+        {% set roleLabel = role ? role.label : 'Voyageur' %}
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ roleClasses[roleLabel]|default('bg-blue-50 text-blue-700 border border-blue-200') }}">
+            {{ roleLabel }}
+        </span>
+    </td>
+    <td class="px-6 py-4">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ statusClasses[user.status]|default('bg-gray-100 text-gray-700 border border-gray-200') }}">
+            <i class="fa-solid {{ statusIcons[user.status]|default('fa-circle') }} text-[8px] mr-1.5"></i>
+            {{ statusLabels[user.status]|default(user.status) }}
+        </span>
+    </td>
+    <td class="px-6 py-4 text-gray-500">
+        {{ user.createdAt|date('d/m/Y') }}
+        {% if user.isEmailVerified %}
+            <i class="fa-solid fa-circle-check text-emerald-500 text-xs ml-1" title="Email vérifié"></i>
+        {% endif %}
+    </td>
+    <td class="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+        <a href="{{ path('app_user_show', { id: user.id }) }}" class="text-xs text-gray-600 hover:text-gray-900 font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition inline-block">
+            Voir
+        </a>
+        <a href="{{ path('app_user_edit', { id: user.id }) }}" class="text-xs bg-gray-900 text-white font-semibold px-2.5 py-1.5 rounded-lg hover:bg-gray-700 transition inline-block">
+            Modifier
+        </a>
+    </td>
+</tr>

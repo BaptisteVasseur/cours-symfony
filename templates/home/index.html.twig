@@ -27,6 +27,8 @@
 
             {% for property in properties %}
                 {% include 'parts/card.html.twig' with { property: property } %}
+            {% else %}
+                <p class="col-span-full text-gray-500 text-sm">Aucun logement disponible.</p>
             {% endfor %}
 
         </div>

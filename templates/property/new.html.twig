@@ -1,0 +1,17 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block page_title %}Nouvelle annonce{% endblock %}
+
+{% block content %}
+    <div class="mb-6">
+        <a href="{{ path('app_property_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+            Retour à la liste
+        </a>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 max-w-5xl">
+        <h3 class="font-bold text-gray-900 mb-6">Créer une annonce</h3>
+        {{ include('property/_form.html.twig', { button_label: 'Créer l\'annonce' }) }}
+    </div>
+{% endblock %}

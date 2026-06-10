@@ -1,0 +1,7 @@
+<form method="post" action="{{ path('app_property_delete', { id: property.id }) }}" onsubmit="return confirm('Confirmer la suppression de cette annonce ?');">
+    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ property.id) }}">
+    <button type="submit" class="w-full bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-sm px-4 py-2.5 rounded-lg border border-red-200 transition">
+        <i class="fa-solid fa-trash-can text-xs mr-1.5"></i>
+        Supprimer l'annonce
+    </button>
+</form>

@@ -17,27 +17,49 @@ class HomeController extends AbstractController
     public function index(PropertyRepository $propertyRepository): Response
     {
         return $this->render('home/index.html.twig', [
-            'properties' => $propertyRepository->findMostPopular(),
+            'properties' => $propertyRepository->findForListing(),
         ]);
     }
 
     #[Route('/logement/{id}', name: 'app_logement_detail')]
-    public function detail(Property $property): Response
+    public function detail(Property $property, PropertyRepository $propertyRepository): Response
     {
+        $property = $propertyRepository->findOneForDetail($property) ?? $property;
+
         return $this->render('home/logement.html.twig', [
-            'mon_logement' => $property
+            'property' => $property,
         ]);
     }
 
     #[Route('/search', name: 'app_search', methods: ['GET'])]
     public function search(Request $request, PropertyRepository $propertyRepository): Response
     {
+        $checkin = $this->parseDate($request->query->get('checkin'));
+        $checkout = $this->parseDate($request->query->get('checkout'));
 
+        return $this->render('home/search.html.twig', [
+            'properties' => $propertyRepository->findForListing(),
+            'checkin' => $checkin,
+            'checkout' => $checkout,
+            'guests' => $request->query->getInt('guests'),
+            'destination' => $request->query->get('destination'),
+        ]);
     }
 
     #[Route('/register', name: 'app_register')]
     public function register(): Response
     {
         return $this->render('home/register.html.twig');
+    }
+
+    private function parseDate(?string $value): ?\DateTimeImmutable
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
+
+        return $date !== false ? $date : null;
     }
 }

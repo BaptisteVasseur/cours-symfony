@@ -23,9 +23,10 @@ security:
             form_login:
                 login_path: app_login
                 check_path: app_login
-                enable_csrf: true
             logout:
                 path: app_logout
+                # where to redirect after logout
+                # target: app_any_route
                 # where to redirect after logout
                 # target: app_any_route
 
@@ -36,15 +37,13 @@ security:
             # switch_user: true
 
     role_hierarchy:
-        # ROLE_FACTURATION, ROLE_SERVICE_CLIENT, ROLE_PREPARATEUR_COMMANDE
-        # ROLE_PRESTATAIRE, ROLE_CLIENT, ROLE_BANNI, ROLE_VIP, ROLE_ADMIN
-        # ROLE_SUPER_ADMIN
+        ROLE_BANNI:
+        ROLE_USER:
+        ROLE_HOST: ROLE_USER
+        ROLE_SUPER_HOST: ROLE_HOST
 
-        ROLE_PRESTATAIRE: ROLE_USER
-        ROLE_CLIENT: ROLE_USER
-        ROLE_BANNI: ROLE_USER
-        ROLE_VIP: ROLE_USER
-        ROLE_ADMIN: [ROLE_PRESTATAIRE, ROLE_SERVICE_CLIENT, ROLE_PREPARATEUR_COMMANDE, ROLE_CLIENT, ROLE_BANNI, ROLE_VIP]
+        ROLE_MODERATEUR: ROLE_USER
+        ROLE_ADMIN: [ROLE_MODERATEUR, ROLE_SUPER_HOST]
         ROLE_SUPER_ADMIN: ROLE_ADMIN
 
     # Note: Only the *first* matching rule is applied

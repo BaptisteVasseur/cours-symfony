@@ -35,7 +35,7 @@ class Property
     private ?string $propertyType = null;
 
     #[ORM\Column(length: 50)]
-    private ?string $status = null;
+    private ?string $status = 'pending';
 
     #[ORM\Column]
     private ?int $maxGuests = null;

@@ -1,0 +1,29 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% set property = reservation.property %}
+
+{% block page_title %}Modifier la réservation{% endblock %}
+
+{% block content %}
+    <div class="mb-6">
+        <a href="{{ path('app_admin_reservation_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+            Retour à la liste
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+            <h3 class="font-bold text-gray-900 mb-6">
+                Modifier la réservation
+                {% if property %}<span class="text-gray-400 font-normal">— {{ property.title }}</span>{% endif %}
+            </h3>
+            {{ include('admin_reservation/_form.html.twig', { button_label: 'Mettre à jour' }) }}
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 h-fit">
+            <h3 class="font-bold text-gray-900 mb-2">Zone de danger</h3>
+            <p class="text-sm text-gray-500 mb-4">La suppression est définitive et retirera toutes les données associées.</p>
+            {{ include('admin_reservation/_delete_form.html.twig') }}
+        </div>
+    </div>
+{% endblock %}
