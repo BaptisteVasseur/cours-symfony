@@ -18,6 +18,7 @@ framework:
             messenger.bus.default: []
 
         routing:
-            App\Message\BookingPendingMessage:   async
-            App\Message\BookingConfirmedMessage: async
-            App\Message\BookingCancelledMessage: async
+            App\Message\BookingPendingMessage:        async
+            App\Message\BookingConfirmedMessage:      async
+            App\Message\BookingCancelledMessage:      async
+            App\Message\CheckBookingExpiryMessage:    async

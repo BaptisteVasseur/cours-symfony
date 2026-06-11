@@ -8,11 +8,13 @@ use App\Entity\User;
 use App\Message\BookingCancelledMessage;
 use App\Message\BookingConfirmedMessage;
 use App\Message\BookingPendingMessage;
+use App\Message\CheckBookingExpiryMessage;
 use App\Repository\BlockedPeriodRepository;
 use App\Repository\BookingRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Stamp\DelayStamp;
 
 class BookingService
 {
@@ -87,6 +89,11 @@ class BookingService
             $this->bus->dispatch(new BookingConfirmedMessage($booking->getId()));
         } else {
             $this->bus->dispatch(new BookingPendingMessage($booking->getId()));
+            // Expiration automatique après 24h si l'hôte n'a pas traité la demande
+            $this->bus->dispatch(
+                new CheckBookingExpiryMessage($booking->getId()),
+                [new DelayStamp(86400 * 1000)]
+            );
         }
 
         return $booking;

@@ -104,6 +104,23 @@ class BookingRepository extends ServiceEntityRepository
     }
 
     /**
+     * Returns pending bookings created before the given threshold (for expiration).
+     *
+     * @return Booking[]
+     */
+    public function findExpiredPending(\DateTimeInterface $threshold): array
+    {
+        return $this->createQueryBuilder('b')
+            ->where('b.status = :status')
+            ->andWhere('b.createdAt < :threshold')
+            ->setParameter('status', 'pending')
+            ->setParameter('threshold', $threshold)
+            ->orderBy('b.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Returns upcoming confirmed bookings for a host (checkout >= today).
      *
      * @return Booking[]
