@@ -1,0 +1,25 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Inscription{% endblock %}
+
+{% block content %}
+    <div class="min-h-[calc(100vh-14rem)] flex items-center justify-center py-12 px-4">
+        <div class="w-full max-w-md">
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-bold text-gray-900 mb-2">Créer un compte</h1>
+                <p class="text-gray-600">Rejoignez la plateforme et réservez des logements uniques</p>
+            </div>
+            <div class="bg-white rounded-2xl border border-gray-200 shadow-xl p-8">
+                {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
+                    {{ form_row(form.firstName, { row_attr: { class: 'space-y-2' }, label_attr: { class: 'block text-sm font-semibold' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                    {{ form_row(form.lastName, { row_attr: { class: 'space-y-2' }, label_attr: { class: 'block text-sm font-semibold' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                    {{ form_row(form.email, { row_attr: { class: 'space-y-2' }, label_attr: { class: 'block text-sm font-semibold' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                    {{ form_row(form.plainPassword.first, { row_attr: { class: 'space-y-2' }, label_attr: { class: 'block text-sm font-semibold' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                    {{ form_row(form.plainPassword.second, { row_attr: { class: 'space-y-2' }, label_attr: { class: 'block text-sm font-semibold' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                    <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">S'inscrire</button>
+                {{ form_end(form) }}
+                <p class="text-center text-sm text-gray-600 mt-6">Déjà inscrit ? <a href="{{ path('app_login') }}" class="text-brand font-semibold">Se connecter</a></p>
+            </div>
+        </div>
+    </div>
+{% endblock %}

@@ -17,4 +17,27 @@ class ReportRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, Report::class);
     }
+
+    /**
+     * @return list<Report>
+     */
+    public function findAllForListing(): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('rep')
+            ->leftJoin('r.reporter', 'rep')
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countOpen(): int
+    {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('statuses', ['open', 'investigating'])
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

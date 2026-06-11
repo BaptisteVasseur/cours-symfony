@@ -4,54 +4,106 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\ReservationRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
+#[ApiResource(
+    operations: [
+        new GetCollection(security: "is_granted('ROLE_ADMIN')"),
+        new Get(security: "is_granted('RESERVATION_VIEW', object)"),
+        new Post(
+            security: "is_granted('ROLE_USER')",
+            securityPostDenormalize: "object.getGuest() == user",
+        ),
+        new Put(security: "is_granted('ROLE_ADMIN')"),
+        new Patch(security: "is_granted('ROLE_ADMIN')"),
+        new Delete(security: "is_granted('ROLE_ADMIN')"),
+    ],
+)]
+#[Assert\Expression(
+    expression: "this.getStatus() != 'cancelled' or (this.getCancellationReason() !== null and this.getCancellationReason() !== '')",
+    message: 'Le motif d\'annulation est obligatoire pour une réservation annulée.',
+)]
 #[ORM\Entity(repositoryClass: ReservationRepository::class)]
 #[ORM\Table(name: 'reservations')]
 class Reservation
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull(message: 'Le logement est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'reservations')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Assert\NotNull(message: 'Le voyageur est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'reservations')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $guest = null;
 
+    #[Assert\NotNull(message: 'La date d\'arrivée est obligatoire.')]
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     private ?\DateTimeImmutable $checkinDate = null;
 
+    #[Assert\NotNull(message: 'La date de départ est obligatoire.')]
+    #[Assert\GreaterThan(propertyPath: 'checkinDate', message: 'La date de départ doit être postérieure à la date d\'arrivée.')]
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     private ?\DateTimeImmutable $checkoutDate = null;
 
+    #[Assert\NotNull(message: 'Le nombre de voyageurs est obligatoire.')]
+    #[Assert\GreaterThanOrEqual(value: 1, message: 'Il doit y avoir au moins {{ compared_value }} voyageur.')]
     #[ORM\Column]
     private ?int $guestsCount = null;
 
+    #[Assert\NotBlank(message: 'Le statut est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['pending', 'confirmed', 'completed', 'cancelled'],
+        message: 'Le statut sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $status = null;
 
+    #[Assert\NotBlank(message: 'Le prix total est obligatoire.')]
+    #[Assert\Type(type: 'numeric', message: 'Le prix total doit être un nombre.')]
+    #[Assert\Positive(message: 'Le prix total doit être supérieur à 0.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $totalPrice = null;
 
+    #[Assert\Type(type: 'numeric', message: 'Les frais de ménage doivent être un nombre.')]
+    #[Assert\GreaterThanOrEqual(value: 0, message: 'Les frais de ménage ne peuvent pas être négatifs.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $cleaningFee = null;
 
+    #[Assert\Type(type: 'numeric', message: 'Les frais de service doivent être un nombre.')]
+    #[Assert\GreaterThanOrEqual(value: 0, message: 'Les frais de service ne peuvent pas être négatifs.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $serviceFee = null;
 
+    #[Assert\Type(type: 'numeric', message: 'La caution doit être un nombre.')]
+    #[Assert\GreaterThanOrEqual(value: 0, message: 'La caution ne peut pas être négative.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $securityDeposit = null;
 
+    #[Assert\NotBlank(message: 'La devise est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['EUR', 'USD', 'GBP'],
+        message: 'La devise sélectionnée n\'est pas valide.',
+    )]
     #[ORM\Column(length: 10)]
     private ?string $currency = null;
 
+    #[Assert\Length(max: 2000, maxMessage: 'Le motif d\'annulation ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $cancellationReason = null;
 

@@ -1,0 +1,68 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set property = reservation.property %}
+{% set cover = property ? property.coverMedia : null %}
+{% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
+{% set hostProfile = property and property.host ? property.host.profile : null %}
+{% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
+
+{% set statusLabels = {
+    'confirmed': 'Confirmée',
+    'completed': 'Terminée',
+    'pending': 'En attente',
+    'cancelled': 'Annulée',
+} %}
+{% set statusColors = {
+    'confirmed': 'bg-green-100 text-green-800',
+    'completed': 'bg-blue-100 text-blue-800',
+    'pending': 'bg-yellow-100 text-yellow-800',
+    'cancelled': 'bg-red-100 text-red-800',
+} %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+        <a href="{{ path('app_reservation_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Retour aux réservations
+        </a>
+        <div class="mb-8">
+            <div class="flex flex-wrap items-center gap-3 mb-2">
+                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Confirmation de réservation</h1>
+                <span class="text-sm font-semibold px-3 py-1 rounded-full {{ statusColors[reservation.status]|default('bg-gray-100 text-gray-800') }}">
+                    {{ statusLabels[reservation.status]|default(reservation.status) }}
+                </span>
+            </div>
+            <p class="text-gray-500">Réservation effectuée le {{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
+        </div>
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                {% if property %}
+                    <section class="border border-gray-200 rounded-xl overflow-hidden">
+                        <div class="flex flex-col sm:flex-row">
+                            <div class="sm:w-48 h-40 sm:h-auto shrink-0">
+                                <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                            </div>
+                            <div class="p-5">
+                                <h2 class="text-lg font-semibold">{{ property.title }}</h2>
+                                <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="text-sm font-semibold text-brand hover:underline mt-2 inline-block">Voir le logement</a>
+                            </div>
+                        </div>
+                    </section>
+                {% endif %}
+                <section class="border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4">Détails du séjour</h2>
+                    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div><dt class="text-gray-500">Arrivée</dt><dd class="font-semibold">{{ reservation.checkinDate|date('d/m/Y') }}</dd></div>
+                        <div><dt class="text-gray-500">Départ</dt><dd class="font-semibold">{{ reservation.checkoutDate|date('d/m/Y') }}</dd></div>
+                        <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
+                    </dl>
+                </section>
+            </div>
+            <aside>
+                <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
+                    <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
+                    <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                </div>
+            </aside>
+        </div>
+    </main>
+{% endblock %}

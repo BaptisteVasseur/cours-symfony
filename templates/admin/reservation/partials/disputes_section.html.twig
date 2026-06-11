@@ -1,0 +1,45 @@
+{% set disputeStatusLabels = {
+    'open': 'Ouvert',
+    'resolved': 'Résolu',
+} %}
+{% set disputeStatusClasses = {
+    'open': 'bg-amber-50 text-amber-800 border border-amber-200',
+    'resolved': 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+} %}
+
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <h3 class="font-bold text-gray-900 mb-4">Litiges</h3>
+    {% if reservation.disputes|length > 0 %}
+        <div class="space-y-4">
+            {% for dispute in reservation.disputes %}
+                <div class="p-4 rounded-lg border border-gray-100 {{ dispute.status == 'open' ? 'bg-amber-50/30' : 'bg-gray-50/50' }}">
+                    <div class="flex items-start justify-between gap-3 mb-2">
+                        <div>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ disputeStatusClasses[dispute.status]|default('bg-gray-100 text-gray-700') }}">
+                                {{ disputeStatusLabels[dispute.status]|default(dispute.status) }}
+                            </span>
+                            <p class="text-xs text-gray-400 mt-2">
+                                Ouvert par {{ dispute.openedBy ? dispute.openedBy.email : '—' }}
+                                · {{ dispute.createdAt|date('d/m/Y H:i') }}
+                            </p>
+                        </div>
+                    </div>
+                    {% if dispute.resolution %}
+                        <p class="text-sm text-gray-600 mt-2"><span class="font-semibold text-gray-900">Résolution :</span> {{ dispute.resolution }}</p>
+                    {% endif %}
+                    {% if dispute.status == 'open' %}
+                        <form method="post" action="{{ path('app_admin_dispute_resolve', { id: dispute.id }) }}" class="mt-4 space-y-2">
+                            <input type="hidden" name="_token" value="{{ csrf_token('dispute' ~ dispute.id) }}">
+                            <textarea name="resolution" rows="2" required placeholder="Décrire la résolution du litige…" class="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-gray-400"></textarea>
+                            <button type="submit" class="bg-gray-900 hover:bg-gray-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition">
+                                Clôturer le litige
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-sm text-gray-400">Aucun litige sur cette réservation.</p>
+    {% endif %}
+</div>

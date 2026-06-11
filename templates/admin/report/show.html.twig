@@ -1,0 +1,119 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% set statusLabels = {
+    'open': 'Ouvert',
+    'investigating': 'En cours d\'investigation',
+    'closed': 'Clôturé',
+} %}
+{% set targetLabels = {
+    'property': 'Annonce',
+    'user': 'Utilisateur',
+    'review': 'Avis',
+} %}
+
+{% block page_title %}Signalement{% endblock %}
+
+{% block content %}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="mb-6">
+        <a href="{{ path('app_admin_report_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition">
+            <i class="fa-solid fa-arrow-left text-xs"></i>
+            Retour à la liste
+        </a>
+    </div>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div class="xl:col-span-2 space-y-6">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                    <div>
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200 mb-2">
+                            {{ targetLabels[report.targetType]|default(report.targetType) }}
+                        </span>
+                        <h2 class="text-xl font-bold text-gray-900">Signalement #{{ report.id|slice(0, 8) }}</h2>
+                    </div>
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                        {{ statusLabels[report.status]|default(report.status) }}
+                    </span>
+                </div>
+                <p class="text-sm text-gray-600 leading-relaxed">{{ report.reason }}</p>
+                <dl class="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                    <div>
+                        <dt class="text-gray-400 text-xs uppercase mb-1">Signalé par</dt>
+                        <dd class="font-medium text-gray-900">{{ report.reporter ? report.reporter.email : '—' }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-400 text-xs uppercase mb-1">Date</dt>
+                        <dd class="font-medium text-gray-900">{{ report.createdAt|date('d/m/Y H:i') }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-400 text-xs uppercase mb-1">Cible (ID)</dt>
+                        <dd class="font-mono text-xs text-gray-600 break-all">{{ report.target }}</dd>
+                    </div>
+                </dl>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <h3 class="font-bold text-gray-900 mb-4">Accès à la cible</h3>
+                {% if report.targetType == 'property' %}
+                    <a href="{{ path('app_property_show', { id: report.target }) }}" class="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:underline">
+                        <i class="fa-solid fa-house text-xs"></i>
+                        Voir l'annonce
+                    </a>
+                {% elseif report.targetType == 'user' %}
+                    <a href="{{ path('app_user_show', { id: report.target }) }}" class="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:underline">
+                        <i class="fa-solid fa-user text-xs"></i>
+                        Voir l'utilisateur
+                    </a>
+                {% else %}
+                    <a href="{{ path('app_admin_review_index') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:underline">
+                        <i class="fa-solid fa-star text-xs"></i>
+                        Modération des avis
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+                <h3 class="font-bold text-gray-900 mb-4">Actions</h3>
+                <div class="space-y-2">
+                    {% if report.status != 'investigating' %}
+                        <form method="post" action="{{ path('app_admin_report_status', { id: report.id }) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('report_status' ~ report.id) }}">
+                            <input type="hidden" name="status" value="investigating">
+                            <button type="submit" class="w-full text-center bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition">
+                                Prendre en charge
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if report.status != 'closed' %}
+                        <form method="post" action="{{ path('app_admin_report_status', { id: report.id }) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('report_status' ~ report.id) }}">
+                            <input type="hidden" name="status" value="closed">
+                            <button type="submit" class="w-full text-center bg-gray-900 hover:bg-gray-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition">
+                                Clôturer
+                            </button>
+                        </form>
+                    {% endif %}
+                    {% if report.status == 'closed' %}
+                        <form method="post" action="{{ path('app_admin_report_status', { id: report.id }) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('report_status' ~ report.id) }}">
+                            <input type="hidden" name="status" value="open">
+                            <button type="submit" class="w-full text-center border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold text-sm px-4 py-2.5 rounded-lg transition">
+                                Rouvrir
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}

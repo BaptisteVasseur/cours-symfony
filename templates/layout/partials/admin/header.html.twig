@@ -1,0 +1,13 @@
+<header class="bg-white border-b border-gray-200 h-16 px-6 flex items-center justify-between shrink-0">
+    <div class="flex items-center space-x-4">
+        <button class="md:hidden text-gray-600 text-xl"><i class="fa-solid fa-bars"></i></button>
+        <h1 class="text-lg font-semibold text-gray-800">{% block page_title %}{% endblock %}</h1>
+    </div>
+    <div class="flex items-center space-x-4">
+        <div class="relative">
+            <span class="absolute top-0 right-0 w-2 h-2 bg-brand rounded-full"></span>
+            <i class="fa-regular fa-bell text-gray-600 text-xl cursor-pointer"></i>
+        </div>
+        <a href="{{ path('app_home') }}" class="text-xs text-gray-500 hover:text-brand font-medium border border-gray-200 px-3 py-1.5 rounded-lg transition">Retour au site public</a>
+    </div>
+</header>

@@ -1,0 +1,36 @@
+{% set statusLabels = {
+    'open': 'Ouvert',
+    'investigating': 'En cours',
+    'closed': 'Clôturé',
+} %}
+{% set statusClasses = {
+    'open': 'bg-amber-50 text-amber-800 border border-amber-200',
+    'investigating': 'bg-blue-50 text-blue-800 border border-blue-200',
+    'closed': 'bg-gray-100 text-gray-700 border border-gray-200',
+} %}
+{% set targetLabels = {
+    'property': 'Annonce',
+    'user': 'Utilisateur',
+    'review': 'Avis',
+} %}
+
+<tr class="hover:bg-gray-50/70 transition">
+    <td class="px-6 py-4">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700 border border-gray-200">
+            {{ targetLabels[report.targetType]|default(report.targetType) }}
+        </span>
+    </td>
+    <td class="px-6 py-4 text-sm text-gray-600 max-w-xs truncate">{{ report.reason }}</td>
+    <td class="px-6 py-4 text-sm text-gray-500">{{ report.reporter ? report.reporter.email : '—' }}</td>
+    <td class="px-6 py-4">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ statusClasses[report.status]|default('bg-gray-100 text-gray-700 border border-gray-200') }}">
+            {{ statusLabels[report.status]|default(report.status) }}
+        </span>
+    </td>
+    <td class="px-6 py-4 text-sm text-gray-400">{{ report.createdAt|date('d/m/Y H:i') }}</td>
+    <td class="px-6 py-4 text-right">
+        <a href="{{ path('app_admin_report_show', { id: report.id }) }}" class="text-xs text-gray-600 hover:text-gray-900 font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition inline-block">
+            Traiter
+        </a>
+    </td>
+</tr>
