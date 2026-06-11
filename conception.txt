@@ -1,0 +1,28 @@
+Modélisation temporelle : Le jour de check-out est-il réservable par un nouveau voyageur ?
+Oui, c'est un comportement normal et attendu dans le monde du tourisme. Refuser cela reviendrait à forcer les hébergeurs à avoir des nuits vides sans nécessité et diminuerait les disponibilités des logements pour les voyageurs.
+
+
+Comment gérez-vous la superposition d'un départ à 11h et d'une arrivée à 15h dans votre schéma de données ?
+En utilisant le système de nuitée. Une nuit est réservée par une seule personne uniquement et c'est cette nuit qu'on inscrit en base de données.
+Jean réserve la nuit du 1 et sort le 2 à 11h, Pierre réserve la nuit du 2 et arrive à 15h.
+
+Gestion des états : Une demande Pending bloque-t-elle les dates ? Analysez les risques liés à ce choix (blocage abusif vs overbooking).
+Le risque dans le fait de ne pas bloquer les demandes pending est que l'hébergeur pourrait laisser trainer les demandes afin d'attendre d'avoir la meilleure et risque de créér de la frustration chez les utilisateurs refusés car leur demande n'a pas eu de poids suffisant dans la plateforme.
+Le risque dans le fait de bloquer les demandes pending est que des voyageurs bloquent des hébergements pendant plusieurs heures sans réelle intention de réserver ou avec des durées trop courtes. Cela réduirait le choix pour les autres voyageurs ayant une intention réelle de réserver et la visibilité de l'hébergement. 
+En pesant les deux risques, le moindre est celui de ne pas bloquer les demandes pending mais de laisser une fenêtre de courte durée afin d'accepter ou non la demande (24h). Ainsi, l'hébergeur sera dans l'obligation de répondre rapidement aux demandes sans pouvoir les accumuler jusqu'au dernier moment pour choisir celle qui lui convient le mieux.
+
+Concurrence : Comment votre base de données réagit-elle si deux utilisateurs valident un paiement
+à la milliseconde près pour le même logement et les mêmes dates ?
+
+
+Performance : Comment valider la disponibilité d'un logement sur 20 nuits consécutives sans
+saturer la base de requêtes SQL itératives ?
+Il faut faire une requête SQL sur la table des périodes uniques vérifiant qu'il n'y a pas de record dont la période serait inclue dans la période souhaitée par l'utilisateur.
+Asynchronisme : Pourquoi l'envoi d'email doit-il préférentiellement intervenir après le flush() de
+l'ORM ? Quelle est la stratégie si RabbitMQ tombe en panne ?
+De cette façon on s'assure que l'email sera envoyé si et seulement si la réservation a bien pû être effectuée en base afin de ne pas avoir des utilisateurs avec des emails de confirmation de réservation alors que leur réservation n'a pas été stockée correctement. Il vaut mieux renvoyer une erreur qu'un voyageur à la rue. 
+L'utilisateur aura sa confirmation de réservation dans la page et sera invitée à télécharger le PDF de confirmation en attendant que Rabbit se rétablisse.
+
+Structure SQL : Justifiez votre choix d'architecture pour le calendrier : table de jours individuels
+( PropertyAvailability ) ou table de périodes ( date_start , date_end ).
+La table des périodes a l'avantage d'avoir un nombre de record moins important ainsi que d'être au plus proche de la réalité car les logements sont réservées pour une période donnée. Cela permettra aussi de voir en une simple requête sur combien s'étend une réservation.
