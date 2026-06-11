@@ -1,0 +1,28 @@
+{% extends 'layout/test.html.twig' %}
+
+{% block title %}Ma page ACEUIL TEST {% endblock %}
+
+{% block body %}
+
+
+
+
+<h1>Liste des utilisateurs</h1>
+
+<a href="{{ path('app_test2') }}">Test2</a>
+
+{% for user in users %}
+    <h1>{{user.name}}- {{user.age}}</h1>
+{% else %}
+    Aucun user trouvé
+
+{% endfor %}
+
+{% include 'parts/test.html.twig' with {property:"Click Me"} %}
+
+{#Invisibble #}
+
+
+
+
+{% endblock %}

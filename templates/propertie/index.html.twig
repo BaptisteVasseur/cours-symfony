@@ -1,0 +1,65 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Property index{% endblock %}
+
+{% block body %}
+    <h1>Property index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Description</th>
+                <th>PropertyType</th>
+                <th>Status</th>
+                <th>MaxGuests</th>
+                <th>Bedrooms</th>
+                <th>Beds</th>
+                <th>Bathrooms</th>
+                <th>PricePerNight</th>
+                <th>CleaningFee</th>
+                <th>SecurityDeposit</th>
+                <th>CheckinTime</th>
+                <th>CheckoutTime</th>
+                <th>InstantBooking</th>
+                <th>CreatedAt</th>
+                <th>UpdatedAt</th>
+                <th>Id</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for property in properties %}
+            <tr>
+                <td>{{ property.title }}</td>
+                <td>{{ property.description }}</td>
+                <td>{{ property.propertyType }}</td>
+                <td>{{ property.status }}</td>
+                <td>{{ property.maxGuests }}</td>
+                <td>{{ property.bedrooms }}</td>
+                <td>{{ property.beds }}</td>
+                <td>{{ property.bathrooms }}</td>
+                <td>{{ property.pricePerNight }}</td>
+                <td>{{ property.cleaningFee }}</td>
+                <td>{{ property.securityDeposit }}</td>
+                <td>{{ property.checkinTime ? property.checkinTime|date('H:i:s') : '' }}</td>
+                <td>{{ property.checkoutTime ? property.checkoutTime|date('H:i:s') : '' }}</td>
+                <td>{{ property.instantBooking ? 'Yes' : 'No' }}</td>
+                <td>{{ property.createdAt ? property.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ property.updatedAt ? property.updatedAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ property.id }}</td>
+                <td>
+                    <a href="{{ path('app_propertie_show', {'id': property.id}) }}">show</a>
+                    <a href="{{ path('app_propertie_edit', {'id': property.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="18">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_propertie_new') }}">Create new</a>
+{% endblock %}
