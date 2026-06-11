@@ -56,4 +56,16 @@ class PropertyBlockRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /** @return list<PropertyBlock> */
+    public function findByICalSource(Property $property, string $providerName): array
+    {
+        return $this->createQueryBuilder('b')
+            ->andWhere('b.property = :property')
+            ->andWhere('b.iCalUid LIKE :prefix')
+            ->setParameter('property', $property)
+            ->setParameter('prefix', $providerName.':%')
+            ->getQuery()
+            ->getResult();
+    }
 }

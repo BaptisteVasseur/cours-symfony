@@ -137,6 +137,40 @@
             <a href="{{ path('app_host_reservations') }}" class="mt-4 flex items-center justify-center gap-2 w-full border border-gray-200 rounded-xl py-2 text-sm text-gray-600 hover:bg-gray-50">
                 <i class="fa-solid fa-list"></i> Gérer les demandes
             </a>
+
+            {# Synchronisation iCal #}
+            <div class="mt-6 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                <h3 class="font-semibold text-gray-900 mb-3">
+                    <i class="fa-solid fa-calendar-days text-brand mr-1"></i> Lien iCal
+                </h3>
+                {% if property.calendarToken %}
+                    <p class="text-xs text-gray-500 mb-2">Partagez ce lien pour synchroniser votre calendrier.</p>
+                    {% set icalUrl = url('api_property_ical_export', {id: property.id}) ~ '?token=' ~ property.calendarToken %}
+                    <div class="flex items-center gap-2 mb-3">
+                        <input type="text" readonly value="{{ icalUrl }}" onclick="this.select()"
+                               class="flex-1 border border-gray-200 rounded-lg px-3 py-1.5 text-xs text-gray-600 bg-gray-50 truncate">
+                        <button onclick="navigator.clipboard.writeText('{{ icalUrl }}'); this.textContent='✓'"
+                                class="text-xs px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 whitespace-nowrap">
+                            Copier
+                        </button>
+                    </div>
+                    <form method="POST" action="{{ path('app_host_calendar_token_revoke', {id: property.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('calendar_token_' ~ property.id) }}">
+                        <button type="submit" onclick="return confirm('Révoquer le lien ? Les synchronisations existantes seront interrompues.')"
+                                class="w-full text-sm text-red-600 hover:text-red-800 border border-red-200 rounded-xl py-1.5 hover:bg-red-50">
+                            <i class="fa-solid fa-link-slash mr-1"></i> Révoquer le lien
+                        </button>
+                    </form>
+                {% else %}
+                    <p class="text-xs text-gray-500 mb-3">Générez un lien pour exporter vos réservations vers Google Agenda, Apple Calendrier, etc.</p>
+                    <form method="POST" action="{{ path('app_host_calendar_token_generate', {id: property.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('calendar_token_' ~ property.id) }}">
+                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-2 rounded-xl text-sm">
+                            <i class="fa-solid fa-link mr-1"></i> Générer le lien
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
         </div>
     </div>
 </main>
