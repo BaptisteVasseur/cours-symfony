@@ -1,0 +1,32 @@
+{% set statusLabels = {
+    'confirmed': 'Confirmée',
+    'completed': 'Terminée',
+    'pending': 'En attente',
+    'cancelled': 'Annulée',
+} %}
+
+<section class="border border-gray-200 rounded-xl p-6">
+    <h2 class="text-lg font-semibold mb-4">Historique de la réservation</h2>
+    <ol class="relative border-l border-gray-200 ml-1.5 space-y-5">
+        <li class="ml-5">
+            <span class="absolute -left-[7px] w-3.5 h-3.5 rounded-full bg-gray-300 border-2 border-white"></span>
+            <p class="text-sm font-medium text-gray-900">Demande créée</p>
+            <p class="text-xs text-gray-500">{{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
+        </li>
+        {% for entry in reservation.statusHistory|sort((a, b) => a.createdAt <=> b.createdAt) %}
+            {% set author = entry.changedBy %}
+            <li class="ml-5">
+                <span class="absolute -left-[7px] w-3.5 h-3.5 rounded-full bg-brand border-2 border-white"></span>
+                <p class="text-sm font-medium text-gray-900">
+                    {{ statusLabels[entry.oldStatus]|default(entry.oldStatus|default('—')) }}
+                    <i class="fa-solid fa-arrow-right text-gray-300 text-xs mx-1"></i>
+                    {{ statusLabels[entry.newStatus]|default(entry.newStatus) }}
+                </p>
+                <p class="text-xs text-gray-500">
+                    {{ entry.createdAt|date('d/m/Y à H:i') }} ·
+                    {{ author ? (author.profile and author.profile.firstName ? author.profile.firstName ~ ' ' ~ author.profile.lastName : author.email) : 'Système' }}
+                </p>
+            </li>
+        {% endfor %}
+    </ol>
+</section>
