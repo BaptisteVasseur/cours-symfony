@@ -7,17 +7,29 @@
             </a>
 
             <nav class="flex items-center gap-2 sm:gap-4">
-                <a href="{{ path('app_home') }}" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-[#FF385C] transition">Logements</a>
+                <a href="{{ path('app_search') }}" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-[#FF385C] transition">Rechercher</a>
 
                 {% if is_granted('IS_AUTHENTICATED_FULLY') %}
-                    <a href="{{ path('app_listing_index') }}" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-[#FF385C] transition">Mes annonces</a>
                     <a href="{{ path('app_my_bookings') }}" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-[#FF385C] transition">Mes réservations</a>
+
+                    {% if is_granted('ROLE_HOST') %}
+                        <a href="{{ path('app_listing_index') }}" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-[#FF385C] transition">Mes annonces</a>
+                        <a href="{{ path('app_host_bookings') }}" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-[#FF385C] transition">Demandes</a>
+                    {% endif %}
 
                     {% if is_granted('ROLE_ADMIN') %}
                         <a href="{{ path('app_admin_dashboard') }}" class="px-4 py-2 text-sm font-semibold text-white bg-gray-900 rounded-full hover:bg-gray-700 transition">
                             ⚙️ Admin
                         </a>
                     {% endif %}
+
+                    {% set unread = unread_notifications_count() %}
+                    <a href="{{ path('app_notifications') }}" class="relative px-2 py-2 text-gray-600 hover:text-[#FF385C] transition" title="Notifications">
+                        🔔
+                        {% if unread > 0 %}
+                            <span class="absolute -top-0.5 -right-0.5 bg-[#FF385C] text-white text-[10px] font-bold rounded-full min-w-[16px] h-4 px-1 flex items-center justify-center">{{ unread > 9 ? '9+' : unread }}</span>
+                        {% endif %}
+                    </a>
 
                     <span class="hidden sm:inline text-sm text-gray-500">{{ app.user.firstName }}</span>
 

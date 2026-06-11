@@ -1,0 +1,30 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Notifications — HomeStay{% endblock %}
+
+{% block body %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Notifications</h1>
+
+    {% if notifications is empty %}
+        <div class="bg-white border border-gray-200 rounded-2xl p-12 text-center text-gray-500">
+            Aucune notification pour le moment. 🔔
+        </div>
+    {% else %}
+        <div class="bg-white border border-gray-200 rounded-2xl divide-y divide-gray-100">
+            {% for notification in notifications %}
+                <div class="flex items-start gap-3 px-5 py-4 {{ not notification.isRead ? 'bg-rose-50/40' : '' }}">
+                    <div class="text-xl">🔔</div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-between">
+                            <h2 class="font-medium text-gray-900">{{ notification.title }}</h2>
+                            <time class="text-xs text-gray-400">{{ notification.createdAt|date('d/m/Y H:i') }}</time>
+                        </div>
+                        <p class="text-sm text-gray-600 mt-0.5">{{ notification.content }}</p>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
