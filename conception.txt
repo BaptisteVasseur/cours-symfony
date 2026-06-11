@@ -1,0 +1,31 @@
+CONCEPTION TECHNIQUE
+
+1. MODÉLISATION TEMPOREL​LE
+   - Q: Le check-out est-il réservable le même jour ?
+        R: Oui, Le jour de check-out est réservable par un nouveau voyageur puisque nous facturons par nuit et non par jour, donc un individu qui va reserver un logement ne payera pas pour la journée mais pour la nuit, donc qu'il soit présent la journée ou non cela ne change rien.
+   - Q: Schéma de données pour gérer 11h/15h
+        R: Pour le schéma de donnée, il vaut mieux s'alligner sur le fonctionnement de ical puisque c'est avec cela que l'on va pouvoir organiser les reservations. De ce fait, on utilisera "Date" pour s'aligner avec le fonctionnement de Ical, mais aussi par simplicité technique et cohérence métier comme justifier precedemment, la non disponibilité du logement sur une plage horraire dans la journée n'est pas une contrainte à la reservation. Le client de la veille n'a techniquement pas reserver pour le jour du depart meme si il est encore présent jusque 11h.
+
+2. GESTION DES ÉTATS (Pending)
+   - Q: Une demande Pending bloque-t-elle les dates ? 
+        R: Non car conformément au cahier des charges, seul le status "confirmed" doit pouvoir verouiller des dates.
+   - Q: Analysez les risques liés à ce choix (blocage abusif vs overbooking) 
+        R: On peux limiter/gérer le risque d'overbooking, le status pending d'une demande permet au proprietaire de recevoir ses demande par exmeple sous forme de liste dans un ordre chronologique, et une fois que le proprietaire confirme une demande, cela pourrait envoyer une nottification à l'ensemble des personnes ayant fait cette demande les informant de l'indisponibilité pour la période en question. L'algo de disponibilité se chargera de rendre indisponible le logement sur la durée de reservation.
+
+3. CONCURRENCE
+   - Q: Comment votre base de données réagit-elle si deux utilisateurs valident un paiement à la milliseconde près pour le même logement et les mêmes dates ?
+        R: Dans le cas du instantbooking, on va utiliser un élément natif à la bdd qui va agire comme un verrou au niveau de la ligne du logement en bdd. Au moment de la tentative d epaiement, la premiere requette arrivé va verrouiler l'etape et passer au suivante jusque finaliser la transaction, les autres users seront dans un etat de tentative de paiement avec un laps de temps pour le chargement du fait du verrou, et des que la transaction sera finalisé pour le premier d'entre eux, un message expliquant que le logement a déjà été reserver pour la periode specifié apparaitra.
+           Dans le cas du non instantbooking, cela est simplement en pending comme l'explique la question precedente, donc le proprietaire sera à charge de directement gerer cet aspect de validation. Le risque de concurrence à la milisecondes ne s'applique pas vraiment ici, mais par cohérence le mecanisme reste le même.
+
+4. PERFORMANCE 
+   - Comment valider la disponibilité d'un logement sur 20 nuits consécutives sans saturer la base de requêtes SQL itératives ?
+        R: L'idée serait de faire un requête pour vérifier le status du logement sur la periode donnée, si on decele un reservation, donc un status "confirmed" ou que le logement est indisponible pour une quelconque raison, cela empechera la reservation. Ainsi nous evitons d'iterer une requette sql sur les 20 jours. En une requete SQL on recupere les periode de reservation existante et on verifie si la periode demandée se chevauche avec une autre periode de reservation existante
+
+5. ASYNCHRONISME 
+   - Q: Pourquoi l'envoi d'email doit-il préférentiellement intervenir après le flush() de l'ORM ? Quelle est la stratégie si RabbitMQ tombe en panne ?
+        R: flush() permet de confirmer au prealable en bdd avant d'envoyer lemail, autrement il y'a un risque si flush() echoue et que le mail est envoyé, la confirmation ne sera en réalité pas effective.
+           Si rabbitMQ tombe en panne via un transport de secours on ecris les message en bdd jusqu'a un retour à la normal
+
+6. STRUCTURE SQL DU CALENDRIER
+   - Q: Justifiez votre choix d'architecture pour le calendrier : table de jours individuels ( PropertyAvailability ) ou table de périodes ( date_start , date_end ).
+        R: Par cohérence on utilisera une table de période (algo de chevauchement pour les reservations), le fonctionnement de Ical
