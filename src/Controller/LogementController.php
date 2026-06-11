@@ -64,8 +64,46 @@ class LogementController extends AbstractController
     #[Route('/logements/{id}', name: 'app_logement_show', requirements: ['id' => '\\d+'], methods: ['GET'])]
     public function show(Logement $logement): Response
     {
+        $dateMin = new \DateTimeImmutable('today');
+        $dateMax = $dateMin->modify('+60 days');
+        $disponibilitesParDate = [];
+
+        foreach ($logement->disponibilites as $disponibilite) {
+            if ($disponibilite->date >= $dateMin && $disponibilite->date < $dateMax) {
+                $disponibilitesParDate[$disponibilite->date->format('Y-m-d')] = $disponibilite;
+            }
+        }
+
+        $calendrierDisponibilites = [];
+        $semaine = array_fill(0, ((int) $dateMin->format('N')) - 1, [
+            'date' => null,
+            'disponibilite' => null,
+        ]);
+        $date = $dateMin;
+
+        while ($date < $dateMax) {
+            $semaine[] = [
+                'date' => $date,
+                'disponibilite' => $disponibilitesParDate[$date->format('Y-m-d')] ?? null,
+            ];
+
+            if (count($semaine) === 7) {
+                $calendrierDisponibilites[] = $semaine;
+                $semaine = [];
+            }
+
+            $date = $date->modify('+1 day');
+        }
+
+        if ($semaine !== []) {
+            $calendrierDisponibilites[] = $semaine;
+        }
+
         return $this->render('logement/show.html.twig', [
             'logement' => $logement,
+            'calendrier_disponibilites' => $calendrierDisponibilites,
+            'date_min' => $dateMin,
+            'date_max' => $dateMax,
         ]);
     }
 }

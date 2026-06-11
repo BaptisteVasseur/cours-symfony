@@ -2,6 +2,19 @@
 
 Date : 11 juin 2026
 
+
+## 0. Statut de realisation
+
+- Commit 1 - Conception : termine.
+- Commit 2 - Modele reservation/calendrier : termine.
+- Commit 3 - Service de disponibilite : termine.
+- Commit 4 - Recherche par dates et voyageurs : termine.
+- Commit 5 - Calendrier hote et blocage manuel : termine.
+- Commit 6 - Workflow reservation et annulation : termine.
+- Commit 7 - Emails asynchrones : termine.
+- Commit 8 - Export iCal securise : termine.
+- Commit 9 - Documentation finale : en cours.
+
 ## Objectif prioritaire
 
 Traiter en priorite le sujet d'evaluation centre sur le moteur de reservation, le calendrier de disponibilite, les notifications email asynchrones et la synchronisation iCal.
@@ -48,21 +61,21 @@ Le livrable de conception `conception.txt` est prioritaire avant toute nouvelle 
 - Notifications : in-app faites, email asynchrone non fait.
 - Disponibilite : verifiee en memoire depuis la collection du logement, pas encore optimisee en requetes Doctrine de plages.
 
-### Manquant pour le sujet
+### Points du sujet et statut
 
-- Fichier `conception.txt` a la racine.
-- Propriete `instantBooking` ou equivalent sur `Logement`.
-- Token iCal unique et revocable par logement.
-- Endpoint export iCal securise `/api/properties/{id}/calendar.ics?token=...`.
-- Interface calendrier hote en vue mensuelle.
-- Blocage manuel de periodes par l'hote avec motif.
-- Annulation voyageur/hote avec motif.
-- Liberation des dates lors d'une annulation.
-- Notifications email via Mailer + Messenger.
-- Verification Mailpit des emails.
-- Recherche stricte par `destination`, `checkin`, `checkout`, `guests`.
-- Tests ou verifications de non-chevauchement.
-- Bonus import iCal via commande `app:ical:sync`.
+- Fichier `conception.txt` a la racine. Fait.
+- Propriete `instantBooking` sur `Logement`. Fait.
+- Token iCal unique et revocable par logement. Fait.
+- Endpoint export iCal securise `/api/properties/{id}/calendar.ics?token=...`. Fait.
+- Interface calendrier hote en vue mensuelle. Fait.
+- Blocage manuel de periodes par l'hote avec motif. Fait.
+- Annulation voyageur/hote avec motif. Fait.
+- Liberation des dates lors d'une annulation. Fait.
+- Notifications email via Mailer + Messenger. Fait.
+- Verification Mailpit des emails. Fait.
+- Recherche stricte par `destination`, `checkin`, `checkout`, `guests`. Fait.
+- Tests ou verifications de non-chevauchement. Partiel : verifications manuelles et revalidation metier.
+- Bonus import iCal via commande `app:ical:sync`. Non fait.
 
 ## 2. Priorite 1 - Conception
 

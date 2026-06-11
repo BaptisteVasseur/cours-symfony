@@ -41,6 +41,62 @@
                     </div>
                 </div>
 
+                <div class="border-b border-gray-100 py-8">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+                        <div>
+                            <h2 class="text-xl font-semibold text-gray-950">Disponibilites</h2>
+                            <p class="mt-2 text-sm text-gray-600">Les dates ouvertes a la reservation sur les 60 prochains jours.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2 text-xs font-medium">
+                            <span class="rounded-full bg-emerald-50 px-3 py-1 text-emerald-700">Disponible</span>
+                            <span class="rounded-full bg-rose-50 px-3 py-1 text-rose-700">Reservee</span>
+                            <span class="rounded-full bg-gray-100 px-3 py-1 text-gray-600">Bloquee</span>
+                            <span class="rounded-full bg-slate-50 px-3 py-1 text-slate-500">Non ouverte</span>
+                        </div>
+                    </div>
+
+                    <div class="mt-5 grid grid-cols-7 gap-2 text-center text-xs font-semibold uppercase text-gray-400">
+                        <span>Lun</span>
+                        <span>Mar</span>
+                        <span>Mer</span>
+                        <span>Jeu</span>
+                        <span>Ven</span>
+                        <span>Sam</span>
+                        <span>Dim</span>
+                    </div>
+                    <div class="mt-2 space-y-2">
+                        {% for semaine in calendrier_disponibilites %}
+                            <div class="grid grid-cols-7 gap-2">
+                                {% for jour in semaine %}
+                                    {% if jour.date %}
+                                        {% set disponibilite = jour.disponibilite %}
+                                        {% set statut = disponibilite ? disponibilite.statut.value : 'non_ouverte' %}
+                                        {% set libelle = {
+                                            disponible: 'Dispo',
+                                            reservee: 'Reservee',
+                                            bloquee: 'Bloquee',
+                                            non_ouverte: 'Non ouverte'
+                                        }[statut] %}
+                                        {% set style = {
+                                            disponible: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+                                            reservee: 'border-rose-200 bg-rose-50 text-rose-800',
+                                            bloquee: 'border-gray-200 bg-gray-100 text-gray-600',
+                                            non_ouverte: 'border-slate-100 bg-slate-50 text-slate-400'
+                                        }[statut] %}
+                                        <div class="min-h-16 rounded-md border px-1.5 py-2 text-center {{ style }}">
+                                            <p class="text-sm font-bold">{{ jour.date|date('d/m') }}</p>
+                                            <p class="mt-1 text-[0.65rem] font-semibold leading-tight">{{ libelle }}</p>
+                                        </div>
+                                    {% else %}
+                                        <div class="min-h-16"></div>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <p class="mt-4 text-xs text-gray-500">La date de depart correspond au lendemain de la derniere nuit reservee.</p>
+                </div>
+
                 <div class="grid gap-8 py-8 md:grid-cols-2">
                     <section>
                         <h2 class="text-xl font-semibold text-gray-950">Reglement</h2>
@@ -70,11 +126,11 @@
                     <div class="grid grid-cols-2 gap-3">
                         <label>
                             <span class="text-xs font-semibold uppercase text-gray-500">Arrivee</span>
-                            <input name="date_arrivee" type="date" required class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                            <input name="date_arrivee" type="date" min="{{ date_min|date('Y-m-d') }}" max="{{ date_max|date('Y-m-d') }}" required class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
                         </label>
                         <label>
                             <span class="text-xs font-semibold uppercase text-gray-500">Depart</span>
-                            <input name="date_depart" type="date" required class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                            <input name="date_depart" type="date" min="{{ date_min|date('Y-m-d') }}" max="{{ date_max|date('Y-m-d') }}" required class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
                         </label>
                     </div>
                     <label>
