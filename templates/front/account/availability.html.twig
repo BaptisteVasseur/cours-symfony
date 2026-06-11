@@ -3,7 +3,7 @@
 {% block title %}Disponibilités — {{ property.title }}{% endblock %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
         <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
             <i class="fa-solid fa-arrow-left"></i> Retour à mes propriétés
         </a>
@@ -17,39 +17,151 @@
             {% endfor %}
         {% endfor %}
 
-        <section class="border border-gray-200 rounded-xl p-6 mb-8">
-            <h2 class="text-lg font-semibold mb-4">Bloquer une période</h2>
-            <form method="POST" action="{{ path('app_availability_block', { id: property.id }) }}" class="flex flex-wrap gap-4 items-end">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
-                    <input type="date" name="start_date" required class="border border-gray-300 rounded-lg px-4 py-2 text-sm">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Date de fin (exclue)</label>
-                    <input type="date" name="end_date" required class="border border-gray-300 rounded-lg px-4 py-2 text-sm">
-                </div>
-                <button type="submit" class="bg-gray-900 text-white font-semibold px-5 py-2 rounded-lg text-sm hover:bg-gray-700 transition">
-                    Bloquer
-                </button>
-            </form>
-        </section>
+        {% set year = app.request.query.get('year') ?? 'now'|date('Y') %}
+        {% set month = app.request.query.get('month') ?? 'now'|date('n') %}
+        {% set firstDayOfWeek = (year ~ '-' ~ (month < 10 ? '0' ~ month : month) ~ '-01')|date('N') %}
+        {% set daysInMonth = (year ~ '-' ~ (month < 10 ? '0' ~ month : month) ~ '-01')|date('t') %}
+        {% set monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'] %}
 
-        <section class="border border-gray-200 rounded-xl p-6">
-            <h2 class="text-lg font-semibold mb-4">Dates bloquées</h2>
-            {% if blocked|length > 0 %}
-                <div class="space-y-2">
-                    {% for availability in blocked %}
-                        <div class="flex items-center justify-between py-2 border-b border-gray-100">
-                            <span class="text-sm text-gray-700">{{ availability.availableDate|date('d/m/Y') }}</span>
-                            <form method="POST" action="{{ path('app_availability_unblock', { id: property.id, availabilityId: availability.id }) }}">
-                                <button type="submit" class="text-xs text-red-600 hover:underline">Débloquer</button>
-                            </form>
-                        </div>
-                    {% endfor %}
+        {% set blockedDates = [] %}
+        {% for a in blocked %}
+            {% set blockedDates = blockedDates|merge([a.availableDate|date('Y-m-d')]) %}
+        {% endfor %}
+
+        {% set prevMonth = month == 1 ? 12 : month - 1 %}
+        {% set prevYear = month == 1 ? year - 1 : year %}
+        {% set nextMonth = month == 12 ? 1 : month + 1 %}
+        {% set nextYear = month == 12 ? year + 1 : year %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+                <div class="border border-gray-200 rounded-xl p-6 mb-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <a href="{{ path('app_availability_index', { id: property.id, month: prevMonth, year: prevYear }) }}"
+                           class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                            <i class="fa-solid fa-chevron-left text-sm text-gray-600"></i>
+                        </a>
+                        <h2 class="text-lg font-semibold text-gray-900">{{ monthNames[month - 1] }} {{ year }}</h2>
+                        <a href="{{ path('app_availability_index', { id: property.id, month: nextMonth, year: nextYear }) }}"
+                           class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition">
+                            <i class="fa-solid fa-chevron-right text-sm text-gray-600"></i>
+                        </a>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-1 mb-2">
+                        {% for dayName in ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'] %}
+                            <div class="text-center text-xs font-medium text-gray-400 py-1">{{ dayName }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-1">
+                        {% for i in 1..(firstDayOfWeek - 1) %}
+                            <div></div>
+                        {% endfor %}
+
+                        {% for day in 1..daysInMonth %}
+                            {% set dateStr = year ~ '-' ~ (month < 10 ? '0' ~ month : month) ~ '-' ~ (day < 10 ? '0' ~ day : day) %}
+                            {% set isBlocked = dateStr in blockedDates %}
+                            {% set isToday = dateStr == 'now'|date('Y-m-d') %}
+
+                            <div class="relative aspect-square flex items-center justify-center rounded-lg text-sm font-medium
+                                {{ isBlocked ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-700 hover:bg-gray-100' }}
+                                {{ isToday ? 'ring-2 ring-gray-900' : '' }}
+                                transition cursor-default">
+                                {{ day }}
+                                {% if isBlocked %}
+                                    <span class="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-red-400"></span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="flex items-center gap-4 mt-4 text-xs text-gray-500">
+                        <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-gray-50 border border-gray-200"></span> Disponible</div>
+                        <div class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-red-100"></span> Bloqué</div>
+                    </div>
                 </div>
-            {% else %}
-                <p class="text-gray-500 text-sm">Aucune date bloquée.</p>
-            {% endif %}
-        </section>
+
+                <div class="border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4">Bloquer une période</h2>
+                    <form method="POST" action="{{ path('app_availability_block', { id: property.id }) }}" class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
+                                <input type="date" name="start_date" required class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Date de fin (exclue)</label>
+                                <input type="date" name="end_date" required class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
+                            </div>
+                            <div>
+    <label class="block text-sm font-medium text-gray-700 mb-1">Motif</label>
+    <select name="reason" required class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
+        <option value="">-- Choisir un motif --</option>
+        <option value="Travaux">Travaux</option>
+        <option value="Usage personnel">Usage personnel</option>
+        <option value="Entretien">Entretien</option>
+        <option value="Autre">Autre</option>
+    </select>
+</div>
+                        </div>
+                        <button type="submit" class="bg-gray-900 text-white font-semibold px-5 py-2.5 rounded-lg text-sm hover:bg-gray-700 transition">
+                            <i class="fa-solid fa-ban mr-2"></i>Bloquer ces dates
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <aside>
+                <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
+                <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-calendar-xmark text-gray-400"></i>
+                    Dates bloquées
+                    {% if blocked|length > 0 %}
+                        <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full">
+                            {{ blocked|length }}
+                        </span>
+                    {% endif %}
+                </h2>
+
+    {% if blocked|length > 0 %}
+        <div class="space-y-3 max-h-80 overflow-y-auto">
+            {% for availability in blocked %}
+                <div class="group flex items-center justify-between py-2 px-1 border-b border-gray-100 hover:bg-gray-50 rounded-lg transition-colors">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-ban text-red-400 text-sm"></i>
+                        <span class="text-sm font-medium text-gray-700">
+                            {{ availability.availableDate|date('d/m/Y') }}
+                        </span>
+                        {% if availability.reason %}
+                            <span class="text-xs text-gray-400 ml-1">
+                                ({{ availability.reason|length > 30 ? availability.reason|slice(0, 30) ~ '...' : availability.reason }})
+                            </span>
+                        {% endif %}
+                    </div>
+                    
+                    <form method="POST" action="{{ path('app_availability_unblock', { id: property.id, availabilityId: availability.id }) }}"
+                          onsubmit="return confirm('Débloquer cette date ?')">
+                        <button type="submit" 
+                                class="text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors font-medium">
+                            <i class="fa-solid fa-unlock-alt mr-1"></i>
+                            Débloquer
+                        </button>
+                    </form>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-8">
+            <div class="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3">
+                <i class="fa-solid fa-check text-green-500 text-xl"></i>
+            </div>
+            <p class="text-gray-500 text-sm">Aucune date bloquée</p>
+            <p class="text-gray-400 text-xs mt-1">Toutes les dates sont disponibles</p>
+        </div>
+    {% endif %}
+</div>
+            </aside>
+        </div>
     </main>
 {% endblock %}

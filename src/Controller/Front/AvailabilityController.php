@@ -16,7 +16,7 @@ use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/logement/{id}/disponibilites')]
-#[IsGranted('ROLE_ADMIN')]
+#[IsGranted('ROLE_HOST')]
 final class AvailabilityController extends AbstractController
 {
     #[Route('', name: 'app_availability_index', methods: ['GET'])]
@@ -51,11 +51,14 @@ final class AvailabilityController extends AbstractController
         $interval = new \DateInterval('P1D');
         $period = new \DatePeriod($start, $interval, $end);
 
+        $reason = $request->request->get('reason', 'Indisponibilité');
+
         foreach ($period as $date) {
             $availability = new PropertyAvailability();
             $availability->setProperty($property);
             $availability->setAvailableDate(\DateTimeImmutable::createFromInterface($date));
             $availability->setIsAvailable(false);
+            $availability->setReason($reason);
             $em->persist($availability);
         }
 

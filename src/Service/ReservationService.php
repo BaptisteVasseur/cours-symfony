@@ -9,14 +9,19 @@ use App\Entity\PropertyAvailability;
 use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Message\ReservationCancelledMessage;
+use App\Message\ReservationConfirmedMessage;
+use App\Message\ReservationCreatedMessage;
 use App\Repository\ReservationRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 class ReservationService
 {
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly ReservationRepository $reservationRepository,
+        private readonly MessageBusInterface $bus,
     ) {}
 
     public function isAvailable(Property $property, \DateTimeImmutable $checkin, \DateTimeImmutable $checkout, int $guestsCount): bool
@@ -100,6 +105,12 @@ class ReservationService
         $this->em->persist($reservation);
         $this->em->flush();
 
+        if ($initialStatus === 'pending') {
+            $this->bus->dispatch(new ReservationCreatedMessage($reservation->getId()));
+        } elseif ($initialStatus === 'confirmed') {
+            $this->bus->dispatch(new ReservationConfirmedMessage($reservation->getId()));
+        }
+
         return $reservation;
     }
 
@@ -110,6 +121,8 @@ class ReservationService
         }
 
         $this->transition($reservation, 'confirmed', $changedBy);
+
+        $this->bus->dispatch(new ReservationConfirmedMessage($reservation->getId()));
     }
 
     public function cancel(Reservation $reservation, User $changedBy, string $reason): void
@@ -120,6 +133,7 @@ class ReservationService
 
         $reservation->setCancellationReason($reason);
         $this->transition($reservation, 'cancelled', $changedBy);
+        $this->bus->dispatch(new ReservationCancelledMessage($reservation->getId()));
     }
 
     public function complete(Reservation $reservation, User $changedBy): void
