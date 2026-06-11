@@ -37,6 +37,9 @@ class Booking
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $specialRequests = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $cancelReason = null;
+
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -85,6 +88,9 @@ class Booking
 
     public function getSpecialRequests(): ?string { return $this->specialRequests; }
     public function setSpecialRequests(?string $specialRequests): static { $this->specialRequests = $specialRequests; return $this; }
+
+    public function getCancelReason(): ?string { return $this->cancelReason; }
+    public function setCancelReason(?string $cancelReason): static { $this->cancelReason = $cancelReason; return $this; }
 
     public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }
     public function setCreatedAt(\DateTimeImmutable $createdAt): static { $this->createdAt = $createdAt; return $this; }

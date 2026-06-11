@@ -53,6 +53,12 @@ class Listing
     private ?bool $isActive = true;
 
     #[ORM\Column]
+    private bool $instantBooking = false;
+
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalToken = null;
+
+    #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\Column]
@@ -86,6 +92,10 @@ class Listing
     #[ORM\OneToMany(targetEntity: Conversation::class, mappedBy: 'listing')]
     private Collection $conversations;
 
+    /** @var Collection<int, BlockedPeriod> */
+    #[ORM\OneToMany(targetEntity: BlockedPeriod::class, mappedBy: 'listing', cascade: ['persist', 'remove'])]
+    private Collection $blockedPeriods;
+
     public function __construct()
     {
         $this->bookings = new ArrayCollection();
@@ -93,6 +103,7 @@ class Listing
         $this->amenities = new ArrayCollection();
         $this->reviews = new ArrayCollection();
         $this->conversations = new ArrayCollection();
+        $this->blockedPeriods = new ArrayCollection();
     }
 
     public function getId(): ?int { return $this->id; }
@@ -132,6 +143,12 @@ class Listing
 
     public function isActive(): ?bool { return $this->isActive; }
     public function setIsActive(bool $isActive): static { $this->isActive = $isActive; return $this; }
+
+    public function isInstantBooking(): bool { return $this->instantBooking; }
+    public function setInstantBooking(bool $instantBooking): static { $this->instantBooking = $instantBooking; return $this; }
+
+    public function getIcalToken(): ?string { return $this->icalToken; }
+    public function setIcalToken(?string $icalToken): static { $this->icalToken = $icalToken; return $this; }
 
     public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }
     public function setCreatedAt(\DateTimeImmutable $createdAt): static { $this->createdAt = $createdAt; return $this; }
@@ -238,6 +255,26 @@ class Listing
     {
         if ($this->conversations->removeElement($conversation) && $conversation->getListing() === $this) {
             $conversation->setListing(null);
+        }
+        return $this;
+    }
+
+    /** @return Collection<int, BlockedPeriod> */
+    public function getBlockedPeriods(): Collection { return $this->blockedPeriods; }
+
+    public function addBlockedPeriod(BlockedPeriod $blockedPeriod): static
+    {
+        if (!$this->blockedPeriods->contains($blockedPeriod)) {
+            $this->blockedPeriods->add($blockedPeriod);
+            $blockedPeriod->setListing($this);
+        }
+        return $this;
+    }
+
+    public function removeBlockedPeriod(BlockedPeriod $blockedPeriod): static
+    {
+        if ($this->blockedPeriods->removeElement($blockedPeriod) && $blockedPeriod->getListing() === $this) {
+            $blockedPeriod->setListing(null);
         }
         return $this;
     }
