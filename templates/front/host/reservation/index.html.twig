@@ -20,7 +20,6 @@
         <h2 class="text-base font-semibold text-gray-700 mb-3">Export calendrier (iCal)</h2>
         <div class="grid gap-3 sm:grid-cols-2">
         {% for property in properties %}
-            {% if property.calendarToken %}
             <div class="flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
                 <div class="min-w-0 mr-3">
                     <p class="text-sm font-medium text-gray-800 truncate">{{ property.title }}</p>
@@ -28,14 +27,22 @@
                         {{ property.instantBooking ? 'Réservation instantanée' : 'Confirmation requise' }}
                     </p>
                 </div>
-                <a href="{{ path('api_ical_export', {id: property.id}) }}?token={{ property.calendarToken }}"
-                   download="calendrier-{{ property.id }}.ics"
-                   class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition">
-                    <i class="fa-regular fa-calendar text-brand"></i>
-                    Exporter .ics
-                </a>
+                <div class="flex items-center gap-2 shrink-0">
+                    <a href="{{ path('app_host_calendar', {id: property.id}) }}"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-brand text-white rounded-lg hover:opacity-90 transition">
+                        <i class="fa-regular fa-calendar-days"></i>
+                        Calendrier
+                    </a>
+                    {% if property.calendarToken %}
+                    <a href="{{ path('api_ical_export', {id: property.id}) }}?token={{ property.calendarToken }}"
+                       download="calendrier-{{ property.id }}.ics"
+                       class="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition">
+                        <i class="fa-solid fa-arrow-down-to-line"></i>
+                        .ics
+                    </a>
+                    {% endif %}
+                </div>
             </div>
-            {% endif %}
         {% endfor %}
         </div>
     </section>

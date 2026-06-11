@@ -18,8 +18,9 @@
            class="p-2 rounded-lg hover:bg-gray-100 text-gray-600">
             <i class="fa-solid fa-chevron-left"></i>
         </a>
+        {% set monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'] %}
         <h2 class="text-lg font-semibold text-gray-900">
-            {{ firstDay|date('MMMM Y', locale='fr') }}
+            {{ monthNames[month - 1] }} {{ year }}
         </h2>
         <a href="{{ path('app_host_calendar', {id: property.id, year: nextMonth.format('Y'), month: nextMonth.format('n')}) }}"
            class="p-2 rounded-lg hover:bg-gray-100 text-gray-600">
@@ -47,7 +48,7 @@
                 {% if dayNum < 1 or dayNum > daysInMonth %}
                     <div class="h-12 bg-gray-50 border-b border-r border-gray-100"></div>
                 {% else %}
-                    {% set dateStr = year ~ '-' ~ month|format_number({minimumIntegerDigits: 2}) ~ '-' ~ dayNum|format_number({minimumIntegerDigits: 2}) %}
+                    {% set dateStr = year ~ '-' ~ '%02d'|format(month) ~ '-' ~ '%02d'|format(dayNum) %}
                     {% set isBlocked = dateStr in blockedDates %}
                     {% set today = 'now'|date('Y-m-d') %}
                     {% set isPast = dateStr < today %}
