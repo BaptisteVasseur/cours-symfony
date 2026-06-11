@@ -138,24 +138,35 @@
                         <p class="text-sm text-gray-500 mb-4">Frais de ménage : {{ property.cleaningFee|number_format(0, ',', ' ') }} €</p>
                     {% endif %}
                     <div class="border border-gray-300 rounded-lg mb-4">
-                        <div class="grid grid-cols-2 divide-x divide-gray-300">
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Arrivée</p>
-                                <p class="text-sm text-gray-500">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
+                        <form method="get" action="{{ path('app_reservation_checkout', { id: property.id }) }}">
+                            <div class="grid grid-cols-2 divide-x divide-gray-300 border-b border-gray-300">
+                                <div class="p-3">
+                                    <label class="block text-[10px] font-bold uppercase text-gray-800">Arrivée</label>
+                                    <input type="date" name="checkin" required class="w-full text-sm text-gray-700 focus:outline-none">
+                                </div>
+                                <div class="p-3">
+                                    <label class="block text-[10px] font-bold uppercase text-gray-800">Départ</label>
+                                    <input type="date" name="checkout" required class="w-full text-sm text-gray-700 focus:outline-none">
+                                </div>
                             </div>
                             <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Départ</p>
-                                <p class="text-sm text-gray-500">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
+                                <label class="block text-[10px] font-bold uppercase text-gray-800">Voyageurs</label>
+                                <input type="number" name="guests" min="1" max="{{ property.maxGuests }}" value="1" required class="w-full text-sm text-gray-700 focus:outline-none">
                             </div>
-                        </div>
-                        <div class="p-3 border-t border-gray-300">
-                            <p class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</p>
-                            <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
-                        </div>
+                            {% if app.user %}
+                                <div class="p-3 border-t border-gray-300">
+                                    <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition">
+                                        Réserver
+                                    </button>
+                                </div>
+                            {% endif %}
+                        </form>
                     </div>
-                    <button type="button" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition">
-                        Réserver
-                    </button>
+                    {% if not app.user %}
+                        <a href="{{ path('app_login') }}" class="block w-full text-center bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition">
+                            Connectez-vous pour réserver
+                        </a>
+                    {% endif %}
                     {% if property.instantBooking %}
                         <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
                     {% endif %}
