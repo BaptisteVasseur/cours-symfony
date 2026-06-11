@@ -8,6 +8,7 @@ use App\Entity\User;
 use App\Entity\UserProfile;
 use App\Form\RegistrationType;
 use App\Repository\UserRepository;
+use App\Service\MailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
@@ -24,6 +25,7 @@ class RegisterController extends AbstractController
         EntityManagerInterface $entityManager,
         UserPasswordHasherInterface $passwordHasher,
         UserRepository $userRepository,
+        MailService $mailService,
     ): Response {
         if ($this->getUser() instanceof User) {
             return $this->redirectToRoute('app_home');
@@ -58,9 +60,13 @@ class RegisterController extends AbstractController
             $profile->setLastName($data['lastName']);
             $profile->setIdentityStatus('unverified');
 
+            $user->setProfile($profile);
+
             $entityManager->persist($user);
             $entityManager->persist($profile);
             $entityManager->flush();
+
+            $mailService->sendRegistrationEmail($user);
 
             $this->addFlash('success', 'Compte créé avec succès. Vous pouvez vous connecter.');
 
