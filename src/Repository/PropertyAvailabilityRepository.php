@@ -71,27 +71,4 @@ class PropertyAvailabilityRepository extends ServiceEntityRepository
         return $count > 0;
     }
 
-    /**
-     * @return array<string, string> dates bloquées pour le calendrier frontend ['Y-m-d' => reason]
-     */
-    public function findBlockedRangesForCalendar(Property $property): array
-    {
-        $rows = $this->createQueryBuilder('a')
-            ->select('a.availableDate', 'a.reason')
-            ->where('a.property = :property')
-            ->andWhere('a.isAvailable = false')
-            ->andWhere('a.availableDate >= :today')
-            ->setParameter('property', $property)
-            ->setParameter('today', new \DateTimeImmutable('today'))
-            ->orderBy('a.availableDate', 'ASC')
-            ->getQuery()
-            ->getResult();
-
-        $result = [];
-        foreach ($rows as $row) {
-            $result[$row['availableDate']->format('Y-m-d')] = $row['reason'] ?? '';
-        }
-
-        return $result;
-    }
 }

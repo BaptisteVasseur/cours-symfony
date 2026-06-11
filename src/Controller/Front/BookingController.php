@@ -32,11 +32,12 @@ final class BookingController extends AbstractController
         PropertyAvailabilityRepository $availabilityRepository,
         EntityManagerInterface $entityManager,
     ): Response {
+        $property = $propertyRepository->findOneForDetail($property) ?? $property;
+
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
         }
 
-        $property = $propertyRepository->findOneForDetail($property) ?? $property;
         $user = $this->getUser();
         if (!$user instanceof User) {
             return $this->redirectToRoute('app_login');

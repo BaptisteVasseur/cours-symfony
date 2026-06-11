@@ -13,6 +13,8 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Security\Csrf\CsrfToken;
+use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
@@ -79,6 +81,7 @@ final class AvailabilityController extends AbstractController
                 $current = $current->modify('+1 day');
             }
 
+
             $entityManager->flush();
             $this->addFlash('success', 'Période bloquée avec succès.');
 
@@ -95,10 +98,17 @@ final class AvailabilityController extends AbstractController
     public function unblock(
         Property $property,
         string $availabilityId,
+        Request $request,
         PropertyAvailabilityRepository $availabilityRepository,
         EntityManagerInterface $entityManager,
+        CsrfTokenManagerInterface $csrfTokenManager,
     ): Response {
         $this->denyAccessUnlessGranted('HOST', $property);
+
+        $token = new CsrfToken('unblock' . $availabilityId, $request->request->get('_token'));
+        if (!$csrfTokenManager->isTokenValid($token)) {
+            throw $this->createAccessDeniedException('Token CSRF invalide.');
+        }
 
         $availability = $availabilityRepository->find($availabilityId);
         if ($availability && $availability->getProperty() === $property) {
