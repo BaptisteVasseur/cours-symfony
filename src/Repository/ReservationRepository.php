@@ -150,4 +150,29 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedForPropertyAndMonth(
+        \App\Entity\Property $property,
+        \DateTimeImmutable $monthStart,
+        \DateTimeImmutable $monthEnd,
+    ): array {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkinDate <= :monthEnd')
+            ->andWhere('r.checkoutDate >= :monthStart')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->setParameter('monthStart', $monthStart)
+            ->setParameter('monthEnd', $monthEnd)
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

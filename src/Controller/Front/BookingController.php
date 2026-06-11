@@ -9,6 +9,7 @@ use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Form\BookingType;
+use App\Repository\PropertyAvailabilityRepository;
 use App\Repository\PropertyRepository;
 use App\Repository\ReservationRepository;
 use Doctrine\ORM\EntityManagerInterface;
@@ -29,6 +30,7 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         ReservationRepository $reservationRepository,
+        PropertyAvailabilityRepository $availabilityRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         if ($property->getStatus() !== 'published') {
@@ -64,6 +66,12 @@ final class BookingController extends AbstractController
 
             if ($guestsCount > $property->getMaxGuests()) {
                 $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
+
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
+            }
+
+            if ($availabilityRepository->hasBlockedDays($property, $checkin, $checkout)) {
+                $this->addFlash('error', 'Ce logement est indisponible sur certaines dates de votre séjour.');
 
                 return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
