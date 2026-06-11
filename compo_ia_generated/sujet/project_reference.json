@@ -1,0 +1,376 @@
+{
+  "meta": {
+    "title": "Moteur de Réservation & Calendrier iCal",
+    "context": "Clone Airbnb - Symfony 8 / 4ème année",
+    "branch": "tp/reservation-calendrier",
+    "mandatory_deliverable": "conception.txt à la racine du projet (modèle de données, règles métier, schéma de flux)",
+    "submission": "Pull Request GitHub vers main"
+  },
+
+  "existing_code": {
+    "entities": {
+      "Property": {
+        "file": "src/Entity/Property.php",
+        "relevant_fields": ["instantBooking (bool)", "status (draft|pending|published)", "maxGuests", "pricePerNight", "cleaningFee", "securityDeposit", "checkinTime", "checkoutTime"],
+        "relations": ["availabilities -> PropertyAvailability[]", "iCalSyncs -> PropertyICalSync[]", "reservations -> Reservation[]"]
+      },
+      "Reservation": {
+        "file": "src/Entity/Reservation.php",
+        "status_choices": ["pending", "confirmed", "completed", "cancelled"],
+        "fields": ["checkinDate (DATE_IMMUTABLE)", "checkoutDate (DATE_IMMUTABLE)", "guestsCount", "totalPrice", "cleaningFee", "serviceFee", "securityDeposit", "currency", "cancellationReason", "createdAt"],
+        "note": "cancellationReason obligatoire si status=cancelled (Assert\\Expression déjà en place)"
+      },
+      "PropertyAvailability": {
+        "file": "src/Entity/PropertyAvailability.php",
+        "model": "une ligne = un jour individuel",
+        "fields": ["availableDate (DATE_IMMUTABLE)", "isAvailable (bool, default=true)", "priceOverride (nullable)", "minimumStay (nullable)"],
+        "note": "isAvailable=false = jour manuellement bloqué par l'hôte"
+      },
+      "PropertyICalSync": {
+        "file": "src/Entity/PropertyICalSync.php",
+        "fields": ["providerName", "iCalUrl", "lastSyncAt (nullable)"],
+        "missing": "pas de champ calendarToken pour l'export sécurisé (Partie E)"
+      },
+      "ReservationStatusHistory": {
+        "file": "src/Entity/ReservationStatusHistory.php",
+        "purpose": "historique des changements de statut (timeline voyageur G.5)"
+      }
+    },
+    "controllers": {
+      "BookingController": {
+        "file": "src/Controller/Front/BookingController.php",
+        "route": "GET|POST /logement/{id}/reserver",
+        "what_it_does": "crée la réservation, calcule le prix (nuits * tarif + 12% service fee + cleaningFee), set status selon instantBooking",
+        "what_it_lacks": [
+          "pas de vérification de disponibilité (dates bloquées manuellement + réservations confirmed superposées)",
+          "pas de dispatch de message/email asynchrone après flush",
+          "pas de vérification real-time au moment de la soumission"
+        ]
+      },
+      "ReservationController": {
+        "file": "src/Controller/Front/ReservationController.php",
+        "routes": ["GET /reservations (liste voyageur)", "GET /reservations/{id} (détail)"],
+        "what_it_lacks": [
+          "pas de route annulation (voyageur)",
+          "pas d'espace hôte pour modérer les demandes pending"
+        ]
+      }
+    },
+    "repositories": {
+      "ReservationRepository": {
+        "file": "src/Repository/ReservationRepository.php",
+        "existing_methods": ["findAllForListing()", "findOneForDetail()", "findByGuestForListing(User)", "sumCompletedRevenue()"],
+        "missing_methods": ["findPendingByHost(User) pour la modération", "hasConflict(Property, DateTimeImmutable, DateTimeImmutable) pour la dispo"]
+      },
+      "PropertyAvailabilityRepository": {
+        "file": "src/Repository/PropertyAvailabilityRepository.php",
+        "state": "vide - aucune méthode custom",
+        "missing_methods": ["findBlockedDatesForPeriod(Property, start, end)", "findByPropertyAndMonth(Property, year, month) pour le calendrier hôte"]
+      },
+      "PropertyRepository": {
+        "file": "src/Repository/PropertyRepository.php",
+        "missing_methods": ["search(destination, checkin, checkout, guests) pour /search (Partie C)"]
+      }
+    },
+    "packages_installed": {
+      "symfony/mailer": "8.0 - disponible",
+      "symfony/messenger": "8.0 + amqp + doctrine transports - disponible",
+      "symfony/http-client": "8.0 - disponible (pour import iCal)",
+      "twig": "disponible"
+    }
+  },
+
+  "parts_to_implement": {
+
+    "A_availability_management": {
+      "label": "Partie A — Gestion des disponibilités (hôte)",
+      "priority": 1,
+      "status": "à faire",
+      "specs": {
+        "A1_host_calendar_interface": {
+          "description": "Interface hôte : vue mensuelle du calendrier, déclaration de périodes d'indisponibilité",
+          "route_suggestion": "GET /host/properties/{id}/calendar",
+          "actions": [
+            "Afficher calendrier mensuel avec jours libres/bloqués/réservés",
+            "Form pour bloquer/débloquer une plage de dates (raison optionnelle)",
+            "Optionnel : durée séjour minimum et tarif journalier spécifique via priceOverride et minimumStay"
+          ],
+          "entity_used": "PropertyAvailability (isAvailable=false pour blocage manuel)"
+        },
+        "A2_availability_algorithm": {
+          "description": "Une plage est disponible SSI les 4 conditions sont remplies",
+          "conditions": [
+            "1. Property.status == 'published'",
+            "2. Aucun PropertyAvailability.isAvailable=false sur la période",
+            "3. Aucune Reservation(status=confirmed) ne chevauche la période",
+            "4. Property.maxGuests >= guestsCount demandé"
+          ],
+          "implementation": "Service AvailabilityService::isAvailable(Property, DateTimeImmutable $start, DateTimeImmutable $end, int $guests): bool",
+          "query_strategy": "Une seule requête DQL sur PropertyAvailability + sous-requête sur Reservation pour éviter N+1"
+        }
+      },
+      "new_files": [
+        "src/Service/AvailabilityService.php",
+        "src/Controller/Front/Host/AvailabilityController.php",
+        "templates/front/host/calendar.html.twig"
+      ]
+    },
+
+    "B_booking_flow": {
+      "label": "Partie B — Parcours de réservation",
+      "priority": 2,
+      "status": "partiellement existant",
+      "specs": {
+        "B1_traveler_experience": {
+          "description": "Tunnel de réservation complet",
+          "steps": [
+            "1. Sélection dates depuis fiche logement ou /search",
+            "2. Page checkout (BookingController - déjà existe)",
+            "3. Vérification dispo en temps réel lors soumission",
+            "4. Création réservation (Confirmed si instantBooking, sinon Pending)",
+            "5. Redirection vers /reservations/{id} avec flash",
+            "6. Dispatch asynchrone email notification"
+          ],
+          "fix_in": "src/Controller/Front/BookingController.php",
+          "add": "appel AvailabilityService avant persist + dispatch BookingCreatedMessage"
+        },
+        "B2_host_moderation": {
+          "description": "Tableau de bord hôte : demandes pending, Accepter / Refuser (avec motif)",
+          "routes": [
+            "GET /host/reservations - liste des demandes pending",
+            "POST /host/reservations/{id}/accept",
+            "POST /host/reservations/{id}/reject"
+          ],
+          "on_accept": "Reservation.status -> confirmed + dispatch email voyageur+hôte",
+          "on_reject": "Reservation.status -> cancelled + cancellationReason obligatoire + dispatch email",
+          "new_files": [
+            "src/Controller/Front/Host/ReservationModerationController.php",
+            "templates/front/host/reservations/index.html.twig"
+          ]
+        },
+        "B3_cancellation": {
+          "description": "Annulation par voyageur ou hôte",
+          "rules": [
+            "Motif obligatoire",
+            "Libère immédiatement les dates (suppression ou marquage des PropertyAvailability concernées)",
+            "Notifie les deux parties par email"
+          ],
+          "route": "POST /reservations/{id}/cancel",
+          "status_transition": "confirmed|pending -> cancelled"
+        }
+      }
+    },
+
+    "C_search_engine": {
+      "label": "Partie C — Moteur de recherche",
+      "priority": 3,
+      "status": "à faire",
+      "route": "GET /search",
+      "get_params": {
+        "destination": "recherche LIKE sur PropertyAddress.city ou PropertyAddress.address",
+        "checkin": "DateTimeImmutable - filtrage disponibilité",
+        "checkout": "DateTimeImmutable - filtrage disponibilité",
+        "guests": "int - exclusion si maxGuests < guests"
+      },
+      "implementation": {
+        "repository_method": "PropertyRepository::search(string $destination, ?DateTimeImmutable $checkin, ?DateTimeImmutable $checkout, ?int $guests): array",
+        "dql_strategy": "JOIN PropertyAddress pour destination + sous-requête NOT EXISTS Reservation confirmed qui chevauche + sous-requête NOT EXISTS PropertyAvailability bloquée",
+        "controller": "src/Controller/Front/SearchController.php",
+        "template": "templates/front/search/index.html.twig"
+      }
+    },
+
+    "D_notifications": {
+      "label": "Partie D — Notifications transactionnelles (Messenger + Mailer)",
+      "priority": 4,
+      "status": "à faire",
+      "transport": "Symfony Messenger - file doctrine (DB locale) ou RabbitMQ selon config",
+      "validation": "Mailpit sur http://localhost:8025",
+      "triggers": [
+        {
+          "event": "Nouvelle demande (Pending)",
+          "recipients": ["Hôte"],
+          "data": "logement, dates, infos voyageur, total, lien d'action",
+          "message_class": "App\\Message\\BookingRequestMessage"
+        },
+        {
+          "event": "Réservation validée (Confirmed)",
+          "recipients": ["Voyageur", "Hôte"],
+          "data": "récapitulatif commande, coordonnées, montant",
+          "message_class": "App\\Message\\BookingConfirmedMessage"
+        },
+        {
+          "event": "Refus ou Annulation",
+          "recipients": ["Partie(s) concernée(s)"],
+          "data": "motif explicite",
+          "message_class": "App\\Message\\BookingCancelledMessage"
+        }
+      ],
+      "new_files": [
+        "src/Message/BookingRequestMessage.php",
+        "src/Message/BookingConfirmedMessage.php",
+        "src/Message/BookingCancelledMessage.php",
+        "src/MessageHandler/BookingRequestHandler.php",
+        "src/MessageHandler/BookingConfirmedHandler.php",
+        "src/MessageHandler/BookingCancelledHandler.php",
+        "src/Mail/BookingMailer.php",
+        "templates/email/booking_request.html.twig",
+        "templates/email/booking_confirmed.html.twig",
+        "templates/email/booking_cancelled.html.twig"
+      ],
+      "important_note": "dispatch APRÈS entityManager->flush() pour éviter d'envoyer un email si la transaction échoue"
+    },
+
+    "E_ical_export": {
+      "label": "Partie E — Synchronisation iCal Export",
+      "priority": 5,
+      "status": "à faire",
+      "description": "Chaque logement expose un flux ICS sécurisé recensant les séjours confirmés",
+      "endpoint": "GET /api/properties/{id}/calendar.ics?token={secret}",
+      "security": {
+        "token_field": "à ajouter dans Property ou PropertyICalSync : calendarToken (string unique, storable en DB, révocable)",
+        "rule": "Interdit d'exposer sans validation du token"
+      },
+      "ics_format": {
+        "header": ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//Clone Airbnb//FR"],
+        "per_reservation": {
+          "UID": "res-{reservation.id}@clone-airbnb.local",
+          "SUMMARY": "{property.title} — {guest.fullName}",
+          "DTSTART;VALUE=DATE": "YYYYMMDD (checkinDate)",
+          "DTEND;VALUE=DATE": "YYYYMMDD (checkoutDate)",
+          "DESCRIPTION": "Séjour {nights} nuits — {totalPrice}€ — {guest.email}"
+        }
+      },
+      "filter": "Uniquement les Reservation.status == 'confirmed'",
+      "new_files": [
+        "src/Controller/Api/ICalExportController.php",
+        "src/Service/ICalExportService.php"
+      ],
+      "token_migration": "ajouter calendarToken sur Property (uuid v4, généré à la création)"
+    },
+
+    "F_ical_import_BONUS": {
+      "label": "Partie F — Synchronisation iCal Import (BONUS)",
+      "priority": 6,
+      "status": "bonus - à faire",
+      "description": "L'hôte fournit une URL iCal externe (ex: son calendrier Airbnb). Le système récupère ce flux et bloque les nuitées correspondantes en local.",
+      "command": "app:ical:sync",
+      "file": "src/Command/ICalSyncCommand.php",
+      "http_client": "Symfony\\Contracts\\HttpClient\\HttpClientInterface (déjà installé)",
+      "entity_used": "PropertyICalSync (iCalUrl, lastSyncAt)",
+      "blocking_strategy": "Créer/mettre à jour des PropertyAvailability(isAvailable=false) pour les VEVENT importés",
+      "conflict_management": {
+        "chevauchement_avec_reservation_confirmed": "Logger l'anomalie, ne pas écraser la réservation",
+        "suppression_evenement_distant": "Supprimer le PropertyAvailability bloqué si le VEVENT n'existe plus dans le flux",
+        "documenter_dans_conception.txt": true
+      },
+      "cron": "symfony/scheduler ou crontab système pour automatiser"
+    },
+
+    "G_advanced_BONUS": {
+      "label": "Partie G — Fonctionnalités avancées (BONUS)",
+      "items": {
+        "G1_expiration": {
+          "description": "Annulation automatique des demandes Pending non traitées après 24h via un Worker Messenger",
+          "implementation": "Symfony Messenger Scheduler ou DelayStamp sur un message"
+        },
+        "G2_checkin_reminder": {
+          "description": "Mail de rappel J-1 avec informations d'accès",
+          "implementation": "Symfony Scheduler (CronTask) ou Messenger Scheduler"
+        },
+        "G5_timeline": {
+          "description": "Historique visuel des changements de statut sur la fiche réservation",
+          "entity": "ReservationStatusHistory (déjà existante)",
+          "implementation": "Alimenter ReservationStatusHistory à chaque transition d'état + afficher dans show.html.twig"
+        },
+        "G6_dynamic_pricing": {
+          "description": "Calcul réactif du coût total (nuits × prix + frais) selon les dates choisies en front",
+          "implementation": "Stimulus JS + endpoint AJAX ou calcul JS côté client"
+        },
+        "G8_in_app_notifications": {
+          "description": "Système de notifications en BDD (icône cloche dans nav)",
+          "entity": "Notification (déjà existante dans src/Entity/Notification.php)"
+        }
+      }
+    }
+  },
+
+  "conception_txt_questions": {
+    "file": "conception.txt (obligatoire, à rédiger manuellement)",
+    "questions_a_repondre": [
+      {
+        "theme": "Modélisation temporelle",
+        "question": "Le jour de checkout est-il réservable par un nouveau voyageur ?",
+        "decision": "Oui : checkin le jour du checkout d'une autre réservation est autorisé car le précédent voyageur part. La comparaison doit être < checkout (exclusif) pas <= .",
+        "schema": "chevauchement si : nouvelle.checkin < existante.checkout AND nouvelle.checkout > existante.checkin"
+      },
+      {
+        "theme": "Gestion des états",
+        "question": "Une demande Pending bloque-t-elle les dates ?",
+        "decision_recommandee": "Non : Pending ne bloque pas. Seul Confirmed bloque. Risque d'overbooking acceptable vs blocage abusif. Si instantBooking=true : passage direct en Confirmed donc blocage immédiat.",
+        "risque": "Deux voyageurs peuvent soumettre simultanément pour les mêmes dates. Premier confirmé gagne, second est annulé automatiquement."
+      },
+      {
+        "theme": "Concurrence",
+        "question": "Deux utilisateurs valident en même temps pour le même logement et les mêmes dates",
+        "solution": "Pessimistic lock (LOCK_PESSIMISTIC_WRITE) sur la Property au moment de la création de réservation, ou vérification de dispo dans une transaction + unique constraint"
+      },
+      {
+        "theme": "Performance",
+        "question": "Valider la disponibilité sur 20 nuits sans requêtes SQL itératives",
+        "solution": "Une seule requête DQL avec NOT EXISTS + BETWEEN sur la plage entière plutôt que de boucler jour par jour"
+      },
+      {
+        "theme": "Asynchronisme",
+        "question": "Pourquoi dispatcher l'email après flush() ?",
+        "solution": "Si la transaction ORM échoue, le message ne doit pas partir. En dispatchant après flush(), on garantit que la donnée est persistée. Stratégie de fallback si RabbitMQ tombe : utiliser le transport doctrine (DB locale) comme failover."
+      },
+      {
+        "theme": "Structure SQL",
+        "question": "Table de jours individuels (PropertyAvailability) ou table de périodes (date_start, date_end) ?",
+        "decision": "Table de jours individuels (déjà en place). Avantage : requêtes simples avec BETWEEN, gestion fine par jour. Inconvénient : volume élevé pour longues périodes."
+      }
+    ]
+  },
+
+  "implementation_order": [
+    "1. Rédiger conception.txt (obligatoire avant code)",
+    "2. Partie A : AvailabilityService + Host Calendar Controller",
+    "3. Partie B : Fix BookingController (ajout dispo check) + Host Moderation + Cancellation",
+    "4. Partie C : SearchController + PropertyRepository::search()",
+    "5. Partie D : Messages + Handlers + BookingMailer + templates email",
+    "6. Partie E : iCal Export (calendarToken sur Property + ICalExportController)",
+    "7. Partie F (BONUS) : app:ical:sync Command",
+    "8. Parties G (BONUS) : G1 expiration, G5 timeline, G6 tarification, G8 notifications"
+  ],
+
+  "key_missing_elements_summary": {
+    "entities": [
+      "calendarToken (string) à ajouter sur Property pour sécuriser l'endpoint iCal export"
+    ],
+    "services": [
+      "AvailabilityService (vérification dispo algo A2)",
+      "ICalExportService (génération fichier .ics)",
+      "BookingMailer (envoi emails transactionnels)"
+    ],
+    "controllers": [
+      "Host/AvailabilityController (calendrier hôte)",
+      "Host/ReservationModerationController (pending list, accept, reject)",
+      "Front/SearchController (GET /search)",
+      "Api/ICalExportController (GET /api/properties/{id}/calendar.ics)",
+      "Ajout cancel action dans ReservationController"
+    ],
+    "messenger": [
+      "3 Message classes + 3 Handler classes"
+    ],
+    "commands": [
+      "ICalSyncCommand (app:ical:sync) - BONUS"
+    ],
+    "repository_methods": [
+      "PropertyAvailabilityRepository::findBlockedDatesForPeriod()",
+      "ReservationRepository::hasConflict()",
+      "ReservationRepository::findPendingByHost()",
+      "PropertyRepository::search()"
+    ]
+  }
+}

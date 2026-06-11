@@ -1,17 +1,30 @@
 {% set cover = property.coverMedia %}
 {% set averageRating = property.averageRating %}
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
+{% set isFav = favoriteIds is defined and (property.id in favoriteIds) %}
 
-<a href="{{ path('app_logement_detail', { id: property.id }) }}" class="group block">
+{% set _linkParams = { id: property.id } %}
+{% if searchParams is defined and searchParams %}
+    {% set _linkParams = _linkParams|merge(searchParams) %}
+{% endif %}
+<a href="{{ path('app_logement_detail', _linkParams) }}" class="group block" data-property-type="{{ property.propertyType }}">
     <div class="relative aspect-square w-full overflow-hidden rounded-xl mb-3">
         <img
             class="h-full w-full object-cover group-hover:scale-105 transition duration-300"
             src="{{ cover ? cover.fileUrl : placeholderImage }}"
             alt="{{ property.title }}"
         >
-        <button type="button" class="absolute top-3 right-3 text-white text-xl drop-shadow-md hover:scale-110 transition" aria-label="Ajouter aux favoris" onclick="event.preventDefault()">
-            <i class="fa-regular fa-heart"></i>
+        {% if app.user %}
+        <button type="button"
+            class="fav-btn absolute top-3 right-3 text-xl drop-shadow-md hover:scale-110 transition {{ isFav ? 'text-brand' : 'text-white' }}"
+            aria-label="Ajouter aux favoris"
+            data-property-id="{{ property.id }}"
+            data-token="{{ csrf_token('fav_' ~ property.id) }}"
+            data-url="{{ path('app_favorite_toggle', { id: property.id }) }}"
+            onclick="event.preventDefault(); toggleFavorite(this)">
+            <i class="{{ isFav ? 'fa-solid' : 'fa-regular' }} fa-heart"></i>
         </button>
+        {% endif %}
     </div>
     <div class="flex justify-between items-start gap-2">
         <h3 class="font-bold text-sm text-gray-900 line-clamp-1">{{ property.title }}</h3>

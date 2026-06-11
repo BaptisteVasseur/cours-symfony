@@ -1,0 +1,78 @@
+Q1 : on peut réserver le jour de checkout par un autre voyageur, la méthode 
+AvailabilityService::isAvailable() applique cette règle en vérifiant les 
+réservations confirmées déjà présentes en base.des valeurs sont attribués à l'heure de chekin et l'heure de checkou
+et si l'heure de check in < l'heure de checkout la réservatione est validée
+
+Q2 — GESTION DES ÉTATS (Pending bloque-t-il les dates ?)
+
+Une demande pending ne bloque pas les dates, car il suffirait de faire des demandes et des annulations
+  en boucle pour bloquer complétement une propriété. Côté propriétaire, il a 24h pour confirmer un pending, sinon la demande saute.
+  Donc on a la sécurité des 2 cotés :
+  -celui qui veut bloquer la propriété ne peut pas parce que le pending bloque pas la réservation
+  -le proprio qui veut overbooker ne peut pas car si il confirme une autre résa, l'ancienne saute ( ou est annulé au bout de 24h)
+
+Q3 — GESTION DE LA CONCURRENCE
+Si 2 voyageurs réservent au même moment les mêmes dates, il faut pas que les 2 réservations passent
+Le problème c'est que les 2 peuvent voir la propriété disponible en même temps, avant que la première résa soit enregistrée
+Donc la vérification et la création de la résa doivent se faire ensemble, dans une transaction.
+On bloque la vérification avec un lock pessimiste, comme ça le 2eme voyageur attend que le 1er ait fini
+
+Donc :
+-le 1er voyageur vérifie les dates
+-si c'est dispo il crée la résa et elle est flush
+-le 2eme voyageur passe après
+-il re-vérifie et là il voit que les dates sont plus dispo
+
+Comme ça on évite l'overbooking
+En Doctrine ça peut se faire avec LockMode::PESSIMISTIC_WRITE dans le repository ou avec l'EntityManager
+
+
+Q4 — PERFORMANCE (vérifier 20 nuits sans N requêtes)
+Pour vérifier 20 nuits il faut pas faire 20 requêtes, sinon plus le séjour est long plus ça devient lent
+On vérifie directement toute la période avec une seule requête
+
+La règle c'est :
+-si une résa commence avant le checkout demandé
+-et si elle finit après le checkin demandé
+
+Alors ça veut dire que les périodes se croisent, donc le logement est pas dispo.
+
+Dans le repository on fait juste un COUNT sur les réservations confirmed qui croisent les dates.
+Si COUNT > 0 ça veut dire qu'il y a déjà une résa, donc refus
+Si COUNT = 0 alors c'est disponible.
+
+Comme ça 2 nuits, 20 nuits ou 1 mois ça change pas, on garde une seule requête.
+Par contre il faut un index sur property_id, status, checkjn_date et checkout_date pour que la requête soit rapide.
+
+
+Q5 — ASYNCHRONISME (pourquoi l'email après flush ?)
+L'email doit partir après le flush car avant le flush la réservation est pas encore vraiment en base.
+
+Si on envoie l'email avant et que le flush plante, le voyageur reçoit une confirmation alors que la résa existe pas
+Donc il croit avoir réservé alors que en vrai non
+
+Avec le flush avant :
+-si le flush plante, aucun mail part
+-si le flush marche, la résa est bien en base et là on peut envoyer l'email
+
+L'email peut être envoyé avec Messenger en async, comme ça la page attend pas que le mail soit envoyé
+Et si le worker est pas lancé, le message reste en base avec doctrine://default et il sera envoyé après
+
+
+Q6 — STRUCTURE SQL (jours individuels vs périodes)
+Pour le calendrier je pense que c'est mieux de stocker les jours un par un dans property_availability
+Chaque ligne représente une date pour une propriété, avec si le jour est bloqué ou non
+
+C'est plus simple car si le proprio veut bloquer juste un jour, ou débloquer un jour au milieu d'une semaine, on modifie juste cette date
+Avec des périodes start/end ça devient plus compliqué, parce que si on débloque un jour au milieu il faut couper la période en 2
+
+Donc avec les jours individuels :
+-c'est plus facile à afficher dans le calendrier
+-c'est plus facile à modifier jour par jour
+-pour vérifier une période on cherche juste les jours entre checkin et checkout
+-pour l'import iCal c'est aussi plus simple parce qu'on peut transformer les dates en jours bloqués
+
+L'inconvénient c'est que ça fait plus de lignes en base, par exemple 1 an bloqué ça fait 365 lignes
+Mais c'est pas vraiment un problème si on met un index sur property_id et date
+
+Donc je garde les jours individuels, car c'est plus simple à gérer pour une appli de réservation

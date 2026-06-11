@@ -109,28 +109,44 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         }
 
         $extraTitles = [
-            ['Maison de Campagne Normande', 'house', 'published', '120.00', 'Deauville', 'France'],
-            ['Chalet Alpin Familial', 'chalet', 'published', '195.00', 'Megève', 'France'],
-            ['Studio Plage Bordeaux', 'apartment', 'draft', '75.00', 'Arcachon', 'France'],
-            ['Penthouse Parisien', 'apartment', 'published', '350.00', 'Paris', 'France'],
-            ['Gîte Rural Provence', 'house', 'published', '110.00', 'Aix-en-Provence', 'France'],
-            ['Bungalow Tropical', 'house', 'pending', '160.00', 'Bali', 'Indonésie'],
+            // France
+            ['Maison de Campagne Normande', 'house',     'published', '120.00', 'Deauville',        'France',      49.3544, 1.0761],
+            ['Chalet Alpin Familial',        'chalet',    'published', '195.00', 'Megève',            'France',      45.8571, 6.6186],
+            ['Studio Plage Bordeaux',        'apartment', 'published', '75.00',  'Arcachon',          'France',      44.6617, -1.1681],
+            ['Penthouse Parisien Vue Tour',  'apartment', 'published', '350.00', 'Paris',             'France',      48.8566, 2.3522],
+            ['Gîte Rural Provence',          'house',     'published', '110.00', 'Aix-en-Provence',   'France',      43.5297, 5.4474],
+            ['Mas en Pierre Luberon',        'villa',     'published', '230.00', 'Gordes',            'France',      43.9108, 5.1986],
+            ['Appartement Vue Mer Cannes',   'apartment', 'published', '280.00', 'Cannes',            'France',      43.5528, 7.0174],
+            ['Chalet Ski Les Arcs',          'chalet',    'published', '310.00', 'Les Arcs',          'France',      45.5694, 6.8358],
+            ['Loft Bordeaux Chartrons',      'loft',      'published', '145.00', 'Bordeaux',          'France',      44.8578, -0.5792],
+            ['Villa Méditerranée Nice',      'villa',     'published', '390.00', 'Nice',              'France',      43.7102, 7.2620],
+            ['Appartement Alsacien Colmar',  'apartment', 'published', '95.00',  'Colmar',            'France',      48.0793, 7.3585],
+            ['Maison Bretonne Saint-Malo',   'house',     'published', '160.00', 'Saint-Malo',        'France',      48.6493, -2.0256],
+            // Europe
+            ['Bungalow Tropical',            'house',     'published', '160.00', 'Bali',              'Indonésie',   -8.3405, 115.0920],
+            ['Apartment Amsterdam Jordaan',  'apartment', 'published', '175.00', 'Amsterdam',         'Pays-Bas',    52.3740, 4.8897],
+            ['Loft Design Berlin Mitte',     'loft',      'published', '130.00', 'Berlin',            'Allemagne',   52.5200, 13.4050],
+            ['Casa Ibiza Blanca',            'villa',     'published', '450.00', 'Ibiza',             'Espagne',     38.9067, 1.4206],
+            ['Studio Lisbonne Alfama',       'apartment', 'published', '85.00',  'Lisbonne',          'Portugal',    38.7223, -9.1393],
+            ['Chalet Suisse Grindelwald',    'chalet',    'published', '260.00', 'Grindelwald',       'Suisse',      46.6245, 8.0413],
+            ['Appartement Rome Trastevere',  'apartment', 'published', '140.00', 'Rome',              'Italie',      41.8891, 12.4709],
+            ['Villa Athènes Plaka',          'villa',     'published', '320.00', 'Athènes',           'Grèce',       37.9715, 23.7282],
         ];
 
-        foreach ($extraTitles as $i => [$title, $type, $status, $price, $city, $country]) {
+        foreach ($extraTitles as $i => [$title, $type, $status, $price, $city, $country, $lat, $lng]) {
             $property = $this->createProperty(
                 $hosts[$i % count($hosts)],
                 $policies[$i % count($policies)],
                 $title,
-                'Description complète pour ' . $title,
+                sprintf('%s est un logement exceptionnel situé à %s, %s. Idéal pour les voyageurs en quête d\'authenticité et de confort. Profitez des équipements modernes et d\'un emplacement privilégié.', $title, $city, $country),
                 $type,
                 $status,
                 $price,
                 $city,
                 $country,
                 sprintf('%05d', random_int(10000, 99999)),
-                48.8566 + ($i * 0.1),
-                2.3522 + ($i * 0.1),
+                $lat,
+                $lng,
                 $amenityRefs,
                 $manager,
                 false

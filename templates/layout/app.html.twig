@@ -9,5 +9,44 @@
 
     {% include 'layout/partials/app/footer.html.twig' %}
 
+    <script>
+    (function () {
+        var openBtn  = document.getElementById('mobile-header-search-btn');
+        var closeBtn = document.getElementById('mobile-header-search-close');
+        var overlay  = document.getElementById('mobile-header-search-overlay');
+        if (openBtn && overlay) {
+            openBtn.addEventListener('click', function () {
+                overlay.classList.remove('hidden');
+                var inp = overlay.querySelector('input[type=text]');
+                if (inp) inp.focus();
+            });
+        }
+        if (closeBtn && overlay) {
+            closeBtn.addEventListener('click', function () { overlay.classList.add('hidden'); });
+        }
+    })();
+
+    function toggleFavorite(btn) {
+        var url   = btn.dataset.url;
+        var token = btn.dataset.token;
+        var icon  = btn.querySelector('i');
+        var body  = new URLSearchParams({ _token: token });
+
+        fetch(url, { method: 'POST', body: body, headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.status === 'added') {
+                    icon.classList.replace('fa-regular', 'fa-solid');
+                    btn.classList.add('text-brand');
+                    btn.classList.remove('text-white');
+                } else {
+                    icon.classList.replace('fa-solid', 'fa-regular');
+                    btn.classList.remove('text-brand');
+                    btn.classList.add('text-white');
+                }
+            });
+    }
+    </script>
+
     </body>
 {% endblock %}

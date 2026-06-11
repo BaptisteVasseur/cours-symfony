@@ -5,105 +5,173 @@
 {% set guests = guests|default(1) %}
 
 {% if variant == 'hero' %}
-    <div class="mb-10" data-controller="search" data-search-guests-value="{{ guests }}">
-        <form action="{{ path('app_search') }}" method="get" class="hidden md:block">
-            <div class="bg-white border border-gray-200 rounded-full shadow-[0_3px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] transition flex items-center divide-x divide-gray-200 max-w-4xl mx-auto">
-                <div class="flex-1 px-8 py-3 rounded-full cursor-pointer transition" data-search-target="field" data-action="click->search#selectField">
-                    <label class="block text-xs font-bold text-gray-800 mb-0.5">Où</label>
-                    <input type="text" name="destination" value="{{ destination }}" placeholder="Rechercher une destination" class="w-full text-sm text-gray-600 placeholder-gray-400 focus:outline-none bg-transparent" data-action="focus->search#selectField">
-                </div>
-                <div class="flex-1 px-8 py-3 rounded-full cursor-pointer transition" data-search-target="field" data-action="click->search#selectField">
-                    <label class="block text-xs font-bold text-gray-800 mb-0.5">Arrivée</label>
-                    <input type="date" name="checkin" value="{{ checkin }}" class="w-full text-sm text-gray-600 focus:outline-none bg-transparent" data-action="focus->search#selectField">
-                </div>
-                <div class="flex-1 px-8 py-3 rounded-full cursor-pointer transition" data-search-target="field" data-action="click->search#selectField">
-                    <label class="block text-xs font-bold text-gray-800 mb-0.5">Départ</label>
-                    <input type="date" name="checkout" value="{{ checkout }}" class="w-full text-sm text-gray-600 focus:outline-none bg-transparent" data-action="focus->search#selectField">
-                </div>
-                <div class="flex-1 px-8 py-3 rounded-full cursor-pointer transition relative" data-search-target="field" data-action="click->search#toggleGuests">
-                    <label class="block text-xs font-bold text-gray-800 mb-0.5">Voyageurs</label>
-                    <span class="text-sm text-gray-600" data-search-target="guestsLabel">{{ guests }} voyageur{{ guests > 1 ? 's' : '' }}</span>
-                    <input type="hidden" name="guests" value="{{ guests }}" data-search-target="guestsInput">
+<div class="mb-10">
+    {# Desktop #}
+    <form id="search-form-desktop" action="{{ path('app_search') }}" method="get" class="hidden md:block">
+        <div class="bg-white border border-gray-200 rounded-full shadow-[0_3px_12px_rgba(0,0,0,0.1)] hover:shadow-[0_6px_20px_rgba(0,0,0,0.15)] transition flex items-center divide-x divide-gray-200 max-w-4xl mx-auto">
+            <div class="flex-1 px-8 py-3">
+                <label class="block text-xs font-bold text-gray-800 mb-0.5">Où</label>
+                <input type="text" name="destination" value="{{ destination }}" placeholder="Rechercher une destination"
+                       class="w-full text-sm text-gray-600 placeholder-gray-400 focus:outline-none bg-transparent">
+            </div>
+            <div class="flex-1 px-8 py-3">
+                <label class="block text-xs font-bold text-gray-800 mb-0.5">Arrivée</label>
+                <input type="date" name="checkin" value="{{ checkin }}"
+                       class="w-full text-sm text-gray-600 focus:outline-none bg-transparent">
+            </div>
+            <div class="flex-1 px-8 py-3">
+                <label class="block text-xs font-bold text-gray-800 mb-0.5">Départ</label>
+                <input type="date" name="checkout" value="{{ checkout }}"
+                       class="w-full text-sm text-gray-600 focus:outline-none bg-transparent">
+            </div>
+            <div class="flex-1 px-8 py-3 relative" id="guests-trigger">
+                <label class="block text-xs font-bold text-gray-800 mb-0.5">Voyageurs</label>
+                <span id="guests-label" class="text-sm text-gray-600 cursor-pointer select-none">
+                    {{ guests }} voyageur{{ guests > 1 ? 's' : '' }}
+                </span>
+                <input type="hidden" name="guests" id="guests-input" value="{{ guests }}">
 
-                    <div class="hidden absolute top-full right-0 mt-3 bg-white border border-gray-200 rounded-2xl shadow-xl p-6 w-80 z-50" data-search-target="guestsPanel" data-action="click->search#stopPropagation">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <p class="font-semibold text-gray-900 text-sm">Voyageurs</p>
-                                <p class="text-xs text-gray-500">Nombre total</p>
-                            </div>
-                            <div class="flex items-center space-x-3">
-                                <button type="button" class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:border-gray-900 disabled:opacity-30 disabled:cursor-not-allowed" data-action="search#decrementGuests" data-search-target="decrementBtn">
-                                    <i class="fa-solid fa-minus text-xs"></i>
-                                </button>
-                                <span class="w-6 text-center font-semibold text-sm" data-search-target="guestsCount">{{ guests }}</span>
-                                <button type="button" class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:border-gray-900" data-action="search#incrementGuests">
-                                    <i class="fa-solid fa-plus text-xs"></i>
-                                </button>
-                            </div>
+                <div id="guests-panel" class="hidden absolute top-full right-0 mt-3 bg-white border border-gray-200 rounded-2xl shadow-xl p-6 w-72 z-50">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="font-semibold text-gray-900 text-sm">Voyageurs</p>
+                            <p class="text-xs text-gray-500">Nombre total</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <button type="button" id="guests-dec"
+                                class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:border-gray-900 disabled:opacity-30 disabled:cursor-not-allowed">
+                                <i class="fa-solid fa-minus text-xs"></i>
+                            </button>
+                            <span id="guests-count" class="w-6 text-center font-semibold text-sm">{{ guests }}</span>
+                            <button type="button" id="guests-inc"
+                                class="w-8 h-8 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:border-gray-900">
+                                <i class="fa-solid fa-plus text-xs"></i>
+                            </button>
                         </div>
                     </div>
-                </div>
-                <div class="pr-2 py-2">
-                    <button type="submit" class="bg-brand hover:bg-brandHover text-white rounded-full px-6 py-3.5 flex items-center space-x-2 transition font-semibold text-sm">
-                        <i class="fa-solid fa-magnifying-glass"></i>
-                        <span>Rechercher</span>
-                    </button>
                 </div>
             </div>
-        </form>
-
-        <form action="{{ path('app_search') }}" method="get" class="md:hidden">
-            <button type="button" class="w-full bg-white border border-gray-200 rounded-full shadow-md px-6 py-4 flex items-center justify-between" data-action="click->search#openMobile">
-                <div class="flex items-center space-x-3 text-left">
-                    <i class="fa-solid fa-magnifying-glass text-brand"></i>
-                    <div>
-                        <p class="font-semibold text-sm text-gray-900">Où allez-vous ?</p>
-                        <p class="text-xs text-gray-500">Dates · Voyageurs</p>
-                    </div>
-                </div>
-            </button>
-
-            <div class="hidden fixed inset-0 z-[60] bg-white" data-search-target="mobilePanel">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                    <button type="button" class="text-sm font-semibold underline" data-action="search#closeMobile">Fermer</button>
-                    <span class="font-semibold">Rechercher</span>
-                    <span class="w-12"></span>
-                </div>
-                <div class="p-6 space-y-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-800 mb-2">Où</label>
-                        <input type="text" name="destination" value="{{ destination }}" placeholder="Rechercher une destination" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-gray-800 mb-2">Arrivée</label>
-                            <input type="date" name="checkin" value="{{ checkin }}" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-gray-800 mb-2">Départ</label>
-                            <input type="date" name="checkout" value="{{ checkout }}" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-800 mb-2">Voyageurs</label>
-                        <input type="number" name="guests" value="{{ guests }}" min="1" max="16" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
-                    </div>
-                    <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white rounded-xl py-4 font-semibold text-sm transition">
-                        <i class="fa-solid fa-magnifying-glass mr-2"></i>Rechercher
-                    </button>
-                </div>
+            <div class="pr-2 py-2">
+                <button type="submit" class="bg-brand hover:bg-brandHover text-white rounded-full px-6 py-3.5 flex items-center space-x-2 transition font-semibold text-sm">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <span>Rechercher</span>
+                </button>
             </div>
-        </form>
-    </div>
-{% else %}
-    <form action="{{ path('app_search') }}" method="get" class="hidden md:flex items-center border border-gray-200 rounded-full p-2 pl-6 shadow-sm hover:shadow-md transition max-w-md w-full mx-4">
-        <div class="flex space-x-4 text-sm font-semibold text-gray-700 flex-1 min-w-0">
-            <input type="text" name="destination" value="{{ destination }}" placeholder="N'importe où" class="border-r border-gray-200 pr-4 w-28 truncate focus:outline-none bg-transparent placeholder-gray-700 font-semibold">
-            <input type="date" name="checkin" value="{{ checkin }}" class="border-r border-gray-200 pr-4 w-28 text-gray-500 focus:outline-none bg-transparent font-normal">
-            <input type="number" name="guests" value="{{ guests }}" min="1" max="16" class="w-20 text-gray-500 focus:outline-none bg-transparent font-normal" title="Voyageurs">
         </div>
-        <button type="submit" class="bg-brand text-white p-2.5 rounded-full hover:bg-brandHover transition shrink-0">
-            <i class="fa-solid fa-magnifying-glass text-xs"></i>
-        </button>
     </form>
+
+    {# Mobile #}
+    <div class="md:hidden">
+        <button type="button" id="mobile-search-open"
+            class="w-full bg-white border border-gray-200 rounded-full shadow-md px-6 py-4 flex items-center gap-3">
+            <i class="fa-solid fa-magnifying-glass text-brand"></i>
+            <div class="text-left">
+                <p class="font-semibold text-sm text-gray-900">Où allez-vous ?</p>
+                <p class="text-xs text-gray-500">Dates · Voyageurs</p>
+            </div>
+        </button>
+
+        <div id="mobile-search-panel" class="hidden fixed inset-0 z-[60] bg-white overflow-y-auto">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <button type="button" id="mobile-search-close" class="text-sm font-semibold underline">Fermer</button>
+                <span class="font-semibold">Rechercher</span>
+                <span class="w-12"></span>
+            </div>
+            <form action="{{ path('app_search') }}" method="get" class="p-6 space-y-4">
+                <div>
+                    <label class="block text-xs font-bold text-gray-800 mb-2">Où</label>
+                    <input type="text" name="destination" value="{{ destination }}" placeholder="Rechercher une destination"
+                           class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-800 mb-2">Arrivée</label>
+                        <input type="date" name="checkin" value="{{ checkin }}"
+                               class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-gray-800 mb-2">Départ</label>
+                        <input type="date" name="checkout" value="{{ checkout }}"
+                               class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-gray-800 mb-2">Voyageurs</label>
+                    <input type="number" name="guests" value="{{ guests }}" min="1" max="16"
+                           class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
+                </div>
+                <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white rounded-xl py-4 font-semibold text-sm transition">
+                    <i class="fa-solid fa-magnifying-glass mr-2"></i>Rechercher
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    var gCount  = {{ guests }};
+    var panel   = document.getElementById('guests-panel');
+    var trigger = document.getElementById('guests-trigger');
+    var label   = document.getElementById('guests-label');
+    var input   = document.getElementById('guests-input');
+    var display = document.getElementById('guests-count');
+    var dec     = document.getElementById('guests-dec');
+    var inc     = document.getElementById('guests-inc');
+
+    function updateGuests(n) {
+        gCount = Math.max(1, Math.min(16, n));
+        if (display) display.textContent = gCount;
+        if (input)   input.value = gCount;
+        if (label)   label.textContent = gCount + (gCount > 1 ? ' voyageurs' : ' voyageur');
+        if (dec)     dec.disabled = gCount <= 1;
+    }
+
+    if (trigger && panel) {
+        trigger.addEventListener('click', function (e) {
+            panel.classList.toggle('hidden');
+            e.stopPropagation();
+        });
+        document.addEventListener('click', function (e) {
+            if (!trigger.contains(e.target)) panel.classList.add('hidden');
+        });
+    }
+    if (dec) dec.addEventListener('click', function (e) { e.stopPropagation(); updateGuests(gCount - 1); });
+    if (inc) inc.addEventListener('click', function (e) { e.stopPropagation(); updateGuests(gCount + 1); });
+
+    updateGuests(gCount);
+
+    var openBtn  = document.getElementById('mobile-search-open');
+    var closeBtn = document.getElementById('mobile-search-close');
+    var mPanel   = document.getElementById('mobile-search-panel');
+
+    if (openBtn && mPanel) {
+        openBtn.addEventListener('click', function () {
+            mPanel.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        });
+    }
+    if (closeBtn && mPanel) {
+        closeBtn.addEventListener('click', function () {
+            mPanel.classList.add('hidden');
+            document.body.classList.remove('overflow-hidden');
+        });
+    }
+})();
+</script>
+
+{% else %}
+<form action="{{ path('app_search') }}" method="get" class="hidden md:flex items-center border border-gray-200 rounded-full p-2 pl-6 shadow-sm hover:shadow-md transition max-w-md w-full mx-4">
+    <div class="flex space-x-4 text-sm font-semibold text-gray-700 flex-1 min-w-0">
+        <input type="text" name="destination" value="{{ destination }}" placeholder="N'importe où"
+               class="border-r border-gray-200 pr-4 w-28 truncate focus:outline-none bg-transparent placeholder-gray-700 font-semibold">
+        <input type="date" name="checkin" value="{{ checkin }}"
+               class="border-r border-gray-200 pr-4 w-28 text-gray-500 focus:outline-none bg-transparent font-normal">
+        <input type="number" name="guests" value="{{ guests }}" min="1" max="16"
+               class="w-20 text-gray-500 focus:outline-none bg-transparent font-normal" title="Voyageurs">
+    </div>
+    <button type="submit" class="bg-brand text-white p-2.5 rounded-full hover:bg-brandHover transition shrink-0">
+        <i class="fa-solid fa-magnifying-glass text-xs"></i>
+    </button>
+</form>
 {% endif %}

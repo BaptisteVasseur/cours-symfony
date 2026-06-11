@@ -30,14 +30,87 @@
                 </div>
             </div>
             <aside>
-                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
+                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28"
+                     id="price-summary"
+                     data-price="{{ property.pricePerNight }}"
+                     data-cleaning="{{ property.cleaningFee ?? 0 }}">
                     <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
                     <div class="p-5">
                         <h2 class="font-semibold">{{ property.title }}</h2>
-                        <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+                        <p class="text-lg font-bold mt-2">
+                            {{ property.pricePerNight|number_format(0, ',', ' ') }} €
+                            <span class="text-sm font-normal text-gray-500">/ nuit</span>
+                        </p>
+
+                        <div id="price-breakdown" class="hidden mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm text-gray-700">
+                            <div class="flex justify-between">
+                                <span id="nights-label">— nuits</span>
+                                <span id="nights-total">—</span>
+                            </div>
+                            {% if property.cleaningFee %}
+                            <div class="flex justify-between text-gray-500">
+                                <span>Frais de ménage</span>
+                                <span>{{ property.cleaningFee|number_format(0, ',', ' ') }} €</span>
+                            </div>
+                            {% endif %}
+                            <div class="flex justify-between text-gray-500">
+                                <span>Frais de service (12 %)</span>
+                                <span id="service-fee">—</span>
+                            </div>
+                            <div class="flex justify-between font-bold pt-2 border-t border-gray-100 text-base">
+                                <span>Total</span>
+                                <span id="total-price">—</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </aside>
         </div>
     </main>
+
+    <script>
+    (function () {
+        var summary      = document.getElementById('price-summary');
+        var breakdown    = document.getElementById('price-breakdown');
+        var nightsLabel  = document.getElementById('nights-label');
+        var nightsTotalEl = document.getElementById('nights-total');
+        var serviceFeeEl = document.getElementById('service-fee');
+        var totalPriceEl = document.getElementById('total-price');
+
+        if (!summary) return;
+
+        var pricePerNight = parseFloat(summary.dataset.price) || 0;
+        var cleaningFee   = parseFloat(summary.dataset.cleaning) || 0;
+
+        var checkinInput  = document.querySelector('[name="booking[checkinDate]"]');
+        var checkoutInput = document.querySelector('[name="booking[checkoutDate]"]');
+
+        function fmt(n) {
+            return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €';
+        }
+
+        function recalculate() {
+            var c1 = checkinInput  ? checkinInput.value  : '';
+            var c2 = checkoutInput ? checkoutInput.value : '';
+            if (!c1 || !c2) { breakdown.classList.add('hidden'); return; }
+
+            var d1 = new Date(c1), d2 = new Date(c2);
+            var nights = Math.round((d2 - d1) / 86400000);
+            if (nights <= 0) { breakdown.classList.add('hidden'); return; }
+
+            var subtotal = nights * pricePerNight;
+            var service  = Math.round(subtotal * 0.12 * 100) / 100;
+            var total    = subtotal + cleaningFee + service;
+
+            nightsLabel.textContent  = nights + ' nuit' + (nights > 1 ? 's' : '') + ' × ' + pricePerNight.toLocaleString('fr-FR') + ' €';
+            nightsTotalEl.textContent = fmt(subtotal);
+            serviceFeeEl.textContent  = fmt(service);
+            totalPriceEl.textContent  = fmt(total);
+            breakdown.classList.remove('hidden');
+        }
+
+        if (checkinInput)  checkinInput.addEventListener('change', recalculate);
+        if (checkoutInput) checkoutInput.addEventListener('change', recalculate);
+    })();
+    </script>
 {% endblock %}

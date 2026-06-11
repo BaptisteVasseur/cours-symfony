@@ -1,0 +1,222 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Ajouter un logement{% endblock %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-3xl mx-auto w-full">
+    <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Mes propriétés
+    </a>
+
+    <h1 class="text-2xl font-bold text-gray-900 mb-8">Ajouter un logement</h1>
+
+    <div class="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+        {{ form_start(form, { attr: { class: 'space-y-6', enctype: 'multipart/form-data' } }) }}
+
+        <div class="grid grid-cols-1 gap-6">
+
+            {# Titre #}
+            <div>
+                {{ form_label(form.title, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                {{ form_widget(form.title, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand' } }) }}
+                {{ form_errors(form.title) }}
+            </div>
+
+            {# Description #}
+            <div>
+                {{ form_label(form.description, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                {{ form_widget(form.description, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand resize-none' } }) }}
+                {{ form_errors(form.description) }}
+            </div>
+
+            {# Photos #}
+            <div>
+                <label class="block text-sm font-semibold text-gray-700 mb-2">
+                    Photos du logement
+                    <span class="font-normal text-gray-400 ml-1">(JPEG, PNG, WebP · max 5 Mo chacune)</span>
+                </label>
+
+                {# Zone de drop custom #}
+                <label for="{{ form.photos.vars.id }}"
+                       class="flex flex-col items-center justify-center w-full border-2 border-dashed border-gray-300 rounded-xl p-8 cursor-pointer hover:border-brand hover:bg-brand/5 transition group">
+                    <i class="fa-solid fa-cloud-arrow-up text-3xl text-gray-300 group-hover:text-brand transition mb-3"></i>
+                    <p class="text-sm font-semibold text-gray-600 group-hover:text-brand">Cliquer pour choisir vos photos</p>
+                    <p class="text-xs text-gray-400 mt-1">ou glisser-déposer ici · plusieurs fichiers acceptés</p>
+                </label>
+                {{ form_widget(form.photos, { attr: { class: 'sr-only', id: form.photos.vars.id } }) }}
+                {{ form_errors(form.photos) }}
+
+                {# Prévisualisation JS #}
+                <div id="photo-preview" class="mt-4 grid grid-cols-3 sm:grid-cols-4 gap-3 hidden"></div>
+                <p id="photo-count" class="mt-2 text-xs text-gray-500 hidden"></p>
+            </div>
+
+            {# Ville & Pays #}
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Ville</label>
+                    <input type="text" name="host_property[city]" placeholder="Ex: Paris"
+                           class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand">
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-1">Pays</label>
+                    <input type="text" name="host_property[country]" value="France"
+                           class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand">
+                </div>
+            </div>
+
+            {# Type #}
+            <div>
+                {{ form_label(form.propertyType, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                {{ form_widget(form.propertyType, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand bg-white' } }) }}
+                {{ form_errors(form.propertyType) }}
+            </div>
+
+            {# Capacité #}
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div>
+                    {{ form_label(form.maxGuests, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                    {{ form_widget(form.maxGuests, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand' } }) }}
+                    {{ form_errors(form.maxGuests) }}
+                </div>
+                <div>
+                    {{ form_label(form.bedrooms, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                    {{ form_widget(form.bedrooms, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand' } }) }}
+                    {{ form_errors(form.bedrooms) }}
+                </div>
+                <div>
+                    {{ form_label(form.beds, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                    {{ form_widget(form.beds, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand' } }) }}
+                    {{ form_errors(form.beds) }}
+                </div>
+                <div>
+                    {{ form_label(form.bathrooms, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                    {{ form_widget(form.bathrooms, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand' } }) }}
+                    {{ form_errors(form.bathrooms) }}
+                </div>
+            </div>
+
+            {# Prix #}
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    {{ form_label(form.pricePerNight, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                    {{ form_widget(form.pricePerNight, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand' } }) }}
+                    {{ form_errors(form.pricePerNight) }}
+                </div>
+                <div>
+                    {{ form_label(form.cleaningFee, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                    {{ form_widget(form.cleaningFee, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand' } }) }}
+                    {{ form_errors(form.cleaningFee) }}
+                </div>
+                <div>
+                    {{ form_label(form.securityDeposit, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                    {{ form_widget(form.securityDeposit, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand' } }) }}
+                    {{ form_errors(form.securityDeposit) }}
+                </div>
+            </div>
+
+            {# Horaires #}
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    {{ form_label(form.checkinTime, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                    {{ form_widget(form.checkinTime, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand' } }) }}
+                </div>
+                <div>
+                    {{ form_label(form.checkoutTime, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                    {{ form_widget(form.checkoutTime, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand' } }) }}
+                </div>
+            </div>
+
+            {# Politique annulation #}
+            <div>
+                {{ form_label(form.cancellationPolicy, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-1' } }) }}
+                {{ form_widget(form.cancellationPolicy, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand bg-white' } }) }}
+                {{ form_errors(form.cancellationPolicy) }}
+            </div>
+
+            {# Options #}
+            <div class="flex items-center gap-3">
+                {{ form_widget(form.instantBooking, { attr: { class: 'w-4 h-4 text-brand border-gray-300 rounded' } }) }}
+                {{ form_label(form.instantBooking, null, { label_attr: { class: 'text-sm text-gray-700' } }) }}
+            </div>
+        </div>
+
+        <div class="pt-4 border-t border-gray-100 flex items-center gap-4">
+            <button type="submit" class="bg-brand hover:bg-brandHover text-white font-semibold py-3 px-8 rounded-xl transition">
+                Créer le logement
+            </button>
+            <a href="{{ path('app_account_properties') }}" class="text-sm text-gray-600 hover:text-gray-900">Annuler</a>
+        </div>
+
+        {{ form_end(form) }}
+    </div>
+
+    <p class="mt-4 text-xs text-gray-400">
+        Votre logement sera créé en mode <strong>brouillon</strong>. Un administrateur le validera avant publication.
+    </p>
+</main>
+
+<script>
+(function () {
+    var input   = document.getElementById('{{ form.photos.vars.id }}');
+    var preview = document.getElementById('photo-preview');
+    var count   = document.getElementById('photo-count');
+
+    if (!input) return;
+
+    input.addEventListener('change', function () {
+        var files = Array.from(input.files);
+        preview.innerHTML = '';
+
+        if (files.length === 0) {
+            preview.classList.add('hidden');
+            count.classList.add('hidden');
+            return;
+        }
+
+        preview.classList.remove('hidden');
+        count.classList.remove('hidden');
+        count.textContent = files.length + ' photo' + (files.length > 1 ? 's' : '') + ' sélectionnée' + (files.length > 1 ? 's' : '') + ' (la première sera la photo principale)';
+
+        files.forEach(function (file, i) {
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var wrapper = document.createElement('div');
+                wrapper.className = 'relative rounded-xl overflow-hidden aspect-square';
+
+                var img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'w-full h-full object-cover';
+                wrapper.appendChild(img);
+
+                if (i === 0) {
+                    var badge = document.createElement('span');
+                    badge.className = 'absolute bottom-1 left-1 bg-brand text-white text-[10px] font-bold px-1.5 py-0.5 rounded';
+                    badge.textContent = 'Principale';
+                    wrapper.appendChild(badge);
+                }
+
+                preview.appendChild(wrapper);
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+
+    // Drag & drop sur la zone label
+    var dropzone = input.closest('div').querySelector('label');
+    if (dropzone) {
+        dropzone.addEventListener('dragover', function (e) { e.preventDefault(); dropzone.classList.add('border-brand', 'bg-brand/10'); });
+        dropzone.addEventListener('dragleave', function () { dropzone.classList.remove('border-brand', 'bg-brand/10'); });
+        dropzone.addEventListener('drop', function (e) {
+            e.preventDefault();
+            dropzone.classList.remove('border-brand', 'bg-brand/10');
+            var dt = e.dataTransfer;
+            if (dt.files.length) {
+                input.files = dt.files;
+                input.dispatchEvent(new Event('change'));
+            }
+        });
+    }
+})();
+</script>
+{% endblock %}
