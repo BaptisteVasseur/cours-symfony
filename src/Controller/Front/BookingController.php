@@ -16,6 +16,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use App\Service\ReservationMailer;
 
 #[IsGranted('ROLE_USER')]
 final class BookingController extends AbstractController
@@ -27,7 +28,7 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         BookingService $bookingService,
-        \App\Service\ReservationMailer $reservationMailer,
+        ReservationMailer $reservationMailer,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -45,7 +46,20 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_logement_detail', ['id' => $property->getId()]);
         }
 
-        $form = $this->createForm(BookingType::class);
+        $defaults = [];
+        $checkinParam = $request->query->get('checkin');
+        if ($checkinParam && ($d = \DateTime::createFromFormat('Y-m-d', $checkinParam))) {
+            $defaults['checkinDate'] = $d->setTime(0, 0);
+        }
+        $checkoutParam = $request->query->get('checkout');
+        if ($checkoutParam && ($d = \DateTime::createFromFormat('Y-m-d', $checkoutParam))) {
+            $defaults['checkoutDate'] = $d->setTime(0, 0);
+        }
+        $guestsParam = $request->query->getInt('guests');
+        if ($guestsParam > 0) {
+            $defaults['guestsCount'] = $guestsParam;
+        }
+        $form = $this->createForm(BookingType::class, $defaults);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -57,19 +71,13 @@ final class BookingController extends AbstractController
             if ($checkin >= $checkout) {
                 $this->addFlash('error', 'La date de départ doit être postérieure à la date d\'arrivée.');
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
 
             if ($guestsCount > $property->getMaxGuests()) {
                 $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
 
             try {
@@ -77,12 +85,11 @@ final class BookingController extends AbstractController
             } catch (UnavailableDatesException $e) {
                 $this->addFlash('error', $e->getMessage());
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
+
             $reservationMailer->sendForNewReservation($reservation);
+
             $this->addFlash('success', 'confirmed' === $reservation->getStatus()
                 ? 'Votre réservation est confirmée !'
                 : 'Votre demande de réservation a bien été envoyée à l\'hôte.');
