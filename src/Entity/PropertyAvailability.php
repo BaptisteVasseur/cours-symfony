@@ -11,6 +11,8 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PropertyAvailabilityRepository::class)]
 #[ORM\Table(name: 'property_availability')]
+#[ORM\UniqueConstraint(name: 'UNIQ_PROPERTY_AVAILABILITY_DAY', columns: ['property_id', 'available_date'])]
+#[ORM\Index(name: 'IDX_PROPERTY_AVAILABILITY_RANGE', columns: ['property_id', 'available_date', 'is_available'])]
 class PropertyAvailability
 {
     use UuidEntityTrait;
@@ -30,6 +32,15 @@ class PropertyAvailability
 
     #[ORM\Column(nullable: true)]
     private ?int $minimumStay = null;
+
+    #[ORM\Column(length: 50)]
+    private string $source = 'manual';
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $reason = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $externalUid = null;
 
     public function getProperty(): ?Property
     {
@@ -87,6 +98,42 @@ class PropertyAvailability
     public function setMinimumStay(?int $minimumStay): static
     {
         $this->minimumStay = $minimumStay;
+
+        return $this;
+    }
+
+    public function getSource(): string
+    {
+        return $this->source;
+    }
+
+    public function setSource(string $source): static
+    {
+        $this->source = $source;
+
+        return $this;
+    }
+
+    public function getReason(): ?string
+    {
+        return $this->reason;
+    }
+
+    public function setReason(?string $reason): static
+    {
+        $this->reason = $reason;
+
+        return $this;
+    }
+
+    public function getExternalUid(): ?string
+    {
+        return $this->externalUid;
+    }
+
+    public function setExternalUid(?string $externalUid): static
+    {
+        $this->externalUid = $externalUid;
 
         return $this;
     }
