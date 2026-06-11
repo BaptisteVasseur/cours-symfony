@@ -32,6 +32,49 @@
                 </span>
             </div>
             <p class="text-gray-500">Réservation effectuée le {{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
+
+            {% if reservation.status in ['pending', 'confirmed'] %}
+                <div class="mt-4">
+                    <button
+                        onclick="document.getElementById('modal-cancel').classList.remove('hidden')"
+                        class="inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-red-700 border border-red-300 rounded-lg hover:bg-red-50 transition"
+                    >
+                        <i class="fa-solid fa-ban"></i> Annuler la réservation
+                    </button>
+                </div>
+
+                {# ── Cancel modal ── #}
+                <div id="modal-cancel" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+                    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
+                        <h3 class="text-lg font-semibold mb-2">Annuler la réservation</h3>
+                        <p class="text-sm text-gray-500 mb-4">Cette action est irréversible. Indiquez éventuellement un motif.</p>
+                        <form method="post" action="{{ path('app_booking_cancel', { id: reservation.id }) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('cancel_reservation_' ~ reservation.id) }}">
+                            <textarea
+                                name="reason"
+                                rows="3"
+                                placeholder="Motif d'annulation (facultatif)"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 mb-4"
+                            ></textarea>
+                            <div class="flex gap-3 justify-end">
+                                <button
+                                    type="button"
+                                    onclick="document.getElementById('modal-cancel').classList.add('hidden')"
+                                    class="px-4 py-2 text-sm text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-50"
+                                >
+                                    Fermer
+                                </button>
+                                <button
+                                    type="submit"
+                                    class="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700"
+                                >
+                                    Confirmer l'annulation
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            {% endif %}
         </div>
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2 space-y-6">
@@ -51,8 +94,8 @@
                 <section class="border border-gray-200 rounded-xl p-6">
                     <h2 class="text-lg font-semibold mb-4">Détails du séjour</h2>
                     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                        <div><dt class="text-gray-500">Arrivée</dt><dd class="font-semibold">{{ reservation.checkinDate|date('d/m/Y') }}</dd></div>
-                        <div><dt class="text-gray-500">Départ</dt><dd class="font-semibold">{{ reservation.checkoutDate|date('d/m/Y') }}</dd></div>
+                        <div><dt class="text-gray-500">Arrivée</dt><dd class="font-semibold">{{ reservation.checkinDate|date('d/m/Y à H:i') }}</dd></div>
+                        <div><dt class="text-gray-500">Départ</dt><dd class="font-semibold">{{ reservation.checkoutDate|date('d/m/Y à H:i') }}</dd></div>
                         <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
                     </dl>
                 </section>

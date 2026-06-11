@@ -24,9 +24,6 @@ security:
             logout:
                 path: app_logout
                 target: app_home
-            login_throttling:
-                max_attempts: 5
-                interval: '15 minutes'
 
     role_hierarchy:
         ROLE_USER:

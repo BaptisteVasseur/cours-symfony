@@ -1,0 +1,254 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set property = reservation.property %}
+{% set cover = property ? property.coverMedia : null %}
+{% set guest = reservation.guest %}
+{% set guestProfile = guest ? guest.profile : null %}
+{% set placeholder = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
+
+{% set statusLabels = {
+    'confirmed': 'Confirmée',
+    'completed': 'Terminée',
+    'pending': 'En attente',
+    'cancelled': 'Annulée',
+} %}
+{% set statusColors = {
+    'confirmed': 'bg-green-100 text-green-800',
+    'completed': 'bg-blue-100 text-blue-800',
+    'pending': 'bg-yellow-100 text-yellow-800',
+    'cancelled': 'bg-red-100 text-red-800',
+} %}
+{% set statusIcons = {
+    'confirmed': 'fa-circle-check',
+    'completed': 'fa-flag-checkered',
+    'pending': 'fa-clock',
+    'cancelled': 'fa-ban',
+} %}
+
+{% block title %}Demande de {{ guestProfile and guestProfile.firstName ? guestProfile.firstName : (guest ? guest.email : 'voyageur') }} — Espace hôte{% endblock %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+
+    <a href="{{ path('app_host_reservations') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Retour aux demandes
+    </a>
+
+    {# ── En-tête statut ── #}
+    <div class="mb-8">
+        <div class="flex flex-wrap items-center gap-3 mb-2">
+            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Demande de réservation</h1>
+            <span class="inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1 rounded-full {{ statusColors[reservation.status]|default('bg-gray-100 text-gray-800') }}">
+                <i class="fa-solid {{ statusIcons[reservation.status]|default('fa-circle') }} text-xs"></i>
+                {{ statusLabels[reservation.status]|default(reservation.status) }}
+            </span>
+        </div>
+        <p class="text-gray-400 text-sm">Reçue le {{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {# ── Colonne principale ── #}
+        <div class="lg:col-span-2 space-y-6">
+
+            {# Logement #}
+            {% if property %}
+                <section class="border border-gray-200 rounded-2xl overflow-hidden">
+                    <div class="flex flex-col sm:flex-row">
+                        <div class="sm:w-52 h-40 sm:h-auto shrink-0">
+                            <img src="{{ cover ? cover.fileUrl : placeholder }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-5 flex flex-col justify-between">
+                            <div>
+                                <p class="text-xs text-gray-400 uppercase tracking-wide mb-1">Logement</p>
+                                <h2 class="text-lg font-semibold text-gray-900">{{ property.title }}</h2>
+                                {% if property.address %}
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        <i class="fa-solid fa-location-dot mr-1 text-gray-400"></i>
+                                        {{ property.address.city }}, {{ property.address.country }}
+                                    </p>
+                                {% endif %}
+                            </div>
+                            <a href="{{ path('app_logement_detail', { id: property.id }) }}"
+                               class="mt-3 text-sm font-semibold text-brand hover:underline inline-flex items-center gap-1">
+                                Voir l'annonce <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                            </a>
+                        </div>
+                    </div>
+                </section>
+            {% endif %}
+
+            {# Voyageur #}
+            <section class="border border-gray-200 rounded-2xl p-6">
+                <p class="text-xs text-gray-400 uppercase tracking-wide mb-4">Voyageur</p>
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center text-lg font-bold text-gray-600 shrink-0">
+                        {{ guestProfile and guestProfile.firstName ? guestProfile.firstName|first|upper : (guest ? guest.email|first|upper : '?') }}
+                    </div>
+                    <div>
+                        {% if guestProfile and (guestProfile.firstName or guestProfile.lastName) %}
+                            <p class="font-semibold text-gray-900">{{ guestProfile.firstName }} {{ guestProfile.lastName }}</p>
+                        {% endif %}
+                        {% if guest %}
+                            <p class="text-sm text-gray-500">{{ guest.email }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </section>
+
+            {# Détails séjour #}
+            <section class="border border-gray-200 rounded-2xl p-6">
+                <p class="text-xs text-gray-400 uppercase tracking-wide mb-4">Détails du séjour</p>
+                <dl class="grid grid-cols-1 sm:grid-cols-3 gap-5 text-sm">
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <dt class="text-gray-400 text-xs mb-1"><i class="fa-regular fa-calendar-check mr-1"></i>Arrivée</dt>
+                        <dd class="font-semibold text-gray-900">{{ reservation.checkinDate|date('d/m/Y') }}</dd>
+                        <dd class="text-gray-500">{{ reservation.checkinDate|date('H:i') }}</dd>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <dt class="text-gray-400 text-xs mb-1"><i class="fa-regular fa-calendar-xmark mr-1"></i>Départ</dt>
+                        <dd class="font-semibold text-gray-900">{{ reservation.checkoutDate|date('d/m/Y') }}</dd>
+                        <dd class="text-gray-500">{{ reservation.checkoutDate|date('H:i') }}</dd>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-4">
+                        <dt class="text-gray-400 text-xs mb-1"><i class="fa-solid fa-user-group mr-1"></i>Voyageurs</dt>
+                        <dd class="font-semibold text-gray-900">{{ reservation.guestsCount }}</dd>
+                        <dd class="text-gray-500">personne{{ reservation.guestsCount > 1 ? 's' : '' }}</dd>
+                    </div>
+                </dl>
+            </section>
+
+            {# Actions hôte — seulement pour pending #}
+            {% if reservation.status == 'pending' %}
+                <section class="border border-yellow-200 bg-yellow-50 rounded-2xl p-6">
+                    <p class="text-sm font-semibold text-yellow-800 mb-1">
+                        <i class="fa-solid fa-clock mr-1"></i> En attente de votre décision
+                    </p>
+                    <p class="text-sm text-yellow-700 mb-5">Vous avez 24 h pour accepter ou refuser cette demande. Sans réponse, elle sera automatiquement annulée.</p>
+
+                    <div class="flex flex-wrap gap-3">
+                        {# Confirmer #}
+                        <form method="post" action="{{ path('app_host_reservation_confirm', { id: reservation.id }) }}" data-turbo="false">
+                            <input type="hidden" name="_token" value="{{ csrf_token('host_reservation_' ~ reservation.id) }}">
+                            <button type="submit"
+                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-brand hover:bg-brandHover text-white text-sm font-semibold rounded-xl transition">
+                                <i class="fa-solid fa-circle-check"></i> Accepter la réservation
+                            </button>
+                        </form>
+
+                        {# Refuser — ouvre modal #}
+                        <button type="button"
+                                onclick="document.getElementById('modal-refuse').classList.remove('hidden')"
+                                class="inline-flex items-center gap-2 px-5 py-2.5 border border-red-300 text-red-700 hover:bg-red-50 text-sm font-semibold rounded-xl transition">
+                            <i class="fa-solid fa-ban"></i> Refuser
+                        </button>
+                    </div>
+                </section>
+            {% endif %}
+
+            {# Historique des statuts #}
+            {% if reservation.statusHistory|length > 0 %}
+                <section class="border border-gray-200 rounded-2xl p-6">
+                    <p class="text-xs text-gray-400 uppercase tracking-wide mb-4">Historique</p>
+                    <ol class="relative border-l border-gray-200 space-y-5 ml-2">
+                        {% for entry in reservation.statusHistory %}
+                            <li class="ml-4">
+                                <span class="absolute -left-1.5 w-3 h-3 rounded-full
+                                    {% if entry.newStatus == 'confirmed' %}bg-green-400
+                                    {% elseif entry.newStatus == 'cancelled' %}bg-red-400
+                                    {% elseif entry.newStatus == 'pending' %}bg-yellow-400
+                                    {% else %}bg-gray-300{% endif %}
+                                    border-2 border-white"></span>
+                                <p class="text-sm font-medium text-gray-800">
+                                    {% if entry.oldStatus %}
+                                        {{ statusLabels[entry.oldStatus]|default(entry.oldStatus) }} → {{ statusLabels[entry.newStatus]|default(entry.newStatus) }}
+                                    {% else %}
+                                        Création — {{ statusLabels[entry.newStatus]|default(entry.newStatus) }}
+                                    {% endif %}
+                                </p>
+                                <p class="text-xs text-gray-400">
+                                    {{ entry.createdAt|date('d/m/Y à H:i') }}
+                                    {% if entry.changedBy %}· par {{ entry.changedBy.email }}{% endif %}
+                                </p>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                </section>
+            {% endif %}
+
+        </div>
+
+        {# ── Sidebar récap prix ── #}
+        <aside>
+            <div class="border border-gray-200 rounded-2xl p-6 sticky top-28">
+                <p class="text-xs text-gray-400 uppercase tracking-wide mb-4">Récapitulatif financier</p>
+
+                <div class="space-y-3 text-sm">
+                    {% set nights = reservation.checkinDate|date('U') %}
+                    {% set nights = ((reservation.checkoutDate|date('U') - reservation.checkinDate|date('U')) / 86400)|round(0, 'ceil') %}
+
+                    {% if property %}
+                        <div class="flex justify-between text-gray-600">
+                            <span>{{ nights }} nuit{{ nights > 1 ? 's' : '' }} × {{ property.pricePerNight|number_format(0, ',', ' ') }} €</span>
+                            <span>{{ (nights * property.pricePerNight)|number_format(0, ',', ' ') }} €</span>
+                        </div>
+                    {% endif %}
+
+                    {% if reservation.cleaningFee %}
+                        <div class="flex justify-between text-gray-600">
+                            <span>Frais de ménage</span>
+                            <span>{{ reservation.cleaningFee|number_format(0, ',', ' ') }} €</span>
+                        </div>
+                    {% endif %}
+
+                    {% if reservation.serviceFee %}
+                        <div class="flex justify-between text-gray-600">
+                            <span>Frais de service</span>
+                            <span>{{ reservation.serviceFee|number_format(0, ',', ' ') }} €</span>
+                        </div>
+                    {% endif %}
+
+                    <div class="flex justify-between font-bold text-gray-900 border-t border-gray-100 pt-3 mt-1 text-base">
+                        <span>Total</span>
+                        <span class="text-brand">{{ reservation.totalPrice|number_format(0, ',', ' ') }} {{ reservation.currency|default('EUR') }}</span>
+                    </div>
+                </div>
+
+                {% if reservation.status == 'pending' %}
+                    <p class="text-xs text-gray-400 mt-4 text-center">
+                        <i class="fa-solid fa-shield-halved mr-1"></i>
+                        Paiement sécurisé — versé après le check-in
+                    </p>
+                {% endif %}
+            </div>
+        </aside>
+    </div>
+</main>
+
+{# ── Modal refus ── #}
+<div id="modal-refuse" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6">
+        <h3 class="text-lg font-semibold mb-1">Refuser la demande</h3>
+        <p class="text-sm text-gray-500 mb-5">Le voyageur sera notifié. Indiquez un motif si vous le souhaitez.</p>
+
+        <form method="post" action="{{ path('app_host_reservation_refuse', { id: reservation.id }) }}" data-turbo="false">
+            <input type="hidden" name="_token" value="{{ csrf_token('host_reservation_' ~ reservation.id) }}">
+
+            <textarea name="reason" rows="3" placeholder="Ex. : dates indisponibles, maintenance prévue…"
+                      class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 mb-4 resize-none"></textarea>
+
+            <div class="flex gap-3 justify-end">
+                <button type="button"
+                        onclick="document.getElementById('modal-refuse').classList.add('hidden')"
+                        class="px-4 py-2 text-sm text-gray-700 border border-gray-200 rounded-xl hover:bg-gray-50 transition">
+                    Annuler
+                </button>
+                <button type="submit"
+                        class="px-4 py-2 text-sm font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition">
+                    Confirmer le refus
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -119,27 +119,40 @@
                     {% if property.cleaningFee %}
                         <p class="text-sm text-gray-500 mb-4">Frais de ménage : {{ property.cleaningFee|number_format(0, ',', ' ') }} €</p>
                     {% endif %}
-                    <div class="border border-gray-300 rounded-lg mb-4">
-                        <div class="grid grid-cols-2 divide-x divide-gray-300">
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Arrivée</p>
-                                <p class="text-sm text-gray-500">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
+
+                    {% if app.user %}
+                        <div class="border border-gray-300 rounded-lg mb-4">
+                            <div class="grid grid-cols-2 divide-x divide-gray-300">
+                                <div class="p-3">
+                                    <p class="text-[10px] font-bold uppercase text-gray-800">Arrivée</p>
+                                    <p class="text-sm text-gray-500">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
+                                </div>
+                                <div class="p-3">
+                                    <p class="text-[10px] font-bold uppercase text-gray-800">Départ</p>
+                                    <p class="text-sm text-gray-500">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
+                                </div>
                             </div>
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Départ</p>
-                                <p class="text-sm text-gray-500">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
+                            <div class="p-3 border-t border-gray-300">
+                                <p class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</p>
+                                <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
                             </div>
                         </div>
-                        <div class="p-3 border-t border-gray-300">
-                            <p class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</p>
-                            <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
-                        </div>
-                    </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
-                        Réserver
-                    </a>
-                    {% if property.instantBooking %}
-                        <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
+                        <a href="{{ path('app_booking_checkout', { id: property.id }) }}"
+                           class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                            Réserver
+                        </a>
+                        {% if property.instantBooking %}
+                            <p class="text-center text-xs text-gray-500 mt-3">
+                                <i class="fa-solid fa-bolt text-brand text-xs mr-1"></i>
+                                Réservation instantanée disponible
+                            </p>
+                        {% endif %}
+                    {% else %}
+                        <a href="{{ path('app_login') }}"
+                           class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                            Connectez-vous pour réserver
+                        </a>
+                        <p class="text-center text-xs text-gray-400 mt-3">Créez un compte gratuitement en 2 minutes</p>
                     {% endif %}
                 </div>
             </aside>

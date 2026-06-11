@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Confirmation de réservation</title>
+    <style>
+        body { font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0; background: #f9f9f9; }
+        .container { max-width: 600px; margin: 32px auto; background: #fff; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,.08); }
+        .header { background: #FF5A5F; color: #fff; padding: 32px 40px; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .body { padding: 32px 40px; }
+        .property-name { font-size: 20px; font-weight: bold; color: #222; }
+        .detail-row { display: flex; justify-content: space-between; border-bottom: 1px solid #eee; padding: 12px 0; }
+        .detail-label { color: #666; }
+        .detail-value { font-weight: bold; }
+        .status-badge { display: inline-block; padding: 4px 16px; border-radius: 99px; font-size: 14px; font-weight: bold; }
+        .status-confirmed { background: #d1fae5; color: #065f46; }
+        .status-pending { background: #fef3c7; color: #92400e; }
+        .footer { background: #f9f9f9; padding: 20px 40px; font-size: 12px; color: #999; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>
+            {% if reservation.status == 'confirmed' %}
+                ✅ Réservation confirmée
+            {% else %}
+                ⏳ Demande de réservation reçue
+            {% endif %}
+        </h1>
+    </div>
+    <div class="body">
+        <p>Bonjour <strong>{{ guest_name }}</strong>,</p>
+        {% if reservation.status == 'confirmed' %}
+            <p>Votre réservation est confirmée. Voici le récapitulatif :</p>
+        {% else %}
+            <p>Votre demande de réservation a bien été enregistrée. Le propriétaire a <strong>24h</strong> pour la confirmer. Voici le récapitulatif :</p>
+        {% endif %}
+
+        <p class="property-name">{{ reservation.property.title }}</p>
+        <p>{{ reservation.property.address.city ?? '' }}, {{ reservation.property.address.country ?? '' }}</p>
+
+        <div class="detail-row">
+            <span class="detail-label">Arrivée</span>
+            <span class="detail-value">{{ reservation.checkinDate|date('d/m/Y H:i') }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Départ</span>
+            <span class="detail-value">{{ reservation.checkoutDate|date('d/m/Y H:i') }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Voyageurs</span>
+            <span class="detail-value">{{ reservation.guestsCount }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Total</span>
+            <span class="detail-value">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</span>
+        </div>
+        <div class="detail-row">
+            <span class="detail-label">Statut</span>
+            <span class="detail-value">
+                <span class="status-badge {% if reservation.status == 'confirmed' %}status-confirmed{% else %}status-pending{% endif %}">
+                    {% if reservation.status == 'confirmed' %}Confirmée{% else %}En attente{% endif %}
+                </span>
+            </span>
+        </div>
+
+        {% if reservation.status == 'pending' %}
+        <p style="margin-top:24px; color:#92400e; background:#fef3c7; padding:12px 16px; border-radius:8px;">
+            ⚠️ Si la demande n'est pas confirmée sous 24h, elle sera automatiquement annulée.
+        </p>
+        {% endif %}
+    </div>
+    <div class="footer">
+        Vous recevez cet e-mail car vous avez effectué une réservation sur notre plateforme.<br>
+        © {{ "now"|date("Y") }} Airbnb Clone
+    </div>
+</div>
+</body>
+</html>

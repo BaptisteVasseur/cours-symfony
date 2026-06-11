@@ -1,0 +1,102 @@
+Morgan KPASSI 
+Service de gestion de reservation Plan : 
+
+1. Gérer les instant booking et les manual booking avec différent status (pending, cancel, confiremed, Completed, free ).
+2. Gérer les conflits de reservation sur une période donnée et mettre à jour le bon status si disponible et l'affichage du calendrier
+3. Gérer spécifiquement les réservations en interne par utilisateur en remplissant un formulaire avec les dates -> mise à jour du status de la reservation 
+-> message flash + envoie email.
+4. Moteur de recherche via /search 4 parametre destination checkin checkout guest 
+5. Gérer l'annulation d'une reservation message flash des 2 parties via un bouton ou expiration Worker 24h 
+
+Modélisation temporelle :
+Oui, il est possible de reservé le jour d'un checkout, le jour et l'heure seront les deux clés.
+il faudrait qu'il y ai cependant au moins un espace de 3h entre un checkin et un checkout.
+
+Gestion des états : 
+Un pending ne bloque pas les dates cependant 3 personnes maximum peut réserver sur une planche de date qui se chevauche.
+Au delà, il y aurait trop de refus par utilisateur ce qui selon moi engenderait de la frustation justifié.
+
+Concurrence : 
+Il faudrait que la bdd lance une alerte ou active une notifacation lorsqu'il y a un paiement d'un meme montant au meme moment sur la meme plage de date.
+Afin que l'admin puisse gérer le probleme par la suite. 
+
+Performance : 
+Il faut reserver avec une date et une heure d'arriver et puis une date et une heure de départ
+Comme ceci on sait que les jours entre sont indisponible sans itérer chaque jour. 
+
+
+
+Liste de fonctionnalité produite : 
+
+Module Réservation — Fonctionnalités produites
+Côté Voyageur
+Calendrier de disponibilité
+Endpoint JSON public (/logement/{id}/disponibilite.json) qui retourne toutes les plages de dates bloquées. Consommé par Flatpickr pour colorier les jours indisponibles en rouge directement dans le sélecteur de dates.
+
+Formulaire de réservation
+Page dédiée (/logement/{id}/reserver) avec un sélecteur Flatpickr pour l'arrivée et le départ, un champ voyageurs, et un aperçu du prix calculé en temps réel (nuits × tarif + frais de ménage + 12 % de service). Les dates invalides sont désactivées visuellement.
+
+Confirmation instantanée ou en attente
+Si le logement a l'option "réservation instantanée" activée, la réservation passe directement en confirmed. Sinon, elle passe en pending et attend la validation de l'hôte sous 24 h.
+
+Annulation
+Le voyageur peut annuler une réservation pending ou confirmed depuis sa page de détail. Un motif facultatif peut être saisi dans une modale de confirmation.
+
+Mes réservations
+Liste chronologique de toutes ses réservations (/reservations) avec le statut coloré, le logement, les dates et le montant total.
+
+Détail d'une réservation
+Page complète (/reservations/{id}) avec le récapitulatif du séjour, la décomposition du prix, le statut actuel et l'historique de tous les changements de statut.
+
+Côté Hôte
+Tableau des demandes reçues
+Page /hote/reservations segmentée en trois sections : demandes en attente (avec badge de comptage), réservations confirmées, et historique. Accessible uniquement aux utilisateurs avec le rôle ROLE_HOST.
+
+Détail d'une demande
+Fiche complète (/hote/reservations/{id}) avec les informations du voyageur, les dates du séjour sous forme de cards, le récapitulatif financier en sidebar, et la timeline des changements de statut.
+
+Accepter une demande
+Action POST protégée par CSRF. Passe la réservation de pending à confirmed, enregistre le changement dans l'historique et redirige vers la liste avec un flash de confirmation.
+
+Refuser une demande
+Action POST avec modale de saisie du motif. Passe la réservation de pending à cancelled, enregistre le motif et le changement dans l'historique.
+
+Règles métier
+Délai entre deux séjours
+Un délai incompressible de 3 heures est requis entre la fin d'un séjour et le début du suivant sur un même logement. Ce délai est enforced côté serveur et côté JS dans le calendrier.
+
+Durée minimale
+Chaque réservation doit durer au minimum 3 heures.
+
+Limite de demandes simultanées
+Un logement ne peut pas avoir plus de 3 réservations pending sur une même période, pour éviter la sur-sollicitation d'un logement.
+
+Anti-doublon voyageur
+Un voyageur ne peut pas créer deux réservations actives (pending ou confirmed) qui se chevauchent, même sur des logements différents.
+
+Blocage de l'auto-réservation
+Un hôte ne peut pas réserver son propre logement.
+
+Calcul de prix
+Le montant total est calculé automatiquement à partir de trois composantes : le sous-total (nombre de nuits × tarif par nuit), les frais de ménage définis sur le logement, et les frais de service à hauteur de 12 % du sous-total. Ce calcul est affiché en temps réel sur le formulaire et enregistré en base au moment de la création.
+
+Workflow des statuts
+Chaque réservation passe par un cycle de vie tracé. À la création, elle est pending (validation requise) ou confirmed (instant booking). L'hôte peut la passer en confirmed ou cancelled. Un worker asynchrone (Symfony Messenger) expire automatiquement les demandes pending non traitées après 24 heures. En fin de séjour, le statut passe en completed.
+
+Chaque transition est enregistrée dans une table d'historique (ReservationStatusHistory) avec l'auteur du changement, la date et l'ancien et le nouveau statut.
+
+Infrastructure technique
+Sécurité
+Un voter dédié (ReservationVoter) contrôle l'accès : RESERVATION_VIEW pour le voyageur et l'hôte, RESERVATION_MANAGE réservé à l'hôte. Toutes les actions POST (confirmation, refus, annulation) sont protégées par un token CSRF unique par réservation.
+
+Worker asynchrone
+Un message ExpireReservationMessage est dispatché via Symfony Messenger avec un délai de 24 h au moment de la création d'une réservation en attente. Le handler associé annule automatiquement la réservation si elle est toujours pending.
+
+Sélecteur de dates
+Flatpickr est chargé en CDN avec la locale française. Il affiche les jours bloqués en rouge, impose le délai de 3 h entre les séjours, et empêche la sélection d'une date de départ avant la date d'arrivée.
+
+E-mail de confirmation
+Un e-mail transactionnel est envoyé au voyageur après chaque réservation créée, via Symfony Mailer avec un template Twig dédié. En environnement de développement, les e-mails sont interceptés par Mailpit.
+
+Notifications flash
+Chaque action (réservation, annulation, confirmation, refus) déclenche un message flash affiché en haut à droite de l'écran, avec auto-disparition après 6 secondes et un code couleur par type (succès, info, erreur).

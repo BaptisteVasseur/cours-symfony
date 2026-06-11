@@ -6,38 +6,218 @@
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
-            <i class="fa-solid fa-arrow-left"></i> Retour au logement
-        </a>
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
-            {% endfor %}
-        {% endfor %}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2">
-                <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
-                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                    {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+{# Flatpickr — CDN only, no broken theme #}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/fr.js"></script>
+
+<main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+    <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Retour au logement
+    </a>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2">
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
+
+            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                {{ form_start(form, { attr: { class: 'space-y-5', id: 'booking-form', novalidate: 'novalidate', 'data-turbo': 'false' } }) }}
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {# Checkin #}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Arrivée</label>
+                            <input id="checkin-picker" type="text" placeholder="jj/mm/aaaa hh:mm"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                            {{ form_widget(form.checkinDate) }}
+                            {{ form_errors(form.checkinDate) }}
                         </div>
-                        {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
-                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
-                    {{ form_end(form) }}
-                </div>
+                        {# Checkout #}
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Départ</label>
+                            <input id="checkout-picker" type="text" placeholder="jj/mm/aaaa hh:mm"
+                                class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand cursor-pointer">
+                            {{ form_widget(form.checkoutDate) }}
+                            {{ form_errors(form.checkoutDate) }}
+                        </div>
+                    </div>
+
+                    {# Récap prix — affiché dès que les deux dates sont choisies #}
+                    <div id="price-preview" class="hidden bg-gray-50 rounded-xl p-4 text-sm border border-gray-100 space-y-1">
+                        <div class="flex justify-between text-gray-600"><span id="prev-label"></span><span id="prev-subtotal"></span></div>
+                        <div class="flex justify-between text-gray-600"><span>Frais de ménage</span><span id="prev-cleaning"></span></div>
+                        <div class="flex justify-between text-gray-600"><span>Frais de service (12 %)</span><span id="prev-service"></span></div>
+                        <div class="flex justify-between font-bold border-t border-gray-200 pt-2 mt-1"><span>Total</span><span id="prev-total" class="text-brand"></span></div>
+                    </div>
+
+                    {{ form_row(form.guestsCount, {
+                        label: 'Voyageurs',
+                        attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests }
+                    }) }}
+
+                    <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl transition">
+                        Confirmer la réservation
+                    </button>
+                {{ form_end(form) }}
             </div>
-            <aside>
-                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
-                    <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
-                    <div class="p-5">
-                        <h2 class="font-semibold">{{ property.title }}</h2>
-                        <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+        </div>
+
+        <aside>
+            <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
+                <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
+                <div class="p-5">
+                    <h2 class="font-semibold">{{ property.title }}</h2>
+                    <p class="text-lg font-bold mt-2">
+                        {{ property.pricePerNight|number_format(0, ',', ' ') }} €
+                        <span class="text-sm font-normal text-gray-500">/ nuit</span>
+                    </p>
+                    {% if property.cleaningFee %}
+                        <p class="text-xs text-gray-400 mt-1">+ {{ property.cleaningFee|number_format(0, ',', ' ') }} € frais de ménage</p>
+                    {% endif %}
+                    <p class="text-xs text-gray-400 mt-1">Max {{ property.maxGuests }} voyageurs</p>
+
+                    <div class="mt-4 pt-4 border-t border-gray-100 text-xs text-gray-500 space-y-1">
+                        <p class="font-medium text-gray-700 mb-2">Légende calendrier</p>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm inline-block" style="background:#fee2e2"></span>Non disponible</div>
+                        <div class="flex items-center gap-2"><span class="w-3 h-3 rounded-sm inline-block bg-brand"></span>Votre sélection</div>
                     </div>
                 </div>
-            </aside>
-        </div>
-    </main>
+            </div>
+        </aside>
+    </div>
+</main>
+
+<style>
+    .flatpickr-day.flatpickr-disabled,
+    .flatpickr-day.flatpickr-disabled:hover {
+        background: #fee2e2 !important;
+        color: #ef4444 !important;
+        opacity: 1 !important;
+        cursor: not-allowed !important;
+        text-decoration: line-through;
+    }
+    .flatpickr-calendar { font-family: inherit; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,.15); }
+    .flatpickr-day.selected, .flatpickr-day.selected:hover { background: #FF385C !important; border-color: #FF385C !important; }
+    .flatpickr-day:hover:not(.flatpickr-disabled) { background: #ffe4e8; }
+</style>
+
+<script>
+(function () {
+    var GAP_HOURS       = {{ constant('App\\Service\\ReservationAvailabilityService::GAP_HOURS') }};
+    var PRICE_PER_NIGHT = {{ property.pricePerNight }};
+    var CLEANING_FEE    = {{ property.cleaningFee ?? 0 }};
+    var AVAILABILITY_URL = '{{ path('app_booking_availability_json', { id: property.id }) }}';
+
+    var blocked = [];  /* will be filled after fetch */
+
+    /* ── helpers ── */
+    function pad(n) { return String(n).padStart(2, '0'); }
+
+    /* Format Date → 'YYYY-MM-DDTHH:mm' for Symfony DateTimeType */
+    function toSymfonyInput(d) {
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate())
+             + 'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    }
+
+    function isBlocked(date) {
+        return blocked.some(function (b) {
+            return date >= new Date(b.from) && date < new Date(b.to);
+        });
+    }
+
+    /* ── Init Flatpickr IMMEDIATELY (no fetch dependency) ── */
+    var fpCheckin  = null;
+    var fpCheckout = null;
+
+    document.addEventListener('DOMContentLoaded', function () {
+        /* Resolve hidden inputs by name — avoids fragile id overrides */
+        var checkinInput  = document.querySelector('[name="booking[checkinDate]"]');
+        var checkoutInput = document.querySelector('[name="booking[checkoutDate]"]');
+
+        /* ── price preview ── */
+        function updatePreview() {
+            var ci  = checkinInput  ? checkinInput.value  : '';
+            var co  = checkoutInput ? checkoutInput.value : '';
+            var box = document.getElementById('price-preview');
+            if (!ci || !co) { box.classList.add('hidden'); return; }
+            var diff = new Date(co) - new Date(ci);
+            if (diff <= 0) { box.classList.add('hidden'); return; }
+            var nights   = Math.max(1, Math.ceil(diff / 86400000));
+            var subtotal = nights * PRICE_PER_NIGHT;
+            var service  = Math.round(subtotal * 0.12 * 100) / 100;
+            var total    = subtotal + CLEANING_FEE + service;
+            var fmt = function (n) { return n.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' €'; };
+            document.getElementById('prev-label').textContent    = nights + ' nuit' + (nights > 1 ? 's' : '') + ' × ' + fmt(PRICE_PER_NIGHT);
+            document.getElementById('prev-subtotal').textContent = fmt(subtotal);
+            document.getElementById('prev-cleaning').textContent = fmt(CLEANING_FEE);
+            document.getElementById('prev-service').textContent  = fmt(service);
+            document.getElementById('prev-total').textContent    = fmt(total);
+            box.classList.remove('hidden');
+        }
+
+        fpCheckin = flatpickr('#checkin-picker', {
+            locale: 'fr',
+            enableTime: true,
+            time_24hr: true,
+            dateFormat: 'd/m/Y H:i',
+            minuteIncrement: 30,
+            minDate: 'today',
+            disable: [isBlocked],
+            onChange: function (dates) {
+                if (!dates[0]) return;
+                if (checkinInput) checkinInput.value = toSymfonyInput(dates[0]);
+                var minCo = new Date(dates[0].getTime() + GAP_HOURS * 3600000);
+                fpCheckout.set('minDate', minCo);
+                /* Find nearest future block that starts after checkin */
+                var maxCo = null;
+                blocked.forEach(function (b) {
+                    var bFrom = new Date(b.from);
+                    if (bFrom > dates[0]) {
+                        var limit = new Date(bFrom.getTime() - GAP_HOURS * 3600000);
+                        if (maxCo === null || limit < maxCo) maxCo = limit;
+                    }
+                });
+                fpCheckout.set('maxDate', maxCo || null);
+                /* Clear checkout if it became invalid */
+                if (fpCheckout.selectedDates[0] && fpCheckout.selectedDates[0] <= minCo) fpCheckout.clear();
+                updatePreview();
+            },
+        });
+
+        fpCheckout = flatpickr('#checkout-picker', {
+            locale: 'fr',
+            enableTime: true,
+            time_24hr: true,
+            dateFormat: 'd/m/Y H:i',
+            minuteIncrement: 30,
+            disable: [isBlocked],
+            onChange: function (dates) {
+                if (!dates[0]) return;
+                if (checkoutInput) checkoutInput.value = toSymfonyInput(dates[0]);
+                updatePreview();
+            },
+        });
+
+        /* Pre-fill on form re-submission (validation errors) */
+        var ei = checkinInput  ? checkinInput.value  : '';
+        var eo = checkoutInput ? checkoutInput.value : '';
+        if (ei) fpCheckin.setDate(ei.replace('T', ' '));
+        if (eo) fpCheckout.setDate(eo.replace('T', ' '));
+
+        /* ── Fetch blocked ranges and update pickers ── */
+        fetch(AVAILABILITY_URL)
+            .then(function (r) { return r.ok ? r.json() : Promise.reject(r.status); })
+            .then(function (data) {
+                blocked = data.blocked || [];
+                /* Rebuild disable list with real data */
+                fpCheckin.set('disable',  [isBlocked]);
+                fpCheckout.set('disable', [isBlocked]);
+                /* Redraw to apply colours */
+                fpCheckin.redraw();
+                fpCheckout.redraw();
+            })
+            .catch(function (e) { console.warn('Availability fetch failed:', e); });
+    });
+}());
+</script>
 {% endblock %}

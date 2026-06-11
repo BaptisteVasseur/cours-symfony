@@ -5,6 +5,37 @@
 
     {% include 'layout/partials/app/header.html.twig' %}
 
+    {# ── Flash messages globaux ── #}
+    {% set flashIcons = { success: 'fa-circle-check', info: 'fa-circle-info', warning: 'fa-triangle-exclamation', error: 'fa-circle-xmark' } %}
+    {% set flashColors = { success: 'bg-emerald-50 border-emerald-200 text-emerald-800', info: 'bg-blue-50 border-blue-200 text-blue-800', warning: 'bg-amber-50 border-amber-200 text-amber-800', error: 'bg-red-50 border-red-200 text-red-800' } %}
+    {% set allFlashes = [] %}
+    {% for type, messages in app.flashes %}
+        {% for message in messages %}
+            {% set allFlashes = allFlashes|merge([{ type: type, message: message }]) %}
+        {% endfor %}
+    {% endfor %}
+    {% if allFlashes is not empty %}
+    <div id="flash-stack" class="fixed top-20 right-4 z-[9999] flex flex-col gap-2 w-full max-w-sm">
+        {% for flash in allFlashes %}
+        <div class="flash-item flex items-start gap-3 {{ flashColors[flash.type] ?? flashColors.info }} border rounded-xl px-4 py-3 shadow-lg text-sm transition-all duration-300">
+            <i class="fa-solid {{ flashIcons[flash.type] ?? 'fa-circle-info' }} mt-0.5 shrink-0"></i>
+            <span class="flex-1">{{ flash.message }}</span>
+            <button onclick="this.closest('.flash-item').remove()" class="shrink-0 opacity-50 hover:opacity-100 transition ml-1">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        {% endfor %}
+    </div>
+    <script>
+        setTimeout(function () {
+            document.querySelectorAll('.flash-item').forEach(function (el) {
+                el.style.opacity = '0';
+                setTimeout(function () { el.remove(); }, 300);
+            });
+        }, 6000);
+    </script>
+    {% endif %}
+
     {% block content %}{% endblock %}
 
     {% include 'layout/partials/app/footer.html.twig' %}
