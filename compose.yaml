@@ -2,11 +2,11 @@ services:
   database:
     image: postgres:${POSTGRES_VERSION:-16}-alpine
     environment:
-      POSTGRES_DB: app
-      POSTGRES_PASSWORD: my-super-secret-password
-      POSTGRES_USER: app
+      POSTGRES_DB: airbnb
+      POSTGRES_PASSWORD: esgi
+      POSTGRES_USER: madox
     healthcheck:
-      test: ["CMD", "pg_isready", "-d", "app", "-U", "app"]
+      test: ["CMD", "pg_isready", "-d", "airbnb", "-U", "madox"]
       timeout: 5s
       retries: 5
       start_period: 60s
@@ -33,7 +33,7 @@ services:
       - vendor:/var/www/html/vendor
       - var:/var/www/html/var
     environment:
-      DATABASE_URL: postgresql://app:my-super-secret-password@database:5432/app?serverVersion=16&charset=utf8
+      DATABASE_URL: postgresql://madox:esgi@database:5432/airbnb?serverVersion=16&charset=utf8
       MESSENGER_TRANSPORT_DSN: doctrine://default
       MAILER_DSN: smtp://mailer:1025
     depends_on:
@@ -54,7 +54,7 @@ services:
       - vendor:/var/www/html/vendor
       - var:/var/www/html/var
     environment:
-      DATABASE_URL: postgresql://app:my-super-secret-password@database:5432/app?serverVersion=16&charset=utf8
+      DATABASE_URL: postgresql://madox:esgi@database:5432/airbnb?serverVersion=16&charset=utf8
       MESSENGER_TRANSPORT_DSN: doctrine://default
       MAILER_DSN: smtp://mailer:1025
     depends_on:

@@ -85,23 +85,58 @@
                 </div>
 
                 {% if is_granted('ROLE_USER') %}
-                    {{ form_start(bookingForm, { action: path('app_booking_new', { id: property.id }), method: 'POST', attr: { class: 'space-y-4' } }) }}
+                    {{ form_start(bookingForm, { action: path('app_booking_new', { id: property.id }), method: 'POST', attr: { class: 'space-y-4', id: 'booking-form' } }) }}
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Arrivée</label>
-                            {{ form_widget(bookingForm.checkIn) }}
+                            {{ form_widget(bookingForm.checkIn, { attr: { id: 'checkIn', min: 'today'|date('Y-m-d') } }) }}
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-1">Départ</label>
-                            {{ form_widget(bookingForm.checkOut) }}
+                            {{ form_widget(bookingForm.checkOut, { attr: { id: 'checkOut' } }) }}
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-1">Voyageurs</label>
-                            {{ form_widget(bookingForm.guestsCount, { attr: { max: property.maxGuests } }) }}
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Voyageurs (max {{ property.maxGuests }})</label>
+                            {{ form_widget(bookingForm.guestsCount, { attr: { id: 'guestsCount', max: property.maxGuests, min: 1 } }) }}
                         </div>
+
+                        {# Dynamic pricing — G.6 #}
+                        <div id="price-preview" class="hidden border-t border-gray-100 pt-3 space-y-1">
+                            <div class="flex justify-between text-sm text-gray-600">
+                                <span id="price-label">— € × — nuits</span>
+                                <span id="price-subtotal">—</span>
+                            </div>
+                            <div class="flex justify-between font-bold text-gray-900">
+                                <span>Total</span>
+                                <span id="price-total">—</span>
+                            </div>
+                        </div>
+
                         <button type="submit" class="w-full bg-rose-500 hover:bg-rose-600 text-white font-semibold py-3 rounded-xl transition">
-                            Réserver
+                            Voir le récapitulatif
                         </button>
                     {{ form_end(bookingForm) }}
+
+                    <script>
+                    (function() {
+                        var pricePerNight = {{ property.pricePerNight }};
+                        function update() {
+                            var ci = document.getElementById('checkIn').value;
+                            var co = document.getElementById('checkOut').value;
+                            if (!ci || !co) return;
+                            var d1 = new Date(ci), d2 = new Date(co);
+                            var nights = Math.round((d2 - d1) / 86400000);
+                            if (nights <= 0) return;
+                            var total = nights * pricePerNight;
+                            document.getElementById('price-label').textContent = pricePerNight + ' € × ' + nights + ' nuit' + (nights > 1 ? 's' : '');
+                            document.getElementById('price-subtotal').textContent = total.toFixed(2) + ' €';
+                            document.getElementById('price-total').textContent = total.toFixed(2) + ' €';
+                            document.getElementById('price-preview').classList.remove('hidden');
+                        }
+                        document.getElementById('checkIn').addEventListener('change', update);
+                        document.getElementById('checkOut').addEventListener('change', update);
+                    })();
+                    </script>
+
                 {% else %}
                     <a href="{{ path('app_login') }}" class="block w-full text-center bg-rose-500 hover:bg-rose-600 text-white font-semibold py-3 rounded-xl transition">
                         Connectez-vous pour réserver

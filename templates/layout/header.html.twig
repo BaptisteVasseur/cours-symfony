@@ -8,11 +8,15 @@
                 <span class="text-rose-500 font-bold text-xl tracking-tight">airbnb</span>
             </a>
 
-            <form method="GET" action="{{ path('app_property_index') }}" class="hidden md:flex items-center border border-gray-300 rounded-full px-4 py-2 gap-3 shadow-sm hover:shadow-md transition">
-                <input type="text" name="city" value="{{ app.request.query.get('city') }}" placeholder="Destination" class="outline-none text-sm w-32">
+            <form method="GET" action="{{ path('app_search') }}" class="hidden md:flex items-center border border-gray-300 rounded-full px-4 py-2 gap-2 shadow-sm hover:shadow-md transition">
+                <input type="text" name="destination" value="{{ app.request.query.get('destination') }}" placeholder="Destination" class="outline-none text-sm w-28">
                 <span class="text-gray-300">|</span>
-                <input type="number" name="guests" value="{{ app.request.query.get('guests') }}" placeholder="Voyageurs" min="1" class="outline-none text-sm w-24">
-                <button type="submit" class="bg-rose-500 text-white rounded-full p-1.5 hover:bg-rose-600 transition">
+                <input type="date" name="checkin" value="{{ app.request.query.get('checkin') }}" class="outline-none text-sm w-28 text-gray-600">
+                <span class="text-gray-300">|</span>
+                <input type="date" name="checkout" value="{{ app.request.query.get('checkout') }}" class="outline-none text-sm w-28 text-gray-600">
+                <span class="text-gray-300">|</span>
+                <input type="number" name="guests" value="{{ app.request.query.get('guests') }}" placeholder="Voyageurs" min="1" class="outline-none text-sm w-20">
+                <button type="submit" class="bg-rose-500 text-white rounded-full p-1.5 hover:bg-rose-600 transition flex-shrink-0">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                 </button>
             </form>
@@ -40,6 +44,14 @@
                             <a href="{{ path('app_booking_index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Mes réservations</a>
                             {% if is_granted('ROLE_HOST') %}
                                 <a href="{{ path('app_property_new') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Ajouter un logement</a>
+                                <a href="{{ path('host_dashboard') }}" class="block px-4 py-2 text-sm text-blue-600 font-medium hover:bg-gray-50">
+                                    Tableau de bord hôte
+                                </a>
+                            {% endif %}
+                            {% if is_granted('ROLE_ADMIN') %}
+                                <a href="{{ path('admin_dashboard') }}" class="block px-4 py-2 text-sm text-purple-600 font-medium hover:bg-gray-50">
+                                    Administration
+                                </a>
                             {% endif %}
                             <a href="{{ path('app_logout') }}" class="block px-4 py-2 text-sm text-rose-500 hover:bg-gray-50 rounded-b-xl">Déconnexion</a>
                         </div>
