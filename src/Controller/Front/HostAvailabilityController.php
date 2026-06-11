@@ -152,4 +152,28 @@ final class HostAvailabilityController extends AbstractController
 
         return $days;
     }
+
+    #[Route('/ical/generer', name: 'ical_generate', methods: ['POST'])]
+    public function generateIcalToken(
+        Property $property,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        $user = $this->getUser();
+        if (!$user instanceof User || $property->getHost()?->getId() !== $user->getId()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('ical_generate_' . $property->getId(), $this->container->get('request_stack')->getCurrentRequest()?->request->getString('_token'))) {
+            $this->addFlash('error', 'Invalid security token.');
+
+            return $this->redirectToRoute('app_host_availability_index', ['id' => $property->getId()]);
+        }
+
+        $property->setIcalToken(bin2hex(random_bytes(32)));
+        $entityManager->flush();
+
+        $this->addFlash('success', 'iCal token generated.');
+
+        return $this->redirectToRoute('app_host_availability_index', ['id' => $property->getId()]);
+    }
 }
