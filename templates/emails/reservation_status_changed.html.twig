@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #111; max-width: 600px; margin: 0 auto; padding: 24px;">
+
+{% if newStatus == 'confirmed' %}
+<h2 style="color: #059669;">Réservation confirmée — {{ reservation.property.title }}</h2>
+<p>Bonjour {{ recipient.firstName ?? recipient.email }},</p>
+<p>Bonne nouvelle ! Votre réservation pour <strong>{{ reservation.property.title }}</strong> a été <strong>confirmée</strong> par l'hôte.</p>
+{% elseif newStatus == 'cancelled' %}
+<h2 style="color: #dc2626;">Réservation annulée — {{ reservation.property.title }}</h2>
+<p>Bonjour {{ recipient.firstName ?? recipient.email }},</p>
+<p>Votre réservation pour <strong>{{ reservation.property.title }}</strong> a été <strong>annulée</strong>.</p>
+{% if reservation.cancellationReason %}
+<p><strong>Motif :</strong> {{ reservation.cancellationReason }}</p>
+{% endif %}
+{% else %}
+<h2>Mise à jour de votre réservation — {{ reservation.property.title }}</h2>
+<p>Bonjour {{ recipient.firstName ?? recipient.email }},</p>
+<p>Le statut de votre réservation a été mis à jour.</p>
+{% endif %}
+
+<table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+    <tr>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; color: #6b7280;">Logement</td>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; font-weight: 600;">{{ reservation.property.title }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; color: #6b7280;">Arrivée</td>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; font-weight: 600;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; color: #6b7280;">Départ</td>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; font-weight: 600;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+    </tr>
+</table>
+
+<p style="margin-top: 24px; color: #6b7280; font-size: 12px;">StayNest — vous pouvez consulter vos réservations depuis votre espace personnel.</p>
+</body>
+</html>

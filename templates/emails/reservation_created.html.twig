@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #111; max-width: 600px; margin: 0 auto; padding: 24px;">
+<h2>Nouvelle réservation — {{ reservation.property.title }}</h2>
+
+<p>Bonjour {{ recipient.firstName ?? recipient.email }},</p>
+
+{% if role == 'guest' %}
+<p>Votre demande de réservation a bien été enregistrée.</p>
+{% else %}
+<p>Vous avez reçu une nouvelle demande de réservation pour <strong>{{ reservation.property.title }}</strong>.</p>
+{% endif %}
+
+<table style="border-collapse: collapse; width: 100%; margin: 16px 0;">
+    <tr>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; color: #6b7280;">Arrivée</td>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; font-weight: 600;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; color: #6b7280;">Départ</td>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; font-weight: 600;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; color: #6b7280;">Voyageurs</td>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; font-weight: 600;">{{ reservation.guestsCount }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; color: #6b7280;">Montant total</td>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; font-weight: 600;">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 8px; border: 1px solid #e5e7eb; color: #6b7280;">Statut</td>
+        <td style="padding: 8px; border: 1px solid #e5e7eb;">{{ reservation.status == 'confirmed' ? 'Confirmée' : 'En attente de validation' }}</td>
+    </tr>
+</table>
+
+<p style="margin-top: 24px; color: #6b7280; font-size: 12px;">StayNest — vous pouvez gérer vos réservations depuis votre espace personnel.</p>
+</body>
+</html>
