@@ -1,0 +1,61 @@
+Nom : Mohed Abbas
+Classe : 4IW2
+Date : 11 juin 2026
+
+
+Question 1: Comment je represente une periode de reservation ?
+
+Une reservation, c'est une periode. Je garde deux dates : la date d'arrivee (checkinDate) et la date de depart (checkoutDate). Les deux sont de type DATE, parce que je compte des nuits et pas des heures.
+
+J'utilise un intervalle semi-ouvert. Ca veut dire que le jour de depart n'est pas compte. Par exemple, du 16 au 19 juin, le client dort les nuits du 16, du 17 et du 18. Il ne dort pas la nuit du 19. Donc ca fait 3 nuits, et pas 4.
+
+Je fais comme ca parce que dans la vraie vie le client part le matin (vers 11h) et un autre client peut arriver l'apres-midi (vers 15h). Le jour de depart doit donc rester libre pour quelqu'un d'autre.
+
+Pour savoir si deux reservations se touchent, j'utilise cette regle : existante.checkin < nouvelle.checkout ET existante.checkout > nouvelle.checkin. Les signes sont stricts (< et >). Comme ca, depart le 19 et arrivee le 19 ne pose pas de probleme.
+
+
+Question 2: Est-ce qu'une demande en attente bloque les dates ?
+
+Non. Seules les reservations confirmees (Confirmed) bloquent les dates.
+
+Quand une demande est en attente (Pending), elle n'occupe pas le calendrier. L'hote n'a pas encore dit oui. Donc deux personnes peuvent demander les memes dates en meme temps. La premiere demande qui est confirmee gagne. L'autre ne peut plus etre confirmee.
+
+Je fais ce choix pour ne pas bloquer des dates pour rien. Une demande en attente peut etre refusee, alors c'est dommage de bloquer le calendrier tout de suite. Le vrai conflit est regle au moment de la confirmation.
+
+
+Question 3: Comment j'evite le double-booking (deux fois la meme date) ?
+
+J'utilise une transaction. Quand je cree ou je confirme une reservation, je verifie encore une fois la disponibilite a l'interieur de la transaction, juste avant d'enregistrer.
+
+Comme ca, si deux confirmations arrivent presque en meme temps, la deuxieme voit la premiere et elle est refusee. Il n'y a pas deux reservations sur les memes dates.
+
+Pour faire encore mieux, on peut ajouter une contrainte d'exclusion dans PostgreSQL. La base de donnees elle-meme empeche alors deux periodes de se chevaucher. C'est la solution ideale, en plus du code.
+
+
+Question 4: Est-ce que c'est rapide, meme pour 20 nuits ?
+
+Oui. Je ne fais pas une requete par nuit. Je fais seulement deux requetes, et c'est toujours pareil, que la periode fasse 2 nuits ou 20 nuits.
+
+La premiere requete cherche s'il y a une reservation confirmee qui se chevauche. La deuxieme requete (un COUNT) compte les jours bloques par l'hote dans la periode.
+
+Donc le temps de calcul ne change pas avec la duree. Il n'y a pas de boucle qui fait beaucoup de requetes (pas de probleme N+1). Pour la recherche, c'est pareil : une seule requete avec deux NOT EXISTS.
+
+
+Question 5: Pourquoi les emails sont envoyes en asynchrone et apres l'enregistrement ?
+
+Les emails partent en asynchrone avec Symfony Messenger. Un worker s'occupe d'envoyer les mails. Comme ca, l'utilisateur n'attend pas l'envoi du mail, la page repond vite.
+
+Dans le message, je mets seulement l'identifiant (id) de la reservation, pas l'objet complet.
+
+Surtout, j'envoie le mail seulement apres que la reservation est bien enregistree (apres le flush). Si la transaction echoue et qu'on annule tout, alors aucun mail n'est envoye. Comme ca, on n'envoie jamais un mail pour une reservation qui n'existe pas. Si le serveur de mail est en panne, le systeme reessaie plus tard (transport failed).
+
+
+Question 6: Pourquoi j'ai deux facons de gerer les dates (periode et jour par jour) ?
+
+J'utilise deux tables differentes, parce qu'elles ne servent pas a la meme chose.
+
+La table Reservation garde une periode (date d'arrivee et date de depart). C'est simple et ca prend peu de place pour une reservation.
+
+La table PropertyAvailability garde une ligne par jour. C'est utile pour les blocages de l'hote, pour les imports iCal, et pour mettre un prix special ou un nombre de nuits minimum sur un jour precis.
+
+Donc la periode est bonne pour les reservations, et le jour par jour est bon pour les details. Les deux travaillent ensemble dans la requete de disponibilite.
