@@ -9,6 +9,7 @@ use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
 use App\Repository\PropertyRepository;
+use App\Repository\ReservationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,6 +28,7 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
+        ReservationRepository $reservationRepository,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -46,6 +48,7 @@ final class BookingController extends AbstractController
 
         $form = $this->createForm(BookingType::class);
         $form->handleRequest($request);
+        $bookedRanges = $reservationRepository->findBookedRanges($property);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
@@ -64,6 +67,15 @@ final class BookingController extends AbstractController
 
             if ($guestsCount > $property->getMaxGuests()) {
                 $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
+
+                return $this->render('front/property/booking.html.twig', [
+                    'property' => $property,
+                    'form' => $form,
+                ]);
+            }
+
+            if ($reservationRepository->hasConflict($property, $checkin, $checkout)) {
+                $this->addFlash('error', 'Ce logement est déjà réservé sur ces dates.');
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
@@ -102,6 +114,7 @@ final class BookingController extends AbstractController
         return $this->render('front/property/booking.html.twig', [
             'property' => $property,
             'form' => $form,
+            'bookedRanges' => $bookedRanges,
         ]);
     }
 }

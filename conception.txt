@@ -1,0 +1,14 @@
+CONCEPTION TECHNIQUE RESERVATION D'UN LIOGEMENT:
+
+On prend en compte la date d'arrivé ainsi que la date de départ du client et son nombre de voyageur
+On verifie les dispo du logement
+Donc aucune reservation autre possible sur les dates d'un logement loué.
+
+Gestion des états :
+- pending: ne bloque pas les dates, il est encore possible de reservé sur ces dates
+- confirmed: bloque les dates, il n'est plus possible de reservé sur ces dates
+- cancelled:Annulation, les dates sont dispo/re dispo
+-completed: séjour terminé
+
+Prendre en compte les InstantBooking qui eux passe directement en confirmed, dépend de si le logment le propose.
+Pending à besoin de confiramtion de l'hote pour vérouiller les dates

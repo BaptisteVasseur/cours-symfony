@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Reservation;
+use App\Entity\Property;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -89,6 +90,49 @@ class ReservationRepository extends ServiceEntityRepository
             ->andWhere('r.guest = :guest')
             ->setParameter('guest', $guest)
             ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function hasConflict(Property $property, \DateTimeImmutable $checkin, \DateTimeImmutable $checkout): bool
+    {
+        $count = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :confirmed')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('confirmed', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
+    }
+
+    public function findBookedRanges(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->select('r.checkinDate', 'r.checkoutDate')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['confirmed', 'pending'])
+            ->getQuery()
+            ->getArrayResult();
+    }
+
+    public function findRecentReservations(int $limit = 10): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->orderBy('r.createdAt', 'DESC')
+            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }

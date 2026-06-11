@@ -132,4 +132,17 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function findRecentReservations(int $limit = 10): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->orderBy('r.createdAt', 'DESC')
+            ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
 }
