@@ -1,0 +1,135 @@
+{% extends 'layout/user.html.twig' %}
+
+{% set statusLabels = {
+    'confirmed': 'Confirmée',
+    'completed': 'Terminée',
+    'pending': 'En attente',
+    'cancelled': 'Annulée',
+} %}
+{% set statusClasses = {
+    'confirmed': 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+    'completed': 'bg-blue-50 text-blue-800 border border-blue-200',
+    'pending': 'bg-amber-50 text-amber-800 border border-amber-200',
+    'cancelled': 'bg-red-50 text-red-800 border border-red-200',
+} %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+        <div class="mb-8">
+            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Espace hôte</h1>
+            <p class="text-gray-500 mt-1">Vos logements et les réservations associées</p>
+        </div>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div class="border border-gray-200 rounded-xl p-5">
+                <p class="text-xs uppercase font-semibold text-gray-400">Logements</p>
+                <p class="text-2xl font-bold text-gray-900 mt-1">{{ totalProperties }}</p>
+            </div>
+            <div class="border border-gray-200 rounded-xl p-5">
+                <p class="text-xs uppercase font-semibold text-gray-400">Réservations</p>
+                <p class="text-2xl font-bold text-gray-900 mt-1">{{ totalReservations }}</p>
+            </div>
+            <div class="border border-gray-200 rounded-xl p-5">
+                <p class="text-xs uppercase font-semibold text-gray-400">À valider</p>
+                <p class="text-2xl font-bold text-gray-900 mt-1">{{ pendingReservations }}</p>
+            </div>
+            <div class="border border-gray-200 rounded-xl p-5">
+                <p class="text-xs uppercase font-semibold text-gray-400">Revenus</p>
+                <p class="text-2xl font-bold text-gray-900 mt-1">{{ revenue|number_format(0, ',', ' ') }} €</p>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            {% for property in properties %}
+                {% set cover = property.coverMedia %}
+                <section class="border border-gray-200 rounded-xl overflow-hidden bg-white">
+                    <div class="flex flex-col lg:flex-row">
+                        <div class="lg:w-64 h-48 lg:h-auto bg-gray-100 shrink-0">
+                            <img src="{{ cover ? cover.fileUrl : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=500&q=80' }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="p-5 flex-grow">
+                            <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-4">
+                                <div>
+                                    <h2 class="text-lg font-semibold text-gray-900">{{ property.title }}</h2>
+                                    {% if property.address %}
+                                        <p class="text-sm text-gray-500">{{ property.address.city }}, {{ property.address.country }}</p>
+                                    {% endif %}
+                                </div>
+                                {% set statusBadges = {
+                                    'draft': { label: 'Brouillon', class: 'bg-gray-100 text-gray-700 border border-gray-200' },
+                                    'pending': { label: 'En attente', class: 'bg-amber-50 text-amber-800 border border-amber-200' },
+                                    'published': { label: 'Publié', class: 'bg-emerald-50 text-emerald-800 border border-emerald-200' },
+                                } %}
+                                {% set badge = statusBadges[property.status]|default(statusBadges['draft']) %}
+                                <div class="flex flex-wrap gap-2">
+                                    <span class="text-xs px-2.5 py-1 rounded-full font-semibold {{ badge.class }}">{{ badge.label }}</span>
+                                    <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="text-xs border border-gray-200 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-50">Voir</a>
+                                    <a href="{{ path('app_host_availability', { id: property.id }) }}" class="text-xs border border-gray-200 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-50">Indisponibilités</a>
+                                </div>
+                            </div>
+
+                            {% set reservations = property.reservations %}
+                            {% if reservations|length > 0 %}
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-sm">
+                                        <thead>
+                                            <tr class="text-xs uppercase text-gray-400 border-b border-gray-100">
+                                                <th class="py-2 pr-3">Voyageur</th>
+                                                <th class="py-2 pr-3">Dates</th>
+                                                <th class="py-2 pr-3">Statut</th>
+                                                <th class="py-2 pr-3">Montant</th>
+                                                <th class="py-2 text-right">Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-gray-100">
+                                            {% for reservation in reservations %}
+                                                <tr>
+                                                    <td class="py-3 pr-3">
+                                                        <p class="font-medium text-gray-900">{{ reservation.guest.profile ? reservation.guest.profile.firstName ~ ' ' ~ reservation.guest.profile.lastName : reservation.guest.email }}</p>
+                                                        <p class="text-xs text-gray-400">{{ reservation.guest.email }}</p>
+                                                    </td>
+                                                    <td class="py-3 pr-3 text-gray-600">
+                                                        {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                                                    </td>
+                                                    <td class="py-3 pr-3">
+                                                        <span class="inline-flex px-2.5 py-1 rounded-full text-xs font-semibold {{ statusClasses[reservation.status]|default('bg-gray-100 text-gray-700 border border-gray-200') }}">
+                                                            {{ statusLabels[reservation.status]|default(reservation.status) }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="py-3 pr-3 font-semibold text-gray-900">{{ reservation.totalPrice|number_format(0, ',', ' ') }} {{ reservation.currency|default('EUR') }}</td>
+                                                    <td class="py-3 text-right whitespace-nowrap">
+                                                        {% if reservation.status == 'pending' %}
+                                                            <form method="post" action="{{ path('app_reservation_accept', { id: reservation.id }) }}" class="inline">
+                                                                <input type="hidden" name="_token" value="{{ csrf_token('accept' ~ reservation.id) }}">
+                                                                <button type="submit" class="text-xs bg-gray-900 text-white px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-700">Accepter</button>
+                                                            </form>
+                                                        {% endif %}
+                                                        <a href="{{ path('app_reservation_show', { id: reservation.id }) }}" class="text-xs border border-gray-200 px-3 py-1.5 rounded-lg font-semibold hover:bg-gray-50 inline-block">Détail</a>
+                                                    </td>
+                                                </tr>
+                                            {% endfor %}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            {% else %}
+                                <p class="text-sm text-gray-500">Aucune réservation pour ce logement.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </section>
+            {% else %}
+                <div class="text-center py-16 border border-dashed border-gray-200 rounded-xl">
+                    <p class="text-gray-500">Vous n'avez pas encore de logement rattaché à ce compte.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </main>
+{% endblock %}

@@ -1,0 +1,145 @@
+CONCEPTION TECHNIQUE - MOTEUR DE RESERVATION ET GOOGLE CALENDAR
+
+Contexte et objectif
+Le projet est un clone Airbnb Symfony avec une base de donnees deja structuree autour des logements, reservations, paiements, notifications, avis et messagerie. Le module a concevoir doit completer ce socle sans casser l'existant : les entites Property, Reservation, PropertyAvailability, Payment, Notification et ReservationStatusHistory existent deja et utilisent des UUID. L'objectif est d'ajouter un vrai moteur de disponibilite, un parcours de reservation voyageur, une moderation hote, des notifications asynchrones et une future synchronisation Google Calendar securisee.
+
+1. Modele de donnees retenu
+
+Le coeur du modele repose sur les tables existantes :
+- properties : logement, hote, statut de publication, capacite, prix par nuit, frais, horaires de check-in/check-out, instant_booking.
+- reservations : logement, voyageur, checkin_date, checkout_date, guests_count, status, total_price, fees, currency, cancellation_reason.
+- reservation_status_history : trace les transitions d'etat pour conserver l'historique metier.
+- property_availability : calendrier journalier par logement avec available_date, is_available, price_override et minimum_stay.
+- property_ical_sync : ancienne table de synchronisation calendrier a renommer ou remplacer a terme par une configuration Google Calendar.
+- notifications et messenger_messages : support des notifications utilisateur et de l'envoi asynchrone.
+
+Le schema actuel ne contient pas encore de table dediee a Google Calendar. Le choix technique prevu est d'ajouter a terme une table property_google_calendar_sync avec property_id, google_calendar_id, access_token chiffre, refresh_token chiffre, sync_enabled, last_sync_at et last_error. Les secrets OAuth Google doivent etre stockes via variables d'environnement et les jetons utilisateurs doivent etre proteges en base. Aucun identifiant de calendrier ou jeton ne doit etre expose sur les pages publiques.
+
+Pour le calendrier, je conserve l'approche actuelle par jours individuels avec property_availability. Elle est plus adaptee au besoin Airbnb qu'une simple table de periodes, car elle permet de gerer facilement les indisponibilites ponctuelles, les tarifs specifiques par nuit et les durees minimales variables. Une table de periodes serait plus compacte pour bloquer de longues plages, mais deviendrait plus complexe des qu'il faut fusionner, couper ou surcharger des dates. Le compromis est d'ajouter un index unique logique sur (property_id, available_date) et un index sur available_date pour eviter les doublons et accelerer les recherches.
+
+2. Modelisation temporelle
+
+Les reservations sont modelisees en nuits, avec un intervalle semi-ouvert : [checkin_date, checkout_date]. Le jour de checkout n'est pas consomme comme nuit et peut donc etre reserve par un nouveau voyageur. Exemple : une reservation du 10 au 15 juillet occupe les nuits du 10, 11, 12, 13 et 14 ; une nouvelle reservation peut commencer le 15.
+
+Les heures de check-in et check-out presentes dans Property servent a l'affichage et aux regles operationnelles, mais pas au verrouillage de disponibilite. Un depart a 11h et une arrivee a 15h le meme jour sont compatibles car ils appartiennent a deux reservations adjacentes, non superposees. Si le produit devait imposer une nuit de battement pour menage, cette regle serait ajoutee dans le service de disponibilite en elargissant l'intervalle bloque.
+
+La detection de chevauchement doit donc utiliser la condition suivante : une reservation existante bloque la demande si existing.checkin_date < requested.checkout_date ET existing.checkout_date > requested.checkin_date, uniquement pour les statuts bloquants.
+
+3. Regles metier de disponibilite
+
+Une plage est disponible si toutes les conditions suivantes sont vraies :
+- le logement est au statut published ;
+- guests_count est inferieur ou egal a properties.max_guests ;
+- checkin_date est strictement avant checkout_date ;
+- aucun jour de la plage [checkin_date, checkout_date] n'est marque is_available = false dans property_availability ;
+- aucune reservation confirmed ne chevauche la plage ;
+- la duree du sejour respecte minimum_stay si une regle existe sur une des dates concernees.
+
+Les demandes Pending ne bloquent pas les dates dans le choix retenu. Ce choix evite qu'un voyageur puisse bloquer abusivement le calendrier d'un hote sans paiement ni validation. Le risque est que plusieurs demandes Pending existent pour les memes dates ; il est accepte car une seule pourra etre confirmee. Au moment ou l'hote accepte une demande, le service revalide la disponibilite dans une transaction. Si les dates ont ete prises entre-temps, l'acceptation est refusee et l'hote doit traiter la demande autrement.
+
+Les statuts metier sont :
+- pending : demande envoyee, en attente de decision hote ;
+- confirmed : reservation acceptee, dates verrouillees ;
+- cancelled : reservation annulee avec motif obligatoire ;
+- completed : sejour termine.
+
+Transitions autorisees :
+- creation vers confirmed si instant_booking = true et disponibilite valide ;
+- creation vers pending si instant_booking = false ;
+- pending vers confirmed par l'hote apres revalidation ;
+- pending vers cancelled en cas de refus, expiration ou annulation voyageur ;
+- confirmed vers cancelled avec motif par l'hote ou le voyageur ;
+- confirmed vers completed apres la date de checkout.
+
+Chaque transition doit creer une ligne reservation_status_history avec l'ancien statut, le nouveau statut, l'utilisateur auteur et la date.
+
+4. Parcours et schema de flux
+
+Flux voyageur :
+1. Le voyageur recherche via /search avec destination, checkin, checkout et guests.
+2. Le repository filtre les logements published, la ville/adresse, la capacite et exclut les logements ayant un blocage calendrier ou une reservation confirmed chevauchante.
+3. Depuis la fiche logement, le voyageur arrive au recapitulatif de reservation.
+4. A la soumission, ReservationService revalide la disponibilite en base, calcule le total et cree la reservation.
+5. Si instant_booking est actif, le statut devient confirmed ; sinon pending.
+6. EntityManager flush la reservation, l'historique et les donnees associees.
+7. Un message Messenger est dispatch apres flush pour envoyer les emails et eventuellement creer une notification in-app.
+8. Le voyageur est redirige vers le suivi de reservation avec un message flash.
+
+Flux hote :
+1. L'hote consulte les demandes pending de ses logements.
+2. Il accepte ou refuse une demande.
+3. L'acceptation relance la verification de disponibilite dans une transaction, puis passe la reservation en confirmed.
+4. Le refus passe la reservation en cancelled avec motif.
+5. Une notification email asynchrone est envoyee au voyageur, et l'historique est conserve.
+
+Flux annulation :
+1. L'utilisateur autorise demande l'annulation avec un motif obligatoire.
+2. Le service verifie les droits : voyageur proprietaire de la reservation, hote du logement, admin ou super admin.
+3. Le statut passe a cancelled.
+4. Les dates sont liberees automatiquement car seules les reservations confirmed bloquent le calendrier.
+5. Les deux parties sont notifiees.
+
+5. Concurrence et paiements
+
+Le point critique est la creation ou confirmation simultanee de deux reservations pour le meme logement et les memes dates. La validation applicative seule ne suffit pas. La strategie prevue est d'executer la verification et le changement de statut dans une transaction PostgreSQL. Pour un logement donne, le service verrouille la ligne Property en mode pessimistic write ou utilise un verrou applicatif PostgreSQL base sur l'identifiant du logement. Ensuite il relance la requete de chevauchement sur les reservations confirmed avant de confirmer.
+
+Si deux paiements arrivent a la milliseconde pres, un seul processus obtient le verrou du logement et confirme. Le second relit l'etat apres liberation du verrou, detecte le chevauchement et echoue proprement : reservation refusee ou paiement a rembourser/annuler selon l'etat Stripe. Cette logique devra etre idempotente grace a provider_payment_intent cote Payment.
+
+6. Performance des recherches et disponibilites
+
+Il ne faut pas interroger la base jour par jour pour 20 nuits. La disponibilite se valide avec des requetes ensemblistes :
+- une requete COUNT sur property_availability pour compter les jours indisponibles dans [checkin, checkout] ;
+- une requete EXISTS sur reservations avec la condition de chevauchement ;
+- une requete de recherche qui utilise NOT EXISTS pour exclure les logements indisponibles.
+
+Indexes recommandes :
+- reservations(property_id, status, checkin_date, checkout_date) ;
+- property_availability(property_id, available_date) avec unicite ;
+- properties(status, max_guests) ;
+- property_addresses(city) pour la recherche destination.
+
+Cette approche permet de valider une plage de 20 nuits avec une ou deux requetes SQL au lieu de 20 requetes iteratives.
+
+7. Notifications et asynchronisme
+
+Les emails transactionnels doivent etre envoyes via Symfony Messenger afin que le tunnel de reservation reste rapide et que les erreurs SMTP ne bloquent pas l'utilisateur. Le message doit etre dispatch apres flush() de l'ORM, car le handler asynchrone doit recevoir une reservation deja persistante et relisible en base. Si le message etait envoye avant flush, le worker pourrait tenter de charger un identifiant inexistant ou envoyer un email pour une transaction finalement annulee.
+
+Le projet utilise deja le transport doctrine://default, donc les messages sont stockes en base dans messenger_messages. Si RabbitMQ est indisponible, la strategie MVP est de conserver le transport Doctrine comme fallback local : les messages restent en attente et seront traites au retour du worker. Les erreurs d'envoi doivent etre journalisees et retentees selon la configuration Messenger. Mailpit permet de verifier les emails en developpement sur http://localhost:8025.
+
+8. Synchronisation Google Calendar
+
+Chaque logement pourra etre lie a un calendrier Google appartenant a l'hote via OAuth. L'acces Google Calendar repose sur une autorisation explicite de l'hote, un refresh token et l'API Google Calendar. La synchronisation ne sera pas developpee dans la premiere implementation du moteur de reservation, mais le modele doit rester compatible avec elle.
+
+Les reservations confirmed devront creer ou mettre a jour un evenement Google Calendar. La date de debut correspond a checkin_date et la date de fin a checkout_date, en evenement journee entiere, pour conserver le modele semi-ouvert. Les pending ne seront pas poussees vers Google Calendar afin d'eviter de bloquer le calendrier externe avant validation de l'hote.
+
+La revocation se fera par deconnexion du compte Google ou suppression du lien calendrier cote plateforme. En cas d'echec de refresh token, la synchronisation sera desactivee et l'hote sera notifie.
+
+9. Import Google Calendar bonus
+
+L'import Google Calendar reposera sur une commande app:google-calendar:sync. La commande interrogera l'API Google Calendar avec HttpClient ou un client Google dedie, recuperera les evenements du calendrier lie, puis transformera les evenements pertinents en indisponibilites journalieres dans property_availability avec is_available = false.
+
+Gestion des conflits :
+- si un evenement distant chevauche une reservation confirmed locale, la reservation locale reste prioritaire et un log/notification hote est cree ;
+- si un evenement distant chevauche une demande pending, la demande peut rester pending mais ne pourra plus etre confirmee sans revalidation ;
+- si un evenement disparait du calendrier Google, les jours bloques par cette synchronisation doivent etre debloques uniquement s'ils ne sont pas bloques manuellement. Pour cela, une evolution future utile serait d'ajouter une origine au blocage, par exemple source = manual|google_calendar et external_event_id.
+
+10. Services prevus
+
+La logique ne doit pas etre placee dans les controleurs. Les services principaux seront :
+- AvailabilityChecker : valide une plage et expose les raisons d'indisponibilite ;
+- BookingPriceCalculator : calcule nuits, prix par nuit, price_override, frais et total ;
+- ReservationService : cree, confirme, refuse, annule et complete les reservations ;
+- GoogleCalendarSyncService : pousse les reservations confirmees vers Google Calendar et importe les blocages externes ;
+- NotificationMessage et NotificationMessageHandler : envoi email asynchrone.
+
+Les controleurs web/API doivent rester fins : recuperation de la requete, validation formulaire/DTO, appel service, redirection ou reponse.
+
+11. Securite et autorisations
+
+Les actions voyageur exigent ROLE_USER. Les actions hote exigent ROLE_HOST et doivent verifier que l'utilisateur courant est bien le host du logement. Les actions admin gardent ROLE_ADMIN ou ROLE_SUPER_ADMIN. Les controles fins doivent etre portes par des voters pour Reservation et Property.
+
+Les donnees sensibles Google Calendar ne sont accessibles qu'a travers OAuth et les jetons stockes cote serveur. Les mutations de reservation doivent utiliser CSRF sur les formulaires Twig. Les endpoints API sensibles doivent declarer une regle security API Platform ou une verification explicite cote controleur.
+
+Conclusion
+
+La conception s'appuie sur le schema existant au lieu de le remplacer. Le choix principal est de traiter les reservations comme des intervalles de nuits [checkin, checkout), de ne bloquer que les reservations confirmed, et d'utiliser property_availability comme calendrier journalier pour les blocages, prix specifiques et durees minimales. Les points critiques sont geres par des services dedies, des requetes SQL ensemblistes, des transactions avec verrouillage par logement et Messenger pour les effets de bord asynchrones.

@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Property;
+use App\Dto\BookingRequest;
+use App\Form\BookingRequestType;
 use App\Repository\PropertyRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -22,12 +24,20 @@ class HomeController extends AbstractController
     }
 
     #[Route('/logement/{id}', name: 'app_logement_detail')]
-    public function detail(Property $property, PropertyRepository $propertyRepository): Response
+    public function detail(Property $property, PropertyRepository $propertyRepository, Request $request): Response
     {
         $property = $propertyRepository->findOneForDetail($property) ?? $property;
+        $bookingRequest = new BookingRequest();
+        $bookingRequest->checkinDate = $this->parseDate($request->query->get('checkin'));
+        $bookingRequest->checkoutDate = $this->parseDate($request->query->get('checkout'));
+        $bookingRequest->guestsCount = max(1, $request->query->getInt('guests', 1));
+        $bookingForm = $this->createForm(BookingRequestType::class, $bookingRequest, [
+            'action' => $this->generateUrl('app_reservation_create', ['id' => $property->getId()]),
+        ]);
 
         return $this->render('home/logement.html.twig', [
             'property' => $property,
+            'bookingForm' => $bookingForm,
         ]);
     }
 
@@ -36,13 +46,20 @@ class HomeController extends AbstractController
     {
         $checkin = $this->parseDate($request->query->get('checkin'));
         $checkout = $this->parseDate($request->query->get('checkout'));
+        $guests = $request->query->has('guests') ? max(1, $request->query->getInt('guests', 1)) : null;
+        $destination = trim((string) $request->query->get('destination', ''));
 
         return $this->render('home/search.html.twig', [
-            'properties' => $propertyRepository->findForListing(),
-            'checkin' => $checkin,
-            'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'properties' => $propertyRepository->searchAvailable(
+                $destination !== '' ? $destination : null,
+                $checkin,
+                $checkout,
+                $guests,
+            ),
+            'checkin' => $checkin?->format('Y-m-d'),
+            'checkout' => $checkout?->format('Y-m-d'),
+            'guests' => $guests ?? 1,
+            'destination' => $destination,
         ]);
     }
 

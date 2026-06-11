@@ -13,6 +13,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use App\Entity\PropertyGoogleCalendarSync;
 
 #[ApiResource(
     normalizationContext: ['groups' => ['mon-groupe']],
@@ -71,6 +72,12 @@ class Property
     )]
     #[ORM\Column(length: 50)]
     private ?string $status = 'pending';
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $icalToken = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $icalTokenRegeneratedAt = null;
 
     #[Assert\NotNull(message: 'Le nombre de voyageurs est obligatoire.')]
     #[Assert\GreaterThanOrEqual(value: 1, message: 'Il doit y avoir au moins {{ compared_value }} voyageur.')]
@@ -144,6 +151,9 @@ class Property
     /** @var Collection<int, PropertyICalSync> */
     #[ORM\OneToMany(targetEntity: PropertyICalSync::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $iCalSyncs;
+
+    #[ORM\OneToOne(mappedBy: 'property', targetEntity: PropertyGoogleCalendarSync::class, cascade: ['persist', 'remove'])]
+    private ?PropertyGoogleCalendarSync $googleCalendarSync = null;
 
     /** @var Collection<int, Reservation> */
     #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'property')]
@@ -546,6 +556,54 @@ class Property
         $this->reviews->removeElement($review);
 
         return $this;
+    }
+
+    public function getGoogleCalendarSync(): ?PropertyGoogleCalendarSync
+    {
+        return $this->googleCalendarSync;
+    }
+
+    public function setGoogleCalendarSync(?PropertyGoogleCalendarSync $googleCalendarSync): static
+    {
+        if ($googleCalendarSync !== null && $googleCalendarSync->getProperty() !== $this) {
+            $googleCalendarSync->setProperty($this);
+        }
+        $this->googleCalendarSync = $googleCalendarSync;
+
+        return $this;
+    }
+
+    public function getIcalToken(): ?string
+    {
+        return $this->icalToken;
+    }
+
+    public function setIcalToken(?string $icalToken): static
+    {
+        $this->icalToken = $icalToken;
+
+        return $this;
+    }
+
+    public function getIcalTokenRegeneratedAt(): ?\DateTimeImmutable
+    {
+        return $this->icalTokenRegeneratedAt;
+    }
+
+    public function setIcalTokenRegeneratedAt(?\DateTimeImmutable $icalTokenRegeneratedAt): static
+    {
+        $this->icalTokenRegeneratedAt = $icalTokenRegeneratedAt;
+
+        return $this;
+    }
+
+    public function regenerateIcalToken(): string
+    {
+        $token = bin2hex(random_bytes(32));
+        $this->icalToken = $token;
+        $this->icalTokenRegeneratedAt = new \DateTimeImmutable();
+
+        return $token;
     }
 
     public function getCoverMedia(): ?PropertyMedia

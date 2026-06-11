@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Property;
+use App\Entity\PropertyAvailability;
+use App\Entity\Reservation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -81,6 +83,36 @@ class PropertyRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    public function countForHost(\App\Entity\User $host): int
+    {
+        return (int) $this->createQueryBuilder('p')
+            ->select('COUNT(p.id)')
+            ->andWhere('p.host = :host')
+            ->setParameter('host', $host)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
+    public function findForHostDashboard(\App\Entity\User $host): array
+    {
+        return $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'guest', 'guestProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reservations', 'r')
+            ->leftJoin('r.guest', 'guest')
+            ->leftJoin('guest.profile', 'guestProfile')
+            ->andWhere('p.host = :host')
+            ->setParameter('host', $host)
+            ->orderBy('p.createdAt', 'DESC')
+            ->addOrderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     /**
      * @return array<Property>
      */
@@ -114,5 +146,50 @@ class PropertyRepository extends ServiceEntityRepository
             ->setParameter('property', $property)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
+    public function searchAvailable(
+        ?string $destination,
+        ?\DateTimeImmutable $checkinDate,
+        ?\DateTimeImmutable $checkoutDate,
+        ?int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->andWhere('p.status = :published')
+            ->setParameter('published', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && trim($destination) !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.addressLine1) LIKE :destination')
+                ->setParameter('destination', '%'.mb_strtolower(trim($destination)).'%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkinDate !== null && $checkoutDate !== null && $checkoutDate > $checkinDate) {
+            $qb->andWhere(sprintf(
+                'NOT EXISTS (SELECT reserved.id FROM %s reserved WHERE reserved.property = p AND reserved.status = :confirmed AND reserved.checkinDate < :checkoutDate AND reserved.checkoutDate > :checkinDate)',
+                Reservation::class,
+            ))
+                ->andWhere(sprintf(
+                    'NOT EXISTS (SELECT blocked.id FROM %s blocked WHERE blocked.property = p AND blocked.isAvailable = false AND blocked.availableDate >= :checkinDate AND blocked.availableDate < :checkoutDate)',
+                    PropertyAvailability::class,
+                ))
+                ->setParameter('confirmed', 'confirmed')
+                ->setParameter('checkinDate', $checkinDate)
+                ->setParameter('checkoutDate', $checkoutDate);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 }
