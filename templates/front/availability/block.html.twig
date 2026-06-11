@@ -1,0 +1,52 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Bloquer une période — {{ property.title }}{% endblock %}
+
+{% block body %}
+<div class="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <nav class="text-sm text-gray-500 mb-6">
+        <a href="{{ path('app_account_properties') }}" class="hover:underline">Mes logements</a>
+        <span class="mx-1">/</span>
+        <a href="{{ path('app_availability_index', {id: property.id}) }}" class="hover:underline">{{ property.title }}</a>
+        <span class="mx-1">/</span>
+        <span class="text-gray-900">Bloquer une période</span>
+    </nav>
+
+    <h1 class="text-2xl font-bold text-gray-900 mb-8">Bloquer une période</h1>
+
+    {{ form_start(form, {attr: {class: 'space-y-5'}}) }}
+
+        <div>
+            {{ form_label(form.dateStart, null, {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+            {{ form_widget(form.dateStart, {attr: {class: 'w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'}}) }}
+            {{ form_errors(form.dateStart) }}
+        </div>
+
+        <div>
+            {{ form_label(form.dateEnd, null, {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+            {{ form_widget(form.dateEnd, {attr: {class: 'w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'}}) }}
+            {{ form_errors(form.dateEnd) }}
+        </div>
+
+        <div>
+            {{ form_label(form.reason, null, {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+            {{ form_widget(form.reason, {attr: {class: 'w-full border border-gray-300 rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent'}}) }}
+            {{ form_errors(form.reason) }}
+        </div>
+
+        <div class="flex gap-3 pt-2">
+            <button type="submit"
+                    class="flex-1 bg-brand hover:bg-brandHover text-white font-semibold py-3 px-6 rounded-xl transition-colors">
+                Bloquer ces dates
+            </button>
+            <a href="{{ path('app_availability_index', {id: property.id}) }}"
+               class="flex-1 text-center border border-gray-300 text-gray-700 font-semibold py-3 px-6 rounded-xl hover:bg-gray-50 transition-colors">
+                Annuler
+            </a>
+        </div>
+
+    {{ form_end(form) }}
+
+</div>
+{% endblock %}

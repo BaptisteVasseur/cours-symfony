@@ -31,6 +31,9 @@ class PropertyAvailability
     #[ORM\Column(nullable: true)]
     private ?int $minimumStay = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $reason = null;
+
     public function getProperty(): ?Property
     {
         return $this->property;
@@ -87,6 +90,18 @@ class PropertyAvailability
     public function setMinimumStay(?int $minimumStay): static
     {
         $this->minimumStay = $minimumStay;
+
+        return $this;
+    }
+
+    public function getReason(): ?string
+    {
+        return $this->reason;
+    }
+
+    public function setReason(?string $reason): static
+    {
+        $this->reason = $reason;
 
         return $this;
     }

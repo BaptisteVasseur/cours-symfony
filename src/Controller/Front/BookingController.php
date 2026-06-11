@@ -8,7 +8,9 @@ use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
+use App\Repository\PropertyAvailabilityRepository;
 use App\Repository\PropertyRepository;
+use App\Repository\ReservationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,6 +28,8 @@ final class BookingController extends AbstractController
         Request $request,
         Property $property,
         PropertyRepository $propertyRepository,
+        ReservationRepository $reservationRepository,
+        PropertyAvailabilityRepository $availabilityRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         if ($property->getStatus() !== 'published') {
@@ -64,6 +68,24 @@ final class BookingController extends AbstractController
 
             if ($guestsCount > $property->getMaxGuests()) {
                 $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
+
+                return $this->render('front/property/booking.html.twig', [
+                    'property' => $property,
+                    'form' => $form,
+                ]);
+            }
+
+            if ($reservationRepository->findOverlapping((string) $property->getId(), $checkin, $checkout)) {
+                $this->addFlash('error', 'Ce logement est déjà réservé sur cette période.');
+
+                return $this->render('front/property/booking.html.twig', [
+                    'property' => $property,
+                    'form' => $form,
+                ]);
+            }
+
+            if ($availabilityRepository->hasBlockedDayInRange($property, $checkin, $checkout)) {
+                $this->addFlash('error', 'Une ou plusieurs nuits de cette période sont indisponibles (bloquées par l\'hôte).');
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
