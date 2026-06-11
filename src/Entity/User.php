@@ -32,8 +32,8 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Patch(security: "is_granted('ROLE_ADMIN')"),
         new Delete(security: "is_granted('ROLE_SUPER_ADMIN')"),
     ],
-    normalizationContext: ['groups' => ['mon-groupe']],
-    denormalizationContext: ['groups' => ['mon-groupe-2']],
+    normalizationContext: ['groups' => ['user:read']],
+    denormalizationContext: ['groups' => ['user:write']],
 )]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
@@ -41,7 +41,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     use UuidEntityTrait;
 
-    #[Groups(['mon-groupe'])]
+    #[Groups(['user:read', 'user:write', 'property:read', 'reservation:read'])]
     #[Assert\NotBlank(message: 'L\'adresse email est obligatoire.')]
     #[Assert\Email(message: 'L\'adresse email n\'est pas valide.')]
     #[Assert\Length(max: 255, maxMessage: 'L\'adresse email ne peut pas dépasser {{ limit }} caractères.')]
@@ -52,7 +52,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255)]
     private ?string $passwordHash = null;
 
-    #[Groups(['mon-groupe'])]
+    #[Groups(['user:read', 'user:write'])]
     #[Assert\Length(max: 50, maxMessage: 'Le numéro de téléphone ne peut pas dépasser {{ limit }} caractères.')]
     #[Assert\Regex(pattern: '/^\+?[0-9\s\-().]{6,20}$/', message: 'Le numéro de téléphone n\'est pas valide.')]
     #[ORM\Column(length: 50, nullable: true)]
@@ -63,12 +63,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         choices: ['active', 'pending', 'suspended'],
         message: 'Le statut sélectionné n\'est pas valide.',
     )]
+    #[Groups(['user:read', 'user:write'])]
     #[ORM\Column(length: 50)]
     private ?string $status = 'pending';
 
+    #[Groups(['user:read', 'user:write'])]
     #[ORM\Column]
     private bool $isEmailVerified = false;
 
+    #[Groups(['user:read', 'user:write'])]
     #[ORM\Column]
     private bool $is2faEnabled = false;
 
@@ -77,6 +80,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         message: 'La langue sélectionnée n\'est pas valide.',
     )]
     #[Assert\Length(max: 10, maxMessage: 'La langue ne peut pas dépasser {{ limit }} caractères.')]
+    #[Groups(['user:read', 'user:write'])]
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $preferredLanguage = null;
 
@@ -85,21 +89,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         message: 'La devise sélectionnée n\'est pas valide.',
     )]
     #[Assert\Length(max: 10, maxMessage: 'La devise ne peut pas dépasser {{ limit }} caractères.')]
+    #[Groups(['user:read', 'user:write'])]
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $preferredCurrency = null;
 
+    #[Groups(['user:read'])]
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[Groups(['user:read'])]
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
-    #[Groups(['mon-groupe'])]
+    #[Groups(['user:read', 'user:write', 'property:read', 'reservation:read'])]
     #[Assert\Valid]
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: UserProfile::class, cascade: ['persist', 'remove'])]
     private ?UserProfile $profile = null;
 
     /** @var list<string> */
+    #[Groups(['user:read', 'user:write'])]
+    #[Assert\All([
+        new Assert\Choice(choices: ['ROLE_HOST', 'ROLE_ADMIN', 'ROLE_SUPER_ADMIN']),
+    ])]
     #[ORM\Column(type: Types::JSON)]
     private array $roles = [];
 

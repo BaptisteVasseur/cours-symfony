@@ -149,14 +149,14 @@ class UserType extends AbstractType
      */
     private function availableRoles(array $options): array
     {
-        if ($options['manage_elevated_roles']) {
-            return Roles::ASSIGNABLE;
-        }
+        $roles = $options['manage_elevated_roles']
+            ? Roles::ASSIGNABLE
+            : array_filter(
+                Roles::ASSIGNABLE,
+                static fn (string $role): bool => !in_array($role, [Roles::ADMIN, Roles::SUPER_ADMIN], true),
+                ARRAY_FILTER_USE_KEY,
+            );
 
-        return array_filter(
-            Roles::ASSIGNABLE,
-            static fn (string $role): bool => !in_array($role, [Roles::ADMIN, Roles::SUPER_ADMIN], true),
-            ARRAY_FILTER_USE_KEY,
-        );
+        return array_flip($roles);
     }
 }

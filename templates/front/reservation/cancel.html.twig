@@ -1,0 +1,27 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Annuler la reservation{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-2xl mx-auto w-full">
+        <a href="{{ path('app_reservation_show', { id: reservation.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Retour
+        </a>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <h1 class="text-2xl font-semibold text-gray-900 mb-2">Annuler la reservation</h1>
+        <p class="text-gray-500 mb-6">Un motif est obligatoire et sera envoye a l'autre partie.</p>
+
+        <div class="border border-gray-200 rounded-xl p-6 bg-white">
+            {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
+                {{ form_row(form.reason, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm min-h-32' } }) }}
+                <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-3 rounded-xl">Confirmer l'annulation</button>
+            {{ form_end(form) }}
+        </div>
+    </main>
+{% endblock %}

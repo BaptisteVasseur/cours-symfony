@@ -22,21 +22,27 @@ class UserProfile
     private ?User $user = null;
 
     #[Assert\Length(max: 100, maxMessage: 'Le prénom ne peut pas dépasser {{ limit }} caractères.')]
+    #[Groups(['user:read', 'user:write', 'property:read', 'reservation:read'])]
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $firstName = null;
 
     #[Assert\Length(max: 100, maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères.')]
+    #[Groups(['user:read', 'user:write', 'property:read', 'reservation:read'])]
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $lastName = null;
 
+    #[Groups(['user:read', 'user:write'])]
+    #[Assert\LessThan(value: 'today', message: 'La date de naissance doit etre dans le passe.')]
     #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $birthDate = null;
 
     #[Assert\Url(requireTld: false, message: 'L\'URL de l\'avatar n\'est pas valide.')]
+    #[Groups(['user:read', 'user:write', 'property:read', 'reservation:read'])]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $avatarUrl = null;
 
     #[Assert\Length(max: 1000, maxMessage: 'La bio ne peut pas dépasser {{ limit }} caractères.')]
+    #[Groups(['user:read', 'user:write'])]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $bio = null;
 
@@ -44,9 +50,11 @@ class UserProfile
         choices: ['unverified', 'pending', 'verified', 'rejected'],
         message: 'Le statut d\'identité sélectionné n\'est pas valide.',
     )]
+    #[Groups(['user:read', 'user:write'])]
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $identityStatus = null;
 
+    #[Groups(['user:read'])]
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 

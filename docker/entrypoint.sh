@@ -11,6 +11,7 @@ fi
 
 echo "==> Création des dossiers var/..."
 mkdir -p var/cache var/log
+rm -f var/docker-ready
 
 echo "==> Installation des dépendances Composer..."
 composer install --no-interaction --prefer-dist --no-scripts
@@ -18,11 +19,15 @@ composer install --no-interaction --prefer-dist --no-scripts
 echo "==> Génération des autoloaders..."
 composer dump-autoload --no-interaction
 
+echo "==> Installation des assets Importmap..."
+php bin/console importmap:install --no-interaction
+
 echo "==> Warm-up du cache Symfony..."
 php bin/console cache:warmup
 
 echo "==> Exécution des migrations..."
 php bin/console doctrine:migrations:migrate --no-interaction --allow-no-migration
+touch var/docker-ready
 
 echo "==> Démarrage du serveur PHP sur le port 8000..."
 exec php -S 0.0.0.0:8000 -t public

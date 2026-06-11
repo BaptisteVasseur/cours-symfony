@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -89,6 +90,92 @@ class ReservationRepository extends ServiceEntityRepository
             ->andWhere('r.guest = :guest')
             ->setParameter('guest', $guest)
             ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function hasConfirmedOverlap(
+        Property $property,
+        \DateTimeImmutable $start,
+        \DateTimeImmutable $end,
+        ?Reservation $excludedReservation = null,
+    ): bool {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate < :end')
+            ->andWhere('r.checkoutDate > :start')
+            ->setParameter('property', $property)
+            ->setParameter('status', Reservation::STATUS_CONFIRMED)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end);
+
+        if ($excludedReservation !== null) {
+            $qb->andWhere('r != :excludedReservation')
+                ->setParameter('excludedReservation', $excludedReservation);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult() > 0;
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedForPeriod(Property $property, \DateTimeImmutable $start, \DateTimeImmutable $end): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate < :end')
+            ->andWhere('r.checkoutDate > :start')
+            ->setParameter('property', $property)
+            ->setParameter('status', Reservation::STATUS_CONFIRMED)
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedForICal(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->setParameter('property', $property)
+            ->setParameter('status', Reservation::STATUS_CONFIRMED)
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', Reservation::STATUS_PENDING)
+            ->orderBy('r.createdAt', 'ASC')
             ->getQuery()
             ->getResult();
     }

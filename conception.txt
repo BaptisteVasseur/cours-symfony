@@ -1,0 +1,56 @@
+Conception technique - reservation, disponibilites et export iCal
+
+1. Modele de donnees
+
+Le projet possede deja les entites principales du domaine :
+- Property : logement, hote, statut, capacite, prix, reservation instantanee.
+- Reservation : voyageur, logement, dates, nombre de voyageurs, statut, prix et motif d'annulation.
+- PropertyAvailability : calendrier hote. Le modele cible utilise des periodes bloquees dateStart/dateEnd plutot qu'une ligne par jour.
+- ReservationStatusHistory : trace les transitions de statut.
+
+Les dates de reservation et de blocage sont modelisees en intervalles [debut, fin). La date de checkout est donc exclusive : un voyageur qui quitte le 12 permet une arrivee le 12. Les heures reelles de check-out/check-in restent des informations d'accueil, mais ne changent pas le verrouillage des nuitees.
+
+2. Workflow de reservation
+
+Les statuts retenus sont :
+- Pending : demande envoyee, en attente de l'hote.
+- Confirmed : demande acceptee, les dates bloquent le logement.
+- Cancelled : reservation annulee avec motif obligatoire.
+- Completed : sejour termine.
+
+Si instantBooking vaut true, une demande valide cree directement une reservation Confirmed. Sinon, la reservation est creee en Pending et l'hote doit l'accepter ou la refuser. Les transitions importantes sont historisees.
+
+3. Disponibilite et superposition
+
+Un logement est disponible si :
+- son statut est published ;
+- sa capacite est suffisante ;
+- aucune indisponibilite manuelle ne chevauche la periode ;
+- aucune reservation Confirmed ne chevauche la periode.
+
+La condition SQL de chevauchement est : start < requestedEnd AND end > requestedStart. Ce choix accepte naturellement le cas depart le matin / arrivee le meme jour.
+
+Les reservations Pending ne bloquent pas definitivement. Ce choix evite qu'un voyageur monopolise abusivement le calendrier, mais il impose une revalidation stricte au moment de l'acceptation hote.
+
+4. Concurrence
+
+La creation d'une reservation instantanee et l'acceptation d'une demande sont faites dans un service metier. Avant de passer en Confirmed, le service revalide la disponibilite dans une transaction Doctrine. Cela limite les doubles validations simultanees. En production, on pourrait renforcer avec un verrou pessimiste sur la ligne Property ou une contrainte d'exclusion PostgreSQL sur les reservations confirmees.
+
+5. Performance
+
+La disponibilite d'une plage de 20 nuits n'est pas verifiee jour par jour. Les repositories utilisent des requetes de periodes avec la condition de chevauchement. Cela limite le nombre de requetes et reste compatible avec des index sur property_id, dateStart/dateEnd et checkinDate/checkoutDate.
+
+6. Asynchronisme emails
+
+Les emails transactionnels sont declenches apres le flush, via Symfony Messenger. Ainsi, un email n'est pas envoye pour une reservation qui aurait echoue en base. Si le transport async tombe, les messages restent en file selon le transport configure et les echecs peuvent etre consultes dans la file failed.
+
+7. Choix SQL calendrier
+
+Le calendrier hote est represente par des periodes PropertyAvailability dateStart/dateEnd avec isAvailable=false et un motif optionnel. Ce modele evite de creer une ligne par jour, simplifie les exports et reduit les couts SQL. Les anciens champs au jour peuvent etre migres vers des periodes d'une nuit.
+
+8. Export iCal
+
+Chaque logement dispose d'un token d'export iCal stocke en base. L'URL publique est :
+/api/properties/{id}/calendar.ics?token={secret}
+
+Sans token valide, le flux retourne une erreur. Le token est revocable par regeneration. Le flux exporte uniquement les reservations Confirmed, au format VCALENDAR minimal avec DTSTART/DTEND en dates entieres. L'import iCal et la commande de synchronisation sont exclus de cette phase.

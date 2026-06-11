@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Property;
+use App\Entity\PropertyAvailability;
+use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -131,5 +133,52 @@ class PropertyRepository extends ServiceEntityRepository
             ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
+    public function searchPublished(
+        ?string $destination,
+        ?int $guests,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.addressLine1) LIKE :destination OR LOWER(a.country) LIKE :destination')
+                ->setParameter('destination', '%' . strtolower($destination) . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null && $checkin < $checkout) {
+            $qb->andWhere(sprintf(
+                'NOT EXISTS (SELECT blockedReservation.id FROM %s blockedReservation WHERE blockedReservation.property = p AND blockedReservation.status = :confirmedStatus AND blockedReservation.checkinDate < :checkout AND blockedReservation.checkoutDate > :checkin)',
+                Reservation::class,
+            ));
+            $qb->andWhere(sprintf(
+                'NOT EXISTS (SELECT blockedAvailability.id FROM %s blockedAvailability WHERE blockedAvailability.property = p AND blockedAvailability.isAvailable = false AND blockedAvailability.dateStart < :checkout AND blockedAvailability.dateEnd > :checkin)',
+                PropertyAvailability::class,
+            ));
+            $qb->setParameter('confirmedStatus', Reservation::STATUS_CONFIRMED)
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 }

@@ -17,16 +17,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+#[Route('/admin/users')]
 #[IsGranted('ROLE_ADMIN')]
 final class UserController extends AbstractController
 {
-    #[Route('/admin/users', name: 'app_admin_users')]
-    public function adminUsersRedirect(): Response
-    {
-        return $this->redirectToRoute('app_user_index');
-    }
-
-    #[Route('/user', name: 'app_user_index', methods: ['GET'])]
+    #[Route('', name: 'app_user_index', methods: ['GET'])]
     public function index(UserRepository $userRepository): Response
     {
         $users = $userRepository->findForListing();
@@ -41,7 +36,7 @@ final class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/user/new', name: 'app_user_new', methods: ['GET', 'POST'])]
+    #[Route('/new', name: 'app_user_new', methods: ['GET', 'POST'])]
     public function new(Request $request, EntityManagerInterface $entityManager): Response
     {
         $user = new User();
@@ -70,7 +65,7 @@ final class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/user/{id}', name: 'app_user_show', methods: ['GET'])]
+    #[Route('/{id}', name: 'app_user_show', methods: ['GET'])]
     public function show(User $user, UserRepository $userRepository): Response
     {
         $user = $userRepository->findOneForDetail($user) ?? $user;
@@ -82,7 +77,7 @@ final class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/user/{id}/edit', name: 'app_user_edit', methods: ['GET', 'POST'])]
+    #[Route('/{id}/edit', name: 'app_user_edit', methods: ['GET', 'POST'])]
     public function edit(Request $request, User $user, EntityManagerInterface $entityManager): Response
     {
         if ($user->getProfile() === null) {
@@ -109,7 +104,7 @@ final class UserController extends AbstractController
         ]);
     }
 
-    #[Route('/user/{id}', name: 'app_user_delete', methods: ['POST'])]
+    #[Route('/{id}', name: 'app_user_delete', methods: ['POST'])]
     public function delete(Request $request, User $user, EntityManagerInterface $entityManager): Response
     {
         $currentUser = $this->getUser();
@@ -129,7 +124,7 @@ final class UserController extends AbstractController
         return $this->redirectToRoute('app_user_index', [], Response::HTTP_SEE_OTHER);
     }
 
-    #[Route('/user/document/{id}/verify', name: 'app_user_document_verify', methods: ['POST'])]
+    #[Route('/document/{id}/verify', name: 'app_user_document_verify', methods: ['POST'])]
     public function verifyDocument(Request $request, UserDocument $document, EntityManagerInterface $entityManager): Response
     {
         $user = $document->getUser();
@@ -145,7 +140,7 @@ final class UserController extends AbstractController
         return $this->redirectToRoute('app_user_show', ['id' => $user->getId()], Response::HTTP_SEE_OTHER);
     }
 
-    #[Route('/user/document/{id}/reject', name: 'app_user_document_reject', methods: ['POST'])]
+    #[Route('/document/{id}/reject', name: 'app_user_document_reject', methods: ['POST'])]
     public function rejectDocument(Request $request, UserDocument $document, EntityManagerInterface $entityManager): Response
     {
         $user = $document->getUser();
@@ -164,7 +159,7 @@ final class UserController extends AbstractController
         return $this->redirectToRoute('app_user_show', ['id' => $user->getId()], Response::HTTP_SEE_OTHER);
     }
 
-    #[Route('/user/{id}/role/assign', name: 'app_user_role_assign', methods: ['POST'])]
+    #[Route('/{id}/role/assign', name: 'app_user_role_assign', methods: ['POST'])]
     public function assignRole(Request $request, User $user, EntityManagerInterface $entityManager): Response
     {
         if (!$this->isCsrfTokenValid('role_assign'.$user->getId(), $request->getPayload()->getString('_token'))) {
@@ -191,7 +186,7 @@ final class UserController extends AbstractController
         return $this->redirectToRoute('app_user_show', ['id' => $user->getId()], Response::HTTP_SEE_OTHER);
     }
 
-    #[Route('/user/{id}/role/remove', name: 'app_user_role_remove', methods: ['POST'])]
+    #[Route('/{id}/role/remove', name: 'app_user_role_remove', methods: ['POST'])]
     public function removeRole(Request $request, User $user, EntityManagerInterface $entityManager): Response
     {
         if (!$this->isCsrfTokenValid('role_remove'.$user->getId(), $request->getPayload()->getString('_token'))) {

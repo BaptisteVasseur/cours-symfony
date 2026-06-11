@@ -1,5 +1,46 @@
 # Appli Symfony Clone Airbnb
 
+## Demarrage rapide avec Docker
+
+Prerequis : Docker Desktop doit etre lance.
+
+```bash
+docker compose up --build -d
+```
+
+URLs utiles :
+
+- Application : http://localhost:8089
+- Adminer : http://localhost:8088
+- Mailpit : http://localhost:8025
+
+Pour arreter le projet :
+
+```bash
+docker compose down
+```
+
+## Acces aux fonctionnalites
+
+Comptes de demonstration apres chargement des fixtures :
+
+- Admin + hote : `test@example.com` / `password`
+- Super admin : `admin@airbnb-clone.fr` / `password`
+- Hote : `jeanmarc.dupont@email.com` / `password`
+- Voyageur : `sophie.chen@email.com` / `password`
+
+Parcours utiles :
+
+- Connexion : http://localhost:8089/login
+- Inscription : http://localhost:8089/register
+- Detail logement : ouvrir une annonce depuis http://localhost:8089, acces reserve aux utilisateurs connectes
+- Mes reservations : http://localhost:8089/reservations
+- Interface admin : http://localhost:8089/admin
+- CRUD annonces : http://localhost:8089/admin/properties
+- CRUD utilisateurs : http://localhost:8089/admin/users
+- CRUD reservations : http://localhost:8089/admin/reservation
+- Documentation API Platform : http://localhost:8089/api/docs
+
 ## Etapes suivies pour le développement
 
 1. Lire le cahier des charges
