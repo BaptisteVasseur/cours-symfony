@@ -11,14 +11,30 @@
             </div>
         </div>
 
-        <form method="get" action="{{ path('app_logement_index') }}" class="mt-8 grid gap-3 rounded-lg border border-gray-100 bg-white p-4 shadow-sm md:grid-cols-5">
+        {% if erreurs is defined and erreurs is not empty %}
+            <div class="mt-6 rounded-lg bg-amber-50 p-4 text-sm text-amber-800">
+                {% for erreur in erreurs %}
+                    <p>{{ erreur }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        <form method="get" action="{{ path('app_search') }}" class="mt-8 grid gap-3 rounded-lg border border-gray-100 bg-white p-4 shadow-sm md:grid-cols-7">
             <label>
                 <span class="text-xs font-semibold uppercase text-gray-500">Destination</span>
                 <input name="destination" value="{{ criteres.destination }}" type="text" class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
             </label>
             <label>
+                <span class="text-xs font-semibold uppercase text-gray-500">Arrivee</span>
+                <input name="checkin" value="{{ criteres.checkin }}" type="date" class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+            </label>
+            <label>
+                <span class="text-xs font-semibold uppercase text-gray-500">Depart</span>
+                <input name="checkout" value="{{ criteres.checkout }}" type="date" class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+            </label>
+            <label>
                 <span class="text-xs font-semibold uppercase text-gray-500">Voyageurs</span>
-                <input name="voyageurs" value="{{ criteres.voyageurs }}" type="number" min="1" class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                <input name="guests" value="{{ criteres.guests }}" type="number" min="1" class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
             </label>
             <label>
                 <span class="text-xs font-semibold uppercase text-gray-500">Prix max</span>

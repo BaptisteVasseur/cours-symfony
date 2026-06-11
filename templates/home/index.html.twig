@@ -18,18 +18,22 @@
                     <p class="mt-5 max-w-xl text-lg text-white/85">Recherchez un logement, comparez les prix et preparez une demande de reservation en quelques minutes.</p>
                 </div>
 
-                <form action="{{ path('app_logement_index') }}" method="get" class="mt-10 grid gap-3 rounded-lg bg-white p-3 shadow-xl sm:grid-cols-[1.5fr_1fr_1fr_auto]">
+                <form action="{{ path('app_search') }}" method="get" class="mt-10 grid gap-3 rounded-lg bg-white p-3 shadow-xl sm:grid-cols-[1.4fr_1fr_1fr_0.8fr_auto]">
                     <label class="block">
                         <span class="text-xs font-semibold uppercase text-gray-500">Destination</span>
                         <input name="destination" type="text" placeholder="Paris, Nice, Annecy..." class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-gray-950 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
                     </label>
                     <label class="block">
-                        <span class="text-xs font-semibold uppercase text-gray-500">Voyageurs</span>
-                        <input name="voyageurs" type="number" min="1" value="2" class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-gray-950 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                        <span class="text-xs font-semibold uppercase text-gray-500">Arrivee</span>
+                        <input name="checkin" type="date" class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-gray-950 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
                     </label>
                     <label class="block">
-                        <span class="text-xs font-semibold uppercase text-gray-500">Budget max</span>
-                        <input name="prix_max" type="number" min="1" placeholder="250" class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-gray-950 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                        <span class="text-xs font-semibold uppercase text-gray-500">Depart</span>
+                        <input name="checkout" type="date" class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-gray-950 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold uppercase text-gray-500">Voyageurs</span>
+                        <input name="guests" type="number" min="1" value="2" class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-gray-950 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
                     </label>
                     <button type="submit" class="self-end rounded-md bg-rose-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300">Rechercher</button>
                 </form>
