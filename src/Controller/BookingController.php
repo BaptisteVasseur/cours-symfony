@@ -125,7 +125,7 @@ class BookingController extends AbstractController
         return $this->render('booking/confirmation.html.twig', ['booking' => $booking]);
     }
 
-    #[Route('/{id}', name: 'app_booking_show', requirements: ['id' => '.+'])]
+    #[Route('/{id}', name: 'app_booking_show')]
     public function show(Booking $booking): Response
     {
         if ($booking->getTraveler() !== $this->getUser()) {

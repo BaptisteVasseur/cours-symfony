@@ -115,9 +115,9 @@ class BookingRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('b')
             ->leftJoin('b.traveler', 't')->addSelect('t')
             ->where('b.property = :property')
-            ->andWhere('b.status = :confirmed')
+            ->andWhere('b.status IN (:statuses)')
             ->setParameter('property', $property)
-            ->setParameter('confirmed', BookingStatus::CONFIRMED)
+            ->setParameter('statuses', [BookingStatus::CONFIRMED, BookingStatus::COMPLETED])
             ->orderBy('b.checkIn', 'ASC')
             ->getQuery()
             ->getResult();
