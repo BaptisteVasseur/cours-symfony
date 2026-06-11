@@ -62,9 +62,17 @@
                     {% if listing.serviceFee %}<li class="flex justify-between"><span>Frais de service</span><span>{{ listing.serviceFee }} €</span></li>{% endif %}
                     <li class="flex justify-between"><span>Réservation instantanée</span><span>{{ listing.instantBooking ? 'Oui' : 'Non' }}</span></li>
                 </ul>
-                <a href="{{ path('app_booking_new') }}" class="mt-5 block text-center py-2.5 bg-[#FF385C] text-white font-semibold rounded-lg hover:bg-[#E11D48] transition">Réserver</a>
+                <form method="get" action="{{ path('app_reservation_new', {id: listing.id}) }}" class="mt-5 space-y-2">
+                    <div class="grid grid-cols-2 gap-2">
+                        <input type="date" name="checkin" required class="px-2 py-2 border border-gray-300 rounded-lg text-sm">
+                        <input type="date" name="checkout" required class="px-2 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+                    <input type="number" name="guests" min="1" max="{{ listing.maxGuests ?? 20 }}" value="1" class="w-full px-2 py-2 border border-gray-300 rounded-lg text-sm">
+                    <button type="submit" class="w-full py-2.5 bg-[#FF385C] text-white font-semibold rounded-lg hover:bg-[#E11D48] transition">Réserver</button>
+                </form>
 
-                {% if is_granted('ROLE_ADMIN') or (listing.host is not null and listing.host == app.user) %}
+                {% if is_granted('LISTING_MANAGE', listing) %}
+                    <a href="{{ path('app_host_calendar', {id: listing.id}) }}" class="mt-2 block text-center py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">Gérer le calendrier</a>
                     <a href="{{ path('app_listing_edit', {id: listing.id}) }}" class="mt-2 block text-center py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">Modifier ce logement</a>
                 {% endif %}
             </div>

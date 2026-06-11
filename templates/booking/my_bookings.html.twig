@@ -6,13 +6,13 @@
 <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-2xl font-bold text-gray-900">Mes réservations</h1>
-        <a href="{{ path('app_booking_new') }}" class="px-4 py-2 bg-[#FF385C] text-white font-semibold rounded-lg hover:bg-[#E11D48] transition">+ Nouvelle réservation</a>
+        <a href="{{ path('app_search') }}" class="px-4 py-2 bg-[#FF385C] text-white font-semibold rounded-lg hover:bg-[#E11D48] transition">Rechercher un logement</a>
     </div>
 
     {% if bookings is empty %}
         <div class="bg-white border border-gray-200 rounded-2xl p-12 text-center text-gray-500">
             Vous n'avez pas encore de réservation.
-            <a href="{{ path('app_home') }}" class="text-[#FF385C] font-medium hover:underline">Parcourir les logements →</a>
+            <a href="{{ path('app_search') }}" class="text-[#FF385C] font-medium hover:underline">Parcourir les logements →</a>
         </div>
     {% else %}
         <div class="space-y-4">
@@ -30,12 +30,8 @@
                     <div class="flex items-center gap-4">
                         <div class="text-right">
                             <div class="font-bold text-gray-900">{{ booking.totalAmount }} {{ booking.currency ?? 'EUR' }}</div>
-                            {% set s = booking.bookingStatus %}
-                            <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-xs
-                                {{ s == 'confirmed' ? 'bg-green-100 text-green-700' :
-                                   (s == 'completed' ? 'bg-blue-100 text-blue-700' :
-                                   (s == 'cancelled' ? 'bg-red-100 text-red-700' : 'bg-yellow-100 text-yellow-700')) }}">
-                                {{ s }}
+                            <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-xs {{ booking.bookingStatus.badgeClasses }}">
+                                {{ booking.bookingStatus.label }}
                             </span>
                         </div>
                         <a href="{{ path('app_booking_show', {id: booking.id}) }}" class="text-sm font-medium text-[#FF385C] hover:underline whitespace-nowrap">Détail →</a>

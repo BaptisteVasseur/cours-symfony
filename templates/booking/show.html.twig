@@ -3,9 +3,13 @@
 {% block title %}Détail réservation — HomeStay{% endblock %}
 
 {% block body %}
-<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
     <a href="{{ path('app_my_bookings') }}" class="text-sm text-gray-500 hover:text-[#FF385C]">← Mes réservations</a>
-    <h1 class="text-2xl font-bold text-gray-900 mt-2 mb-6">{{ booking.listing ? booking.listing.title : 'Réservation' }}</h1>
+
+    <div class="flex items-center justify-between mt-2 mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">{{ booking.listing ? booking.listing.title : 'Réservation' }}</h1>
+        <span class="px-3 py-1 rounded-full text-sm {{ booking.bookingStatus.badgeClasses }}">{{ booking.bookingStatus.label }}</span>
+    </div>
 
     <div class="bg-white border border-gray-200 rounded-2xl divide-y divide-gray-100">
         {% set rows = {
@@ -17,9 +21,7 @@
             'Montant de base': booking.baseAmount ~ ' ' ~ (booking.currency ?? 'EUR'),
             'Frais de ménage': (booking.cleaningFee ?? '0') ~ ' ' ~ (booking.currency ?? 'EUR'),
             'Frais de service': (booking.serviceFee ?? '0') ~ ' ' ~ (booking.currency ?? 'EUR'),
-            'Taxes': (booking.taxesAmount ?? '0') ~ ' ' ~ (booking.currency ?? 'EUR'),
             'Total': booking.totalAmount ~ ' ' ~ (booking.currency ?? 'EUR'),
-            'Statut': booking.bookingStatus,
         } %}
         {% for label, value in rows %}
             <div class="flex justify-between px-5 py-3 text-sm">
@@ -29,12 +31,45 @@
         {% endfor %}
     </div>
 
-    <div class="mt-6 flex gap-3">
-        <a href="{{ path('app_booking_edit', {id: booking.id}) }}" class="px-5 py-2.5 bg-[#FF385C] text-white font-semibold rounded-lg hover:bg-[#E11D48] transition">Modifier</a>
-        <form method="post" action="{{ path('app_booking_delete', {id: booking.id}) }}" onsubmit="return confirm('Supprimer cette réservation ?');">
-            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ booking.id) }}">
-            <button class="px-5 py-2.5 border border-red-300 text-red-600 font-medium rounded-lg hover:bg-red-50 transition">Supprimer</button>
-        </form>
+    {% if booking.cancellationReason %}
+        <div class="mt-4 px-4 py-3 rounded-lg bg-red-50 text-red-800 text-sm">
+            <strong>Motif :</strong> {{ booking.cancellationReason }}
+        </div>
+    {% endif %}
+
+    {% if booking.bookingStatus.value in ['pending', 'confirmed'] and is_granted('BOOKING_CANCEL', booking) %}
+        <div class="mt-6 bg-white border border-gray-200 rounded-2xl p-5">
+            <h2 class="font-semibold text-gray-900 mb-3">Annuler la réservation</h2>
+            <form method="post" action="{{ path('app_booking_cancel', {id: booking.id}) }}" onsubmit="return confirm('Confirmer l\'annulation ?');">
+                <input type="hidden" name="_token" value="{{ csrf_token('cancel_' ~ booking.id) }}">
+                <textarea name="reason" required rows="2" placeholder="Motif de l'annulation (obligatoire)"
+                          class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF385C]"></textarea>
+                <button type="submit" class="mt-3 px-5 py-2.5 border border-red-300 text-red-600 font-medium rounded-lg hover:bg-red-50 transition">
+                    Annuler la réservation
+                </button>
+            </form>
+        </div>
+    {% endif %}
+
+    <div class="mt-6 bg-white border border-gray-200 rounded-2xl p-5">
+        <h2 class="font-semibold text-gray-900 mb-4">Historique</h2>
+        <ol class="relative border-l border-gray-200 ml-2">
+            {% for entry in booking.histories %}
+                <li class="ml-5 pb-5 last:pb-0">
+                    <span class="absolute -left-1.5 w-3 h-3 rounded-full {{ entry.status.badgeClasses }}"></span>
+                    <div class="flex items-center gap-2">
+                        <span class="px-2 py-0.5 rounded-full text-xs {{ entry.status.badgeClasses }}">{{ entry.status.label }}</span>
+                        <time class="text-xs text-gray-400">{{ entry.createdAt|date('d/m/Y H:i') }}</time>
+                    </div>
+                    <p class="text-sm text-gray-600 mt-1">
+                        {{ entry.comment ?? '' }}
+                        <span class="text-gray-400">— {{ entry.author ? entry.author.firstName ~ ' ' ~ entry.author.lastName : 'Système' }}</span>
+                    </p>
+                </li>
+            {% else %}
+                <li class="ml-5 text-sm text-gray-400">Aucun historique.</li>
+            {% endfor %}
+        </ol>
     </div>
 </div>
 {% endblock %}

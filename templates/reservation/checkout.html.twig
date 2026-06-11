@@ -1,0 +1,120 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Réserver — {{ listing.title }}{% endblock %}
+
+{% block body %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8"
+     data-listing-id="{{ listing.id }}"
+     data-quote-url="{{ path('app_api_quote', {id: listing.id}) }}">
+    <a href="{{ path('app_listing_show', {id: listing.id}) }}" class="text-sm text-gray-500 hover:text-[#FF385C]">← Retour au logement</a>
+    <h1 class="text-2xl font-bold text-gray-900 mt-2 mb-6">Demande de réservation</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-6">
+            <h2 class="font-semibold text-gray-900 mb-4">Votre séjour à « {{ listing.title }} »</h2>
+
+            <form method="get" action="{{ path('app_reservation_new', {id: listing.id}) }}" class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Arrivée</label>
+                    <input type="date" name="checkin" id="checkin" value="{{ range ? range.checkIn|date('Y-m-d') }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF385C]">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Départ</label>
+                    <input type="date" name="checkout" id="checkout" value="{{ range ? range.checkOut|date('Y-m-d') }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF385C]">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Voyageurs</label>
+                    <input type="number" name="guests" id="guests" min="1" max="{{ listing.maxGuests ?? 20 }}" value="{{ guests }}"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF385C]">
+                </div>
+                <div class="sm:col-span-3">
+                    <button type="submit" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition text-sm">
+                        Mettre à jour le récapitulatif
+                    </button>
+                </div>
+            </form>
+
+            <div id="availability-banner" class="mt-4">
+                {% if available is same as(false) %}
+                    <div class="px-4 py-3 rounded-lg bg-red-100 text-red-800 text-sm">{{ unavailableReason ?? 'Dates indisponibles.' }}</div>
+                {% elseif available is same as(true) %}
+                    <div class="px-4 py-3 rounded-lg bg-green-100 text-green-800 text-sm">✅ Ces dates sont disponibles.</div>
+                {% endif %}
+            </div>
+
+            {% if listing.instantBooking %}
+                <p class="mt-4 text-sm text-gray-500">⚡ Réservation instantanée : votre réservation sera confirmée immédiatement.</p>
+            {% else %}
+                <p class="mt-4 text-sm text-gray-500">⏳ Sur demande : l'hôte doit valider votre demande.</p>
+            {% endif %}
+        </div>
+
+        <div>
+            <div class="sticky top-24 bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
+                <p class="text-xl font-bold text-gray-900">{{ listing.pricePerNight }} {{ listing.currency ?? 'EUR' }}
+                    <span class="text-base font-normal text-gray-500">/ nuit</span></p>
+
+                <dl class="mt-4 space-y-2 text-sm" id="quote-breakdown">
+                    <div class="flex justify-between"><dt class="text-gray-600"><span id="q-nights">{{ quote ? quote.nights : 0 }}</span> nuit(s)</dt><dd id="q-base">{{ quote ? quote.baseAmount : '0.00' }} €</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-600">Frais de ménage</dt><dd id="q-cleaning">{{ quote ? quote.cleaningFee : '0.00' }} €</dd></div>
+                    <div class="flex justify-between"><dt class="text-gray-600">Frais de service</dt><dd id="q-service">{{ quote ? quote.serviceFee : '0.00' }} €</dd></div>
+                    <div class="flex justify-between pt-2 border-t border-gray-100 font-bold text-gray-900"><dt>Total</dt><dd id="q-total">{{ quote ? quote.totalAmount : '0.00' }} €</dd></div>
+                </dl>
+
+                <form method="post" action="{{ path('app_reservation_create', {id: listing.id}) }}" class="mt-5">
+                    <input type="hidden" name="_token" value="{{ csrf_token('reservation_' ~ listing.id) }}">
+                    <input type="hidden" name="checkin" id="post-checkin" value="{{ range ? range.checkIn|date('Y-m-d') }}">
+                    <input type="hidden" name="checkout" id="post-checkout" value="{{ range ? range.checkOut|date('Y-m-d') }}">
+                    <input type="hidden" name="guests" id="post-guests" value="{{ guests }}">
+                    <button type="submit" id="reserve-btn"
+                            class="w-full py-2.5 bg-[#FF385C] text-white font-semibold rounded-lg hover:bg-[#E11D48] transition disabled:opacity-50 disabled:cursor-not-allowed"
+                            {{ available is same as(true) ? '' : 'disabled' }}>
+                        {{ listing.instantBooking ? 'Réserver maintenant' : 'Envoyer la demande' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const root = document.querySelector('[data-quote-url]');
+    if (!root) return;
+    const quoteUrl = root.dataset.quoteUrl;
+    const $ = (id) => document.getElementById(id);
+
+    async function refresh() {
+        const checkin = $('checkin').value, checkout = $('checkout').value, guests = $('guests').value || 1;
+        $('post-checkin').value = checkin; $('post-checkout').value = checkout; $('post-guests').value = guests;
+        if (!checkin || !checkout || checkin >= checkout) return;
+
+        try {
+            const url = `${quoteUrl}?checkin=${checkin}&checkout=${checkout}&guests=${guests}`;
+            const res = await fetch(url, { headers: { 'Accept': 'application/json' } });
+            const data = await res.json();
+            if (data.quote) {
+                $('q-nights').textContent = data.quote.nights;
+                $('q-base').textContent = data.quote.baseAmount + ' €';
+                $('q-cleaning').textContent = data.quote.cleaningFee + ' €';
+                $('q-service').textContent = data.quote.serviceFee + ' €';
+                $('q-total').textContent = data.quote.totalAmount + ' €';
+            }
+            const banner = $('availability-banner');
+            const btn = $('reserve-btn');
+            if (data.available) {
+                banner.innerHTML = '<div class="px-4 py-3 rounded-lg bg-green-100 text-green-800 text-sm">✅ Ces dates sont disponibles.</div>';
+                btn.disabled = false;
+            } else {
+                banner.innerHTML = '<div class="px-4 py-3 rounded-lg bg-red-100 text-red-800 text-sm">' + (data.reason || 'Dates indisponibles.') + '</div>';
+                btn.disabled = true;
+            }
+        } catch (e)
+    }
+
+    ['checkin', 'checkout', 'guests'].forEach((id) => $(id) && $(id).addEventListener('change', refresh));
+})();
+</script>
+{% endblock %}

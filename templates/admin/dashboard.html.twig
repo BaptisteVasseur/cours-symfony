@@ -36,7 +36,7 @@
                 {% for booking in recentBookings %}
                     <div class="flex items-center justify-between text-sm">
                         <span class="text-gray-700">{{ booking.listing ? booking.listing.title : '—' }}</span>
-                        <span class="text-gray-400">{{ booking.totalAmount }} € · {{ booking.bookingStatus }}</span>
+                        <span class="text-gray-400">{{ booking.totalAmount }} € · {{ booking.bookingStatus.label }}</span>
                     </div>
                 {% else %}
                     <p class="text-sm text-gray-400">Aucune réservation.</p>
