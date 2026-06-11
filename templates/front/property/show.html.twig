@@ -25,17 +25,31 @@
             </div>
         </div>
 
+        {% set galleryImages = [] %}
+        {% for medium in property.media|slice(1, 4) %}
+            {% set galleryImages = galleryImages|merge([medium.fileUrl]) %}
+        {% endfor %}
+        {# Remplir jusqu'à 4 slots avec le placeholder si besoin #}
+        {% for i in 1..4 %}
+            {% if galleryImages[i-1] is not defined %}
+                {% set galleryImages = galleryImages|merge([placeholderImage]) %}
+            {% endif %}
+        {% endfor %}
+
         <div class="grid grid-cols-1 md:grid-cols-4 gap-2 rounded-xl overflow-hidden mb-10 h-[300px] md:h-[480px]">
             <div class="md:col-span-2 md:row-span-2 relative">
                 <img
                     src="{{ cover ? cover.fileUrl : placeholderImage }}"
                     alt="{{ property.title }}"
                     class="w-full h-full object-cover"
+                    onerror="this.src='{{ placeholderImage }}'"
                 >
             </div>
-            {% for medium in property.media|slice(1, 4) %}
+            {% for imgUrl in galleryImages %}
                 <div class="hidden md:block relative">
-                    <img src="{{ medium.fileUrl }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                    <img src="{{ imgUrl }}" alt="{{ property.title }}"
+                         class="w-full h-full object-cover"
+                         onerror="this.src='{{ placeholderImage }}'">
                 </div>
             {% endfor %}
         </div>
@@ -107,6 +121,17 @@
                     {% else %}
                         <p class="text-gray-500 text-sm">Aucun avis pour le moment.</p>
                     {% endif %}
+
+                    {% if reviewableReservation is defined and reviewableReservation %}
+                        <div class="mt-8 border border-brand/20 rounded-xl p-5 bg-brand/5">
+                            <p class="text-sm font-semibold text-gray-900 mb-1">Vous avez séjourné ici</p>
+                            <p class="text-xs text-gray-500 mb-3">Partagez votre expérience pour aider les futurs voyageurs.</p>
+                            <a href="{{ path('app_reservation_review', { id: reviewableReservation.id }) }}"
+                               class="inline-flex items-center gap-2 bg-brand hover:bg-brandHover text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition">
+                                <i class="fa-solid fa-star"></i> Laisser un avis
+                            </a>
+                        </div>
+                    {% endif %}
                 </section>
             </div>
 
@@ -135,7 +160,11 @@
                             <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
                         </div>
                     </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                    {% set _bookingParams = { id: property.id } %}
+                    {% if checkin is defined and checkin %}{% set _bookingParams = _bookingParams|merge({ checkin: checkin }) %}{% endif %}
+                    {% if checkout is defined and checkout %}{% set _bookingParams = _bookingParams|merge({ checkout: checkout }) %}{% endif %}
+                    {% if guests is defined and guests > 0 %}{% set _bookingParams = _bookingParams|merge({ guests: guests }) %}{% endif %}
+                    <a href="{{ path('app_booking_checkout', _bookingParams) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
                         Réserver
                     </a>
                     {% if property.instantBooking %}

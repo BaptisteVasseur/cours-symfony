@@ -1,0 +1,46 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set property = reservation.property %}
+
+{% block title %}Laisser un avis{% endblock %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-2xl mx-auto w-full">
+    <a href="{{ path('app_reservation_show', { id: reservation.id }) }}"
+       class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Retour à la réservation
+    </a>
+
+    <h1 class="text-2xl font-bold text-gray-900 mb-2">Laisser un avis</h1>
+    {% if property %}
+        <p class="text-gray-500 mb-8">{{ property.title }}</p>
+    {% endif %}
+
+    <div class="bg-white border border-gray-200 rounded-2xl p-8 shadow-sm">
+        {{ form_start(form, { attr: { class: 'space-y-6' } }) }}
+
+        <div>
+            {{ form_label(form.rating, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-2' } }) }}
+            {{ form_widget(form.rating, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand bg-white' } }) }}
+            {{ form_errors(form.rating) }}
+        </div>
+
+        <div>
+            {{ form_label(form.comment, null, { label_attr: { class: 'block text-sm font-semibold text-gray-700 mb-2' } }) }}
+            {{ form_widget(form.comment, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-brand resize-none' } }) }}
+            {{ form_errors(form.comment) }}
+        </div>
+
+        <div class="flex items-center gap-4 pt-2">
+            <button type="submit" class="bg-brand hover:bg-brandHover text-white font-semibold py-3 px-8 rounded-xl transition">
+                Publier l'avis
+            </button>
+            <a href="{{ path('app_reservation_show', { id: reservation.id }) }}" class="text-sm text-gray-600 hover:text-gray-900">
+                Annuler
+            </a>
+        </div>
+
+        {{ form_end(form) }}
+    </div>
+</main>
+{% endblock %}

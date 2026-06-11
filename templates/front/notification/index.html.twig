@@ -1,0 +1,36 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Notifications{% endblock %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-2xl mx-auto w-full">
+    <h1 class="text-2xl font-semibold text-gray-900 mb-6">Notifications</h1>
+
+    {% if notifications is empty %}
+        <div class="text-center py-16 text-gray-400">
+            <i class="fa-solid fa-bell-slash text-4xl mb-3"></i>
+            <p class="text-sm">Aucune notification pour le moment.</p>
+        </div>
+    {% else %}
+        <ul class="space-y-3">
+            {% for notif in notifications %}
+                {% set icons = {
+                    'booking_request':   'fa-clock text-yellow-500',
+                    'booking_confirmed': 'fa-circle-check text-green-500',
+                    'booking_cancelled': 'fa-circle-xmark text-red-500',
+                } %}
+                <li class="flex items-start gap-4 p-4 border border-gray-200 rounded-xl {{ notif.isRead ? 'bg-white' : 'bg-blue-50 border-blue-100' }}">
+                    <i class="fa-solid {{ icons[notif.type]|default('fa-bell text-gray-400') }} mt-0.5 text-lg shrink-0"></i>
+                    <div class="flex-1 min-w-0">
+                        <p class="font-semibold text-sm text-gray-900">{{ notif.title }}</p>
+                        {% if notif.content %}
+                            <p class="text-sm text-gray-500 mt-0.5">{{ notif.content }}</p>
+                        {% endif %}
+                        <p class="text-xs text-gray-400 mt-1">{{ notif.createdAt|date('d/m/Y à H:i') }}</p>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+</main>
+{% endblock %}

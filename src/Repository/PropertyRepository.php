@@ -132,4 +132,63 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<Property>
+     */
+    public function search(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        ?int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('(LOWER(a.city) LIKE LOWER(:dest) OR LOWER(a.addressLine1) LIKE LOWER(:dest) OR LOWER(a.country) LIKE LOWER(:dest))')
+               ->setParameter('dest', '%'.$destination.'%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+               ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            // Exclure les logements avec une réservation confirmed qui chevauche
+            $qb->andWhere($qb->expr()->not(
+                $qb->expr()->exists(
+                    'SELECT r2.id FROM App\Entity\Reservation r2
+                     WHERE r2.property = p
+                     AND r2.status = :confirmed
+                     AND r2.checkinDate < :checkout
+                     AND r2.checkoutDate > :checkin'
+                )
+            ))
+            ->setParameter('confirmed', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+
+            // Exclure les logements avec des jours bloqués manuellement dans la plage
+            $qb->andWhere($qb->expr()->not(
+                $qb->expr()->exists(
+                    'SELECT pa.id FROM App\Entity\PropertyAvailability pa
+                     WHERE pa.property = p
+                     AND pa.isAvailable = false
+                     AND pa.availableDate >= :checkin
+                     AND pa.availableDate < :checkout'
+                )
+            ));
+        }
+
+        return $qb->orderBy('p.createdAt', 'DESC')
+                  ->getQuery()
+                  ->getResult();
+    }
 }

@@ -4,17 +4,38 @@
         <span class="hidden sm:inline">airbnb</span>
     </a>
 
-    <a href="{{ path('app_search') }}" class="flex-1 max-w-sm mx-auto hidden sm:flex items-center gap-2 border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-500 hover:shadow-sm transition min-w-0">
-        <i class="fa-solid fa-magnifying-glass text-brand shrink-0"></i>
-        <span class="truncate">Rechercher un logement</span>
-    </a>
+    <form action="{{ path('app_search') }}" method="get"
+          class="flex-1 max-w-sm mx-auto hidden sm:flex items-center gap-2 border border-gray-200 rounded-full px-4 py-2 text-sm hover:shadow-sm transition min-w-0 bg-white focus-within:shadow-md focus-within:border-gray-400">
+        <i class="fa-solid fa-magnifying-glass text-brand shrink-0 text-xs"></i>
+        <input type="text" name="destination" placeholder="Rechercher un logement…"
+               class="flex-1 min-w-0 bg-transparent focus:outline-none text-gray-700 placeholder-gray-400 text-sm">
+    </form>
 
     <div class="flex items-center gap-2 shrink-0 ml-auto">
-        <a href="{{ path('app_search') }}" class="sm:hidden p-2 text-gray-600 hover:bg-gray-50 rounded-full" aria-label="Rechercher">
+        <button type="button" id="mobile-header-search-btn" class="sm:hidden p-2 text-gray-600 hover:bg-gray-50 rounded-full" aria-label="Rechercher">
             <i class="fa-solid fa-magnifying-glass"></i>
-        </a>
+        </button>
+        <div id="mobile-header-search-overlay" class="hidden fixed inset-0 z-[70] bg-white px-4 pt-4 pb-6">
+            <form action="{{ path('app_search') }}" method="get" class="flex items-center gap-3 border border-gray-300 rounded-xl px-4 py-3 focus-within:border-brand">
+                <i class="fa-solid fa-magnifying-glass text-brand text-sm shrink-0"></i>
+                <input type="text" name="destination" placeholder="Destination, ville…" autofocus
+                       class="flex-1 bg-transparent focus:outline-none text-sm text-gray-700 placeholder-gray-400">
+                <button type="button" id="mobile-header-search-close" class="text-gray-400 hover:text-gray-600 shrink-0">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </form>
+        </div>
 
         {% if app.user %}
+            {% set unread = unread_notification_count(app.user) %}
+            <a href="{{ path('app_notifications') }}" class="relative p-2 text-gray-600 hover:bg-gray-50 rounded-full" aria-label="Notifications">
+                <i class="fa-solid fa-bell text-lg"></i>
+                {% if unread > 0 %}
+                    <span class="absolute top-0.5 right-0.5 w-4 h-4 bg-brand text-white text-[10px] font-bold rounded-full flex items-center justify-center leading-none">
+                        {{ unread > 9 ? '9+' : unread }}
+                    </span>
+                {% endif %}
+            </a>
             {% include 'layout/partials/app/header_profile_menu.html.twig' %}
         {% else %}
             <a href="{{ path('app_login') }}" class="text-sm font-semibold py-2 px-4 border border-gray-200 rounded-full hover:shadow-md transition whitespace-nowrap">

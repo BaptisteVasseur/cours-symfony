@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Réservation annulée</title></head>
+<body style="font-family: Arial, sans-serif; background:#f4f4f4; margin:0; padding:20px;">
+<div style="max-width:600px; margin:0 auto; background:#fff; border-radius:8px; overflow:hidden;">
+    <div style="background:#ef4444; padding:24px 32px;">
+        <h1 style="color:#fff; margin:0; font-size:22px;">Réservation annulée</h1>
+    </div>
+    <div style="padding:32px;">
+        {% set property = reservation.property %}
+        {% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
+
+        {% if recipient == 'host' %}
+            <p>Bonjour,</p>
+            <p>La réservation suivante a été annulée.</p>
+        {% else %}
+            <p>Bonjour {{ guestProfile ? guestProfile.firstName : 'cher voyageur' }},</p>
+            <p>Votre réservation a bien été <strong>annulée</strong>.</p>
+        {% endif %}
+
+        <table style="width:100%; border-collapse:collapse; margin:24px 0;">
+            <tr style="background:#fef2f2;">
+                <td style="padding:12px; font-weight:bold;">Logement</td>
+                <td style="padding:12px;">{{ property ? property.title : '—' }}</td>
+            </tr>
+            <tr>
+                <td style="padding:12px; font-weight:bold;">Arrivée</td>
+                <td style="padding:12px;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+            </tr>
+            <tr style="background:#fef2f2;">
+                <td style="padding:12px; font-weight:bold;">Départ</td>
+                <td style="padding:12px;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+            </tr>
+            {% if reservation.cancellationReason %}
+            <tr>
+                <td style="padding:12px; font-weight:bold;">Motif</td>
+                <td style="padding:12px; color:#666;">{{ reservation.cancellationReason }}</td>
+            </tr>
+            {% endif %}
+        </table>
+
+        <p style="color:#666; font-size:13px;">Si vous avez des questions, n'hésitez pas à nous contacter.</p>
+    </div>
+    <div style="background:#f8f8f8; padding:16px 32px; text-align:center; color:#999; font-size:12px;">
+        © {{ "now"|date("Y") }} StayHub — Ce message est automatique, merci de ne pas y répondre.
+    </div>
+</div>
+</body>
+</html>

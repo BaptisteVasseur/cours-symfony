@@ -1,0 +1,133 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set monthNames = ['', 'Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'] %}
+{% set prevMonth = month - 1 %}
+{% set prevYear  = year %}
+{% set nextMonth = month + 1 %}
+{% set nextYear  = year %}
+{% if prevMonth < 1 %}{% set prevMonth = 12 %}{% set prevYear = year - 1 %}{% endif %}
+{% if nextMonth > 12 %}{% set nextMonth = 1 %}{% set nextYear = year + 1 %}{% endif %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+
+    <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Mes propriétés
+    </a>
+
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-900">Calendrier — {{ property.title }}</h1>
+            <p class="text-sm text-gray-500 mt-1">Gérez vos disponibilités</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <a href="{{ path('app_host_calendar', {id: property.id, year: prevYear, month: prevMonth}) }}" class="p-2 border border-gray-200 rounded-full hover:shadow-md transition">
+                <i class="fa-solid fa-chevron-left text-sm"></i>
+            </a>
+            <span class="font-semibold text-gray-800 w-36 text-center">{{ monthNames[month] }} {{ year }}</span>
+            <a href="{{ path('app_host_calendar', {id: property.id, year: nextYear, month: nextMonth}) }}" class="p-2 border border-gray-200 rounded-full hover:shadow-md transition">
+                <i class="fa-solid fa-chevron-right text-sm"></i>
+            </a>
+        </div>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="mb-4 p-3 bg-green-50 border border-green-200 rounded-xl text-green-800 text-sm">{{ message }}</div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-800 text-sm">{{ message }}</div>
+    {% endfor %}
+
+    <div class="border border-gray-200 rounded-2xl overflow-hidden mb-8">
+        <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+            {% for day in ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'] %}
+                <div class="py-2 text-center text-xs font-semibold text-gray-500">{{ day }}</div>
+            {% endfor %}
+        </div>
+        <div class="grid grid-cols-7">
+            {% for i in 1..(startWeekday - 1) %}
+                <div class="h-14 border-b border-r border-gray-100 bg-gray-50"></div>
+            {% endfor %}
+
+            {% for day in 1..daysInMonth %}
+                {% set dateKey = year ~ '-' ~ '%02d'|format(month) ~ '-' ~ '%02d'|format(day) %}
+                {% set isBlocked   = blockedDates[dateKey] is defined %}
+                {% set isConfirmed = confirmedDates[dateKey] is defined %}
+                {% set isToday     = dateKey == 'now'|date('Y-m-d') %}
+                {% set col = (startWeekday + day - 2) % 7 + 1 %}
+
+                <div class="h-14 border-b border-r border-gray-100 relative flex flex-col items-center justify-center group
+                    {% if isConfirmed %} bg-green-50
+                    {% elseif isBlocked %} bg-red-50
+                    {% else %} hover:bg-gray-50 cursor-pointer
+                    {% endif %}">
+
+                    <span class="text-sm font-medium {% if isToday %}text-brand font-bold{% elseif isBlocked %}text-red-600{% elseif isConfirmed %}text-green-700{% else %}text-gray-700{% endif %}">
+                        {{ day }}
+                    </span>
+
+                    {% if isConfirmed %}
+                        <span class="text-xs text-green-600 mt-0.5"><i class="fa-solid fa-lock text-[10px]"></i></span>
+                    {% elseif isBlocked %}
+                        <form method="post" action="{{ path('app_host_calendar_unblock', {id: property.id}) }}" class="hidden group-hover:block absolute bottom-1">
+                            <input type="hidden" name="_token" value="{{ csrf_token('calendar_block_' ~ property.id) }}">
+                            <input type="hidden" name="date" value="{{ dateKey }}">
+                            <input type="hidden" name="year" value="{{ year }}">
+                            <input type="hidden" name="month" value="{{ month }}">
+                            <button type="submit" class="text-[10px] text-red-600 hover:text-red-800 underline">débloquer</button>
+                        </form>
+                    {% else %}
+                        <form method="post" action="{{ path('app_host_calendar_block', {id: property.id}) }}" class="hidden group-hover:block absolute bottom-1">
+                            <input type="hidden" name="_token" value="{{ csrf_token('calendar_block_' ~ property.id) }}">
+                            <input type="hidden" name="date_start" value="{{ dateKey }}">
+                            <input type="hidden" name="date_end" value="{{ dateKey }}">
+                            <input type="hidden" name="year" value="{{ year }}">
+                            <input type="hidden" name="month" value="{{ month }}">
+                            <button type="submit" class="text-[10px] text-gray-500 hover:text-gray-900 underline">bloquer</button>
+                        </form>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <section class="border border-gray-200 rounded-2xl p-6">
+        <h2 class="font-semibold text-gray-900 mb-4">Bloquer une période</h2>
+        <form method="post" action="{{ path('app_host_calendar_block', {id: property.id}) }}" class="flex flex-wrap gap-4 items-end">
+            <input type="hidden" name="_token" value="{{ csrf_token('calendar_block_' ~ property.id) }}">
+            <input type="hidden" name="year" value="{{ year }}">
+            <input type="hidden" name="month" value="{{ month }}">
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Du</label>
+                <input type="date" name="date_start" required class="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gray-900">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-700 mb-1">Au</label>
+                <input type="date" name="date_end" required class="border border-gray-300 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-gray-900">
+            </div>
+            <button type="submit" class="bg-gray-900 text-white rounded-xl px-5 py-2 text-sm font-semibold hover:bg-gray-700 transition">
+                Bloquer
+            </button>
+        </form>
+    </section>
+
+    <div class="flex gap-6 mt-6 text-sm text-gray-600">
+        <span class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-red-100 border border-red-200 inline-block"></span> Bloqué manuellement</span>
+        <span class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-green-100 border border-green-200 inline-block"></span> Réservation confirmée</span>
+        <span class="flex items-center gap-2"><span class="w-4 h-4 rounded bg-white border border-gray-200 inline-block"></span> Disponible</span>
+    </div>
+
+    <section class="border border-gray-200 rounded-2xl p-6 mt-6">
+        <h2 class="font-semibold text-gray-900 mb-2">Export iCal</h2>
+        <p class="text-sm text-gray-500 mb-3">Synchronisez ce calendrier avec Airbnb, Google Calendar ou tout autre outil compatible iCal.</p>
+        <div class="flex items-center gap-3 flex-wrap">
+            <code class="text-xs bg-gray-100 px-3 py-2 rounded-lg break-all">{{ url('api_property_ical', {id: property.id}) }}?token={{ property.calendarToken }}</code>
+            <a href="{{ path('api_property_ical', {id: property.id}) }}?token={{ property.calendarToken }}"
+               class="text-sm font-semibold text-brand hover:underline flex items-center gap-1" download="calendar.ics">
+                <i class="fa-solid fa-download"></i> Télécharger
+            </a>
+        </div>
+    </section>
+
+</main>
+{% endblock %}

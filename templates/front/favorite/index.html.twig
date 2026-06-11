@@ -1,0 +1,23 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Mes favoris{% endblock %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+    <h1 class="text-2xl font-semibold text-gray-900 mb-6">Mes favoris</h1>
+
+    {% if favorites is empty %}
+        <div class="text-center py-16 text-gray-400">
+            <i class="fa-regular fa-heart text-4xl mb-3"></i>
+            <p class="text-sm">Aucun logement en favori.</p>
+            <a href="{{ path('app_home') }}" class="mt-4 inline-block text-sm font-semibold text-brand hover:underline">Explorer les logements</a>
+        </div>
+    {% else %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+            {% for fav in favorites %}
+                {% include 'components/card.html.twig' with { property: fav.property, favoriteIds: [] } %}
+            {% endfor %}
+        </div>
+    {% endif %}
+</main>
+{% endblock %}
