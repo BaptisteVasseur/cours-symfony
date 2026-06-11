@@ -110,6 +110,49 @@ class ReservationRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
+    /**
+     * Demandes en attente (Pending) reçues sur les logements de l'hôte. File de modération (B.2).
+     *
+     * @return list<Reservation>
+     */
+    public function findPendingForHost(User $host): array
+    {
+        return $this->hostQueryBuilder($host)
+            ->andWhere('r.status = :status')
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Réservations confirmées (à venir) sur les logements de l'hôte.
+     *
+     * @return list<Reservation>
+     */
+    public function findConfirmedForHost(User $host): array
+    {
+        return $this->hostQueryBuilder($host)
+            ->andWhere('r.status = :status')
+            ->setParameter('status', 'confirmed')
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    private function hostQueryBuilder(User $host): \Doctrine\ORM\QueryBuilder
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->setParameter('host', $host);
+    }
+
     public function sumCompletedRevenue(): float
     {
         $result = $this->createQueryBuilder('r')

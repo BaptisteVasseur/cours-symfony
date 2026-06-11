@@ -6,7 +6,10 @@
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full"
+          data-controller="booking"
+          data-booking-rate-value="{{ property.pricePerNight }}"
+          data-booking-cleaning-fee-value="{{ property.cleaningFee ?? 0 }}">
         <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
             <i class="fa-solid fa-arrow-left"></i> Retour au logement
         </a>
@@ -21,10 +24,10 @@
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                     {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 'now'|date('Y-m-d'), 'data-booking-target': 'checkin', 'data-action': 'change->booking#update' } }) }}
+                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 'now'|date('Y-m-d'), 'data-booking-target': 'checkout', 'data-action': 'change->booking#update' } }) }}
                         </div>
-                        {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
+                        {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests, 'data-booking-target': 'guests', 'data-action': 'change->booking#update' } }) }}
                         <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
                     {{ form_end(form) }}
                 </div>
@@ -35,6 +38,30 @@
                     <div class="p-5">
                         <h2 class="font-semibold">{{ property.title }}</h2>
                         <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+
+                        <div class="mt-4 pt-4 border-t border-gray-200">
+                            <p class="text-sm text-gray-400" data-booking-target="placeholder">
+                                Choisissez vos dates pour voir le détail du prix.
+                            </p>
+                            <div class="hidden text-sm space-y-2" data-booking-target="recap">
+                                <div class="flex justify-between text-gray-600">
+                                    <span>{{ property.pricePerNight|number_format(0, ',', ' ') }} € × <span data-booking-target="nights">0</span> nuit(s)</span>
+                                    <span data-booking-target="subtotal"></span>
+                                </div>
+                                <div class="flex justify-between text-gray-600 hidden" data-booking-target="cleaningRow">
+                                    <span>Frais de ménage</span>
+                                    <span data-booking-target="cleaning"></span>
+                                </div>
+                                <div class="flex justify-between text-gray-600">
+                                    <span>Frais de service</span>
+                                    <span data-booking-target="service"></span>
+                                </div>
+                                <div class="flex justify-between font-semibold text-gray-900 border-t border-gray-200 pt-2">
+                                    <span>Total</span>
+                                    <span data-booking-target="total"></span>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </aside>
