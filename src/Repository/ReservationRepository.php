@@ -118,6 +118,27 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
+     * @return list<Reservation>
+     */
+    public function findPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Vérifie si au moins une réservation "confirmed" se superpose avec la plage [checkin, checkout).
      *
      * Condition d'overlap sur intervalles demi-ouverts [A,B) et [C,D) : A < D AND C < B.

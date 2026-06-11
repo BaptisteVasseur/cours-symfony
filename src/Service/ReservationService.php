@@ -9,6 +9,7 @@ use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Message\ReservationCreatedMessage;
+use App\Message\ReservationDecisionMessage;
 use App\Repository\ReservationRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
@@ -105,5 +106,69 @@ final class ReservationService
         $this->bus->dispatch(new ReservationCreatedMessage((string) $reservation->getId()));
 
         return $reservation;
+    }
+
+    /**
+     * Accepte une réservation en attente : passage en `confirmed` + notification email asynchrone.
+     *
+     * @throws \RuntimeException si la réservation n'est pas dans l'état `pending`
+     */
+    public function acceptReservation(Reservation $reservation, User $actor): void
+    {
+        if ($reservation->getStatus() !== 'pending') {
+            throw new \RuntimeException('Seules les demandes en attente peuvent être acceptées.');
+        }
+
+        $this->entityManager->wrapInTransaction(function () use ($reservation, $actor): void {
+            $reservation->setStatus('confirmed');
+            $reservation->setExpiresAt(null);
+
+            $history = new ReservationStatusHistory();
+            $history->setReservation($reservation);
+            $history->setOldStatus('pending');
+            $history->setNewStatus('confirmed');
+            $history->setChangedBy($actor);
+
+            $this->entityManager->persist($history);
+        });
+
+        $this->bus->dispatch(new ReservationDecisionMessage(
+            (string) $reservation->getId(),
+            'accepted',
+            null,
+        ));
+    }
+
+    /**
+     * Refuse une réservation en attente : passage en `cancelled` + motif + notification email asynchrone.
+     *
+     * @throws \RuntimeException si la réservation n'est pas dans l'état `pending`
+     */
+    public function rejectReservation(Reservation $reservation, User $actor, string $reason): void
+    {
+        if ($reservation->getStatus() !== 'pending') {
+            throw new \RuntimeException('Seules les demandes en attente peuvent être refusées.');
+        }
+
+        $this->entityManager->wrapInTransaction(function () use ($reservation, $actor, $reason): void {
+            $reservation->setStatus('cancelled');
+            $reservation->setCancellationReason($reason);
+            $reservation->setExpiresAt(null);
+
+            $history = new ReservationStatusHistory();
+            $history->setReservation($reservation);
+            $history->setOldStatus('pending');
+            $history->setNewStatus('cancelled');
+            $history->setChangedBy($actor);
+            $history->setReason($reason);
+
+            $this->entityManager->persist($history);
+        });
+
+        $this->bus->dispatch(new ReservationDecisionMessage(
+            (string) $reservation->getId(),
+            'rejected',
+            $reason,
+        ));
     }
 }
