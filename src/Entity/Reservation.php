@@ -112,9 +112,10 @@ class Reservation
 
     #[ORM\OneToOne(mappedBy: 'reservation', targetEntity: Invoice::class, cascade: ['persist', 'remove'])]
     private ?Invoice $invoice = null;
-
+    
     /** @var Collection<int, ReservationStatusHistory> */
     #[ORM\OneToMany(targetEntity: ReservationStatusHistory::class, mappedBy: 'reservation', orphanRemoval: true)]
+    #[ORM\OrderBy(['createdAt' => 'ASC'])]
     private Collection $statusHistory;
 
     /** @var Collection<int, Payment> */
