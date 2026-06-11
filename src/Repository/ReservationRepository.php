@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Property;
 use App\Entity\Reservation;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -119,6 +120,42 @@ class ReservationRepository extends ServiceEntityRepository
             ->setParameter('from', $from)
             ->setParameter('to', $to)
             ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->setParameter('host', $host)
+            ->orderBy('r.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
     }

@@ -5,11 +5,14 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Property;
+use App\Entity\Reservation;
 use App\Entity\User;
 use App\Repository\PropertyAvailabilityRepository;
 use App\Repository\PropertyRepository;
 use App\Repository\ReservationRepository;
 use App\Service\AvailabilityManager;
+use App\Service\BookingException;
+use App\Service\BookingManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,6 +29,70 @@ final class HostController extends AbstractController
         return $this->render('host/properties.html.twig', [
             'properties' => $propertyRepository->findByHost($this->currentHost()),
         ]);
+    }
+
+    #[Route('/reservations', name: 'app_host_reservation_index', methods: ['GET'])]
+    public function reservations(ReservationRepository $reservationRepository): Response
+    {
+        $host = $this->currentHost();
+
+        return $this->render('host/reservations.html.twig', [
+            'pending' => $reservationRepository->findPendingForHost($host),
+            'reservations' => $reservationRepository->findForHost($host),
+        ]);
+    }
+
+    #[Route('/reservations/{id}/accept', name: 'app_host_reservation_accept', methods: ['POST'])]
+    public function accept(Reservation $reservation, Request $request, BookingManager $bookingManager): Response
+    {
+        $this->denyUnlessReservationOwner($reservation);
+
+        if ($this->isCsrfTokenValid('accept'.$reservation->getId(), $request->getPayload()->getString('_token'))) {
+            try {
+                $bookingManager->confirm($reservation, $this->currentHost());
+                $this->addFlash('success', 'Réservation acceptée. Le voyageur a été notifié.');
+            } catch (BookingException $exception) {
+                $this->addFlash('danger', $exception->getMessage());
+            }
+        }
+
+        return $this->redirectToRoute('app_host_reservation_index', [], Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/reservations/{id}/reject', name: 'app_host_reservation_reject', methods: ['POST'])]
+    public function reject(Reservation $reservation, Request $request, BookingManager $bookingManager): Response
+    {
+        $this->denyUnlessReservationOwner($reservation);
+
+        if ($this->isCsrfTokenValid('reject'.$reservation->getId(), $request->getPayload()->getString('_token'))) {
+            $reason = trim($request->getPayload()->getString('reason'));
+            try {
+                $bookingManager->reject($reservation, $this->currentHost(), $reason);
+                $this->addFlash('success', 'Demande refusée. Le voyageur a été notifié.');
+            } catch (BookingException $exception) {
+                $this->addFlash('danger', $exception->getMessage());
+            }
+        }
+
+        return $this->redirectToRoute('app_host_reservation_index', [], Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/reservations/{id}/cancel', name: 'app_host_reservation_cancel', methods: ['POST'])]
+    public function cancelReservation(Reservation $reservation, Request $request, BookingManager $bookingManager): Response
+    {
+        $this->denyUnlessReservationOwner($reservation);
+
+        if ($this->isCsrfTokenValid('hostcancel'.$reservation->getId(), $request->getPayload()->getString('_token'))) {
+            $reason = trim($request->getPayload()->getString('reason'));
+            try {
+                $bookingManager->cancel($reservation, $this->currentHost(), $reason);
+                $this->addFlash('success', 'Réservation annulée. Les deux parties ont été notifiées.');
+            } catch (BookingException $exception) {
+                $this->addFlash('danger', $exception->getMessage());
+            }
+        }
+
+        return $this->redirectToRoute('app_host_reservation_index', [], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/properties/{id}/calendar', name: 'app_host_calendar', methods: ['GET'])]
@@ -162,6 +229,13 @@ final class HostController extends AbstractController
     {
         if ($property->getHost() !== $this->currentHost()) {
             throw $this->createAccessDeniedException('Ce logement ne vous appartient pas.');
+        }
+    }
+
+    private function denyUnlessReservationOwner(Reservation $reservation): void
+    {
+        if ($reservation->getProperty()?->getHost() !== $this->currentHost()) {
+            throw $this->createAccessDeniedException('Cette réservation ne concerne pas vos logements.');
         }
     }
 
