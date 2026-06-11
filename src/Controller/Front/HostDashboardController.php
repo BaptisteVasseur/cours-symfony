@@ -15,7 +15,6 @@ use App\Repository\ReservationRepository;
 use App\Security\Roles;
 use App\Security\Voter\ReservationVoter;
 use App\Service\BookingService;
-use App\Service\MailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -128,7 +127,6 @@ final class HostDashboardController extends AbstractController
         Request $request,
         Reservation $reservation,
         BookingService $bookingService,
-        MailService $mailService,
     ): Response {
         if (!$this->isCsrfTokenValid('accept'.$reservation->getId(), $request->request->get('_token'))) {
             $this->addFlash('error', 'Jeton CSRF invalide.');
@@ -142,7 +140,6 @@ final class HostDashboardController extends AbstractController
 
         try {
             $bookingService->confirm($reservation, $user);
-            $mailService->sendBookingConfirmationEmail($reservation);
         } catch (BookingConflictException $exception) {
             $this->addFlash('error', $exception->getMessage());
             return $this->redirectToRoute('app_host_reservations');
