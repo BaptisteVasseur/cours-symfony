@@ -46,6 +46,63 @@ final class BookingService
         return $reservation;
     }
 
+    public function acceptReservation(Reservation $reservation, User $host): Reservation
+    {
+        if ($reservation->getStatus() !== 'pending') {
+            throw new \DomainException('Seules les demandes en attente peuvent être acceptées.');
+        }
+
+        $property = $reservation->getProperty();
+        if (!$property instanceof Property) {
+            throw new \DomainException('Réservation sans logement associé.');
+        }
+
+        $this->em->wrapInTransaction(function () use ($reservation, $property, $host): void {
+            $this->em->lock($property, LockMode::PESSIMISTIC_WRITE);
+
+            $result = $this->availabilityChecker->check(
+                $property,
+                $reservation->getCheckinDate(),
+                $reservation->getCheckoutDate(),
+                (int) $reservation->getGuestsCount(),
+                $reservation,
+            );
+
+            if (!$result->available) {
+                throw new BookingUnavailableException($result->reason);
+            }
+
+            $reservation->setStatus('confirmed');
+            $this->em->persist($this->buildHistory($reservation, 'pending', 'confirmed', $host));
+            $this->em->flush();
+        });
+
+        $this->reservationMailer->sendBookingConfirmed($reservation);
+
+        return $reservation;
+    }
+
+    public function refuseReservation(Reservation $reservation, User $host, string $reason): Reservation
+    {
+        if ($reservation->getStatus() !== 'pending') {
+            throw new \DomainException('Seules les demandes en attente peuvent être refusées.');
+        }
+
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw new \DomainException('Le motif de refus est obligatoire.');
+        }
+
+        $reservation->setStatus('cancelled');
+        $reservation->setCancellationReason($reason);
+        $this->em->persist($this->buildHistory($reservation, 'pending', 'cancelled', $host));
+        $this->em->flush();
+
+        $this->reservationMailer->sendReservationRefused($reservation);
+
+        return $reservation;
+    }
+
     private function createPendingRequest(
         Property $property,
         User $guest,
@@ -125,10 +182,19 @@ final class BookingService
 
     private function buildInitialHistory(Reservation $reservation, User $changedBy): ReservationStatusHistory
     {
+        return $this->buildHistory($reservation, null, (string) $reservation->getStatus(), $changedBy);
+    }
+
+    private function buildHistory(
+        Reservation $reservation,
+        ?string $oldStatus,
+        string $newStatus,
+        User $changedBy,
+    ): ReservationStatusHistory {
         $history = new ReservationStatusHistory();
         $history->setReservation($reservation);
-        $history->setOldStatus(null);
-        $history->setNewStatus($reservation->getStatus());
+        $history->setOldStatus($oldStatus);
+        $history->setNewStatus($newStatus);
         $history->setChangedBy($changedBy);
 
         return $history;

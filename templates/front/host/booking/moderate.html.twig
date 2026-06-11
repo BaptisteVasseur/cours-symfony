@@ -1,0 +1,126 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set property = reservation.property %}
+{% set guest = reservation.guest %}
+{% set guestProfile = guest ? guest.profile : null %}
+{% set guestName = guestProfile and (guestProfile.firstName or guestProfile.lastName)
+    ? (guestProfile.firstName ~ ' ' ~ guestProfile.lastName)|trim
+    : (guest ? guest.email : '—') %}
+
+{% set statusLabels = {
+    'confirmed': 'Confirmée',
+    'completed': 'Terminée',
+    'pending': 'En attente',
+    'cancelled': 'Annulée / Refusée',
+} %}
+{% set statusColors = {
+    'confirmed': 'bg-green-100 text-green-800',
+    'completed': 'bg-blue-100 text-blue-800',
+    'pending': 'bg-yellow-100 text-yellow-800',
+    'cancelled': 'bg-red-100 text-red-800',
+} %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+        <a href="{{ path('app_host_bookings') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Retour aux demandes
+        </a>
+
+        <div class="mb-8">
+            <div class="flex flex-wrap items-center gap-3 mb-2">
+                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Modération de réservation</h1>
+                <span class="text-sm font-semibold px-3 py-1 rounded-full {{ statusColors[reservation.status]|default('bg-gray-100 text-gray-800') }}">
+                    {{ statusLabels[reservation.status]|default(reservation.status) }}
+                </span>
+            </div>
+            <p class="text-gray-500">Référence : <span class="font-mono">{{ reservation.id }}</span></p>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2 space-y-6">
+                <section class="border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4">Logement</h2>
+                    <p class="font-semibold text-gray-900">{{ property ? property.title : 'Logement supprimé' }}</p>
+                    {% if property and property.address %}
+                        <p class="text-sm text-gray-500 mt-1">{{ property.address.city }}, {{ property.address.country }}</p>
+                    {% endif %}
+                    {% if property %}
+                        <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="text-sm font-semibold text-brand hover:underline mt-3 inline-block">Voir l'annonce</a>
+                    {% endif %}
+                </section>
+
+                <section class="border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4">Détails du séjour</h2>
+                    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                        <div><dt class="text-gray-500">Arrivée</dt><dd class="font-semibold">{{ reservation.checkinDate|date('d/m/Y') }}</dd></div>
+                        <div><dt class="text-gray-500">Départ</dt><dd class="font-semibold">{{ reservation.checkoutDate|date('d/m/Y') }}</dd></div>
+                        <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
+                        <div><dt class="text-gray-500">Demandée le</dt><dd class="font-semibold">{{ reservation.createdAt|date('d/m/Y à H:i') }}</dd></div>
+                    </dl>
+                </section>
+
+                <section class="border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4">Voyageur</h2>
+                    <dl class="space-y-2 text-sm">
+                        <div class="flex justify-between"><dt class="text-gray-500">Nom</dt><dd class="font-semibold">{{ guestName }}</dd></div>
+                        {% if guest %}
+                            <div class="flex justify-between"><dt class="text-gray-500">Email</dt><dd>{{ guest.email }}</dd></div>
+                            {% if guest.phone %}
+                                <div class="flex justify-between"><dt class="text-gray-500">Téléphone</dt><dd>{{ guest.phone }}</dd></div>
+                            {% endif %}
+                        {% endif %}
+                    </dl>
+                </section>
+
+                {% if reservation.status == 'cancelled' and reservation.cancellationReason %}
+                    <section class="border border-red-200 bg-red-50 rounded-xl p-6">
+                        <h2 class="text-lg font-semibold mb-2 text-red-900">Motif de refus / annulation</h2>
+                        <p class="text-sm text-red-900 whitespace-pre-line">{{ reservation.cancellationReason }}</p>
+                    </section>
+                {% endif %}
+            </div>
+
+            <aside class="space-y-6">
+                <div class="border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-3">Récapitulatif</h2>
+                    <dl class="space-y-2 text-sm">
+                        <div class="flex justify-between"><dt class="text-gray-500">Sous-total</dt><dd>{{ ((reservation.totalPrice - (reservation.cleaningFee|default(0)) - (reservation.serviceFee|default(0)))|number_format(2, ',', ' ')) }} {{ reservation.currency }}</dd></div>
+                        {% if reservation.cleaningFee %}
+                            <div class="flex justify-between"><dt class="text-gray-500">Ménage</dt><dd>{{ reservation.cleaningFee|number_format(2, ',', ' ') }} {{ reservation.currency }}</dd></div>
+                        {% endif %}
+                        {% if reservation.serviceFee %}
+                            <div class="flex justify-between"><dt class="text-gray-500">Service</dt><dd>{{ reservation.serviceFee|number_format(2, ',', ' ') }} {{ reservation.currency }}</dd></div>
+                        {% endif %}
+                        <div class="flex justify-between border-t border-gray-200 pt-2 mt-2 font-semibold text-gray-900"><dt>Total</dt><dd>{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</dd></div>
+                    </dl>
+                </div>
+
+                {% if reservation.status == 'pending' %}
+                    <div class="border border-gray-200 rounded-xl p-6 space-y-4">
+                        <h2 class="text-lg font-semibold">Décision</h2>
+
+                        <form method="post" action="{{ path('app_host_booking_moderate', { id: reservation.id }) }}">
+                            <input type="hidden" name="action" value="accept">
+                            <input type="hidden" name="_token" value="{{ csrf_token('reservation_accept_' ~ reservation.id) }}">
+                            <button type="submit"
+                                    class="w-full inline-flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl py-3 transition"
+                                    onclick="return confirm('Confirmer l\'acceptation de cette réservation ?');">
+                                <i class="fa-solid fa-check"></i> Accepter
+                            </button>
+                        </form>
+
+                        <div class="border-t border-gray-200 pt-4">
+                            {{ form_start(refuseForm, { attr: { class: 'space-y-3' } }) }}
+                                {{ form_row(refuseForm.reason) }}
+                                <button type="submit"
+                                        class="w-full inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl py-3 transition">
+                                    <i class="fa-solid fa-xmark"></i> Refuser la demande
+                                </button>
+                            {{ form_end(refuseForm) }}
+                        </div>
+                    </div>
+                {% endif %}
+            </aside>
+        </div>
+    </main>
+{% endblock %}

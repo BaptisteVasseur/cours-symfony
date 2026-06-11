@@ -99,6 +99,31 @@ class ReservationRepository extends ServiceEntityRepository
      *
      * @return list<Reservation>
      */
+    public function findByHostForListing(User $host, array $statuses = []): array
+    {
+        $qb = $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->setParameter('host', $host)
+            ->orderBy('r.createdAt', 'DESC');
+
+        if ($statuses !== []) {
+            $qb->andWhere('r.status IN (:statuses)')->setParameter('statuses', $statuses);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @param list<string> $statuses
+     *
+     * @return list<Reservation>
+     */
     public function findOverlapping(
         Property $property,
         \DateTimeImmutable $checkin,

@@ -26,7 +26,7 @@ final class ReservationMailer
         }
 
         $moderationUrl = $this->urlGenerator->generate(
-            'app_reservation_show',
+            'app_host_booking_moderate',
             ['id' => (string) $reservation->getId()],
             UrlGeneratorInterface::ABSOLUTE_URL,
         );
@@ -85,5 +85,34 @@ final class ReservationMailer
                     ])
             );
         }
+    }
+
+    public function sendReservationRefused(Reservation $reservation): void
+    {
+        $guest = $reservation->getGuest();
+        if (!$guest instanceof User || $guest->getEmail() === null) {
+            return;
+        }
+
+        $property = $reservation->getProperty();
+        $reservationUrl = $this->urlGenerator->generate(
+            'app_reservation_show',
+            ['id' => (string) $reservation->getId()],
+            UrlGeneratorInterface::ABSOLUTE_URL,
+        );
+
+        $email = (new TemplatedEmail())
+            ->to($guest->getEmail())
+            ->subject('Demande de réservation refusée — '.$property?->getTitle())
+            ->htmlTemplate('emails/reservation/refused_guest.html.twig')
+            ->context([
+                'reservation' => $reservation,
+                'property' => $property,
+                'guest' => $guest,
+                'reason' => $reservation->getCancellationReason(),
+                'reservationUrl' => $reservationUrl,
+            ]);
+
+        $this->mailer->send($email);
     }
 }

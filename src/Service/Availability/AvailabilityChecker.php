@@ -56,7 +56,7 @@ final class AvailabilityChecker
                       AND r.status = :confirmed_status
                       AND r.checkin_date < :checkout
                       AND r.checkout_date > :checkin
-                      AND (:exclude_id IS NULL OR r.id <> :exclude_id)
+                      AND (CAST(:exclude_id AS uuid) IS NULL OR r.id <> CAST(:exclude_id AS uuid))
                 ) AS has_reservation
             FROM properties p
             WHERE p.id = :property_id
