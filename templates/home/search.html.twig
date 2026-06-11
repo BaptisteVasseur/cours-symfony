@@ -2,29 +2,21 @@
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8">
-{#        {% include 'parts/search_bar.html.twig' with {#}
-{#            destination: destination,#}
-{#            checkin: checkin,#}
-{#            checkout: checkout,#}
-{#            guests: guests,#}
-{#        } %}#}
-
         <div class="mb-8">
             <h2 class="text-xl font-semibold text-gray-900">
-{#                {% if destination %}#}
-{#                    Logements à {{ destination }}#}
-{#                {% else %}#}
-{#                    Tous les logements#}
-{#                {% endif %}#}
+                {% if destination %}
+                    Logements à « {{ destination }} »
+                {% else %}
+                    Tous les logements disponibles
+                {% endif %}
             </h2>
-{#            {% if checkin or checkout or guests %}#}
-{#                <p class="text-sm text-gray-500 mt-1">#}
-{#                    {% if checkin and checkout %}#}
-{#                        Du {{ checkin|date('d M Y') }} au {{ checkout|date('d M Y') }}#}
-{#                    {% endif %}#}
-{#                    {% if guests %}· {{ guests }} voyageur{{ guests > 1 ? 's' : '' }}{% endif %}#}
-{#                </p>#}
-{#            {% endif %}#}
+            <p class="text-sm text-gray-500 mt-1">
+                {{ properties|length }} logement{{ properties|length > 1 ? 's' : '' }}
+                {% if checkin and checkout %}
+                    · du {{ checkin|date('d/m/Y') }} au {{ checkout|date('d/m/Y') }}
+                {% endif %}
+                {% if guests %}· {{ guests }} voyageur{{ guests > 1 ? 's' : '' }}{% endif %}
+            </p>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
@@ -35,7 +27,7 @@
                     checkout: checkout,
                 } %}
             {% else %}
-                <p class="col-span-full text-gray-500 text-sm">Aucun logement trouvé.</p>
+                <p class="col-span-full text-gray-500 text-sm">Aucun logement trouvé pour ces critères.</p>
             {% endfor %}
         </div>
     </main>

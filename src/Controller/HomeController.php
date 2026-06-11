@@ -42,13 +42,22 @@ class HomeController extends AbstractController
     {
         $checkin = $this->parseDate($request->query->get('checkin'));
         $checkout = $this->parseDate($request->query->get('checkout'));
+        $guests = $request->query->getInt('guests');
+        $destination = $request->query->get('destination');
+
+        $properties = $propertyRepository->search(
+            $destination,
+            $checkin,
+            $checkout,
+            $guests > 0 ? $guests : null,
+        );
 
         return $this->render('home/search.html.twig', [
-            'properties' => $propertyRepository->findForListing(),
-            'checkin' => $checkin,
-            'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'properties' => $properties,
+            'checkin' => $checkin?->format('Y-m-d'),
+            'checkout' => $checkout?->format('Y-m-d'),
+            'guests' => $guests > 0 ? $guests : 1,
+            'destination' => $destination,
         ]);
     }
 
@@ -138,7 +147,7 @@ class HomeController extends AbstractController
             return null;
         }
 
-        $date = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
 
         return $date !== false ? $date : null;
     }

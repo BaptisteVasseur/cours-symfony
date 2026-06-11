@@ -99,6 +99,45 @@ class PropertyRepository extends ServiceEntityRepository
     }
 
     /**
+     * @return list<Property>
+     */
+    public function search(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        ?int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->andWhere('p.status = :published')
+            ->setParameter('published', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && trim($destination) !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.country) LIKE :destination OR LOWER(a.addressLine1) LIKE :destination')
+                ->setParameter('destination', '%'.mb_strtolower(trim($destination)).'%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null && $checkout > $checkin) {
+            $qb->andWhere('NOT EXISTS (SELECT 1 FROM App\Entity\PropertyAvailability pa WHERE pa.property = p AND pa.isAvailable = false AND pa.availableDate >= :checkin AND pa.availableDate < :checkout)')
+                ->andWhere('NOT EXISTS (SELECT 1 FROM App\Entity\Reservation res WHERE res.property = p AND res.status = :confirmed AND res.checkinDate < :checkout AND res.checkoutDate > :checkin)')
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout)
+                ->setParameter('confirmed', 'confirmed');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
      * @return array<Property>
      */
     public function findMostPopular(): array
