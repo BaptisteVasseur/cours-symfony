@@ -68,8 +68,13 @@ final class ReservationController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_admin_reservation_show', methods: ['GET'])]
-    public function show(Reservation $reservation, ReservationRepository $reservationRepository): Response
+    public function show(?Reservation $reservation, ReservationRepository $reservationRepository): Response
     {
+        if (!$reservation) {
+            $this->addFlash('error', 'Cette réservation n\'existe plus.');
+            return $this->redirectToRoute('app_admin_reservation_index');
+        }
+
         $reservation = $reservationRepository->findOneForDetail($reservation) ?? $reservation;
 
         return $this->render('admin/reservation/show.html.twig', [
@@ -78,8 +83,12 @@ final class ReservationController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'app_admin_reservation_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Reservation $reservation, EntityManagerInterface $entityManager): Response
+    public function edit(Request $request, ?Reservation $reservation, EntityManagerInterface $entityManager): Response
     {
+        if (!$reservation) {
+            $this->addFlash('error', 'Cette réservation n\'existe plus.');
+            return $this->redirectToRoute('app_admin_reservation_index');
+        }
         $form = $this->createForm(ReservationType::class, $reservation);
         $form->handleRequest($request);
 

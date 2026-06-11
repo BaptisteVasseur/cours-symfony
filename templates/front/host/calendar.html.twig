@@ -1,0 +1,149 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Calendrier — {{ property.title }}{% endblock %}
+
+{% set unavailableMap = {} %}
+{% for date in unavailableDates %}
+    {% set key = date|date('Y-m-d') %}
+    {% set unavailableMap = unavailableMap|merge({ (key): true }) %}
+{% endfor %}
+
+{% set daysInMonth = monthName ? 'now'|date('t') : 30 %}
+{% set firstDay = (year ~ '-' ~ '%02d'|format(month) ~ '-01')|date('N') %}
+{% set totalDays = (year ~ '-' ~ '%02d'|format(month) ~ '-01')|date('t') %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+    <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-4">
+        <i class="fa-solid fa-arrow-left"></i> Retour aux propriétés
+    </a>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {# Calendar grid #}
+        <div class="lg:col-span-2">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-semibold text-gray-900">Calendrier — {{ property.title }}</h1>
+            </div>
+
+            {# Month navigation #}
+            <div class="flex items-center justify-between mb-4">
+                <a href="{{ path('app_host_calendar', { id: property.id, year: prevMonth.year, month: prevMonth.month }) }}" class="px-3 py-1.5 border border-gray-200 rounded-full text-sm hover:bg-gray-50 transition">
+                    <i class="fa-solid fa-chevron-left mr-1"></i> {{ ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][prevMonth.month] }}
+                </a>
+                <span class="text-lg font-semibold">{{ monthName }} {{ year }}</span>
+                <a href="{{ path('app_host_calendar', { id: property.id, year: nextMonth.year, month: nextMonth.month }) }}" class="px-3 py-1.5 border border-gray-200 rounded-full text-sm hover:bg-gray-50 transition">
+                    {{ ['', 'Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'][nextMonth.month] }} <i class="fa-solid fa-chevron-right ml-1"></i>
+                </a>
+            </div>
+
+            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+                    {% for day in ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] %}
+                        <div class="py-2 text-center text-xs font-semibold text-gray-500">{{ day }}</div>
+                    {% endfor %}
+                </div>
+                <div class="grid grid-cols-7">
+                    {% set dayCount = 1 %}
+                    {% for week in 0..5 %}
+                        {% for dayOfWeek in 0..6 %}
+                            {% if week == 0 and dayOfWeek < firstDay - 1 %}
+                                <div class="p-2 border-b border-r border-gray-100 bg-gray-50 min-h-[80px]"></div>
+                            {% elseif dayCount <= totalDays %}
+                                {% set currentDate = (year ~ '-' ~ '%02d'|format(month) ~ '-' ~ '%02d'|format(dayCount))|date('Y-m-d') %}
+                                {% set isUnavailable = unavailableMap[currentDate] is defined %}
+                                {% set isPast = currentDate < 'now'|date('Y-m-d') %}
+                                <div class="p-2 border-b border-r border-gray-100 min-h-[80px] {{ isPast ? 'bg-gray-50' : '' }}">
+                                    <span class="text-xs font-semibold {{ isUnavailable ? 'text-red-600 bg-red-100 px-1.5 py-0.5 rounded-full' : 'text-gray-700' }}">{{ dayCount }}</span>
+                                    {% if isUnavailable and not isPast %}
+                                        <div class="mt-1">
+                                            <span class="inline-block w-2 h-2 rounded-full bg-red-400" title="Indisponible"></span>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                {% set dayCount = dayCount + 1 %}
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="flex items-center gap-6 mt-4 text-sm text-gray-500">
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-red-400 inline-block"></span> Indisponible
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="w-3 h-3 rounded-full bg-gray-200 inline-block"></span> Passé
+                </div>
+            </div>
+        </div>
+
+        {# Sidebar — Block/unblock form + iCal token #}
+        <aside class="space-y-6">
+            {# Block dates form #}
+            <div class="border border-gray-200 rounded-xl p-6">
+                <h2 class="text-lg font-semibold mb-4">Bloquer des dates</h2>
+                {{ form_start(blockForm, { attr: { class: 'space-y-3' } }) }}
+                    {{ form_row(blockForm.fromDate, { label: 'Du', attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm' } }) }}
+                    {{ form_row(blockForm.toDate, { label: 'Au', attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm' } }) }}
+                    {{ form_row(blockForm.reason, { label: 'Motif', attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm' } }) }}
+                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">
+                        Bloquer
+                    </button>
+                {{ form_end(blockForm) }}
+            </div>
+
+            {# Unblock dates form #}
+            <div class="border border-gray-200 rounded-xl p-6">
+                <h2 class="text-lg font-semibold mb-4">Débloquer des dates</h2>
+                {{ form_start(unblockForm, { attr: { class: 'space-y-3' } }) }}
+                    {{ form_row(unblockForm.fromDate, { label: 'Du', attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm' } }) }}
+                    {{ form_row(unblockForm.toDate, { label: 'Au', attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm' } }) }}
+                    <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">
+                        Débloquer
+                    </button>
+                {{ form_end(unblockForm) }}
+            </div>
+
+            {# iCal token management #}
+            <div class="border border-gray-200 rounded-xl p-6">
+                <h2 class="text-lg font-semibold mb-4">Synchronisation iCal</h2>
+                <p class="text-sm text-gray-500 mb-4">
+                    Exportez votre calendrier pour le synchroniser avec Google Calendar, Apple Calendar, etc.
+                </p>
+                {% if calendarUrl %}
+                    <div class="bg-gray-50 rounded-xl p-3 mb-4 break-all">
+                        <code class="text-xs text-gray-700">{{ calendarUrl }}</code>
+                    </div>
+                    <div class="flex gap-2">
+                        <form action="{{ path('app_host_calendar_token_revoke', { id: property.id }) }}" method="post" class="flex-1">
+                            <input type="hidden" name="_token" value="{{ csrf_token('revoke_token' ~ property.id) }}">
+                            <button type="submit" class="w-full border border-red-300 text-red-700 hover:bg-red-50 font-semibold py-2 rounded-xl text-sm transition">
+                                Révoquer le token
+                            </button>
+                        </form>
+                        <form action="{{ path('app_host_calendar_token', { id: property.id }) }}" method="post" class="flex-1">
+                            <input type="hidden" name="_token" value="{{ csrf_token('generate_token' ~ property.id) }}">
+                            <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-2 rounded-xl text-sm transition">
+                                Régénérer
+                            </button>
+                        </form>
+                    </div>
+                {% else %}
+                    <form action="{{ path('app_host_calendar_token', { id: property.id }) }}" method="post">
+                        <input type="hidden" name="_token" value="{{ csrf_token('generate_token' ~ property.id) }}">
+                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-2.5 rounded-xl text-sm transition">
+                            Générer un token
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </aside>
+    </div>
+</main>
+{% endblock %}

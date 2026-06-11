@@ -4,10 +4,9 @@
         <span class="hidden sm:inline">airbnb</span>
     </a>
 
-    <a href="{{ path('app_search') }}" class="flex-1 max-w-sm mx-auto hidden sm:flex items-center gap-2 border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-500 hover:shadow-sm transition min-w-0">
-        <i class="fa-solid fa-magnifying-glass text-brand shrink-0"></i>
-        <span class="truncate">Rechercher un logement</span>
-    </a>
+    <div class="flex-1 max-w-md mx-auto hidden md:block">
+        {% include 'components/search_bar.html.twig' with { variant: 'compact' } %}
+    </div>
 
     <div class="flex items-center gap-2 shrink-0 ml-auto">
         <a href="{{ path('app_search') }}" class="sm:hidden p-2 text-gray-600 hover:bg-gray-50 rounded-full" aria-label="Rechercher">
@@ -15,6 +14,87 @@
         </a>
 
         {% if app.user %}
+            {% set unreadCount = unread_notification_count() %}
+            <div class="relative" data-notif-menu>
+                <button type="button" data-notif-toggle class="relative p-2 text-gray-600 hover:bg-gray-50 rounded-full" aria-expanded="false" aria-label="Notifications">
+                    <i class="fa-solid fa-bell text-lg"></i>
+                    {% if unreadCount > 0 %}
+                        <span class="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-brand text-white text-[10px] font-bold rounded-full flex items-center justify-center px-1" data-notif-badge>
+                            {{ unreadCount > 99 ? '99+' : unreadCount }}
+                        </span>
+                    {% endif %}
+                </button>
+
+                <div data-notif-dropdown class="hidden absolute right-0 top-full mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-gray-100">
+                        <p class="font-semibold text-sm text-gray-900">Notifications</p>
+                    </div>
+                    <ul class="max-h-96 overflow-y-auto divide-y divide-gray-100" data-notif-list></ul>
+                </div>
+            </div>
+
+            <script>
+            (function () {
+                const menu = document.querySelector('[data-notif-menu]');
+                if (!menu) return;
+                const toggle = menu.querySelector('[data-notif-toggle]');
+                const dropdown = menu.querySelector('[data-notif-dropdown]');
+                const list = menu.querySelector('[data-notif-list]');
+                const badge = menu.querySelector('[data-notif-badge]');
+                let loaded = false;
+
+                const iconMap = {
+                    reservation_pending: 'fa-clock text-yellow-500',
+                    reservation_confirmed: 'fa-circle-check text-green-500',
+                    reservation_cancelled: 'fa-circle-xmark text-red-500',
+                    checkin_reminder: 'fa-calendar-day text-blue-500',
+                };
+
+                async function loadNotifications() {
+                    if (loaded) return;
+                    loaded = true;
+                    try {
+                        const res = await fetch('{{ path('app_notifications_json') }}');
+                        const data = await res.json();
+                        if (data.notifications.length === 0) {
+                            list.innerHTML = '<li class="px-4 py-6 text-center text-sm text-gray-400">Aucune notification</li>';
+                        } else {
+                            list.innerHTML = data.notifications.map(n => {
+                                const icon = iconMap[n.type] || 'fa-bell text-gray-400';
+                                const unreadClass = n.isRead ? '' : 'bg-blue-50';
+                                return `<li class="flex items-start gap-3 px-4 py-3 ${unreadClass}">
+                                    <i class="fa-solid ${icon} mt-0.5 text-base shrink-0"></i>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-sm font-semibold text-gray-900 truncate">${n.title}</p>
+                                        ${n.content ? `<p class="text-xs text-gray-500 mt-0.5 line-clamp-2">${n.content}</p>` : ''}
+                                        <p class="text-xs text-gray-400 mt-1">${n.createdAt}</p>
+                                    </div>
+                                    ${!n.isRead ? '<span class="w-2 h-2 bg-brand rounded-full mt-1.5 shrink-0"></span>' : ''}
+                                </li>`;
+                            }).join('');
+                        }
+                        if (badge) badge.remove();
+                    } catch (e) {
+                        list.innerHTML = '<li class="px-4 py-4 text-center text-sm text-gray-400">Erreur de chargement</li>';
+                    }
+                }
+
+                toggle.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const isOpen = !dropdown.classList.contains('hidden');
+                    dropdown.classList.toggle('hidden', isOpen);
+                    toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+                    if (!isOpen) loadNotifications();
+                });
+
+                document.addEventListener('click', (e) => {
+                    if (!menu.contains(e.target)) {
+                        dropdown.classList.add('hidden');
+                        toggle.setAttribute('aria-expanded', 'false');
+                    }
+                });
+            })();
+            </script>
             {% include 'layout/partials/app/header_profile_menu.html.twig' %}
         {% else %}
             <a href="{{ path('app_login') }}" class="text-sm font-semibold py-2 px-4 border border-gray-200 rounded-full hover:shadow-md transition whitespace-nowrap">
