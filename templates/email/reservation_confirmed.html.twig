@@ -1,0 +1,10 @@
+<h2>Réservation confirmée ✅</h2>
+<p>Bonjour {{ guest.profile ? guest.profile.firstName : guest.email }},</p>
+<p>Votre séjour à <strong>{{ property.title }}</strong> est confirmé.</p>
+<ul>
+    <li>Arrivée : {{ reservation.checkinDate|date('d/m/Y') }}</li>
+    <li>Départ : {{ reservation.checkoutDate|date('d/m/Y') }}</li>
+    <li>Voyageurs : {{ reservation.guestsCount }}</li>
+    <li>Total : {{ reservation.totalPrice }} {{ reservation.currency }}</li>
+</ul>
+<p>Hôte : {{ host.profile ? host.profile.firstName : host.email }}</p>

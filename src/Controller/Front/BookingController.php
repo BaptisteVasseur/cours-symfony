@@ -27,6 +27,7 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         BookingService $bookingService,
+        \App\Service\ReservationMailer $reservationMailer,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -81,7 +82,7 @@ final class BookingController extends AbstractController
                     'form' => $form,
                 ]);
             }
-
+            $reservationMailer->sendForNewReservation($reservation);
             $this->addFlash('success', 'confirmed' === $reservation->getStatus()
                 ? 'Votre réservation est confirmée !'
                 : 'Votre demande de réservation a bien été envoyée à l\'hôte.');
