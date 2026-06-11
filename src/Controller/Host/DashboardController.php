@@ -53,7 +53,7 @@ final class DashboardController extends AbstractController
         $entityManager->flush();
 
         // send notification (confirmed) to guest and host
-        $body = $twig->render('emails/reservation/confirmed.html.twig', ['reservation' => $reservation]);
+        $body = $twig->render('parts/reservation_confirmed_email.html.twig', ['reservation' => $reservation]);
         $guestEmail = $reservation->getGuest()?->getEmail();
         $hostEmail = $reservation->getProperty()?->getHost()?->getEmail();
         if ($guestEmail) {
@@ -105,7 +105,7 @@ final class DashboardController extends AbstractController
         $entityManager->flush();
 
         // send notification (cancelled) with reason
-        $body = $twig->render('emails/reservation/cancelled.html.twig', ['reservation' => $reservation, 'reason' => $reason]);
+        $body = $twig->render('parts/reservation_cancelled_email.html.twig', ['reservation' => $reservation, 'reason' => $reason]);
         $guestEmail = $reservation->getGuest()?->getEmail();
         $hostEmail = $reservation->getProperty()?->getHost()?->getEmail();
         if ($guestEmail) {

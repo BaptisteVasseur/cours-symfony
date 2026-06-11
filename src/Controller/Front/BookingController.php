@@ -12,11 +12,15 @@ use App\Repository\PropertyRepository;
 use App\Security\Voter\PropertyVoter;
 use App\Service\PropertyAvailabilityService;
 use Doctrine\ORM\EntityManagerInterface;
+use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Component\Mailer\MailerInterface;
+use Symfony\Component\Mime\Email;
+use Twig\Environment;
 
 #[IsGranted('ROLE_USER')]
 final class BookingController extends AbstractController
@@ -29,6 +33,9 @@ final class BookingController extends AbstractController
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
         PropertyAvailabilityService $propertyAvailabilityService,
+        MailerInterface $mailer,
+        Environment $twig,
+        LoggerInterface $logger,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -91,7 +98,7 @@ final class BookingController extends AbstractController
             }
 
             if (!$propertyAvailabilityService->isAvailable($property, $checkin, $checkout, $guestsCount)) {
-                $this->addFlash('error', 'Ce logement n’est pas disponible pour ces dates.');
+                $this->addFlash('error', 'Ce logement n\'est pas disponible pour ces dates.');
 
                 return $this->redirectToRoute('app_logement_detail', [
                     'id' => $property->getId(),
@@ -124,10 +131,34 @@ final class BookingController extends AbstractController
             $entityManager->persist($reservation);
             $entityManager->flush();
 
+            // send email to host
+            $host = $property->getHost();
+            if ($host?->getEmail()) {
+                try {
+                    $body = $twig->render('parts/reservation_pending_email.html.twig', [
+                        'reservation' => $reservation,
+                        'property' => $property,
+                        'guest' => $user,
+                    ]);
+                    $email = (new Email())
+                        ->from('noreply@example.com')
+                        ->to($host->getEmail())
+                        ->subject('Nouvelle demande de réservation')
+                        ->html($body);
+                    $mailer->send($email);
+                    $logger->info('Reservation email sent (quick flow)', ['hostEmail' => $host->getEmail()]);
+                } catch (\Throwable $e) {
+                    $logger->error('Failed to send reservation email (quick flow)', [
+                        'hostEmail' => $host->getEmail(),
+                        'exception' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             if ($reservation->getStatus() === 'confirmed') {
                 $this->addFlash('success', 'Votre réservation est confirmée.');
             } else {
-                $this->addFlash('success', 'Votre demande de réservation a été envoyée à l’hôte.');
+                $this->addFlash('success', 'Votre demande de réservation a été envoyée à l\'hôte.');
             }
 
             return $this->redirectToRoute('app_reservation_index', ['id' => $reservation->getId()]);
@@ -172,7 +203,7 @@ final class BookingController extends AbstractController
 
             // Check if the property is published, free, has enought capacity, and that there are no conflicting reservations.
             if (!$propertyAvailabilityService->isAvailable($property, $checkin, $checkout, $guestsCount)) {
-                $this->addFlash('error', 'Ce logement n’est pas disponible pour ces dates.');
+                $this->addFlash('error', 'Ce logement n\'est pas disponible pour ces dates.');
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
@@ -203,10 +234,34 @@ final class BookingController extends AbstractController
             $entityManager->persist($reservation);
             $entityManager->flush();
 
+            // send email to host
+            $host = $property->getHost();
+            if ($host?->getEmail()) {
+                try {
+                    $body = $twig->render('parts/reservation_pending_email.html.twig', [
+                        'reservation' => $reservation,
+                        'property' => $property,
+                        'guest' => $user,
+                    ]);
+                    $email = (new Email())
+                        ->from('noreply@example.com')
+                        ->to($host->getEmail())
+                        ->subject('Nouvelle demande de réservation')
+                        ->html($body);
+                    $mailer->send($email);
+                    $logger->info('Reservation email sent (form flow)', ['hostEmail' => $host->getEmail()]);
+                } catch (\Throwable $e) {
+                    $logger->error('Failed to send reservation email (form flow)', [
+                        'hostEmail' => $host->getEmail(),
+                        'exception' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             if ($reservation->getStatus() === 'confirmed') {
                 $this->addFlash('success', 'Votre réservation est confirmée.');
             } else {
-                $this->addFlash('success', 'Votre demande de réservation a été envoyée à l’hôte.');
+                $this->addFlash('success', 'Votre demande de réservation a été envoyée à l\'hôte.');
             }
 
             return $this->redirectToRoute('app_reservation_index', ['id' => $reservation->getId()]);
@@ -218,13 +273,3 @@ final class BookingController extends AbstractController
         ]);
     }
 }
-
-
-
-
-
-
-
-
-
-
