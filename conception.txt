@@ -1,0 +1,151 @@
+#### Attentes
+
+--- Partie réservation
+
+Le but de cette partie est:
+    - Qu'un hôte puisse mettre à disposition sa propriété (Property) grâce à un formulaire.
+        En plus des infos classiques (nom, photo etc..), les dates d' indisponibilités devront être fournies
+
+        Ce formulaire demandera notamment si la réservation instantanée est possible.
+            - Si oui, un utilisateur pourra voir sa réservation être confirmée (statut Confirmed) sans délai.
+            - Si non, la réservation sera en attente (statut Pending) et l'hôte devra confirmer la réservation sur le site pour qu'elle passe en confirmée
+
+        Dans le formulaire, l'hôte peut également renseigner une durée de séjour minimum ou un tarif journalier spécifique. Ces informations sont optionnelles.
+
+    - Un utilisateur, sur la page d'un logement ou bien dans une barre de recherche, indiquer la plage de dates à laquelle il veut réserver un logement.
+    Pour qu'un utilisateur puisse faire la demande de réservation du logement:
+        - Le logement doit être doit être libre sur toute la plage de date renseignée par l'utilisateur (pas de date bloqué par l'hôte ni de réservation confirmée
+        sur toute la plage de date)
+        - La capacité du logement doit être apte a accueillir le nombre de voyageurs renseigné par l'utilisateur
+    
+    Si tous ces critères sont remplis, lorsque l'utilisateur remplira et soumettra le formulaire, la reservation sera soumise (en pending ou confirmed comme mentionné avant)
+    Il sera ensuite redirigé vers un page permettant le suivi de sa demande, suivi d'un message flash.
+
+
+    - Un hôte possèdera une page de modération des demandes, avec:
+        - un recap de toutes les réservations en attente de son/ses logement. Il peut accepter/refuser chaque demande mais doit fournir un motif écrit.
+        - un listing de toutes ses réservations confirmée
+
+    Un user peut également annuler une réservation et doit également fournir un motif.
+
+    Lors d'une annulation (hote ou utilisateur) d'une réservation confirmée, les crénaux passent en libre.
+
+
+--- Partie Moteur de recherche
+    L'utilisateur a accès à une barre de recherche permettant de chercher des logements, selon différents critères:
+        - Selon la destination (Ville, Pays)
+        - Selon la disponibilité
+        - Selon le nombre de voyageurs
+
+--- Partie Email
+    Un service d'emailing doit être mis en place:
+        - Lors d'une nouvelle reservation en attente: L'hôte recoit un email avec un minimum d'infos (Logement, dates, infos voyageur, total, CTA d'action.)
+        - Lors d'une réservation validée: L'utilisateur et l'hote recoivent un recap suivit des coordonnées, montant.
+        - Refus ou annulation:
+            - Si un hote refuse une reservation en attente: l'utilisateur ayant fait la demande recoit un mail avec le motif
+            - Si un utilisateur annule un reservation: l'hote recoit un mail avec le motif
+        
+-- Partie iCal
+    Les hotes peuvent avoir accès à un fichier iCal, permettant d'afficher les évènements (reservation, indisponibilités) de leur logement sur leur calendrier
+    personnel. L'accès à ce fichier devra être sécurisé, via un token unique stocké en DB lié au logement et accessible uniquement par l'hôte connecté.
+
+
+
+
+
+##### Questions:
+
+- Modélisation temporelle : Le jour de check-out est-il réservable par un nouveau voyageur ?
+Comment gérez-vous la superposition d'un départ à 11h et d'une arrivée à 15h dans votre schéma de données ?
+
+Dans l'état, il ne serait pas possible de gérer un départ et une arrivée le même jour car c'est une Date qui est stockée en DB
+Pour cela, il faudrait utiliser l'entité PropertyAvailability, mais la modifier afin que sa propriété availableDate
+soit un dateTime et non un date. On pourrait alors stocker le jour et l'heure et donc donner la possibiliter de
+superposer.
+Il faudra donc également modifier le CheckingTime et le CheckoutTime de l'entié Property pour les passer en DateTime.
+
+
+-Gestion des états : Une demande Pending bloque-t-elle les dates ?
+ Analysez les risques liés à ce choix (blocage abusif vs overbooking).
+
+Une demande en statut Pending ne bloque pas les dates. C'est tout l'intérêt de ce statut.
+
+
+
+Cependant, on peut totalement faire face à un problème de blocage abusif (un hôte qui refuse trop de réservations).
+Dans ce cas, plusieurs choix s'offre à nous:
+- Une modération automatique: 
+    On pourrait, lorsque l'hôte refuse 3 demandes de réservations, afficher un message le mettant en garde sur les refus abusifs.
+    Si il en refuse 5, il est obligé d'accepter la prochaine réservation sous peine d'une exclusion temporaire.
+- Une modération humaine.
+    Si un utilisateur se voit refuser sa réservation, il peut, dans le mail, faire une contestation.
+    Un modérateur humain pourra, sur la partie admin, consulter la contestation et intervenir.
+
+Un problème de spamming de réservation de la part d'un utilisateur peut également arriver.
+Pour cela, nous pouvons:
+    - Faire en sorte que lorsqu'un utilisateur se voit refuser sa réservation deux fois de suite pour un meme logement,
+    il ne puisse pas réserver ce logement avant 14 jours.
+
+
+
+Concurrence : Comment votre base de données réagit-elle si deux utilisateurs valident un paiement
+à la milliseconde près pour le même logement et les mêmes dates ?
+
+Pour cela, nous pouvons mettre en place un Pessimistic Locking de Doctrine.
+Concrètement, la méthode de réservation d'un logement dans le Repository d'une propriété peut être enrichie
+avec LockMode::PESSIMISTIC_WRITE. Cela va permettre de créer une transaction, ne permettant à qu'un seul utilisateur
+d'intéragir avec la BDD. En SQL, un SELECT FOR UPDATE sera utilisé.
+
+
+
+Performance : Comment valider la disponibilité d'un logement sur 20 nuits consécutives sans
+saturer la base de requêtes SQL itératives
+
+Pour cela, il faut que dans le PropertyAvailabilityRepository, une requête soit faite :
+    Avec la propriété
+    Avec un parameter start et end.
+    
+    On irait ensuite compter toutes les disponibilité:
+        - qui concernent le logement
+        - qui se trouvent entre start et end
+        - qui sont en false.
+
+    Si le count n'est pas égal à 0, alors le logement n'est pas disponible sur cette tranche.
+
+
+
+Asynchronisme : Pourquoi l'envoi d'email doit-il préférentiellement intervenir après le flush() de 
+l'ORM ? Quelle est la stratégie si RabbitMQ tombe en panne ?
+
+Si l'on envoie le mail avant le flush(), et que la modification en BDD ne se fait pas pour X raison, le mail va être
+envoyée pour une réservation qui n'existe donc pas en BDD.
+
+Pour cela, on peut utiliser Symfony Messenger avec l'option failure_transport suivi d'un cron symfony.
+
+Si un envoi via RabbitMQ fail, Symfony Messenger va retenter un nombre X de fois de renvoyer l'email.
+Si cela fail toujours, l'objet PHP du message est stocké grace a l'option failure_transport.
+Un cron Symfony va retenter tous les X secondes/minutes de renvoyer le mail.
+
+
+
+Structure SQL : Justifiez votre choix d'architecture pour le calendrier : table de jours individuels
+( PropertyAvailability ) ou table de périodes ( date_start , date_end ).
+
+La table de période permet la vérification de disponibilité selon les heures grâce à DateTime, et donc
+de pouvoir:
+    - Donner la possibilité à un hote de gérer ses indisponibilités avec les heures
+    - Qu'un checkout et qu'un checkin se fasse dans la meme journée.
+    - Moins de données en base: Une disponibilité sur 30 jours sera donc sur une seule ligne au lieu de 30 fois.
+
+
+
+
+    
+
+
+
+
+
+    
+
+
