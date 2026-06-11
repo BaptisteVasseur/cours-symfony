@@ -1,0 +1,114 @@
+CONCEPTION TECHNIQUE — Moteur de Réservation & Calendrier iCal
+===============================================================
+
+1. MODÉLISATION TEMPORELLE
+--------------------------
+Question : Le jour de checkout est-il réservable par un nouveau voyageur ?
+
+Choix : OUI. Le checkout est exclusif dans le calcul du chevauchement.
+
+Formule de chevauchement retenue :
+  nouvelle.checkinDate < reservation_existante.checkoutDate
+  AND nouvelle.checkoutDate > reservation_existante.checkinDate
+
+Exemple : réservation A du 10 au 15 juillet.
+Un voyageur B peut arriver le 15 : A.checkout (15) n'est pas < B.checkin (15), donc pas de chevauchement.
+
+Le checkoutDate représente le jour de départ physique — la nuit du 14 au 15 est la dernière nuit occupée.
+Ce jour n'est donc pas une nuitée réservée pour un futur voyageur.
+
+Impact BDD : dates stockées en DATE (sans heure). Les champs checkinTime/checkoutTime sur Property
+sont purement informatifs et n'entrent pas dans le calcul de disponibilité.
+
+
+2. GESTION DES ÉTATS
+---------------------
+Question : Une demande Pending bloque-t-elle les dates ?
+
+Choix : NON. Seul le statut Confirmed bloque les dates.
+
+Justification :
+- Bloquer dès Pending expose à un abus : un acteur malveillant pourrait créer des demandes
+  sans intention de payer pour bloquer un calendrier entier (overbooking défensif).
+- Le risque d'overbooking côté voyageur est faible et géré : si deux demandes Pending arrivent
+  pour les mêmes dates, l'hôte confirme la première et refuse la seconde manuellement (ou le
+  système annule automatiquement la seconde via G.1).
+- Si instantBooking=true : passage direct en Confirmed → dates bloquées immédiatement, pas de
+  risque d'overbooking.
+
+Diagramme d'états :
+  [pending]   --accept()-->   [confirmed]  --séjour terminé-->  [completed]
+  [pending]   --reject()-->   [cancelled]
+  [confirmed] --cancel()-->   [cancelled]
+
+
+3. CONCURRENCE
+--------------
+Question : Deux utilisateurs valident simultanément pour le même logement et les mêmes dates.
+
+Scénario : instantBooking=true, deux requêtes POST simultanées.
+
+Stratégie retenue :
+La méthode isAvailable() vérifie hasConfirmedOverlap() dans la même requête HTTP.
+En cas de collision réelle (race condition à la milliseconde) :
+- Le premier flush() crée la réservation Confirmed.
+- Le second flush() voit via hasConfirmedOverlap() que les dates sont prises (si on recharge
+  depuis la BDD dans la transaction).
+- Le comportement acceptable : le second utilisateur reçoit un message "logement non disponible".
+
+En production, une solution robuste est d'utiliser un SELECT ... FOR UPDATE (LOCK_PESSIMISTIC_WRITE)
+sur la Property lors de la vérification, ou une contrainte unique applicative.
+
+
+4. PERFORMANCE
+--------------
+Question : Valider la disponibilité sur 20 nuits sans requêtes SQL itératives.
+
+Stratégie : 2 requêtes SQL maximum, peu importe la durée du séjour.
+
+- hasBlockedDatesInRange() : SELECT COUNT(*) WHERE availableDate BETWEEN :start AND :end AND isAvailable=false
+  → 1 seule requête, indépendante du nombre de nuits.
+
+- hasConfirmedOverlap() : SELECT COUNT(*) WHERE checkinDate < :end AND checkoutDate > :start AND status='confirmed'
+  → 1 seule requête avec la formule d'intersection d'intervalles.
+
+Pour la recherche (/search) : NOT EXISTS en sous-requête DQL, tout résolu en 1 requête finale.
+
+
+5. ASYNCHRONISME
+----------------
+Question : Pourquoi l'envoi d'email intervient-il après flush() ?
+
+Si on dispatche avant flush() et que la transaction ORM échoue, l'email est envoyé mais la
+réservation n'existe pas en base. L'utilisateur reçoit une confirmation d'une réservation fantôme.
+
+Règle : dispatch des messages Messenger toujours APRÈS entityManager->flush().
+
+Transport Messenger :
+- Développement : doctrine://default (messages stockés en BDD, table messenger_messages)
+- Production : amqp:// (RabbitMQ)
+
+Stratégie de fallback si RabbitMQ tombe :
+Configurer un transport de secours "doctrine" dans messenger.yaml avec failure_transport.
+Les messages en échec sont stockés en BDD et retraités manuellement via :
+  php bin/console messenger:failed:retry
+
+
+6. STRUCTURE SQL — CALENDRIER
+------------------------------
+Question : Table de jours individuels ou table de périodes (date_start / date_end) ?
+
+Choix : Table de jours individuels (PropertyAvailability — déjà en place).
+
+Avantages :
+- Requêtes simples : WHERE availableDate BETWEEN :start AND :end
+- Granularité maximale : un seul jour peut être bloqué indépendamment
+- Support natif des overrides par jour (priceOverride, minimumStay déjà modélisés)
+- Compatible avec l'import iCal (chaque VEVENT génère N lignes sur la plage)
+
+Inconvénients assumés :
+- Volume : ~365 lignes/an/logement → acceptable pour notre échelle
+- Insertion en masse : batch INSERT lors du blocage d'une longue période
+
+La table de périodes aurait nécessité des requêtes de chevauchement (OVERLAPS ou NOT EXISTS)
+plus complexes à maintenir, pour un gain inexistant à notre échelle.

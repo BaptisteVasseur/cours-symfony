@@ -34,17 +34,28 @@ final class ICalExportService
         $reservations = $this->reservationRepository->findConfirmedForPeriod($property, $start, $end);
 
         foreach ($reservations as $reservation) {
-            $uid = $reservation->getId().'@stayhub.local';
+            $uid     = $reservation->getId().'@stayhub.local';
             $dtstart = $reservation->getCheckinDate()?->format('Ymd') ?? '';
-            // checkout is exclusive — add 1 day for iCal DTEND (inclusive boundary)
-            $dtend = $reservation->getCheckoutDate()?->format('Ymd') ?? '';
+            $dtend   = $reservation->getCheckoutDate()?->format('Ymd') ?? '';
 
             $guestProfile = $reservation->getGuest()?->getProfile();
             $guestName = $guestProfile
                 ? trim(($guestProfile->getFirstName() ?? '').' '.($guestProfile->getLastName() ?? ''))
                 : ($reservation->getGuest()?->getEmail() ?? 'Voyageur');
 
-            $summary = 'Réservation — '.self::escape($guestName);
+            $guestEmail = $reservation->getGuest()?->getEmail() ?? '';
+
+            $nights = 0;
+            if ($reservation->getCheckinDate() && $reservation->getCheckoutDate()) {
+                $nights = (int) $reservation->getCheckinDate()->diff($reservation->getCheckoutDate())->days;
+            }
+
+            $montant = number_format((float) ($reservation->getTotalPrice() ?? 0), 0, ',', ' ');
+
+            $summary     = 'Réservation — '.self::escape($guestName);
+            $description = self::escape(
+                sprintf('Séjour %d nuit%s — %s€ — %s', $nights, $nights > 1 ? 's' : '', $montant, $guestEmail)
+            );
 
             $lines[] = 'BEGIN:VEVENT';
             $lines[] = 'UID:'.$uid;
@@ -52,6 +63,7 @@ final class ICalExportService
             $lines[] = 'DTSTART;VALUE=DATE:'.$dtstart;
             $lines[] = 'DTEND;VALUE=DATE:'.$dtend;
             $lines[] = 'SUMMARY:'.$summary;
+            $lines[] = 'DESCRIPTION:'.$description;
             $lines[] = 'STATUS:CONFIRMED';
             $lines[] = 'END:VEVENT';
         }

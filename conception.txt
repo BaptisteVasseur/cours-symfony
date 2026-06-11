@@ -1,114 +1,78 @@
-CONCEPTION TECHNIQUE — Moteur de Réservation & Calendrier iCal
-===============================================================
+Q1 : on peut réserver le jour de checkout par un autre voyageur, la méthode 
+AvailabilityService::isAvailable() applique cette règle en vérifiant les 
+réservations confirmées déjà présentes en base.des valeurs sont attribués à l'heure de chekin et l'heure de checkou
+et si l'heure de check in < l'heure de checkout la réservatione est validée
 
-1. MODÉLISATION TEMPORELLE
---------------------------
-Question : Le jour de checkout est-il réservable par un nouveau voyageur ?
+Q2 — GESTION DES ÉTATS (Pending bloque-t-il les dates ?)
 
-Choix : OUI. Le checkout est exclusif dans le calcul du chevauchement.
+Une demande pending ne bloque pas les dates, car il suffirait de faire des demandes et des annulations
+  en boucle pour bloquer complétement une propriété. Côté propriétaire, il a 24h pour confirmer un pending, sinon la demande saute.
+  Donc on a la sécurité des 2 cotés :
+  -celui qui veut bloquer la propriété ne peut pas parce que le pending bloque pas la réservation
+  -le proprio qui veut overbooker ne peut pas car si il confirme une autre résa, l'ancienne saute ( ou est annulé au bout de 24h)
 
-Formule de chevauchement retenue :
-  nouvelle.checkinDate < reservation_existante.checkoutDate
-  AND nouvelle.checkoutDate > reservation_existante.checkinDate
+Q3 — GESTION DE LA CONCURRENCE
+Si 2 voyageurs réservent au même moment les mêmes dates, il faut pas que les 2 réservations passent
+Le problème c'est que les 2 peuvent voir la propriété disponible en même temps, avant que la première résa soit enregistrée
+Donc la vérification et la création de la résa doivent se faire ensemble, dans une transaction.
+On bloque la vérification avec un lock pessimiste, comme ça le 2eme voyageur attend que le 1er ait fini
 
-Exemple : réservation A du 10 au 15 juillet.
-Un voyageur B peut arriver le 15 : A.checkout (15) n'est pas < B.checkin (15), donc pas de chevauchement.
+Donc :
+-le 1er voyageur vérifie les dates
+-si c'est dispo il crée la résa et elle est flush
+-le 2eme voyageur passe après
+-il re-vérifie et là il voit que les dates sont plus dispo
 
-Le checkoutDate représente le jour de départ physique — la nuit du 14 au 15 est la dernière nuit occupée.
-Ce jour n'est donc pas une nuitée réservée pour un futur voyageur.
-
-Impact BDD : dates stockées en DATE (sans heure). Les champs checkinTime/checkoutTime sur Property
-sont purement informatifs et n'entrent pas dans le calcul de disponibilité.
-
-
-2. GESTION DES ÉTATS
----------------------
-Question : Une demande Pending bloque-t-elle les dates ?
-
-Choix : NON. Seul le statut Confirmed bloque les dates.
-
-Justification :
-- Bloquer dès Pending expose à un abus : un acteur malveillant pourrait créer des demandes
-  sans intention de payer pour bloquer un calendrier entier (overbooking défensif).
-- Le risque d'overbooking côté voyageur est faible et géré : si deux demandes Pending arrivent
-  pour les mêmes dates, l'hôte confirme la première et refuse la seconde manuellement (ou le
-  système annule automatiquement la seconde via G.1).
-- Si instantBooking=true : passage direct en Confirmed → dates bloquées immédiatement, pas de
-  risque d'overbooking.
-
-Diagramme d'états :
-  [pending]   --accept()-->   [confirmed]  --séjour terminé-->  [completed]
-  [pending]   --reject()-->   [cancelled]
-  [confirmed] --cancel()-->   [cancelled]
+Comme ça on évite l'overbooking
+En Doctrine ça peut se faire avec LockMode::PESSIMISTIC_WRITE dans le repository ou avec l'EntityManager
 
 
-3. CONCURRENCE
---------------
-Question : Deux utilisateurs valident simultanément pour le même logement et les mêmes dates.
+Q4 — PERFORMANCE (vérifier 20 nuits sans N requêtes)
+Pour vérifier 20 nuits il faut pas faire 20 requêtes, sinon plus le séjour est long plus ça devient lent
+On vérifie directement toute la période avec une seule requête
 
-Scénario : instantBooking=true, deux requêtes POST simultanées.
+La règle c'est :
+-si une résa commence avant le checkout demandé
+-et si elle finit après le checkin demandé
 
-Stratégie retenue :
-La méthode isAvailable() vérifie hasConfirmedOverlap() dans la même requête HTTP.
-En cas de collision réelle (race condition à la milliseconde) :
-- Le premier flush() crée la réservation Confirmed.
-- Le second flush() voit via hasConfirmedOverlap() que les dates sont prises (si on recharge
-  depuis la BDD dans la transaction).
-- Le comportement acceptable : le second utilisateur reçoit un message "logement non disponible".
+Alors ça veut dire que les périodes se croisent, donc le logement est pas dispo.
 
-En production, une solution robuste est d'utiliser un SELECT ... FOR UPDATE (LOCK_PESSIMISTIC_WRITE)
-sur la Property lors de la vérification, ou une contrainte unique applicative.
+Dans le repository on fait juste un COUNT sur les réservations confirmed qui croisent les dates.
+Si COUNT > 0 ça veut dire qu'il y a déjà une résa, donc refus
+Si COUNT = 0 alors c'est disponible.
 
-
-4. PERFORMANCE
---------------
-Question : Valider la disponibilité sur 20 nuits sans requêtes SQL itératives.
-
-Stratégie : 2 requêtes SQL maximum, peu importe la durée du séjour.
-
-- hasBlockedDatesInRange() : SELECT COUNT(*) WHERE availableDate BETWEEN :start AND :end AND isAvailable=false
-  → 1 seule requête, indépendante du nombre de nuits.
-
-- hasConfirmedOverlap() : SELECT COUNT(*) WHERE checkinDate < :end AND checkoutDate > :start AND status='confirmed'
-  → 1 seule requête avec la formule d'intersection d'intervalles.
-
-Pour la recherche (/search) : NOT EXISTS en sous-requête DQL, tout résolu en 1 requête finale.
+Comme ça 2 nuits, 20 nuits ou 1 mois ça change pas, on garde une seule requête.
+Par contre il faut un index sur property_id, status, checkjn_date et checkout_date pour que la requête soit rapide.
 
 
-5. ASYNCHRONISME
-----------------
-Question : Pourquoi l'envoi d'email intervient-il après flush() ?
+Q5 — ASYNCHRONISME (pourquoi l'email après flush ?)
+L'email doit partir après le flush car avant le flush la réservation est pas encore vraiment en base.
 
-Si on dispatche avant flush() et que la transaction ORM échoue, l'email est envoyé mais la
-réservation n'existe pas en base. L'utilisateur reçoit une confirmation d'une réservation fantôme.
+Si on envoie l'email avant et que le flush plante, le voyageur reçoit une confirmation alors que la résa existe pas
+Donc il croit avoir réservé alors que en vrai non
 
-Règle : dispatch des messages Messenger toujours APRÈS entityManager->flush().
+Avec le flush avant :
+-si le flush plante, aucun mail part
+-si le flush marche, la résa est bien en base et là on peut envoyer l'email
 
-Transport Messenger :
-- Développement : doctrine://default (messages stockés en BDD, table messenger_messages)
-- Production : amqp:// (RabbitMQ)
-
-Stratégie de fallback si RabbitMQ tombe :
-Configurer un transport de secours "doctrine" dans messenger.yaml avec failure_transport.
-Les messages en échec sont stockés en BDD et retraités manuellement via :
-  php bin/console messenger:failed:retry
+L'email peut être envoyé avec Messenger en async, comme ça la page attend pas que le mail soit envoyé
+Et si le worker est pas lancé, le message reste en base avec doctrine://default et il sera envoyé après
 
 
-6. STRUCTURE SQL — CALENDRIER
-------------------------------
-Question : Table de jours individuels ou table de périodes (date_start / date_end) ?
+Q6 — STRUCTURE SQL (jours individuels vs périodes)
+Pour le calendrier je pense que c'est mieux de stocker les jours un par un dans property_availability
+Chaque ligne représente une date pour une propriété, avec si le jour est bloqué ou non
 
-Choix : Table de jours individuels (PropertyAvailability — déjà en place).
+C'est plus simple car si le proprio veut bloquer juste un jour, ou débloquer un jour au milieu d'une semaine, on modifie juste cette date
+Avec des périodes start/end ça devient plus compliqué, parce que si on débloque un jour au milieu il faut couper la période en 2
 
-Avantages :
-- Requêtes simples : WHERE availableDate BETWEEN :start AND :end
-- Granularité maximale : un seul jour peut être bloqué indépendamment
-- Support natif des overrides par jour (priceOverride, minimumStay déjà modélisés)
-- Compatible avec l'import iCal (chaque VEVENT génère N lignes sur la plage)
+Donc avec les jours individuels :
+-c'est plus facile à afficher dans le calendrier
+-c'est plus facile à modifier jour par jour
+-pour vérifier une période on cherche juste les jours entre checkin et checkout
+-pour l'import iCal c'est aussi plus simple parce qu'on peut transformer les dates en jours bloqués
 
-Inconvénients assumés :
-- Volume : ~365 lignes/an/logement → acceptable pour notre échelle
-- Insertion en masse : batch INSERT lors du blocage d'une longue période
+L'inconvénient c'est que ça fait plus de lignes en base, par exemple 1 an bloqué ça fait 365 lignes
+Mais c'est pas vraiment un problème si on met un index sur property_id et date
 
-La table de périodes aurait nécessité des requêtes de chevauchement (OVERLAPS ou NOT EXISTS)
-plus complexes à maintenir, pour un gain inexistant à notre échelle.
+Donc je garde les jours individuels, car c'est plus simple à gérer pour une appli de réservation

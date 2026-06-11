@@ -66,6 +66,25 @@ final class BookingMailer
         );
     }
 
+    public function sendCheckinReminder(Reservation $reservation): void
+    {
+        $guest    = $reservation->getGuest();
+        $property = $reservation->getProperty();
+
+        if ($guest === null || $property === null) {
+            return;
+        }
+
+        $this->mailer->send(
+            (new TemplatedEmail())
+                ->from(new Address(self::FROM, self::FROM_NAME))
+                ->to(new Address((string) $guest->getEmail()))
+                ->subject('Rappel : votre séjour commence demain — '.$property->getTitle())
+                ->htmlTemplate('email/checkin_reminder.html.twig')
+                ->context(['reservation' => $reservation])
+        );
+    }
+
     public function sendBookingCancelled(Reservation $reservation): void
     {
         $guest = $reservation->getGuest();

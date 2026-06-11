@@ -6,6 +6,7 @@ namespace App\Controller\Front\Host;
 
 use App\Entity\Reservation;
 use App\Entity\User;
+use App\Controller\Front\BookingController;
 use App\Message\BookingCancelledMessage;
 use App\Message\BookingConfirmedMessage;
 use App\Service\NotificationService;
@@ -69,6 +70,7 @@ final class ReservationModerationController extends AbstractController
         $em->flush();
 
         $bus->dispatch(new BookingConfirmedMessage((string) $reservation->getId()));
+        BookingController::dispatchCheckinReminder($bus, $reservation);
         $this->addFlash('success', 'Réservation acceptée.');
 
         return $this->redirectToRoute('app_host_reservations');

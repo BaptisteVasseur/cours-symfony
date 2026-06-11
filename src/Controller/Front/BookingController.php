@@ -10,6 +10,7 @@ use App\Entity\User;
 use App\Form\BookingType;
 use App\Message\BookingConfirmedMessage;
 use App\Message\BookingRequestMessage;
+use App\Message\CheckinReminderMessage;
 use App\Message\ExpireBookingMessage;
 use App\Service\NotificationService;
 use App\Repository\PropertyRepository;
@@ -142,6 +143,7 @@ final class BookingController extends AbstractController
 
             if ($property->isInstantBooking()) {
                 $bus->dispatch(new BookingConfirmedMessage((string) $reservation->getId()));
+                self::dispatchCheckinReminder($bus, $reservation);
                 $this->addFlash('success', 'Réservation confirmée ! Vous recevrez une confirmation par email.');
             } else {
                 $bus->dispatch(new BookingRequestMessage((string) $reservation->getId()));
@@ -159,5 +161,33 @@ final class BookingController extends AbstractController
             'property' => $property,
             'form' => $form,
         ], $form->isSubmitted() ? new Response(null, Response::HTTP_UNPROCESSABLE_ENTITY) : new Response());
+    }
+
+    public static function dispatchCheckinReminder(MessageBusInterface $bus, Reservation $reservation): void
+    {
+        $checkin = $reservation->getCheckinDate();
+        if ($checkin === null) {
+            return;
+        }
+
+        $reminderAt = \DateTimeImmutable::createFromFormat(
+            'Y-m-d H:i:s',
+            $checkin->format('Y-m-d').' 09:00:00',
+            new \DateTimeZone('Europe/Paris')
+        );
+
+        if ($reminderAt === false) {
+            return;
+        }
+
+        $reminderAt = $reminderAt->modify('-1 day');
+        $delayMs    = (int) (($reminderAt->getTimestamp() - time()) * 1000);
+
+        if ($delayMs > 0) {
+            $bus->dispatch(
+                new CheckinReminderMessage((string) $reservation->getId()),
+                [new DelayStamp($delayMs)]
+            );
+        }
     }
 }
