@@ -176,6 +176,42 @@ final class HostController extends AbstractController
         ]);
     }
 
+    #[Route('/listings/{id}/ical/generate', name: 'host_ical_generate', methods: ['POST'])]
+    public function icalGenerate(Listing $listing, Request $request, EntityManagerInterface $em): Response
+    {
+        if ($listing->getHost() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('ical_generate_' . $listing->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $listing->setIcalToken(bin2hex(random_bytes(32)));
+        $em->flush();
+        $this->addFlash('success', 'Lien iCal généré.');
+
+        return $this->redirectToRoute('host_calendar', ['id' => $listing->getId()]);
+    }
+
+    #[Route('/listings/{id}/ical/revoke', name: 'host_ical_revoke', methods: ['POST'])]
+    public function icalRevoke(Listing $listing, Request $request, EntityManagerInterface $em): Response
+    {
+        if ($listing->getHost() !== $this->getUser()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('ical_revoke_' . $listing->getId(), $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $listing->setIcalToken(null);
+        $em->flush();
+        $this->addFlash('success', 'Lien iCal révoqué.');
+
+        return $this->redirectToRoute('host_calendar', ['id' => $listing->getId()]);
+    }
+
     #[Route('/blocked-period/{id}/delete', name: 'host_blocked_period_delete', methods: ['POST'])]
     public function deleteBlockedPeriod(
         BlockedPeriod $blockedPeriod,
