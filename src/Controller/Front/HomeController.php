@@ -55,15 +55,19 @@ class HomeController extends AbstractController
     #[Route('/search', name: 'app_search', methods: ['GET'])]
     public function search(Request $request, PropertyRepository $propertyRepository): Response
     {
-        $checkin = $this->parseDate($request->query->get('checkin'));
-        $checkout = $this->parseDate($request->query->get('checkout'));
+        $destination = $request->query->get('destination');
+        $checkin     = $this->parseDate($request->query->get('checkin'));
+        $checkout    = $this->parseDate($request->query->get('checkout'));
+        $guests      = $request->query->getInt('guests') ?: null;
+
+        $properties = $propertyRepository->findForSearch($destination, $checkin, $checkout, $guests);
 
         return $this->render('front/search/index.html.twig', [
-            'properties' => $propertyRepository->findForListing('published'),
-            'checkin' => $checkin,
-            'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'properties'  => $properties,
+            'checkin'     => $checkin,
+            'checkout'    => $checkout,
+            'guests'      => $guests,
+            'destination' => $destination,
         ]);
     }
 

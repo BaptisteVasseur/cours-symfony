@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Réservation confirmée</title></head>
+<body style="font-family: sans-serif; color: #1f2937; background: #f9fafb; padding: 24px;">
+<div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; padding: 32px; border: 1px solid #e5e7eb;">
+    {% set property = reservation.property %}
+    {% set host = property ? property.host : null %}
+    {% set hostProfile = host ? host.profile : null %}
+    {% set nights = reservation.checkinDate and reservation.checkoutDate ? reservation.checkinDate.diff(reservation.checkoutDate).days : 0 %}
+
+    <h1 style="font-size: 20px; font-weight: 700; color: #059669; margin-bottom: 8px;">Réservation confirmée ✓</h1>
+    <p style="color: #6b7280; margin-bottom: 24px;">Votre séjour est confirmé. Retrouvez ci-dessous le récapitulatif.</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+        <tr><td style="padding: 8px 0; color: #6b7280; width: 40%;">Logement</td>
+            <td style="padding: 8px 0; font-weight: 600;">{{ property ? property.title : '—' }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Hôte</td>
+            <td style="padding: 8px 0;">
+                {{ hostProfile ? hostProfile.firstName ~ ' ' ~ hostProfile.lastName : host ? host.email : '—' }}
+            </td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Arrivée</td>
+            <td style="padding: 8px 0; font-weight: 600;">{{ reservation.checkinDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Départ</td>
+            <td style="padding: 8px 0; font-weight: 600;">{{ reservation.checkoutDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Durée</td>
+            <td style="padding: 8px 0;">{{ nights }} nuit{{ nights > 1 ? 's' : '' }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Voyageurs</td>
+            <td style="padding: 8px 0;">{{ reservation.guestsCount }}</td></tr>
+        {% if reservation.cleaningFee %}
+        <tr><td style="padding: 8px 0; color: #6b7280;">Frais de ménage</td>
+            <td style="padding: 8px 0;">{{ reservation.cleaningFee|number_format(2, ',', ' ') }} €</td></tr>
+        {% endif %}
+        <tr><td style="padding: 8px 0; color: #6b7280;">Frais de service</td>
+            <td style="padding: 8px 0;">{{ reservation.serviceFee|number_format(2, ',', ' ') }} €</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280; font-weight: 700;">Total</td>
+            <td style="padding: 8px 0; font-weight: 700; font-size: 16px;">
+                {{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}
+            </td></tr>
+    </table>
+
+    {% if property and property.checkinTime %}
+    <p style="font-size: 13px; color: #374151; margin-bottom: 4px;">
+        <strong>Check-in :</strong> à partir de {{ property.checkinTime|date('H:i') }}
+    </p>
+    {% endif %}
+    {% if property and property.checkoutTime %}
+    <p style="font-size: 13px; color: #374151;">
+        <strong>Check-out :</strong> avant {{ property.checkoutTime|date('H:i') }}
+    </p>
+    {% endif %}
+</div>
+</body>
+</html>

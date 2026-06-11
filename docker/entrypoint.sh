@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+
 
 if [ ! -f .env ]; then
   echo "==> Aucun .env trouvé, copie de .env.example..."
@@ -13,7 +13,7 @@ echo "==> Création des dossiers var/..."
 mkdir -p var/cache var/log
 
 echo "==> Installation des dépendances Composer..."
-composer install --no-interaction --prefer-dist --no-scripts
+composer install --no-interaction --prefer-dist
 
 echo "==> Génération des autoloaders..."
 composer dump-autoload --no-interaction

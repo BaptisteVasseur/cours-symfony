@@ -1,0 +1,101 @@
+Le jour de check-out sera réservable par un nouveau voyageur.
+
+Les dates seront stockées en DATE (sans heure) dans checkin_date et
+checkout_date. La condition de chevauchement retenue sera :
+
+    existing.checkinDate < requested.checkout
+    AND existing.checkoutDate > requested.checkin
+
+Si A part le 15 et B veut arriver le 15, la condition "15 > 15"
+est fausse : pas de chevauchement. 
+
+Pour le départ 11h / arrivée 15h : les heures ne seront pas stockées au
+niveau de la réservation. Les champs checkinTime et checkoutTime de
+l'entité Property (type TIME_IMMUTABLE) seront uniquement informatifs.
+
+Gestion des états : Une demande Pending bloque-t-elle les dates ?
+
+ Non, une demande Pending ne bloquera pas les dates.
+
+Seules les réservations "confirmed" seront prises en compte dans la
+vérification de disponibilité. Plusieurs demandes pending pourront donc
+coexister sur les mêmes dates.
+Pourquoi cela : 
+
+- Si Pending bloquait on aurait risque de blocage abusif et aussi l'hôte pourrait confirmer
+  plusieurs demandes par erreur. Ce risque est atténué par une
+  re-vérification de disponibilité au moment de la confirmation, et par
+  le fait que les réservations instantanées (instantBooking = true)
+  passent directement par l'algorithme de dispo.
+
+
+Concurrence : Comment votre base de données réagit-elle si deux utilisateurs valident un paiement
+à la milliseconde près pour le même logement et les mêmes dates ?
+
+Sans protection, PostgreSQL en READ COMMITTED (niveau par défaut) permet
+à deux transactions de lire "disponible" avant que l'une n'écrive, créant
+deux réservations confirmées sur les mêmes dates.
+
+Pour cela on utilisera AvailabilityService pour vérifier la disponibilité juste avant de persister, réduisant fortement
+la fenêtre de risque. 
+
+ On va utiliser un champ version sur l'entité est
+   incrémenté à chaque écriture. En cas de conflit, Doctrine lève une
+   OptimisticLockException et force la 2e requête à re-vérifier la dispo,
+   qui détectera alors le conflit. Aucun coût en l'absence de conflit réel.
+
+
+
+
+Performance : Comment valider la disponibilité d'un logement sur 20 nuits consécutives sans
+saturer la base de requêtes SQL itératives ?
+
+La mauvaise approche serait de boucler jour par jour : 20 requêtes SQL
+pour 20 nuits. 
+
+L'approche retenue : 2 requêtes COUNT, indépendantes du nombre de nuits.
+
+  Requête 1 : COUNT des jours bloqués manuellement dans [checkin, checkout)
+  Requête 2 : COUNT des réservations confirmées en chevauchement
+
+    WHERE checkin_date < :checkout AND checkout_date > :checkin
+
+Si les deux COUNT valent 0, le logement est disponible.
+
+Ce service sera encapsulé dans une classe AvailabilityService.
+
+Asynchronisme : Pourquoi l'envoi d'email doit-il préférentiellement intervenir après le flush() de
+l'ORM ? Quelle est la stratégie si RabbitMQ tombe en panne ?
+
+L'email sera dispatché vers Symfony Messenger APRÈS le flush() de l'ORM,
+jamais avant. Un flush() peut échouer (contrainte unique, timeout) et si
+l'email est déjà parti, le voyageur reçoit une confirmation pour une
+réservation qui n'existe pas en base.
+
+Si RabbitMQ tombe en panne :
+- Le transport par défaut sera doctrine://default (file en base PostgreSQL),
+  ce qui évite toute dépendance à RabbitMQ en développement.
+- En production avec RabbitMQ : retry_strategy (3 tentatives, délai
+  exponentiel) + failure_transport vers une file "failed" en base.
+- Récupération via : php bin/console messenger:failed:retry
+
+Structure SQL : Justifiez votre choix d'architecture pour le calendrier : table de jours individuels
+( PropertyAvailability ) ou table de périodes ( date_start , date_end ).
+
+On aura la table de jours individuels (PropertyAvailability) avec
+les champs : available_date, is_available, price_override, minimum_stay.
+
+La requête de disponibilité avec des jours individuels se résume à un
+simple COUNT avec une condition BETWEEN, alors qu'avec des périodes il
+faudrait une condition plus complexe. De même, bloquer ou
+débloquer une date partielle revient juste à supprimer ou modifier une
+ligne, alors qu'avec des périodes il faudrait découper la période en deux.
+
+Le priceOverride par nuit est simple avec un jour par ligne, impossible
+à modéliser proprement avec des périodes. L'import iCal génère aussi
+naturellement une entrée par jour bloqué, ce qui colle parfaitement à ce
+schéma.
+
+Il y'aura un volume de data gérable : environ 365 lignes par an et par logement. Avec
+un index sur (property_id, available_date), les requêtes seront rapides
+même à grande échelle.
