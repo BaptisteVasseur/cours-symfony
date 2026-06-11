@@ -167,6 +167,10 @@ class Property
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'property')]
     private Collection $reviews;
 
+    /** @var Collection<int, PropertyBlockedPeriod> */
+    #[ORM\OneToMany(targetEntity: PropertyBlockedPeriod::class, mappedBy: 'property', orphanRemoval: true)]
+    private Collection $blockedPeriods;
+
     public function __construct()
     {
         $this->propertyAmenities = new ArrayCollection();
@@ -175,6 +179,7 @@ class Property
         $this->iCalSyncs = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
+        $this->blockedPeriods = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -558,6 +563,29 @@ class Property
     public function removeReview(Review $review): static
     {
         $this->reviews->removeElement($review);
+
+        return $this;
+    }
+
+    /** @return Collection<int, PropertyBlockedPeriod> */
+    public function getBlockedPeriods(): Collection
+    {
+        return $this->blockedPeriods;
+    }
+
+    public function addBlockedPeriod(PropertyBlockedPeriod $period): static
+    {
+        if (!$this->blockedPeriods->contains($period)) {
+            $this->blockedPeriods->add($period);
+            $period->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBlockedPeriod(PropertyBlockedPeriod $period): static
+    {
+        $this->blockedPeriods->removeElement($period);
 
         return $this;
     }

@@ -27,15 +27,18 @@ class HomeController extends AbstractController
     #[Route('/logement/{id}', name: 'app_logement_detail')]
     #[IsGranted('ROLE_USER')]
     #[IsGranted(PropertyVoter::VIEW, subject: 'property')]
-    public function detail(Property $property, PropertyRepository $propertyRepository, ReviewRepository $reviewRepository): Response
+    public function detail(Property $property, PropertyRepository $propertyRepository, ReviewRepository $reviewRepository, Request $request): Response
     {
         $property = $propertyRepository->findOneForDetail($property) ?? $property;
         $allReviews = $reviewRepository->findByPropertyOrdered($property);
 
         return $this->render('front/property/show.html.twig', [
-            'property' => $property,
-            'reviews' => \array_slice($allReviews, 0, 5),
+            'property'     => $property,
+            'reviews'      => \array_slice($allReviews, 0, 5),
             'totalReviews' => \count($allReviews),
+            'checkin'      => $request->query->get('checkin', ''),
+            'checkout'     => $request->query->get('checkout', ''),
+            'guests'       => max(1, $request->query->getInt('guests', 1)),
         ]);
     }
 
@@ -55,15 +58,20 @@ class HomeController extends AbstractController
     #[Route('/search', name: 'app_search', methods: ['GET'])]
     public function search(Request $request, PropertyRepository $propertyRepository): Response
     {
-        $checkin = $this->parseDate($request->query->get('checkin'));
-        $checkout = $this->parseDate($request->query->get('checkout'));
+        $checkinStr  = $request->query->get('checkin', '');
+        $checkoutStr = $request->query->get('checkout', '');
+        $guests      = max(1, $request->query->getInt('guests', 1));
+        $destination = (string) $request->query->get('destination', '');
+
+        $checkin  = $this->parseDate($checkinStr);
+        $checkout = $this->parseDate($checkoutStr);
 
         return $this->render('front/search/index.html.twig', [
-            'properties' => $propertyRepository->findForListing('published'),
-            'checkin' => $checkin,
-            'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'properties'  => $propertyRepository->findForSearch($destination ?: null, $checkin, $checkout, $guests > 1 ? $guests : null),
+            'checkin'     => $checkinStr,
+            'checkout'    => $checkoutStr,
+            'guests'      => $guests,
+            'destination' => $destination,
         ]);
     }
 

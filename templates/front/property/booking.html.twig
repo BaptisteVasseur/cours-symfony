@@ -3,150 +3,471 @@
 {% block title %}Réserver — {{ property.title }}{% endblock %}
 
 {% set cover = property.coverMedia %}
-{% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
-
-{% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
-            <i class="fa-solid fa-arrow-left"></i> Retour au logement
-        </a>
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
-            {% endfor %}
-        {% endfor %}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2">
-                <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
-                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                    {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                        </div>
-                        {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
-                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
-                    {{ form_end(form) }}
-                </div>
-            </div>
-            <aside>
-                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
-                    <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
-                    <div class="p-5">
-                        <h2 class="font-semibold">{{ property.title }}</h2>
-                        <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
-                    </div>
-                </div>
-            </aside>
-        </div>
-    </main>
-
-{# Prépare les données JSON pour JS #}
+{% set placeholder = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 {% set bookedJson = [] %}
-{% for range in bookedRanges %}
+{% for range in bookedRanges|default([]) %}
     {% set bookedJson = bookedJson|merge([{
         start: range.checkinDate|date('Y-m-d'),
-        end: range.checkoutDate|date('Y-m-d')
+        end:   range.checkoutDate|date('Y-m-d')
+    }]) %}
+{% endfor %}
+{% for period in blockedPeriods|default([]) %}
+    {% set bookedJson = bookedJson|merge([{
+        start: period.startDate|date('Y-m-d'),
+        end:   period.endDate.modify('+1 day')|date('Y-m-d')
     }]) %}
 {% endfor %}
 
-<div class="mt-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-    <h2 class="text-base font-semibold text-gray-800 mb-4">
-        <i class="fa-solid fa-calendar-xmark text-red-400 mr-2"></i>
-        Disponibilités du logement
-    </h2>
-    <div id="availability-calendar" class="overflow-x-auto"></div>
-</div>
+{% block content %}
+<main class="flex-grow px-4 md:px-8 py-8 max-w-6xl mx-auto w-full">
+
+    <a href="{{ path('app_logement_detail', { id: property.id }) }}"
+       class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Retour au logement
+    </a>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm flex items-center gap-2
+                        {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                <i class="fa-solid {{ label == 'success' ? 'fa-circle-check' : 'fa-circle-exclamation' }} shrink-0"></i>
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+        {# ===== COLONNE GAUCHE — formulaire + calendrier ===== #}
+        <div class="lg:col-span-3 space-y-6">
+
+            <h1 class="text-2xl font-bold text-gray-900">Finaliser votre réservation</h1>
+
+            {# Carte formulaire #}
+            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                {{ form_start(form, { attr: { id: 'booking-form', novalidate: 'novalidate' } }) }}
+
+                <div class="space-y-5">
+
+                    {# Dates #}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                        <div>
+                            {{ form_label(form.checkinDate, 'Arrivée', {
+                                label_attr: { class: 'block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5' }
+                            }) }}
+                            {{ form_widget(form.checkinDate, { attr: {
+                                id:    'booking_checkinDate',
+                                class: 'date-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 transition'
+                            } }) }}
+                            <p id="error-checkin" class="hidden mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-exclamation shrink-0"></i><span></span>
+                            </p>
+                            {{ form_errors(form.checkinDate) }}
+                        </div>
+
+                        <div>
+                            {{ form_label(form.checkoutDate, 'Départ', {
+                                label_attr: { class: 'block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5' }
+                            }) }}
+                            {{ form_widget(form.checkoutDate, { attr: {
+                                id:    'booking_checkoutDate',
+                                class: 'date-input w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 transition'
+                            } }) }}
+                            <p id="error-checkout" class="hidden mt-1.5 text-xs text-red-600 flex items-center gap-1">
+                                <i class="fa-solid fa-circle-exclamation shrink-0"></i><span></span>
+                            </p>
+                            {{ form_errors(form.checkoutDate) }}
+                        </div>
+
+                    </div>
+
+                    {# Alerte conflit de plage #}
+                    <div id="conflict-error" class="hidden bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-center gap-2">
+                        <i class="fa-solid fa-triangle-exclamation shrink-0"></i>
+                        <span id="conflict-message"></span>
+                    </div>
+
+                    {# Voyageurs #}
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1.5">
+                            Voyageurs
+                        </label>
+                        <div class="flex items-center gap-3">
+                            <button type="button" id="guests-minus"
+                                    class="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:border-gray-400 hover:bg-gray-50 transition">
+                                <i class="fa-solid fa-minus text-xs"></i>
+                            </button>
+                            {{ form_widget(form.guestsCount, { attr: {
+                                id:    'booking_guestsCount',
+                                class: 'w-16 text-center border border-gray-200 rounded-xl px-3 py-2.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-gray-900',
+                                min:   1,
+                                max:   property.maxGuests
+                            } }) }}
+                            <button type="button" id="guests-plus"
+                                    class="w-9 h-9 rounded-full border border-gray-200 flex items-center justify-center text-gray-600 hover:border-gray-400 hover:bg-gray-50 transition">
+                                <i class="fa-solid fa-plus text-xs"></i>
+                            </button>
+                            <span class="text-xs text-gray-400">max {{ property.maxGuests }}</span>
+                        </div>
+                        {{ form_errors(form.guestsCount) }}
+                    </div>
+
+                    {# Info réservation instantanée #}
+                    {% if property.instantBooking %}
+                        <div class="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-xl px-4 py-3">
+                            <i class="fa-solid fa-bolt shrink-0"></i>
+                            Réservation instantanée — confirmation immédiate dès votre demande.
+                        </div>
+                    {% else %}
+                        <div class="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-xl px-4 py-3">
+                            <i class="fa-solid fa-clock shrink-0"></i>
+                            L'hôte doit approuver votre demande avant confirmation.
+                        </div>
+                    {% endif %}
+
+                    <button type="submit" id="submit-btn"
+                            class="w-full bg-gray-900 hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3.5 rounded-xl transition text-sm">
+                        Confirmer la réservation
+                    </button>
+
+                </div>
+
+                {{ form_end(form) }}
+            </div>
+
+            {# Calendrier de disponibilités #}
+            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-1">
+                    <h2 class="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                        <i class="fa-regular fa-calendar text-gray-400"></i>
+                        Disponibilités
+                    </h2>
+                    <div class="flex items-center gap-2">
+                        <button type="button" onclick="prevMonth()"
+                                class="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-gray-400 hover:bg-gray-50 transition">
+                            <i class="fa-solid fa-chevron-left text-[10px]"></i>
+                        </button>
+                        <button type="button" onclick="nextMonth()"
+                                class="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:border-gray-400 hover:bg-gray-50 transition">
+                            <i class="fa-solid fa-chevron-right text-[10px]"></i>
+                        </button>
+                    </div>
+                </div>
+                <p class="text-xs text-gray-400 mb-4">Cliquez sur une date disponible pour la sélectionner directement.</p>
+
+                <div class="flex flex-wrap gap-4 text-xs text-gray-500 mb-4">
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded-full bg-gray-900 inline-block"></span> Sélectionné
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded-full bg-gray-100 border border-gray-200 inline-block"></span> Dans votre séjour
+                    </span>
+                    <span class="flex items-center gap-1.5">
+                        <span class="w-3 h-3 rounded-full bg-red-100 inline-block"></span> Réservé / indisponible
+                    </span>
+                </div>
+
+                <div id="availability-calendar"></div>
+            </div>
+
+        </div>
+
+        {# ===== COLONNE DROITE — récapitulatif ===== #}
+        <aside class="lg:col-span-2">
+            <div class="sticky top-28 space-y-4">
+
+                {# Carte logement #}
+                <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                    <img src="{{ cover ? cover.fileUrl : placeholder }}"
+                         alt="{{ property.title }}"
+                         class="w-full h-44 object-cover">
+                    <div class="p-5">
+                        <p class="text-[11px] font-semibold text-gray-400 uppercase tracking-wider mb-1">
+                            {{ property.propertyType|capitalize }}
+                        </p>
+                        <h2 class="font-semibold text-gray-900 leading-snug">{{ property.title }}</h2>
+                        {% if property.address %}
+                            <p class="text-sm text-gray-400 mt-1">
+                                <i class="fa-solid fa-location-dot text-xs mr-1"></i>
+                                {{ property.address.city }}{% if property.address.country %}, {{ property.address.country }}{% endif %}
+                            </p>
+                        {% endif %}
+                        <div class="flex items-center gap-4 mt-3 text-xs text-gray-500 border-t border-gray-100 pt-3">
+                            <span><i class="fa-solid fa-user-group mr-1"></i>{{ property.maxGuests }} voyageurs</span>
+                            <span><i class="fa-solid fa-bed mr-1"></i>{{ property.beds }} lit{{ property.beds > 1 ? 's' : '' }}</span>
+                            <span><i class="fa-solid fa-bath mr-1"></i>{{ property.bathrooms }} sdb</span>
+                        </div>
+                    </div>
+                </div>
+
+                {# Décomposition du prix #}
+                <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                    <h3 class="font-semibold text-gray-900 mb-4 text-sm">Détail du prix</h3>
+
+                    <div id="price-placeholder" class="text-center py-5">
+                        <i class="fa-regular fa-calendar-days text-3xl text-gray-200 mb-2 block"></i>
+                        <p class="text-xs text-gray-400">Sélectionnez vos dates<br>pour estimer le coût.</p>
+                    </div>
+
+                    <div id="price-breakdown" class="hidden">
+                        <div class="space-y-2.5 text-sm">
+                            <div class="flex justify-between text-gray-600">
+                                <span id="nights-label">— nuits × {{ property.pricePerNight }} €</span>
+                                <span id="subtotal-value" class="font-medium text-gray-900">—</span>
+                            </div>
+                            {% if property.cleaningFee and property.cleaningFee > 0 %}
+                                <div class="flex justify-between text-gray-600">
+                                    <span>Frais de ménage</span>
+                                    <span class="font-medium text-gray-900">{{ property.cleaningFee|number_format(0, ',', ' ') }} €</span>
+                                </div>
+                            {% endif %}
+                            <div class="flex justify-between text-gray-600">
+                                <span>Frais de service <span class="text-gray-400 text-xs">(12 %)</span></span>
+                                <span id="service-fee-value" class="font-medium text-gray-900">—</span>
+                            </div>
+                        </div>
+                        <div class="border-t border-gray-200 mt-4 pt-4 flex justify-between font-bold text-gray-900">
+                            <span>Total</span>
+                            <span id="total-value">—</span>
+                        </div>
+                        <p class="text-[11px] text-gray-400 mt-2">Montant estimé, hors caution éventuelle.</p>
+                    </div>
+                </div>
+
+            </div>
+        </aside>
+
+    </div>
+</main>
 
 <script>
-const bookedRanges = {{ bookedJson|json_encode|raw }};
+(function () {
+    const BOOKED_RANGES = {{ bookedJson|json_encode|raw }};
+    const PRICE_PER_NIGHT = {{ property.pricePerNight }};
+    const CLEANING_FEE    = {{ property.cleaningFee ?? 0 }};
+    const MAX_GUESTS      = {{ property.maxGuests }};
+    const TODAY_STR       = new Date().toISOString().split('T')[0];
 
-function generateCalendar(year, month) {
-    const monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin',
-                        'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
-    const today = new Date();
-    today.setHours(0,0,0,0);
+    // ── Ensemble des jours occupés ──────────────────────────────────────────
+    const BOOKED_DAYS = (function () {
+        const s = new Set();
+        BOOKED_RANGES.forEach(r => {
+            let d = new Date(r.start);
+            const end = new Date(r.end);
+            while (d < end) {
+                s.add(d.toISOString().split('T')[0]);
+                d.setDate(d.getDate() + 1);
+            }
+        });
+        return s;
+    })();
 
-    // Calcule tous les jours occupés
-    const bookedDays = new Set();
-    bookedRanges.forEach(range => {
-        let current = new Date(range.start);
-        const end = new Date(range.end);
-        while (current < end) {
-            bookedDays.add(current.toISOString().split('T')[0]);
-            current.setDate(current.getDate() + 1);
+    function rangeOverlaps(ciStr, coStr) {
+        const ci = new Date(ciStr), co = new Date(coStr);
+        return BOOKED_RANGES.some(r => ci < new Date(r.end) && co > new Date(r.start));
+    }
+
+    // ── DOM ─────────────────────────────────────────────────────────────────
+    const checkinEl   = document.getElementById('booking_checkinDate');
+    const checkoutEl  = document.getElementById('booking_checkoutDate');
+    const guestsEl    = document.getElementById('booking_guestsCount');
+    const submitBtn   = document.getElementById('submit-btn');
+
+    checkinEl.min  = TODAY_STR;
+
+    // ── Erreurs inline ──────────────────────────────────────────────────────
+    function showError(id, msg) {
+        const el = document.getElementById(id);
+        el.querySelector('span').textContent = msg;
+        el.classList.remove('hidden');
+        const inp = id === 'error-checkin' ? checkinEl : checkoutEl;
+        inp.classList.add('border-red-400');
+        inp.classList.remove('border-gray-200');
+    }
+    function clearError(id) {
+        document.getElementById(id).classList.add('hidden');
+        const inp = id === 'error-checkin' ? checkinEl : checkoutEl;
+        inp.classList.remove('border-red-400');
+        inp.classList.add('border-gray-200');
+    }
+    function showConflict(msg) {
+        const el = document.getElementById('conflict-error');
+        document.getElementById('conflict-message').textContent = msg;
+        el.classList.remove('hidden');
+    }
+    function clearConflict() {
+        document.getElementById('conflict-error').classList.add('hidden');
+    }
+
+    // ── Prix dynamique ──────────────────────────────────────────────────────
+    function updatePrice() {
+        const ci = checkinEl.value, co = checkoutEl.value;
+        const ph = document.getElementById('price-placeholder');
+        const bd = document.getElementById('price-breakdown');
+        if (!ci || !co || ci >= co) { ph.classList.remove('hidden'); bd.classList.add('hidden'); return; }
+
+        const nights     = Math.round((new Date(co) - new Date(ci)) / 86400000);
+        const subtotal   = PRICE_PER_NIGHT * nights;
+        const serviceFee = Math.round(subtotal * 0.12 * 100) / 100;
+        const total      = subtotal + CLEANING_FEE + serviceFee;
+
+        document.getElementById('nights-label').textContent   = `${nights} nuit${nights > 1 ? 's' : ''} × ${fmt(PRICE_PER_NIGHT)} €`;
+        document.getElementById('subtotal-value').textContent = `${fmt(subtotal)} €`;
+        document.getElementById('service-fee-value').textContent = `${fmt(serviceFee)} €`;
+        document.getElementById('total-value').textContent    = `${fmt(total)} €`;
+
+        ph.classList.add('hidden');
+        bd.classList.remove('hidden');
+    }
+    function fmt(n) { return Math.round(n).toLocaleString('fr-FR'); }
+
+    // ── Validation globale ──────────────────────────────────────────────────
+    function validate() {
+        let ok = true;
+        clearConflict();
+
+        const ci = checkinEl.value, co = checkoutEl.value;
+
+        if (ci) {
+            clearError('error-checkin');
+            if (ci < TODAY_STR) {
+                showError('error-checkin', 'La date d\'arrivée ne peut pas être dans le passé.');
+                ok = false;
+            } else if (BOOKED_DAYS.has(ci)) {
+                showError('error-checkin', 'Cette date est déjà réservée — choisissez une autre date.');
+                ok = false;
+            }
         }
+
+        if (co) {
+            clearError('error-checkout');
+            if (ci && co <= ci) {
+                showError('error-checkout', 'Le départ doit être après l\'arrivée.');
+                ok = false;
+            } else if (BOOKED_DAYS.has(co)) {
+                showError('error-checkout', 'Cette date de départ chevauche une réservation existante.');
+                ok = false;
+            } else if (ci && co && rangeOverlaps(ci, co)) {
+                showConflict('Ces dates ne sont pas disponibles : une réservation existe déjà sur cette période.');
+                ok = false;
+            }
+        }
+
+        submitBtn.disabled = !ok || !ci || !co;
+        updatePrice();
+        renderCalendar();
+    }
+
+    checkinEl.addEventListener('change', () => {
+        if (checkinEl.value) {
+            const next = new Date(checkinEl.value);
+            next.setDate(next.getDate() + 1);
+            checkoutEl.min = next.toISOString().split('T')[0];
+            if (checkoutEl.value && checkoutEl.value <= checkinEl.value) {
+                checkoutEl.value = '';
+            }
+        }
+        validate();
+    });
+    checkoutEl.addEventListener('change', validate);
+
+    // ── Boutons voyageurs ───────────────────────────────────────────────────
+    if (!guestsEl.value || guestsEl.value < 1) guestsEl.value = 1;
+    document.getElementById('guests-minus').addEventListener('click', () => {
+        const v = parseInt(guestsEl.value, 10);
+        if (v > 1) guestsEl.value = v - 1;
+    });
+    document.getElementById('guests-plus').addEventListener('click', () => {
+        const v = parseInt(guestsEl.value, 10);
+        if (v < MAX_GUESTS) guestsEl.value = v + 1;
     });
 
-    const firstDay = new Date(year, month, 1).getDay();
-    const startOffset = (firstDay === 0 ? 6 : firstDay - 1); // lundi = 0
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    // ── Mini-calendrier ─────────────────────────────────────────────────────
+    const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+    let calYear  = new Date().getFullYear();
+    let calMonth = new Date().getMonth();
 
-    let html = `
-        <div class="min-w-[280px]">
-            <div class="flex items-center justify-between mb-3">
-                <button onclick="prevMonth()" class="p-1 hover:bg-gray-100 rounded-full text-gray-500">
-                    <i class="fa-solid fa-chevron-left text-xs"></i>
-                </button>
-                <span class="text-sm font-semibold text-gray-700">${monthNames[month]} ${year}</span>
-                <button onclick="nextMonth()" class="p-1 hover:bg-gray-100 rounded-full text-gray-500">
-                    <i class="fa-solid fa-chevron-right text-xs"></i>
-                </button>
-            </div>
-            <div class="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-1">
-                <span>Lu</span><span>Ma</span><span>Me</span>
-                <span>Je</span><span>Ve</span><span>Sa</span><span>Di</span>
-            </div>
-            <div class="grid grid-cols-7 gap-1 text-center text-sm">
-    `;
+    window.renderCalendar = function () {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const ci = checkinEl.value, co = checkoutEl.value;
 
-    // Cases vides avant le 1er
-    for (let i = 0; i < startOffset; i++) {
-        html += `<span></span>`;
-    }
+        const firstDow   = new Date(calYear, calMonth, 1).getDay();
+        const offset     = firstDow === 0 ? 6 : firstDow - 1;
+        const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
 
-    for (let day = 1; day <= daysInMonth; day++) {
-        const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        const date = new Date(dateStr);
-        const isBooked = bookedDays.has(dateStr);
-        const isPast = date < today;
+        let html = `<div class="text-center text-sm font-semibold text-gray-700 mb-3">${MONTHS[calMonth]} ${calYear}</div>`;
+        html += `<div class="grid grid-cols-7 gap-0.5 text-center text-[11px] font-semibold text-gray-400 mb-1">
+            <span>Lu</span><span>Ma</span><span>Me</span><span>Je</span><span>Ve</span><span>Sa</span><span>Di</span>
+        </div>`;
+        html += `<div class="grid grid-cols-7 gap-0.5 text-center">`;
 
-        let cls = 'rounded-full w-8 h-8 flex items-center justify-center mx-auto ';
-        if (isBooked) {
-            cls += 'bg-red-100 text-red-400 line-through cursor-not-allowed';
-        } else if (isPast) {
-            cls += 'text-gray-300 cursor-not-allowed';
-        } else {
-            cls += 'text-gray-700 hover:bg-gray-100';
+        for (let i = 0; i < offset; i++) html += `<span></span>`;
+
+        for (let day = 1; day <= daysInMonth; day++) {
+            const ds   = `${calYear}-${String(calMonth + 1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+            const date = new Date(ds);
+            const past   = date < today;
+            const booked = BOOKED_DAYS.has(ds);
+            const isCi   = ds === ci;
+            const isCo   = ds === co;
+            const inRange = ci && co && ds > ci && ds < co;
+
+            let cls   = 'w-8 h-8 mx-auto flex items-center justify-center rounded-full text-xs font-medium transition ';
+            let click = '';
+
+            if (past) {
+                cls += 'text-gray-300 cursor-default';
+            } else if (booked) {
+                cls += 'bg-red-50 text-red-300 line-through cursor-not-allowed';
+            } else if (isCi || isCo) {
+                cls  += 'bg-gray-900 text-white cursor-pointer';
+                click = `onclick="calendarPick('${ds}')"`;
+            } else if (inRange) {
+                cls  += 'bg-gray-100 text-gray-700 cursor-pointer rounded-none';
+                click = `onclick="calendarPick('${ds}')"`;
+            } else {
+                cls  += 'text-gray-700 hover:bg-gray-100 cursor-pointer';
+                click = `onclick="calendarPick('${ds}')"`;
+            }
+
+            html += `<div><span class="${cls}" ${click}>${day}</span></div>`;
         }
 
-        html += `<div><span class="${cls}">${day}</span></div>`;
-    }
+        html += `</div>`;
+        document.getElementById('availability-calendar').innerHTML = html;
+    };
 
-    html += `</div></div>`;
-    return html;
-}
+    window.calendarPick = function (ds) {
+        if (BOOKED_DAYS.has(ds) || ds < TODAY_STR) return;
 
-let currentYear = new Date().getFullYear();
-let currentMonth = new Date().getMonth();
+        if (!checkinEl.value || (checkinEl.value && checkoutEl.value)) {
+            checkinEl.value  = ds;
+            checkoutEl.value = '';
+            const next = new Date(ds);
+            next.setDate(next.getDate() + 1);
+            checkoutEl.min = next.toISOString().split('T')[0];
+        } else {
+            if (ds <= checkinEl.value) {
+                checkinEl.value  = ds;
+                checkoutEl.value = '';
+            } else {
+                checkoutEl.value = ds;
+            }
+        }
+        validate();
+    };
 
-function renderCalendar() {
-    document.getElementById('availability-calendar').innerHTML =
-        generateCalendar(currentYear, currentMonth);
-}
+    window.prevMonth = function () {
+        if (calMonth === 0) { calMonth = 11; calYear--; } else calMonth--;
+        renderCalendar();
+    };
+    window.nextMonth = function () {
+        if (calMonth === 11) { calMonth = 0; calYear++; } else calMonth++;
+        renderCalendar();
+    };
 
-function prevMonth() {
-    if (currentMonth === 0) { currentMonth = 11; currentYear--; }
-    else currentMonth--;
-    renderCalendar();
-}
-
-function nextMonth() {
-    if (currentMonth === 11) { currentMonth = 0; currentYear++; }
-    else currentMonth++;
-    renderCalendar();
-}
-
-renderCalendar();
+    validate();
+})();
 </script>
 {% endblock %}

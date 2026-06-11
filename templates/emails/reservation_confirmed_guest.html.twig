@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Votre réservation est confirmée</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;">
+
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:32px 16px;">
+<tr><td align="center">
+<table width="600" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,.08);">
+
+  <!-- Header -->
+  <tr>
+    <td style="background:#059669;padding:28px 32px;">
+      <p style="margin:0;color:#ffffff;font-size:22px;font-weight:700;letter-spacing:-0.3px;">
+        ✅ Réservation confirmée !
+      </p>
+      <p style="margin:6px 0 0;color:#a7f3d0;font-size:13px;">Tout est prêt pour votre séjour.</p>
+    </td>
+  </tr>
+
+  <!-- Body -->
+  <tr>
+    <td style="padding:32px;">
+
+      <p style="margin:0 0 24px;font-size:15px;color:#374151;line-height:1.6;">
+        Bonne nouvelle ! Votre réservation pour <strong>{{ reservation.property.title }}</strong> a été confirmée.
+        Voici le récapitulatif de votre séjour :
+      </p>
+
+      <!-- Property -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:10px;margin-bottom:24px;">
+        <tr>
+          <td style="padding:20px 24px;">
+            <p style="margin:0 0 4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#15803d;">Logement</p>
+            <p style="margin:0;font-size:17px;font-weight:700;color:#111827;">{{ reservation.property.title }}</p>
+            {% if reservation.property.address %}
+              <p style="margin:4px 0 0;font-size:13px;color:#6b7280;">
+                📍 {{ reservation.property.address.city }}{% if reservation.property.address.country %}, {{ reservation.property.address.country }}{% endif %}
+              </p>
+            {% endif %}
+          </td>
+        </tr>
+      </table>
+
+      <!-- Dates -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+        <tr>
+          <td width="33%" style="padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px 0 0 10px;text-align:center;">
+            <p style="margin:0 0 4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;">Arrivée</p>
+            <p style="margin:0;font-size:15px;font-weight:700;color:#111827;">{{ reservation.checkinDate|date('d/m/Y') }}</p>
+          </td>
+          <td width="34%" style="padding:16px;background:#f9fafb;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;text-align:center;">
+            <p style="margin:0 0 4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;">Départ</p>
+            <p style="margin:0;font-size:15px;font-weight:700;color:#111827;">{{ reservation.checkoutDate|date('d/m/Y') }}</p>
+          </td>
+          <td width="33%" style="padding:16px;background:#f9fafb;border:1px solid #e5e7eb;border-radius:0 10px 10px 0;text-align:center;">
+            <p style="margin:0 0 4px;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:#6b7280;">Voyageurs</p>
+            <p style="margin:0;font-size:15px;font-weight:700;color:#111827;">{{ reservation.guestsCount }}</p>
+          </td>
+        </tr>
+      </table>
+
+      <!-- Host contact -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:24px;">
+        <tr>
+          <td style="padding:20px 24px;">
+            <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#374151;">🏠 Votre hôte</p>
+            <p style="margin:0;font-size:14px;color:#111827;font-weight:600;">{{ hostName }}</p>
+            {% if reservation.property.host.email %}
+              <p style="margin:4px 0 0;font-size:13px;color:#6b7280;">{{ reservation.property.host.email }}</p>
+            {% endif %}
+          </td>
+        </tr>
+      </table>
+
+      <!-- Price breakdown -->
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;margin-bottom:32px;">
+        <tr>
+          <td style="padding:20px 24px;">
+            <p style="margin:0 0 12px;font-size:13px;font-weight:700;color:#374151;">💰 Récapitulatif financier</p>
+            {% set nights = reservation.checkinDate.diff(reservation.checkoutDate).days %}
+            <table width="100%" cellpadding="0" cellspacing="0">
+              <tr>
+                <td style="font-size:13px;color:#6b7280;padding:3px 0;">{{ nights }} nuit{{ nights > 1 ? 's' : '' }} × {{ reservation.property.pricePerNight|number_format(0, ',', ' ') }} €</td>
+                <td align="right" style="font-size:13px;color:#111827;font-weight:600;padding:3px 0;">{{ (nights * reservation.property.pricePerNight)|number_format(0, ',', ' ') }} €</td>
+              </tr>
+              {% if reservation.cleaningFee %}
+              <tr>
+                <td style="font-size:13px;color:#6b7280;padding:3px 0;">Frais de ménage</td>
+                <td align="right" style="font-size:13px;color:#111827;font-weight:600;padding:3px 0;">{{ reservation.cleaningFee|number_format(0, ',', ' ') }} €</td>
+              </tr>
+              {% endif %}
+              {% if reservation.serviceFee %}
+              <tr>
+                <td style="font-size:13px;color:#6b7280;padding:3px 0;">Frais de service (12 %)</td>
+                <td align="right" style="font-size:13px;color:#111827;font-weight:600;padding:3px 0;">{{ reservation.serviceFee|number_format(0, ',', ' ') }} €</td>
+              </tr>
+              {% endif %}
+              <tr>
+                <td colspan="2"><hr style="border:none;border-top:1px solid #e5e7eb;margin:10px 0;"></td>
+              </tr>
+              <tr>
+                <td style="font-size:15px;color:#111827;font-weight:700;">Total payé</td>
+                <td align="right" style="font-size:15px;color:#059669;font-weight:700;">{{ reservation.totalPrice|number_format(0, ',', ' ') }} €</td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+
+      <!-- CTA -->
+      <table width="100%" cellpadding="0" cellspacing="0">
+        <tr>
+          <td align="center">
+            <a href="{{ reservationUrl }}"
+               style="display:inline-block;background:#059669;color:#ffffff;font-size:14px;font-weight:600;text-decoration:none;padding:14px 32px;border-radius:8px;">
+              Voir ma réservation →
+            </a>
+          </td>
+        </tr>
+      </table>
+
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="padding:20px 32px;border-top:1px solid #f3f4f6;text-align:center;">
+      <p style="margin:0;font-size:11px;color:#9ca3af;">
+        Cet email a été envoyé automatiquement. Ne pas répondre directement à ce message.
+      </p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+
+</body>
+</html>

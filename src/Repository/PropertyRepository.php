@@ -133,6 +133,58 @@ class PropertyRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * @return list<Property>
+     */
+    public function findForSearch(
+        ?string $destination = null,
+        ?\DateTimeImmutable $checkin = null,
+        ?\DateTimeImmutable $checkout = null,
+        ?int $guests = null,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('(a.city LIKE :dest OR a.country LIKE :dest OR p.title LIKE :dest)')
+               ->setParameter('dest', '%' . $destination . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+               ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            $qb->andWhere('NOT EXISTS (
+                    SELECT r2 FROM App\Entity\Reservation r2
+                    WHERE r2.property = p
+                    AND r2.status IN (:resStatuses)
+                    AND r2.checkinDate < :checkout
+                    AND r2.checkoutDate > :checkin
+                )')
+               ->andWhere('NOT EXISTS (
+                    SELECT bp FROM App\Entity\PropertyBlockedPeriod bp
+                    WHERE bp.property = p
+                    AND bp.startDate < :checkout
+                    AND bp.endDate >= :checkin
+                )')
+               ->setParameter('resStatuses', ['confirmed', 'pending'])
+               ->setParameter('checkin', $checkin)
+               ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
     public function findRecentReservations(int $limit = 10): array
     {
         return $this->createQueryBuilder('r')

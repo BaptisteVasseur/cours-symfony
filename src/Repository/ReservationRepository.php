@@ -124,6 +124,51 @@ class ReservationRepository extends ServiceEntityRepository
             ->getArrayResult();
     }
 
+    /**
+     * @return list<Reservation>
+     */
+    public function findPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findForPropertyAndMonth(Property $property, int $year, int $month): array
+    {
+        $start = new \DateTimeImmutable(sprintf('%04d-%02d-01', $year, $month));
+        $end = $start->modify('last day of this month');
+
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkinDate <= :end')
+            ->andWhere('r.checkoutDate > :start')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['confirmed', 'pending', 'completed'])
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findRecentReservations(int $limit = 10): array
     {
         return $this->createQueryBuilder('r')

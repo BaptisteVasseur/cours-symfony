@@ -12,3 +12,7 @@ Gestion des états :
 
 Prendre en compte les InstantBooking qui eux passe directement en confirmed, dépend de si le logment le propose.
 Pending à besoin de confiramtion de l'hote pour vérouiller les dates
+
+Pour les hôtes, il est important pour eux de voir facilement les dates bloquées. Pour ce faire il faut réalisé un calendrier qui montre de manière
+colorée les dispo de leurs logements.
+On rajoute également également sur cette page un tableau qui vas permettre la confiramtion des reservation en attentes

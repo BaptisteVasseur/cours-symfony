@@ -8,12 +8,16 @@ use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
+use App\Message\NewReservationRequestMessage;
+use App\Message\ReservationConfirmedMessage;
+use App\Repository\PropertyBlockedPeriodRepository;
 use App\Repository\PropertyRepository;
 use App\Repository\ReservationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\PropertyVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -29,6 +33,8 @@ final class BookingController extends AbstractController
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
         ReservationRepository $reservationRepository,
+        PropertyBlockedPeriodRepository $blockedPeriodRepository,
+        MessageBusInterface $bus,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -46,9 +52,27 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_logement_detail', ['id' => $property->getId()]);
         }
 
-        $form = $this->createForm(BookingType::class);
+        $parseDate = static function (?string $v): ?\DateTimeImmutable {
+            if ($v === null || $v === '') {
+                return null;
+            }
+            $d = \DateTimeImmutable::createFromFormat('Y-m-d', $v);
+
+            return $d !== false ? $d : null;
+        };
+
+        $preCheckin  = $parseDate($request->query->get('checkin'));
+        $preCheckout = $parseDate($request->query->get('checkout'));
+        $preGuests   = max(1, $request->query->getInt('guests', 1));
+
+        $form = $this->createForm(BookingType::class, [
+            'checkinDate'  => $preCheckin,
+            'checkoutDate' => $preCheckout,
+            'guestsCount'  => $preGuests,
+        ]);
         $form->handleRequest($request);
-        $bookedRanges = $reservationRepository->findBookedRanges($property);
+        $bookedRanges   = $reservationRepository->findBookedRanges($property);
+        $blockedPeriods = $blockedPeriodRepository->findAllForProperty($property);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
@@ -60,8 +84,10 @@ final class BookingController extends AbstractController
                 $this->addFlash('error', 'La date de départ doit être postérieure à la date d\'arrivée.');
 
                 return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
+                    'property'       => $property,
+                    'form'           => $form,
+                    'bookedRanges'   => $bookedRanges,
+                    'blockedPeriods' => $blockedPeriods,
                 ]);
             }
 
@@ -69,8 +95,10 @@ final class BookingController extends AbstractController
                 $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
 
                 return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
+                    'property'       => $property,
+                    'form'           => $form,
+                    'bookedRanges'   => $bookedRanges,
+                    'blockedPeriods' => $blockedPeriods,
                 ]);
             }
 
@@ -78,8 +106,21 @@ final class BookingController extends AbstractController
                 $this->addFlash('error', 'Ce logement est déjà réservé sur ces dates.');
 
                 return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
+                    'property'       => $property,
+                    'form'           => $form,
+                    'bookedRanges'   => $bookedRanges,
+                    'blockedPeriods' => $blockedPeriods,
+                ]);
+            }
+
+            if ($blockedPeriodRepository->hasConflict($property, $checkin, $checkout)) {
+                $this->addFlash('error', 'Ce logement est indisponible sur ces dates (période bloquée par l\'hôte).');
+
+                return $this->render('front/property/booking.html.twig', [
+                    'property'       => $property,
+                    'form'           => $form,
+                    'bookedRanges'   => $bookedRanges,
+                    'blockedPeriods' => $blockedPeriods,
                 ]);
             }
 
@@ -106,15 +147,22 @@ final class BookingController extends AbstractController
             $entityManager->persist($reservation);
             $entityManager->flush();
 
+            if ($reservation->getStatus() === 'pending') {
+                $bus->dispatch(new NewReservationRequestMessage((string) $reservation->getId()));
+            } else {
+                $bus->dispatch(new ReservationConfirmedMessage((string) $reservation->getId()));
+            }
+
             $this->addFlash('success', 'Votre réservation a été enregistrée.');
 
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }
 
         return $this->render('front/property/booking.html.twig', [
-            'property' => $property,
-            'form' => $form,
-            'bookedRanges' => $bookedRanges,
+            'property'       => $property,
+            'form'           => $form,
+            'bookedRanges'   => $bookedRanges,
+            'blockedPeriods' => $blockedPeriods,
         ]);
     }
 }

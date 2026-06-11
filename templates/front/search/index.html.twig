@@ -1,14 +1,50 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Résultats de recherche</h1>
-        {% if destination %}<p class="text-gray-500 mb-8">Destination : {{ destination }}</p>{% endif %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+
+        {% include 'components/search_bar.html.twig' with {
+            variant: 'hero',
+            destination: destination,
+            checkin: checkin,
+            checkout: checkout,
+            guests: guests
+        } %}
+
+        <div class="flex items-baseline justify-between mb-6">
+            <h1 class="text-xl font-semibold text-gray-900">
+                {% if destination %}
+                    Logements à « {{ destination }} »
+                {% else %}
+                    Résultats de recherche
+                {% endif %}
+            </h1>
+            <span class="text-sm text-gray-400">{{ properties|length }} logement{{ properties|length > 1 ? 's' : '' }}</span>
+        </div>
+
+        {% if checkin and checkout %}
+            <p class="text-sm text-gray-500 -mt-4 mb-6">
+                <i class="fa-regular fa-calendar text-xs mr-1"></i>
+                {{ checkin|date('d/m/Y') }} → {{ checkout|date('d/m/Y') }}
+                {% if guests > 1 %} · {{ guests }} voyageurs{% endif %}
+                — logements disponibles uniquement
+            </p>
+        {% endif %}
+
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
             {% for property in properties %}
-                {% include 'components/card.html.twig' with { property: property } %}
+                {% include 'components/card.html.twig' with {
+                    property: property,
+                    checkin: checkin,
+                    checkout: checkout,
+                    guests: guests
+                } %}
             {% else %}
-                <p class="col-span-full text-gray-500">Aucun logement trouvé.</p>
+                <div class="col-span-full text-center py-16">
+                    <i class="fa-solid fa-magnifying-glass text-4xl text-gray-200 mb-4 block"></i>
+                    <p class="text-gray-500">Aucun logement disponible pour ces critères.</p>
+                    <p class="text-sm text-gray-400 mt-1">Essayez d'autres dates ou une autre destination.</p>
+                </div>
             {% endfor %}
         </div>
     </main>
