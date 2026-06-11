@@ -87,4 +87,72 @@ final class AvailabilityChecker
 
         return $reasons;
     }
+
+    /**
+     * Retourne les périodes indisponibles d'un logement (à partir d'aujourd'hui),
+     * issues des jours bloqués par l'hôte ET des séjours confirmés, regroupées en plages.
+     *
+     * @return list<array{start: \DateTimeImmutable, end: \DateTimeImmutable}>
+     *         Chaque période est inclusive sur le début et exclusive sur la fin (jour de départ).
+     */
+    public function getUnavailablePeriods(Property $property, ?\DateTimeImmutable $from = null, int $monthsAhead = 12): array
+    {
+        $from = ($from ?? new \DateTimeImmutable('today'))->setTime(0, 0);
+        $to = $from->modify(sprintf('+%d months', $monthsAhead));
+
+        /** @var array<string, \DateTimeImmutable> $nights nuits indisponibles, indexées 'Y-m-d' */
+        $nights = [];
+
+        // Jours manuellement bloqués par l'hôte.
+        foreach ($this->availabilityRepository->findBlockedBetween($property, $from, $to) as $availability) {
+            $day = $availability->getAvailableDate()->setTime(0, 0);
+            $nights[$day->format('Y-m-d')] = $day;
+        }
+
+        // Nuits occupées par des réservations confirmées (de l'arrivée à la veille du départ).
+        foreach ($this->reservationRepository->findConfirmedForProperty($property) as $reservation) {
+            $checkin = $reservation->getCheckinDate();
+            $checkout = $reservation->getCheckoutDate();
+            if ($checkin === null || $checkout === null) {
+                continue;
+            }
+            $night = $checkin->setTime(0, 0);
+            $lastNight = $checkout->modify('-1 day')->setTime(0, 0);
+            if ($night < $from) {
+                $night = $from;
+            }
+            while ($night <= $lastNight && $night <= $to) {
+                $nights[$night->format('Y-m-d')] = $night;
+                $night = $night->modify('+1 day');
+            }
+        }
+
+        if ($nights === []) {
+            return [];
+        }
+
+        ksort($nights);
+
+        // Regroupement des nuits consécutives en périodes.
+        $periods = [];
+        $start = null;
+        $prev = null;
+        foreach ($nights as $day) {
+            if ($start === null) {
+                $start = $day;
+                $prev = $day;
+                continue;
+            }
+            if ($day->getTimestamp() === $prev->modify('+1 day')->getTimestamp()) {
+                $prev = $day;
+                continue;
+            }
+            $periods[] = ['start' => $start, 'end' => $prev->modify('+1 day')];
+            $start = $day;
+            $prev = $day;
+        }
+        $periods[] = ['start' => $start, 'end' => $prev->modify('+1 day')];
+
+        return $periods;
+    }
 }

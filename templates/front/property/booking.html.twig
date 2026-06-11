@@ -29,13 +29,37 @@
                     {{ form_end(form) }}
                 </div>
             </div>
-            <aside>
-                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
+            <aside class="space-y-6">
+                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
                     <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
                     <div class="p-5">
                         <h2 class="font-semibold">{{ property.title }}</h2>
                         <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
                     </div>
+                </div>
+
+                {# Périodes indisponibles du logement #}
+                <div class="border border-gray-200 rounded-2xl p-5 shadow-sm">
+                    <h2 class="font-semibold flex items-center gap-2 mb-3">
+                        <i class="fa-regular fa-calendar-xmark text-gray-400"></i> Périodes indisponibles
+                    </h2>
+                    {% if unavailablePeriods is defined and unavailablePeriods|length > 0 %}
+                        <ul class="space-y-2">
+                            {% for period in unavailablePeriods %}
+                                <li class="flex items-center gap-2 text-sm text-gray-700 bg-gray-50 border border-gray-200 rounded-xl px-3 py-2">
+                                    <span class="w-2 h-2 rounded-full bg-red-400 shrink-0"></span>
+                                    {% if period.start|date('Y-m-d') == period.end|date('Y-m-d') %}
+                                        Le {{ period.start|date('d/m/Y') }}
+                                    {% else %}
+                                        Du {{ period.start|date('d/m/Y') }} au {{ period.end|date('d/m/Y') }}
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        </ul>
+                        <p class="text-xs text-gray-400 mt-3">Ces dates ne sont pas réservables (déjà réservées ou bloquées par l'hôte).</p>
+                    {% else %}
+                        <p class="text-sm text-gray-500">Aucune période bloquée : le logement est disponible.</p>
+                    {% endif %}
                 </div>
             </aside>
         </div>

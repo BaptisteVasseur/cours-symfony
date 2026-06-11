@@ -50,6 +50,9 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_logement_detail', ['id' => $property->getId()]);
         }
 
+        // Périodes indisponibles à afficher au voyageur (jours bloqués + séjours confirmés).
+        $unavailablePeriods = $availabilityChecker->getUnavailablePeriods($property);
+
         $form = $this->createForm(BookingType::class);
         $form->handleRequest($request);
 
@@ -71,6 +74,7 @@ final class BookingController extends AbstractController
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
                     'form' => $form,
+                    'unavailablePeriods' => $unavailablePeriods,
                 ], new Response('', Response::HTTP_UNPROCESSABLE_ENTITY));
             }
 
@@ -123,6 +127,7 @@ final class BookingController extends AbstractController
         return $this->render('front/property/booking.html.twig', [
             'property' => $property,
             'form' => $form,
+            'unavailablePeriods' => $unavailablePeriods,
         ], $response);
     }
 }
