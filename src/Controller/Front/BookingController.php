@@ -8,6 +8,7 @@ use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
+use App\Message\AutoCancelPendingReservationMessage;
 use App\Message\ReservationConfirmedMessage;
 use App\Message\ReservationPendingMessage;
 use App\Repository\PropertyAvailabilityRepository;
@@ -17,7 +18,9 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\Envelope;
 use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Messenger\Stamp\DelayStamp;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\PropertyVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -98,6 +101,12 @@ final class BookingController extends AbstractController
                 return $renderBooking();
             }
 
+            if ($reservationRepository->countPendingForGuest($user) >= 3) {
+                $this->addFlash('error', 'Vous avez déjà 3 demandes en attente. Veuillez attendre la réponse des hôtes avant d\'en faire de nouvelles.');
+
+                return $renderBooking();
+            }
+
             if ($reservationRepository->findOverlapping((string) $property->getId(), $checkin, $checkout)) {
                 $this->addFlash('error', 'Ce logement est déjà réservé sur cette période.');
 
@@ -135,6 +144,11 @@ final class BookingController extends AbstractController
 
             if ($reservation->getStatus() === 'pending') {
                 $bus->dispatch(new ReservationPendingMessage((string) $reservation->getId()));
+
+                $bus->dispatch(
+                    (new Envelope(new AutoCancelPendingReservationMessage((string) $reservation->getId())))
+                        ->with(new DelayStamp(86400000))
+                );
             } else {
                 $bus->dispatch(new ReservationConfirmedMessage((string) $reservation->getId()));
             }

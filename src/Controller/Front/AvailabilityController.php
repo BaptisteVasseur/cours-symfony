@@ -13,6 +13,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\Security\Csrf\CsrfToken;
 use Symfony\Component\Security\Csrf\CsrfTokenManagerInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -116,6 +117,40 @@ final class AvailabilityController extends AbstractController
             $entityManager->flush();
             $this->addFlash('success', 'Date débloquée.');
         }
+
+        return $this->redirectToRoute('app_availability_index', ['id' => $property->getId()]);
+    }
+
+    #[Route('/generer-token-ical', name: 'generate_ical_token', methods: ['POST'])]
+    public function generateIcalToken(
+        Property $property,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        CsrfTokenManagerInterface $csrfTokenManager,
+    ): Response {
+        $this->denyAccessUnlessGranted('HOST', $property);
+
+        $token = new CsrfToken('generate_ical_token', $request->request->get('_token'));
+        if (!$csrfTokenManager->isTokenValid($token)) {
+            throw $this->createAccessDeniedException('Token CSRF invalide.');
+        }
+
+        $property->generateIcalToken();
+        $entityManager->flush();
+
+        $icalUrl = $this->generateUrl('api_property_ical', [
+            'id'    => $property->getId(),
+            'token' => $property->getIcalToken(),
+        ], urlType: 'absolute');
+
+        if ($request->isXmlHttpRequest()) {
+            return new JsonResponse([
+                'token'   => $property->getIcalToken(),
+                'icalUrl' => $icalUrl,
+            ]);
+        }
+
+        $this->addFlash('success', 'Lien iCal généré. Vous pouvez le copier ci-dessous.');
 
         return $this->redirectToRoute('app_availability_index', ['id' => $property->getId()]);
     }

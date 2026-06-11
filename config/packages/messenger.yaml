@@ -21,3 +21,4 @@ framework:
             App\Message\ReservationPendingMessage: async
             App\Message\ReservationConfirmedMessage: async
             App\Message\ReservationCancelledMessage: async
+            App\Message\AutoCancelPendingReservationMessage: async

@@ -151,6 +151,18 @@ class ReservationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function countPendingForGuest(User $guest): int
+    {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.guest = :guest')
+            ->andWhere('r.status = :status')
+            ->setParameter('guest', $guest)
+            ->setParameter('status', 'pending')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     public function findOverlapping(string $propertyId, \DateTimeImmutable $checkin, \DateTimeImmutable $checkout): array
     {
         return $this->createQueryBuilder('r')

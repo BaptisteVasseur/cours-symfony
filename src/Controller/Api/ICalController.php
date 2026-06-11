@@ -34,8 +34,9 @@ final class ICalController extends AbstractController
         $reservations = $reservationRepository->findActiveForProperty($property);
 
         $now = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Ymd\THis\Z');
-        $prodId = '-//Airbnb//Calendar//FR';
-        $calName = $property->getTitle() ?? 'Airbnb';
+        $prodId = '-//Clone Airbnb//FR';
+        $calName = $property->getTitle() ?? 'Clone Airbnb';
+        $domain = $request->getHost();
 
         $lines = [
             'BEGIN:VCALENDAR',
@@ -48,17 +49,33 @@ final class ICalController extends AbstractController
         ];
 
         foreach ($reservations as $reservation) {
-            $uid = $reservation->getId() . '@staynest';
-            $dtstart = $reservation->getCheckinDate()->format('Ymd');
-            $dtend   = $reservation->getCheckoutDate()->format('Ymd');
-            $summary = sprintf('Réservation #%s', substr((string) $reservation->getId(), 0, 8));
+            $guest = $reservation->getGuest();
+            $profile = $guest?->getProfile();
+            $guestName = $profile
+                ? trim(($profile->getFirstName() ?? '') . ' ' . ($profile->getLastName() ?? ''))
+                : ($guest?->getEmail() ?? 'Inconnu');
+
+            $checkin = $reservation->getCheckinDate();
+            $checkout = $reservation->getCheckoutDate();
+
+            if ($checkin === null || $checkout === null) {
+                continue;
+            }
+
+            $nights = (int) $checkin->diff($checkout)->days;
+            $totalPrice = $reservation->getTotalPrice() ?? '0';
+
+            $uid = 'res-' . $reservation->getId() . '@' . $domain;
+            $summary = sprintf('%s — %s', $property->getTitle(), $guestName);
+            $description = sprintf('Séjour %d nuits — %s€ — %s', $nights, $totalPrice, $guest?->getEmail() ?? '');
 
             $lines[] = 'BEGIN:VEVENT';
             $lines[] = 'UID:' . $uid;
             $lines[] = 'DTSTAMP:' . $now;
-            $lines[] = 'DTSTART;VALUE=DATE:' . $dtstart;
-            $lines[] = 'DTEND;VALUE=DATE:' . $dtend;
+            $lines[] = 'DTSTART;VALUE=DATE:' . $checkin->format('Ymd');
+            $lines[] = 'DTEND;VALUE=DATE:' . $checkout->format('Ymd');
             $lines[] = 'SUMMARY:' . $summary;
+            $lines[] = 'DESCRIPTION:' . $description;
             $lines[] = 'STATUS:CONFIRMED';
             $lines[] = 'END:VEVENT';
         }
