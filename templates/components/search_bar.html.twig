@@ -74,14 +74,14 @@
                         <label class="block text-xs font-bold text-gray-800 mb-2">Où</label>
                         <input type="text" name="destination" value="{{ destination }}" placeholder="Rechercher une destination" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-2 gap-4" data-controller="simpledatepicker">
                         <div>
                             <label class="block text-xs font-bold text-gray-800 mb-2">Arrivée</label>
-                            <input type="date" name="checkin" value="{{ checkin }}" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
+                            <input type="date" name="checkin" value="{{ checkin }}" data-simpledatepicker-start class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-gray-800 mb-2">Départ</label>
-                            <input type="date" name="checkout" value="{{ checkout }}" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
+                            <input type="date" name="checkout" value="{{ checkout }}" data-simpledatepicker-end class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-gray-900">
                         </div>
                     </div>
                     <div>

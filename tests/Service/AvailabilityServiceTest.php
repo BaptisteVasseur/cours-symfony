@@ -65,10 +65,10 @@ final class AvailabilityServiceTest extends TestCase
 
     private function service(bool $overlap, bool $blocked): AvailabilityService
     {
-        $reservations = $this->createMock(ReservationRepository::class);
+        $reservations = $this->createStub(ReservationRepository::class);
         $reservations->method('hasConfirmedOverlap')->willReturn($overlap);
 
-        $availabilities = $this->createMock(PropertyAvailabilityRepository::class);
+        $availabilities = $this->createStub(PropertyAvailabilityRepository::class);
         $availabilities->method('hasBlockedDay')->willReturn($blocked);
 
         return new AvailabilityService($reservations, $availabilities);

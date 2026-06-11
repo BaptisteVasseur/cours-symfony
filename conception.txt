@@ -6,8 +6,9 @@ CONCEPTION TECHNIQUE — Moteur de réservation & calendrier (clone Airbnb)
   Reservation (checkinDate/checkoutDate en DATE, status pending/confirmed/completed/cancelled),
   PropertyAvailability (1 ligne/jour : isAvailable, priceOverride, minimumStay),
   ReservationStatusHistory (trace des transitions), PropertyICalSync (URL iCal).
-- Ajouts : Property.calendarToken (export iCal sécurisé) + entité BookingHold
-  (logement, voyageur, dates, expiresAt) pour le verrou de checkout (cf. point 2).
+- Ajouts : Property.calendarToken (export iCal sécurisé).
+  BookingHold (logement, voyageur, dates, expiresAt) est conçu mais non implémenté
+  (cf. point 2).
 - Archi : logique dans des Services (AvailabilityService, ReservationService,
   ICalExport/ImportService), requêtes de dates dans les Repositories, contrôleurs fins.
 
@@ -29,10 +30,9 @@ Du coup c'est seulement à la confirmation que je re-vérifie la dispo, et la co
 d'exclusion (pt 3) fait qu'une seule peut passer. Les Pending pas traités expirent à 24h
 (G.1), ça protège le voyageur qui attend une réponse.
 En mode instantané (instantBooking=true), la résa est confirmée auto si les dates sont
-libres. Sauf que le voyageur passe par une page de récap avant : pour pas qu'il finalise
-tout puis se fasse doubler, je pose un hold de 15 min (entité BookingHold + compte à
-rebours). Tant qu'un hold est actif, les autres voyageurs sont bloqués sur ces dates ;
-il saute à la confirmation, ou il expire tout seul s'il abandonne.
+libres. La contrainte d'exclusion garantit qu'une seule peut passer en cas de conflit.
+On pourrait améliorer l'UX avec un hold de 15 min (entité BookingHold envisagée) pour
+protéger le voyageur pendant la page de récap, mais ça n'est pas implémenté ici.
 En gros le cycle c'est pending -> confirmed -> completed, et pending/confirmed ->
 cancelled. Chaque changement est tracé dans ReservationStatusHistory.
 
@@ -88,8 +88,8 @@ PropertyAvailability le bloque.
 
 
 7. SCHÉMA DE FLUX
-- Réservation : récap (checkout) -> instantané : BookingHold 15 min -> confirmation
-  (re-vérif dispo) -> résa confirmed + suppression du hold ; sur demande : création pending.
+- Réservation : récap -> instantané : confirmed direct (contrainte d'exclusion protège) ;
+  sur demande : création pending.
   Flush en transaction (contrainte d'exclusion) -> log historique -> mails async ->
   redirect + flash.
 - Modération hôte : liste des Pending -> accepter (re-vérif -> confirmed) / refuser

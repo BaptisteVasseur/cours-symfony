@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Property;
+use App\Repository\PropertyAvailabilityRepository;
 use App\Repository\PropertyRepository;
+use App\Repository\ReservationRepository;
 use App\Repository\ReviewRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,15 +29,33 @@ class HomeController extends AbstractController
     #[Route('/logement/{id}', name: 'app_logement_detail')]
     #[IsGranted('ROLE_USER')]
     #[IsGranted(PropertyVoter::VIEW, subject: 'property')]
-    public function detail(Property $property, PropertyRepository $propertyRepository, ReviewRepository $reviewRepository): Response
-    {
+    public function detail(
+        Property $property,
+        PropertyRepository $propertyRepository,
+        ReviewRepository $reviewRepository,
+        ReservationRepository $reservationRepository,
+        PropertyAvailabilityRepository $availabilityRepository,
+    ): Response {
         $property = $propertyRepository->findOneForDetail($property) ?? $property;
         $allReviews = $reviewRepository->findByPropertyOrdered($property);
+
+        $unavailableDates = [];
+        foreach ($availabilityRepository->findBlockedForProperty($property) as $avail) {
+            $unavailableDates[$avail->getAvailableDate()->format('Y-m-d')] = true;
+        }
+        foreach ($reservationRepository->findConfirmedForProperty($property) as $reservation) {
+            $d = $reservation->getCheckinDate();
+            while ($d < $reservation->getCheckoutDate()) {
+                $unavailableDates[$d->format('Y-m-d')] = true;
+                $d = $d->modify('+1 day');
+            }
+        }
 
         return $this->render('front/property/show.html.twig', [
             'property' => $property,
             'reviews' => \array_slice($allReviews, 0, 5),
             'totalReviews' => \count($allReviews),
+            'unavailableDates' => $unavailableDates,
         ]);
     }
 

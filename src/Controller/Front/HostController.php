@@ -82,13 +82,40 @@ final class HostController extends AbstractController
     }
 
     #[Route('/logements/{id}/calendrier', name: 'app_host_calendar', methods: ['GET'])]
-    public function calendar(Property $property, PropertyAvailabilityRepository $availabilityRepository): Response
-    {
+    public function calendar(
+        Property $property,
+        Request $request,
+        PropertyAvailabilityRepository $availabilityRepository,
+        ReservationRepository $reservationRepository,
+    ): Response {
         $this->assertHost($property);
+
+        $monthParam = $request->query->get('month');
+        $currentMonth = $monthParam
+            ? \DateTimeImmutable::createFromFormat('Y-m', $monthParam) ?: new \DateTimeImmutable('first day of this month')
+            : new \DateTimeImmutable('first day of this month');
+        $currentMonth = $currentMonth->modify('first day of this month');
+
+        $blockedDates = [];
+        foreach ($availabilityRepository->findBlockedForProperty($property) as $avail) {
+            $blockedDates[$avail->getAvailableDate()->format('Y-m-d')] = true;
+        }
+
+        $reservedRanges = [];
+        foreach ($reservationRepository->findConfirmedForProperty($property) as $reservation) {
+            $reservedRanges[] = [
+                'from' => $reservation->getCheckinDate()->format('Y-m-d'),
+                'to' => $reservation->getCheckoutDate()->format('Y-m-d'),
+                'guest' => $reservation->getGuest()?->getEmail() ?? '',
+            ];
+        }
 
         return $this->render('front/host/calendar.html.twig', [
             'property' => $property,
             'blocked' => $availabilityRepository->findBlockedForProperty($property),
+            'blockedDates' => $blockedDates,
+            'reservedRanges' => $reservedRanges,
+            'currentMonth' => $currentMonth,
         ]);
     }
 
