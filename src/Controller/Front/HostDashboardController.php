@@ -8,20 +8,19 @@ use App\Entity\Conversation;
 use App\Entity\ConversationParticipant;
 use App\Entity\Reservation;
 use App\Entity\User;
-use App\Exception\BookingConflictException;
 use App\Repository\ConversationRepository;
 use App\Repository\PropertyRepository;
 use App\Repository\ReservationRepository;
 use App\Security\Roles;
 use App\Security\Voter\ReservationVoter;
-use App\Service\BookingService;
+use App\Security\Voter\BookingVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
+use Symfony\Bundle\SecurityBundle\Security;
 
 #[Route('/compte')]
 final class HostDashboardController extends AbstractController
@@ -101,125 +100,8 @@ final class HostDashboardController extends AbstractController
         ]);
     }
 
-    #[Route('/hote/reservations', name: 'app_host_reservations', methods: ['GET'])]
-    #[IsGranted('ROLE_HOST')]
-    public function reservations(
-        Request $request,
-        ReservationRepository $reservationRepository,
-    ): Response {
-        $user = $this->getUser();
-        if (!$user instanceof User) {
-            return $this->redirectToRoute('app_login');
-        }
-
-        $status = $request->query->get('status');
-        if ($status === 'all' || !in_array($status, ['pending', 'confirmed', 'completed', 'cancelled'], true)) {
-            $status = null;
-        }
-
-        $reservations = $reservationRepository->findByHostForListing($user, $status);
-
-        return $this->render('front/host_dashboard/reservations.html.twig', [
-            'reservations' => $reservations,
-            'currentStatus' => $status ?? 'all',
-        ]);
-    }
-
-    #[Route('/hote/reservations/{id}/accepter', name: 'app_host_reservation_accept', methods: ['POST'])]
-    #[IsGranted(ReservationVoter::MANAGE, subject: 'reservation')]
-    public function accept(
-        Request $request,
-        Reservation $reservation,
-        BookingService $bookingService,
-    ): Response {
-        if (!$this->isCsrfTokenValid('accept'.$reservation->getId(), $request->request->get('_token'))) {
-            $this->addFlash('error', 'Jeton CSRF invalide.');
-            return $this->redirectToRoute('app_host_reservations');
-        }
-
-        $user = $this->getUser();
-        if (!$user instanceof User) {
-            return $this->redirectToRoute('app_login');
-        }
-
-        try {
-            $bookingService->confirm($reservation, $user);
-        } catch (BookingConflictException $exception) {
-            $this->addFlash('error', $exception->getMessage());
-            return $this->redirectToRoute('app_host_reservations');
-        } catch (\LogicException $exception) {
-            $this->addFlash('error', $exception->getMessage());
-            return $this->redirectToRoute('app_host_reservations');
-        }
-
-        $this->addFlash('success', 'La réservation a été acceptée avec succès.');
-
-        return $this->redirectToRoute('app_host_reservations');
-    }
-
-    #[Route('/hote/reservations/{id}/refuser', name: 'app_host_reservation_decline', methods: ['POST'])]
-    #[IsGranted(ReservationVoter::MANAGE, subject: 'reservation')]
-    public function decline(
-        Request $request,
-        Reservation $reservation,
-        BookingService $bookingService,
-    ): Response {
-        if (!$this->isCsrfTokenValid('decline'.$reservation->getId(), $request->request->get('_token'))) {
-            $this->addFlash('error', 'Jeton CSRF invalide.');
-            return $this->redirectToRoute('app_host_reservations');
-        }
-
-        $reason = trim((string) $request->request->get('cancellation_reason'));
-        $user = $this->getUser();
-        if (!$user instanceof User) {
-            return $this->redirectToRoute('app_login');
-        }
-
-        try {
-            $bookingService->refuse($reservation, $user, $reason);
-        } catch (\LogicException $exception) {
-            $this->addFlash('error', $exception->getMessage());
-            return $this->redirectToRoute('app_host_reservations');
-        }
-
-        $this->addFlash('success', 'La demande de réservation a été refusée.');
-
-        return $this->redirectToRoute('app_host_reservations');
-    }
-
-    #[Route('/hote/reservations/{id}/annuler', name: 'app_host_reservation_cancel', methods: ['POST'])]
-    #[IsGranted(ReservationVoter::MANAGE, subject: 'reservation')]
-    public function cancel(
-        Request $request,
-        Reservation $reservation,
-        BookingService $bookingService,
-    ): Response {
-        if (!$this->isCsrfTokenValid('cancel'.$reservation->getId(), $request->request->get('_token'))) {
-            $this->addFlash('error', 'Jeton CSRF invalide.');
-            return $this->redirectToRoute('app_host_reservations');
-        }
-
-        $reason = trim((string) $request->request->get('cancellation_reason'));
-        $user = $this->getUser();
-        if (!$user instanceof User) {
-            return $this->redirectToRoute('app_login');
-        }
-
-        try {
-            $bookingService->cancel($reservation, $user, $reason);
-        } catch (\LogicException $exception) {
-            $this->addFlash('error', $exception->getMessage());
-            return $this->redirectToRoute('app_host_reservations');
-        }
-
-        $this->addFlash('success', 'La réservation a été annulée avec succès.');
-
-        return $this->redirectToRoute('app_host_reservations');
-    }
-
-
     #[Route('/reservations/{id}/contact', name: 'app_reservation_contact', methods: ['GET', 'POST'])]
-    #[IsGranted(ReservationVoter::VIEW, subject: 'reservation')]
+    #[IsGranted(BookingVoter::VIEW, subject: 'reservation')]
     public function contactGuest(
         Reservation $reservation,
         ConversationRepository $conversationRepository,

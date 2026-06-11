@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Controller\Front;
+namespace App\Controller\Host;
 
 use App\Entity\AvailabilityBlock;
 use App\Entity\Property;
@@ -15,11 +15,11 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/compte')]
 #[IsGranted('ROLE_HOST')]
-final class HostCalendarController extends AbstractController
+final class CalendarController extends AbstractController
 {
-    #[Route('/hote/logements/{id}/calendrier', name: 'app_host_calendar', methods: ['GET'])]
+    #[Route('/host/property/{id}/calendar', name: 'app_host_calendar', methods: ['GET'])]
+    #[Route('/compte/hote/logements/{id}/calendrier', name: 'app_host_calendar_legacy', methods: ['GET'])]
     public function index(Request $request, Property $property, AvailabilityService $availabilityService): Response
     {
         $this->denyUnlessOwner($property);
@@ -32,57 +32,14 @@ final class HostCalendarController extends AbstractController
         ]);
     }
 
-    #[Route('/hote/logements/{id}/calendrier/ical-token', name: 'app_host_ical_token_refresh', methods: ['POST'])]
-    public function refreshIcalToken(Request $request, Property $property, EntityManagerInterface $entityManager): Response
-    {
-        $this->denyUnlessOwner($property);
-
-        if (!$this->isCsrfTokenValid('refresh_ical_token'.$property->getId(), $request->request->get('_token'))) {
-            $this->addFlash('error', 'Jeton CSRF invalide.');
-
-            return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
-        }
-
-        $property->refreshIcalToken();
-        $entityManager->flush();
-        $this->addFlash('success', 'Le lien iCal a été régénéré.');
-
-        return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
-    }
-
-    #[Route('/hote/logements/{id}/calendrier/ical-import', name: 'app_host_ical_import_update', methods: ['POST'])]
-    public function updateIcalImportUrl(Request $request, Property $property, EntityManagerInterface $entityManager): Response
-    {
-        $this->denyUnlessOwner($property);
-
-        if (!$this->isCsrfTokenValid('update_ical_import'.$property->getId(), $request->request->get('_token'))) {
-            $this->addFlash('error', 'Jeton CSRF invalide.');
-
-            return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
-        }
-
-        $url = trim((string) $request->request->get('external_ical_url', ''));
-        if ($url !== '' && filter_var($url, FILTER_VALIDATE_URL) === false) {
-            $this->addFlash('error', 'L’URL iCal externe est invalide.');
-
-            return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
-        }
-
-        $property->setExternalIcalUrl($url !== '' ? $url : null);
-        $entityManager->flush();
-        $this->addFlash('success', $url !== '' ? 'L’URL iCal externe a été enregistrée.' : 'L’URL iCal externe a été supprimée.');
-
-        return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
-    }
-
-    #[Route('/hote/logements/{id}/calendrier/blocages', name: 'app_host_block_create', methods: ['POST'])]
+    #[Route('/host/property/{id}/block', name: 'app_host_block_create', methods: ['POST'])]
+    #[Route('/compte/hote/logements/{id}/calendrier/blocages', name: 'app_host_block_create_legacy', methods: ['POST'])]
     public function createBlock(Request $request, Property $property, AvailabilityService $availabilityService): Response
     {
         $this->denyUnlessOwner($property);
 
         if (!$this->isCsrfTokenValid('block_period'.$property->getId(), $request->request->get('_token'))) {
             $this->addFlash('error', 'Jeton CSRF invalide.');
-
             return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
         }
 
@@ -90,7 +47,6 @@ final class HostCalendarController extends AbstractController
         $end = $this->parseDate($request->request->get('end_date'));
         if ($start === null || $end === null) {
             $this->addFlash('error', 'Les dates de blocage sont invalides.');
-
             return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
         }
 
@@ -107,9 +63,25 @@ final class HostCalendarController extends AbstractController
         ]);
     }
 
-    #[Route('/hote/blocages/{id}/supprimer', name: 'app_host_block_delete', methods: ['POST'])]
-    public function deleteBlock(Request $request, AvailabilityBlock $block, AvailabilityService $availabilityService): Response
-    {
+    #[Route('/host/block/{blockId}', name: 'app_host_block_delete', methods: ['POST'])]
+    #[Route('/compte/hote/blocages/{id}/supprimer', name: 'app_host_block_delete_legacy', methods: ['POST'])]
+    public function deleteBlock(
+        Request $request,
+        AvailabilityService $availabilityService,
+        EntityManagerInterface $entityManager,
+        ?int $blockId = null,
+        ?int $id = null,
+    ): Response {
+        $actualId = $blockId ?? $id;
+        if ($actualId === null) {
+            throw $this->createNotFoundException();
+        }
+
+        $block = $entityManager->getRepository(AvailabilityBlock::class)->find($actualId);
+        if (!$block) {
+            throw $this->createNotFoundException();
+        }
+
         $property = $block->getProperty();
         if ($property === null) {
             throw $this->createNotFoundException();
@@ -119,7 +91,6 @@ final class HostCalendarController extends AbstractController
 
         if (!$this->isCsrfTokenValid('delete_block'.$block->getId(), $request->request->get('_token'))) {
             $this->addFlash('error', 'Jeton CSRF invalide.');
-
             return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
         }
 
