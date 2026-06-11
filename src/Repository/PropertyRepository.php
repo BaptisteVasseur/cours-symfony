@@ -132,4 +132,70 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<Property>
+     */
+    public function findAvailable(
+        ?string $destination = null,
+        ?\DateTimeImmutable $checkin = null,
+        ?\DateTimeImmutable $checkout = null,
+        ?int $guests = null,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('a.city LIKE :destination OR a.addressLine1 LIKE :destination')
+                ->setParameter('destination', '%'.$destination.'%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            // Exclude properties with confirmed reservations overlapping the requested range
+            $qb->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        $this->getEntityManager()->createQueryBuilder()
+                            ->select('1')
+                            ->from('App\Entity\Reservation', 'r2')
+                            ->where('r2.property = p')
+                            ->andWhere('r2.status = :confirmed')
+                            ->andWhere('r2.checkinDate < :checkout')
+                            ->andWhere('r2.checkoutDate > :checkin')
+                            ->getDQL()
+                    )
+                )
+            )
+            ->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        $this->getEntityManager()->createQueryBuilder()
+                            ->select('1')
+                            ->from('App\Entity\PropertyAvailability', 'pa')
+                            ->where('pa.property = p')
+                            ->andWhere('pa.isAvailable = false')
+                            ->andWhere('pa.availableDate >= :checkin')
+                            ->andWhere('pa.availableDate < :checkout')
+                            ->getDQL()
+                    )
+                )
+            )
+            ->setParameter('confirmed', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->orderBy('p.createdAt', 'DESC')->getQuery()->getResult();
+    }
 }
+

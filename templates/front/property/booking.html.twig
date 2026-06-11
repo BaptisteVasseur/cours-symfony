@@ -32,12 +32,71 @@
             <aside>
                 <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
                     <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
-                    <div class="p-5">
+                    <div class="p-5 space-y-3">
                         <h2 class="font-semibold">{{ property.title }}</h2>
-                        <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+                        <p class="text-lg font-bold">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+
+                        {# Tarification dynamique#}
+                        <div id="price-summary" class="hidden border-t border-gray-100 pt-3 space-y-1 text-sm text-gray-600">
+                            <div class="flex justify-between">
+                                <span id="nights-label">— nuits</span>
+                                <span id="nights-total">—</span>
+                            </div>
+                            {% if property.cleaningFee %}
+                                <div class="flex justify-between">
+                                    <span>Frais de ménage</span>
+                                    <span>{{ property.cleaningFee|number_format(2, ',', ' ') }} €</span>
+                                </div>
+                            {% endif %}
+                            <div class="flex justify-between">
+                                <span>Frais de service (12%)</span>
+                                <span id="service-fee">—</span>
+                            </div>
+                            <div class="flex justify-between font-semibold text-gray-900 border-t border-gray-100 pt-2">
+                                <span>Total estimé</span>
+                                <span id="total-price">—</span>
+                            </div>
+                        </div>
+
+                        {% if property.isInstantBooking %}
+                            <p class="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-1.5">⚡ Réservation instantanée</p>
+                        {% else %}
+                            <p class="text-xs text-yellow-700 bg-yellow-50 rounded-lg px-3 py-1.5">⏳ Sur demande — l'hôte doit valider</p>
+                        {% endif %}
                     </div>
                 </div>
             </aside>
         </div>
     </main>
+    <script>
+    (function () {
+        const pricePerNight = {{ property.pricePerNight }};
+        const cleaningFee = {{ property.cleaningFee|default(0) }};
+        const checkinInput = document.querySelector('[name="booking[checkinDate]"]');
+        const checkoutInput = document.querySelector('[name="booking[checkoutDate]"]');
+        const summary = document.getElementById('price-summary');
+
+        function fmt(n) { return n.toFixed(2).replace('.', ',') + ' €'; }
+
+        function update() {
+            const a = checkinInput?.value;
+            const b = checkoutInput?.value;
+            if (!a || !b) { summary.classList.add('hidden'); return; }
+            const diff = (new Date(b) - new Date(a)) / 86400000;
+            if (diff <= 0) { summary.classList.add('hidden'); return; }
+            const subtotal = pricePerNight * diff;
+            const service = Math.round(subtotal * 0.12 * 100) / 100;
+            const total = subtotal + cleaningFee + service;
+            document.getElementById('nights-label').textContent = pricePerNight.toFixed(2).replace('.', ',') + ' € × ' + diff + ' nuit' + (diff > 1 ? 's' : '');
+            document.getElementById('nights-total').textContent = fmt(subtotal);
+            document.getElementById('service-fee').textContent = fmt(service);
+            document.getElementById('total-price').textContent = fmt(total);
+            summary.classList.remove('hidden');
+        }
+
+        checkinInput?.addEventListener('change', update);
+        checkoutInput?.addEventListener('change', update);
+        update();
+    })();
+    </script>
 {% endblock %}

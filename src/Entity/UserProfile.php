@@ -29,6 +29,7 @@ class UserProfile
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $lastName = null;
 
+    #[Assert\LessThanOrEqual('today', message: 'La date de naissance ne peut pas être dans le futur.')]
     #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $birthDate = null;
 

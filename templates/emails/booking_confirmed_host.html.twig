@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="fr">
+<body style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #FF5A5F;">Réservation confirmée</h1>
+    <p>Bonjour,</p>
+    <p>La réservation pour <strong>{{ reservation.property.title }}</strong> est confirmée.</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Voyageur</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.guest.email }}</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Arrivée</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.checkinDate|date('d/m/Y') }}</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Départ</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.checkoutDate|date('d/m/Y') }}</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; color: #666;">Montant total</td>
+            <td style="padding: 8px;"><strong>{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</strong></td>
+        </tr>
+    </table>
+    <p style="color: #999; font-size: 12px;">Cet email a été envoyé automatiquement par votre plateforme de location.</p>
+</body>
+</html>

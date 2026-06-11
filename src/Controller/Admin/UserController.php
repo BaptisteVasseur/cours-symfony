@@ -120,6 +120,18 @@ final class UserController extends AbstractController
         }
 
         if ($this->isCsrfTokenValid('delete'.$user->getId(), $request->getPayload()->getString('_token'))) {
+            if (!$user->getReservations()->isEmpty()) {
+                $this->addFlash('error', 'Impossible de supprimer cet utilisateur : il possède des réservations associées.');
+
+                return $this->redirectToRoute('app_user_show', ['id' => $user->getId()], Response::HTTP_SEE_OTHER);
+            }
+
+            if (!$user->getProperties()->isEmpty()) {
+                $this->addFlash('error', 'Impossible de supprimer cet utilisateur : il possède des logements associés.');
+
+                return $this->redirectToRoute('app_user_show', ['id' => $user->getId()], Response::HTTP_SEE_OTHER);
+            }
+
             $entityManager->remove($user);
             $entityManager->flush();
 

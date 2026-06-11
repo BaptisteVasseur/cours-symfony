@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr">
+<body style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #FF5A5F;">Nouvelle demande de réservation</h1>
+    <p>Bonjour,</p>
+    <p>Vous avez reçu une nouvelle demande de réservation pour <strong>{{ reservation.property.title }}</strong>.</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Logement</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.property.title }}</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Voyageur</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{% if reservation.guest.profile and reservation.guest.profile.firstName %}{{ reservation.guest.profile.firstName }} {{ reservation.guest.profile.lastName }}{% else %}{{ reservation.guest.email }}{% endif %}</strong><br><span style="color:#666;font-size:13px;">{{ reservation.guest.email }}</span></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Arrivée</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.checkinDate|date('d/m/Y') }}</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Départ</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.checkoutDate|date('d/m/Y') }}</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Voyageurs</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.guestsCount }}</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; color: #666;">Montant total</td>
+            <td style="padding: 8px;"><strong>{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</strong></td>
+        </tr>
+    </table>
+    <p>Vous avez <strong>24 heures</strong> pour accepter ou refuser cette demande avant son expiration automatique.</p>
+    <div style="text-align: center; margin: 24px 0;">
+        <a href="{{ absolute_url(path('app_host_all_requests')) }}"
+           style="background: #FF5A5F; color: white; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 15px; display: inline-block;">
+            Voir la demande →
+        </a>
+    </div>
+    <p style="color: #999; font-size: 12px;">Cet email a été envoyé automatiquement par votre plateforme de location.</p>
+</body>
+</html>

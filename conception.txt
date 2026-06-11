@@ -1,0 +1,474 @@
+
+CONCEPTION TECHNIQUE
+====================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. GESTION DES DISPONIBILITÉS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+1.1 Modèle de données
+
+Table : property_availability
+
+Champs :
+- property_id
+- available_date
+- is_available
+- ical_sync_source
+
+Chaque enregistrement représente une journée du calendrier associée à un logement.
+
+1.2 Règles métier
+
+- Les séjours sont représentés sous forme d'intervalle semi-ouvert [checkin, checkout[.
+- La date d'arrivée est incluse dans le séjour.
+- La date de départ n'est pas considérée comme occupée.
+- Un logement est disponible lorsque :
+  - son statut est « published » ;
+  - sa capacité d'accueil est suffisante ;
+  - aucune réservation confirmée ne chevauche la période ;
+  - aucun jour de la période n'est bloqué.
+
+Condition de chevauchement :
+
+reservationA.checkin < reservationB.checkout
+ET
+reservationA.checkout > reservationB.checkin
+
+1.3 Flux fonctionnel
+
+Blocage de dates :
+- Création d'une entrée par jour indisponible dans property_availability.
+
+Déblocage de dates :
+- Suppression des entrées correspondantes.
+
+Vérification de disponibilité :
+- Contrôle du statut du logement.
+- Contrôle de la capacité.
+- Vérification des réservations confirmées.
+- Vérification des jours bloqués.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. GESTION DES RÉSERVATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+2.1 Modèle de données
+
+Entité Reservation :
+
+- property
+- guest
+- checkinDate
+- checkoutDate
+- status
+- totalPrice
+- cleaningFee
+- serviceFee
+- currency
+- cancellationReason
+
+Table reservation_status_history :
+
+- reservation
+- oldStatus
+- newStatus
+- changedAt
+- changedBy
+
+2.2 Règles métier
+
+Statuts autorisés :
+
+- pending
+- confirmed
+- completed
+- cancelled
+
+Transitions autorisées :
+
+pending → confirmed
+pending → cancelled
+confirmed → completed
+confirmed → cancelled
+
+Modes de réservation :
+
+- Instant Booking : réservation confirmée immédiatement.
+- Validation par l'hôte : réservation créée avec le statut pending.
+
+Contraintes :
+
+- Une annulation nécessite un motif.
+- Les réservations pending ne bloquent pas les dates.
+- Les réservations pending expirent après 24 heures sans réponse.
+
+2.3 Flux fonctionnel
+
+Instant Booking :
+
+- Vérification de la disponibilité.
+- Création de la réservation.
+- Passage au statut confirmed.
+- Déclenchement des notifications.
+
+Réservation sur demande :
+
+- Création de la réservation avec le statut pending.
+- Notification de l'hôte.
+- Validation ou refus de la demande.
+- Mise à jour du statut.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. MOTEUR DE RECHERCHE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3.1 Sources de données
+
+- property
+- property_address
+- reservation
+- property_availability
+
+3.2 Critères de filtrage
+
+- Statut du logement = published.
+- Capacité suffisante.
+- Correspondance sur la destination.
+- Disponibilité sur la période demandée.
+
+3.3 Algorithme de disponibilité
+
+Exclusion d'un logement si :
+
+- une réservation confirmée est en conflit ;
+- un jour indisponible est présent dans la période.
+
+Implémentation SQL basée sur des sous-requêtes NOT EXISTS.
+
+3.4 Flux de recherche
+
+- Saisie des critères.
+- Construction de la requête.
+- Exécution des filtres.
+- Affichage des résultats.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. NOTIFICATIONS TRANSACTIONNELLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+4.1 Architecture
+
+Messages Messenger :
+
+- BookingPendingMessage
+- BookingConfirmedMessage
+- BookingCancelledMessage
+
+Stockage via messenger_messages.
+
+4.2 Règles métier
+
+- Les messages sont envoyés après la persistance des données.
+- Les messages non traités restent en file d'attente.
+- Trois tentatives automatiques sont effectuées en cas d'échec.
+- Les erreurs définitives sont transférées dans la file failed.
+
+4.3 Notifications envoyées
+
+- Nouvelle demande : notification à l'hôte.
+- Réservation confirmée : notification à l'hôte et au voyageur.
+- Réservation annulée : notification aux parties concernées.
+- Rappel avant arrivée : notification au voyageur.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. SYNCHRONISATION ICAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5.1 Export
+
+Champ Property :
+
+- icalToken (UUID)
+
+Fonctionnalités :
+
+- Génération d'un lien sécurisé.
+- Export au format RFC 5545.
+- Publication des réservations confirmées futures.
+
+5.2 Import
+
+Table property_ical_sync :
+
+- property
+- providerName
+- icalUrl
+- lastSyncAt
+
+Processus :
+
+- Téléchargement du flux iCal.
+- Analyse des événements.
+- Mise à jour des indisponibilités.
+- Contrôle des conflits.
+
+5.3 Gestion des conflits
+
+- Les réservations confirmées restent prioritaires.
+- Les conflits détectés sont signalés dans les journaux applicatifs.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. FONCTIONNALITÉS AVANCÉES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6.1 – Expiration des demandes
+
+Objectif :
+Annulation automatique des demandes de réservation en attente (pending) non traitées après 24 heures.
+
+Composants :
+
+* Commande planifiée : app:bookings:expire
+* Table : reservation
+* Historique : reservation_status_history
+
+Règles métier :
+
+* Seules les réservations avec le statut pending sont concernées.
+* Une réservation pending datant de plus de 24 heures est automatiquement annulée.
+* Le statut est mis à jour à cancelled.
+* Un motif d'annulation automatique est enregistré.
+* Une entrée est ajoutée dans l'historique des statuts.
+
+Flux :
+
+* Exécution de la commande planifiée.
+* Recherche des réservations pending expirées.
+* Mise à jour du statut.
+* Enregistrement dans l'historique.
+* Déclenchement des notifications d'annulation.
+
+6.2 – Rappel Check-in
+
+Objectif :
+Envoi automatique d'un email de rappel la veille de l'arrivée du voyageur.
+
+Composants :
+
+* Commande planifiée : app:checkin:remind
+* Message Messenger : CheckinReminderMessage
+* Service de notification email
+
+Règles métier :
+
+* Le rappel est envoyé uniquement pour les réservations confirmed.
+* Le rappel est déclenché à J-1 avant la date d'arrivée.
+* Le message contient :
+
+  * l'adresse du logement ;
+  * les horaires d'arrivée et de départ ;
+  * les informations de contact de l'hôte.
+
+Flux :
+
+* Exécution quotidienne de la commande.
+* Recherche des réservations concernées.
+* Envoi du message Messenger.
+* Traitement par le Worker.
+* Envoi de l'email au voyageur.
+
+6.3 – Timeline Voyageur
+
+Objectif :
+Afficher l'historique complet des changements de statut d'une réservation.
+
+Composants :
+
+* Table : reservation_status_history
+
+Champs :
+
+* reservation
+* oldStatus
+* newStatus
+* changedAt
+* changedBy
+
+Règles métier :
+
+* Chaque changement de statut génère une entrée dans l'historique.
+* Les transitions système sont identifiées par un acteur nul ou « Système ».
+* Les événements sont affichés dans l'ordre chronologique.
+
+Flux :
+
+* Changement de statut.
+* Création d'un enregistrement dans l'historique.
+* Chargement de l'historique sur la page de détail de réservation.
+* Affichage de la timeline au voyageur.
+
+6.4 – Tarification Dynamique
+
+Objectif :
+Mettre à jour automatiquement le coût total de la réservation selon les dates sélectionnées.
+
+Composants :
+
+* API de calcul de prix
+* Interface de réservation
+
+Éléments pris en compte :
+
+* Nombre de nuits
+* Prix par nuit
+* Frais de ménage
+* Frais de service
+
+Formule :
+
+Total = (Nombre de nuits × Prix par nuit)
++ Frais de ménage
++ Frais de service
+
+Règles métier :
+
+* Le calcul est exécuté à chaque modification des dates.
+* Le montant affiché correspond au montant enregistré lors de la création de la réservation.
+* Une réservation ne peut être validée sans calcul du montant total.
+
+Flux :
+
+* Sélection des dates.
+* Calcul du nombre de nuits.
+* Calcul du montant total.
+* Mise à jour de l'interface utilisateur.
+* Validation de la réservation.
+
+6.5 – Notifications In-App
+
+Objectif :
+Fournir un système de notifications internes accessible depuis l'interface utilisateur.
+
+Composants :
+
+Table notification :
+
+* user
+* type
+* title
+* content
+* isRead
+* channel
+* createdAt
+
+Fonctionnalités :
+
+* Création automatique des notifications.
+* Consultation des notifications.
+* Marquage comme lues.
+* Affichage du nombre de notifications non lues.
+
+Règles métier :
+
+* Une notification est créée lors des principaux événements métier.
+* Les notifications sont persistées en base de données.
+* Les notifications non lues sont comptabilisées dans le badge de l'interface.
+
+Flux :
+
+* Déclenchement d'un événement métier.
+* Création de la notification.
+* Stockage en base de données.
+* Affichage dans l'interface utilisateur.
+* Mise à jour du compteur de notifications non lues.
+
+QUESTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Le jour de check-out est-il réservable par un nouveau voyageur ? Comment gérez-vous la superposition d'un départ à 11h et d'une arrivée à 15h dans votre schéma de données ?
+
+Réponse :
+
+Oui, le jour de check-out est réservable par un nouveau voyageur.
+
+Les séjours sont modélisés sous forme d'intervalles semi-ouverts [checkin, checkout[. La date d'arrivée est incluse dans la réservation tandis que la date de départ est exclue. Ainsi, une réservation du 10 au 15 juillet occupe les nuits du 10 au 14 juillet et libère automatiquement le logement le 15 juillet.
+
+Le système travaille uniquement avec des dates et non avec des heures pour les contrôles de disponibilité. Les horaires d'arrivée et de départ sont des informations communiquées au voyageur mais ne participent pas au calcul des conflits. Cette approche est cohérente avec le fonctionnement des plateformes de location courte durée où la réservation est exprimée en nombre de nuits.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Une demande Pending bloque-t-elle les dates ? Analysez les risques liés à ce choix (blocage abusif vs overbooking).
+
+Réponse :
+
+Les réservations ayant le statut pending ne bloquent pas les dates.
+
+Cette approche évite qu'un utilisateur puisse bloquer artificiellement plusieurs logements en multipliant les demandes sans intention réelle de réserver. Un blocage des dates dès la création d'une demande augmenterait fortement le risque d'indisponibilités artificielles.
+
+Le principal inconvénient est le risque d'overbooking lorsque plusieurs voyageurs effectuent une demande sur la même période. Ce risque est limité par une nouvelle vérification de disponibilité au moment de la confirmation de la réservation par l'hôte. Si une réservation concurrente a déjà été confirmée, la demande ne peut plus être validée.
+
+Cette stratégie privilégie la disponibilité réelle du calendrier tout en conservant un mécanisme de contrôle lors de la confirmation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Comment votre base de données réagit-elle si deux utilisateurs valident un paiement à la milliseconde près pour le même logement et les mêmes dates ?
+
+Réponse :
+
+Le système applique une double protection contre les conflits de concurrence.
+
+La première protection est réalisée au niveau applicatif. Avant toute confirmation, une nouvelle vérification de disponibilité est exécutée afin de détecter une réservation confirmée sur la même période.
+
+La seconde protection repose sur PostgreSQL et son niveau d'isolation READ COMMITTED. Une transaction ne peut consulter que les données déjà validées. Si une réservation est confirmée par une transaction concurrente, la vérification suivante détectera immédiatement le conflit.
+
+Cette combinaison permet d'éviter la création simultanée de deux réservations confirmées pour les mêmes dates tout en conservant de bonnes performances.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Comment valider la disponibilité d'un logement sur 20 nuits consécutives sans saturer la base de requêtes SQL itératives ?
+
+Réponse :
+
+La validation de disponibilité repose sur deux requêtes SQL agrégées indépendantes de la durée du séjour.
+
+La première vérifie l'existence d'une réservation confirmée en conflit sur la période demandée.
+
+La seconde vérifie l'existence de jours bloqués dans la table property_availability.
+
+Cette approche évite toute boucle applicative sur les dates et maintient un nombre constant de requêtes, que la réservation concerne une nuit ou plusieurs semaines. Le traitement est ainsi délégué au moteur SQL qui exploite directement les index présents sur les colonnes de dates.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Pourquoi l'envoi d'email doit-il préférentiellement intervenir après le flush() de l'ORM ? Quelle est la stratégie si RabbitMQ tombe en panne ?
+
+Réponse :
+
+L'envoi des emails intervient uniquement après l'exécution du flush() afin de garantir que les données sont effectivement enregistrées en base de données.
+
+Si une erreur survient avant la persistance, aucun email n'est envoyé et aucune incohérence n'est créée. Cette approche garantit que chaque notification correspond à une opération métier réellement validée.
+
+Le système utilise Symfony Messenger avec un transport Doctrine. Les messages sont stockés dans la table messenger_messages. En cas d'arrêt du Worker, les messages restent persistés en base de données et sont traités lors du redémarrage du service.
+
+Cette architecture évite la dépendance à un service externe tel que RabbitMQ et garantit l'absence de perte de messages tant que la base de données reste disponible.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Justifiez votre choix d'architecture pour le calendrier : table de jours individuels (PropertyAvailability) ou table de périodes (date_start, date_end).
+
+Réponse :
+
+Le calendrier est basé sur une table de jours individuels nommée property_availability.
+
+Chaque ligne représente une journée indisponible pour un logement donné.
+
+Cette modélisation présente plusieurs avantages :
+
+* vérification simplifiée des disponibilités ;
+* suppression ou ajout d'un jour spécifique sans découpage de périodes ;
+* compatibilité naturelle avec l'import et l'export iCal ;
+* affichage direct dans une interface calendaire.
+
+Une modélisation basée sur des périodes réduirait le nombre d'enregistrements mais complexifierait les traitements. Le déblocage partiel d'une période nécessiterait par exemple la création de nouvelles plages et la gestion des fusions ou des découpages de périodes.
+
+Le choix d'une table de jours individuels privilégie la simplicité de maintenance, la lisibilité des requêtes et la cohérence avec les fonctionnalités de synchronisation calendrier.

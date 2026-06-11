@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="fr">
+<body style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #EF4444;">Réservation annulée</h1>
+    <p>Bonjour,</p>
+    <p>La réservation pour <strong>{{ reservation.property.title }}</strong> a été annulée.</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Logement</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.property.title }}</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Dates</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; color: #666;">Motif</td>
+            <td style="padding: 8px;"><strong>{{ reason }}</strong></td>
+        </tr>
+    </table>
+    <p style="color: #999; font-size: 12px;">Cet email a été envoyé automatiquement par votre plateforme de location.</p>
+</body>
+</html>

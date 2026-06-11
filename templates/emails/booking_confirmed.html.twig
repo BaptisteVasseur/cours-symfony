@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="fr">
+<body style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #FF5A5F;">Réservation confirmée ✓</h1>
+    <p>Bonjour,</p>
+    <p>Votre réservation pour <strong>{{ reservation.property.title }}</strong> est confirmée.</p>
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Logement</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.property.title }}</strong></td>
+        </tr>
+        {% if reservation.property.address %}
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Adresse</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                {{ reservation.property.address.addressLine1 }},
+                {{ reservation.property.address.city }}
+                {% if reservation.property.address.country %}, {{ reservation.property.address.country }}{% endif %}
+            </td>
+        </tr>
+        {% endif %}
+        {% if reservation.property.host %}
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Contact hôte</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ reservation.property.host.email }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Arrivée</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.checkinDate|date('d/m/Y') }}</strong>{% if reservation.property.checkinTime %} à {{ reservation.property.checkinTime|date('H:i') }}{% endif %}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Départ</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.checkoutDate|date('d/m/Y') }}</strong>{% if reservation.property.checkoutTime %} avant {{ reservation.property.checkoutTime|date('H:i') }}{% endif %}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Voyageurs</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.guestsCount }}</strong></td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; color: #666;">Montant total</td>
+            <td style="padding: 8px;"><strong>{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</strong></td>
+        </tr>
+    </table>
+    <p>Bon séjour !</p>
+    <p style="color: #999; font-size: 12px;">Cet email a été envoyé automatiquement par votre plateforme de location.</p>
+</body>
+</html>

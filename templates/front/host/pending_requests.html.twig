@@ -1,0 +1,11 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+        <a href="{{ path('app_host_all_requests') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Tableau de bord
+        </a>
+        <h1 class="text-2xl font-semibold text-gray-900 mb-6">Demandes pour : {{ property.title }}</h1>
+        <a href="{{ path('app_host_all_requests') }}" class="text-brand hover:underline text-sm">Voir toutes mes demandes</a>
+    </main>
+{% endblock %}
