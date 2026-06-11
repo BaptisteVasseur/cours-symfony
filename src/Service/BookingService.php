@@ -10,8 +10,13 @@ use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Exception\BookingConflictException;
 use App\Exception\UnavailableDatesException;
+use App\Message\BookingCancelledMessage;
+use App\Message\BookingConfirmedMessage;
+use App\Message\BookingCreatedMessage;
+use App\Message\BookingRefusedMessage;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 final class BookingService
 {
@@ -19,6 +24,7 @@ final class BookingService
         private readonly EntityManagerInterface $entityManager,
         private readonly AvailabilityService $availabilityService,
         private readonly BookingPriceCalculator $priceCalculator,
+        private readonly MessageBusInterface $messageBus,
     ) {
     }
 
@@ -29,7 +35,7 @@ final class BookingService
         \DateTimeImmutable $checkout,
         int $guestsCount,
     ): Reservation {
-        return $this->entityManager->wrapInTransaction(function () use ($property, $guest, $checkin, $checkout, $guestsCount): Reservation {
+        $reservation = $this->entityManager->wrapInTransaction(function () use ($property, $guest, $checkin, $checkout, $guestsCount): Reservation {
             $this->assertCreationIsValid($property, $guest, $checkin, $checkout, $guestsCount);
 
             if (!$this->availabilityService->isAvailable($property, $checkin, $checkout, $guestsCount)) {
@@ -61,18 +67,30 @@ final class BookingService
 
             return $reservation;
         });
+
+        if ($reservation->getStatus() === 'confirmed') {
+            $this->messageBus->dispatch(new BookingConfirmedMessage($this->reservationId($reservation)));
+        } else {
+            $this->messageBus->dispatch(new BookingCreatedMessage($this->reservationId($reservation)));
+        }
+
+        return $reservation;
     }
 
     public function confirm(Reservation $reservation, ?User $actor): Reservation
     {
-        return $this->entityManager->wrapInTransaction(fn (): Reservation => $this->confirmInsideTransaction($reservation, $actor));
+        $reservation = $this->entityManager->wrapInTransaction(fn (): Reservation => $this->confirmInsideTransaction($reservation, $actor));
+
+        $this->messageBus->dispatch(new BookingConfirmedMessage($this->reservationId($reservation)));
+
+        return $reservation;
     }
 
     public function refuse(Reservation $reservation, User $actor, string $reason): Reservation
     {
         $this->assertReasonIsProvided($reason, 'Un motif de refus est obligatoire.');
 
-        return $this->entityManager->wrapInTransaction(function () use ($reservation, $actor, $reason): Reservation {
+        $reservation = $this->entityManager->wrapInTransaction(function () use ($reservation, $actor, $reason): Reservation {
             if ($reservation->getStatus() !== 'pending') {
                 throw new \LogicException('Cette réservation ne peut plus être refusée.');
             }
@@ -83,13 +101,21 @@ final class BookingService
 
             return $reservation;
         });
+
+        $this->messageBus->dispatch(new BookingRefusedMessage($this->reservationId($reservation)));
+
+        return $reservation;
     }
 
     public function cancel(Reservation $reservation, ?User $actor, string $reason): Reservation
     {
         $this->assertReasonIsProvided($reason, 'Un motif d\'annulation est obligatoire.');
 
-        return $this->cancelWithStatusMessage($reservation, $actor, $reason, 'Transition invalide');
+        $reservation = $this->cancelWithStatusMessage($reservation, $actor, $reason, 'Transition invalide');
+
+        $this->messageBus->dispatch(new BookingCancelledMessage($this->reservationId($reservation)));
+
+        return $reservation;
     }
 
     public function expire(Reservation $reservation): Reservation
@@ -202,6 +228,12 @@ final class BookingService
         if ($guestsCount < 1) {
             throw new \LogicException('Il doit y avoir au moins un voyageur.');
         }
+
+        $nights = (int) $checkin->diff($checkout)->days;
+        $minimumStay = $property->getMinStayNights();
+        if ($minimumStay !== null && $minimumStay > 0 && $nights < $minimumStay) {
+            throw new \LogicException(sprintf('Ce logement impose un séjour minimum de %d nuit%s.', $minimumStay, $minimumStay > 1 ? 's' : ''));
+        }
     }
 
     private function assertReasonIsProvided(string $reason, string $message): void
@@ -209,5 +241,15 @@ final class BookingService
         if (trim($reason) === '') {
             throw new \LogicException($message);
         }
+    }
+
+    private function reservationId(Reservation $reservation): string
+    {
+        $id = $reservation->getId();
+        if ($id === null) {
+            throw new \LogicException('Réservation invalide');
+        }
+
+        return $id->toRfc4122();
     }
 }

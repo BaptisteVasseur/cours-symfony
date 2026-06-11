@@ -1,0 +1,137 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Calendrier - {{ property.title }}{% endblock %}
+
+{% set leadingBlankDays = calendar.monthStart|date('N') - 1 %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+        <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Retour à mes propriétés
+        </a>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="flex flex-col lg:flex-row lg:items-start gap-8">
+            <section class="flex-1">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Calendrier</h1>
+                        <p class="text-gray-500 text-sm mt-1">{{ property.title }}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <a href="{{ path('app_host_calendar', { id: property.id, month: calendar.previousMonth }) }}" class="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50">
+                            <i class="fa-solid fa-chevron-left text-sm"></i>
+                        </a>
+                        <div class="px-4 py-2 rounded-lg border border-gray-200 bg-white text-sm font-semibold min-w-40 text-center">
+                            {{ calendar.monthStart|date('m/Y') }}
+                        </div>
+                        <a href="{{ path('app_host_calendar', { id: property.id, month: calendar.nextMonth }) }}" class="w-10 h-10 rounded-lg border border-gray-200 flex items-center justify-center hover:bg-gray-50">
+                            <i class="fa-solid fa-chevron-right text-sm"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+                    <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200 text-xs font-semibold text-gray-500">
+                        {% for dayLabel in ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] %}
+                            <div class="px-3 py-2 text-center">{{ dayLabel }}</div>
+                        {% endfor %}
+                    </div>
+                    <div class="grid grid-cols-7">
+                        {% if leadingBlankDays > 0 %}
+                            {% for i in 1..leadingBlankDays %}
+                                <div class="min-h-28 border-r border-b border-gray-100 bg-gray-50/60"></div>
+                            {% endfor %}
+                        {% endif %}
+                        {% for day in calendar.days %}
+                            <div class="min-h-28 border-r border-b border-gray-100 p-2 {{ day.status == 'reserved' ? 'bg-green-50' : (day.status == 'blocked' ? 'bg-red-50' : 'bg-white') }}">
+                                <div class="flex items-center justify-between gap-2 mb-2">
+                                    <span class="text-sm font-semibold text-gray-900">{{ day.dayNumber }}</span>
+                                    {% if day.status == 'reserved' %}
+                                        <span class="w-2 h-2 rounded-full bg-green-500"></span>
+                                    {% elseif day.status == 'blocked' %}
+                                        <span class="w-2 h-2 rounded-full bg-red-500"></span>
+                                    {% else %}
+                                        <span class="w-2 h-2 rounded-full bg-gray-200"></span>
+                                    {% endif %}
+                                </div>
+                                {% for reservation in day.reservations %}
+                                    <div class="mb-1 rounded-md bg-green-100 text-green-800 px-2 py-1 text-[11px] font-semibold truncate">
+                                        {{ reservation.guest.profile.firstName|default(reservation.guest.email) }}
+                                    </div>
+                                {% endfor %}
+                                {% for block in day.blocks %}
+                                    <div class="mb-1 rounded-md bg-red-100 text-red-800 px-2 py-1 text-[11px] font-semibold truncate">
+                                        Indisponible
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-4 mt-4 text-xs text-gray-600">
+                    <span class="inline-flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-gray-200"></span> Disponible</span>
+                    <span class="inline-flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-red-500"></span> Bloqué</span>
+                    <span class="inline-flex items-center gap-2"><span class="w-2.5 h-2.5 rounded-full bg-green-500"></span> Réservé confirmé</span>
+                </div>
+            </section>
+
+            <aside class="w-full lg:w-80 space-y-6">
+                <section class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                    <h2 class="text-base font-semibold text-gray-900 mb-4">Bloquer une période</h2>
+                    <form action="{{ path('app_host_block_create', { id: property.id }) }}" method="POST" class="space-y-4">
+                        <input type="hidden" name="_token" value="{{ csrf_token('block_period' ~ property.id) }}">
+                        <div>
+                            <label for="start_date" class="block text-xs font-semibold text-gray-600 mb-1">Début</label>
+                            <input id="start_date" name="start_date" type="date" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label for="end_date" class="block text-xs font-semibold text-gray-600 mb-1">Réouverture</label>
+                            <input id="end_date" name="end_date" type="date" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                            <p class="text-[11px] text-gray-400 mt-1">La date de réouverture n’est pas bloquée.</p>
+                        </div>
+                        <div>
+                            <label for="notes" class="block text-xs font-semibold text-gray-600 mb-1">Motif</label>
+                            <textarea id="notes" name="notes" rows="3" placeholder="Travaux, usage personnel..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-2.5 rounded-lg text-sm">
+                            Bloquer
+                        </button>
+                    </form>
+                </section>
+
+                <section class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                    <h2 class="text-base font-semibold text-gray-900 mb-4">Indisponibilités du mois</h2>
+                    {% if calendar.blocks|length > 0 %}
+                        <div class="space-y-3">
+                            {% for block in calendar.blocks %}
+                                <div class="border border-gray-100 rounded-lg p-3">
+                                    <div class="text-sm font-semibold text-gray-900">
+                                        {{ block.startDate|date('d/m/Y') }} → {{ block.endDate|date('d/m/Y') }}
+                                    </div>
+                                    {% if block.notes %}
+                                        <p class="text-xs text-gray-500 mt-1">{{ block.notes }}</p>
+                                    {% endif %}
+                                    <form action="{{ path('app_host_block_delete', { id: block.id }) }}" method="POST" class="mt-3">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete_block' ~ block.id) }}">
+                                        <button type="submit" class="inline-flex items-center gap-2 text-xs font-semibold text-red-600 hover:text-red-700">
+                                            <i class="fa-solid fa-trash"></i> Supprimer
+                                        </button>
+                                    </form>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-gray-500">Aucune période bloquée sur ce mois.</p>
+                    {% endif %}
+                </section>
+            </aside>
+        </div>
+    </main>
+{% endblock %}
