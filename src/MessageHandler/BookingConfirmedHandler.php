@@ -31,7 +31,7 @@ final readonly class BookingConfirmedHandler
 
         $property = $reservation->getProperty();
         $guest = $reservation->getGuest();
-        $host = $property?->getHost();
+        $host = $reservation->getHost();
 
         if ($guest !== null && $property !== null) {
             $title = 'Séjour confirmé !';

@@ -32,7 +32,7 @@ final readonly class BookingCancelledHandler
 
         $property = $reservation->getProperty();
         $guest = $reservation->getGuest();
-        $host = $property?->getHost();
+        $host = $reservation->getHost();
 
         $actorStr = null;
         foreach ($reservation->getStatusHistory() as $history) {

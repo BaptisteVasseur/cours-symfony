@@ -119,7 +119,7 @@ final class HostDashboardController extends AbstractController
 
             $partHost = new ConversationParticipant();
             $partHost->setConversation($conversation);
-            $partHost->setUser($reservation->getProperty()->getHost());
+            $partHost->setUser($reservation->getHost());
             $entityManager->persist($partHost);
 
             $entityManager->flush();

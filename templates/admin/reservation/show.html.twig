@@ -4,7 +4,7 @@
 {% set cover = property ? property.coverMedia : null %}
 {% set guest = reservation.guest %}
 {% set guestProfile = guest ? guest.profile : null %}
-{% set hostProfile = property and property.host ? property.host.profile : null %}
+{% set hostProfile = reservation.host ? reservation.host.profile : null %}
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
 {% set statusLabels = {
@@ -120,7 +120,7 @@
                             {% endif %}
                         </div>
                     </div>
-                    {% if hostProfile or (property and property.host) %}
+                    {% if hostProfile or reservation.host %}
                         <div class="flex items-start gap-3">
                             <div class="w-10 h-10 bg-rose-50 text-brand rounded-full flex items-center justify-center shrink-0">
                                 <i class="fa-solid fa-house-user text-sm"></i>
@@ -134,7 +134,7 @@
                                         —
                                     {% endif %}
                                 </dd>
-                                <dd class="text-gray-500">{{ property.host ? property.host.email : '—' }}</dd>
+                                <dd class="text-gray-500">{{ reservation.host ? reservation.host.email : '—' }}</dd>
                             </div>
                         </div>
                     {% endif %}

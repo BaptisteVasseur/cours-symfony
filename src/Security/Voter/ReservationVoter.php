@@ -36,7 +36,7 @@ final class ReservationVoter extends Voter
         }
 
         $isGuest = $reservation->getGuest()?->getId() === $user->getId();
-        $isHost = $reservation->getProperty()?->getHost()?->getId() === $user->getId();
+        $isHost = $reservation->getHost()?->getId() === $user->getId();
 
         return match ($attribute) {
             self::VIEW => $isGuest || $isHost,

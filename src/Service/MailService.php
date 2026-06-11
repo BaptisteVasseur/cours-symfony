@@ -116,7 +116,7 @@ final class MailService
     public function sendBookingPendingHostEmail(Reservation $reservation): void
     {
         $property = $reservation->getProperty();
-        $host = $property?->getHost();
+        $host = $reservation->getHost();
         if ($host === null) {
             return;
         }
@@ -137,7 +137,7 @@ final class MailService
         $this->sendBookingConfirmationEmail($reservation);
 
         $property = $reservation->getProperty();
-        $host = $property?->getHost();
+        $host = $reservation->getHost();
         if ($host === null) {
             return;
         }
@@ -186,7 +186,7 @@ final class MailService
             );
         }
 
-        $host = $reservation->getProperty()?->getHost();
+        $host = $reservation->getHost();
         if ($host !== null && $host->getId() !== $guest?->getId()) {
             $this->sendReservationEmail(
                 $reservation,

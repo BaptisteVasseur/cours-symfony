@@ -30,7 +30,7 @@ final readonly class BookingCreatedHandler
         $this->mailService->sendBookingPendingHostEmail($reservation);
 
         $property = $reservation->getProperty();
-        $host = $property?->getHost();
+        $host = $reservation->getHost();
         if ($host !== null) {
             $guestName = $reservation->getGuest()?->getProfile()?->getFirstName() ?? 'Un voyageur';
             $title = 'Nouvelle demande de réservation';

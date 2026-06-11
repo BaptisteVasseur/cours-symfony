@@ -110,7 +110,7 @@ class BookingRepository extends ServiceEntityRepository
             ->leftJoin('p.address', 'a')
             ->leftJoin('r.guest', 'g')
             ->leftJoin('g.profile', 'gp')
-            ->leftJoin('p.host', 'host')
+            ->leftJoin('r.host', 'host')
             ->leftJoin('host.profile', 'hostProfile')
             ->leftJoin('r.statusHistory', 'h')
             ->leftJoin('r.payments', 'pay')
@@ -169,7 +169,7 @@ class BookingRepository extends ServiceEntityRepository
             ->leftJoin('p.address', 'a')
             ->leftJoin('r.guest', 'g')
             ->leftJoin('g.profile', 'gp')
-            ->andWhere('p.host = :host')
+            ->andWhere('r.host = :host')
             ->setParameter('host', $host);
 
         if ($status !== null && $status !== '') {
@@ -192,7 +192,7 @@ class BookingRepository extends ServiceEntityRepository
         $result = $this->createQueryBuilder('r')
             ->select('SUM(r.totalPrice)')
             ->leftJoin('r.property', 'p')
-            ->andWhere('p.host = :host')
+            ->andWhere('r.host = :host')
             ->andWhere('r.status IN (:statuses)')
             ->setParameter('host', $host)
             ->setParameter('statuses', [BookingStatus::CONFIRMED, BookingStatus::COMPLETED])
@@ -207,7 +207,7 @@ class BookingRepository extends ServiceEntityRepository
         return (int) $this->createQueryBuilder('r')
             ->select('COUNT(r.id)')
             ->leftJoin('r.property', 'p')
-            ->andWhere('p.host = :host')
+            ->andWhere('r.host = :host')
             ->andWhere('r.status = :status')
             ->setParameter('host', $host)
             ->setParameter('status', BookingStatus::PENDING)

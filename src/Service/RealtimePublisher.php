@@ -42,7 +42,7 @@ final class RealtimePublisher
             $recipients[$guest->getId()->toRfc4122()] = $guest;
         }
 
-        $host = $reservation->getProperty()?->getHost();
+        $host = $reservation->getHost();
         if ($host instanceof User && $host->getId() !== null) {
             $recipients[$host->getId()->toRfc4122()] = $host;
         }

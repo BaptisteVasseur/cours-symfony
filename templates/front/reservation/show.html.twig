@@ -3,7 +3,7 @@
 {% set property = reservation.property %}
 {% set cover = property ? property.coverMedia : null %}
 {% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
-{% set hostProfile = property and property.host ? property.host.profile : null %}
+{% set hostProfile = reservation.host ? reservation.host.profile : null %}
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
 {% set statusLabels = {
@@ -59,7 +59,7 @@
                     </dl>
                 </section>
 
-                {% set isHost = property and property.host and property.host.id == app.user.id %}
+                {% set isHost = reservation.host and reservation.host.id == app.user.id %}
                 <section class="border border-gray-200 rounded-xl p-6 bg-white">
                     {% if isHost %}
                         <h2 class="text-lg font-semibold mb-4">Informations sur le voyageur</h2>
@@ -91,19 +91,19 @@
                                     {% if hostProfile.avatarUrl %}
                                         <img src="{{ hostProfile.avatarUrl }}" alt="" class="w-full h-full object-cover">
                                     {% else %}
-                                        {{ property.host.profile.firstName|default(property.host.email)|first|upper }}
+                                        {{ reservation.host.profile.firstName|default(reservation.host.email)|first|upper }}
                                     {% endif %}
                                 </div>
                                 <div>
                                     <h3 class="font-semibold text-gray-900">{{ hostProfile.firstName }} {{ hostProfile.lastName }}</h3>
-                                    <p class="text-sm text-gray-500">{{ property.host.email }}</p>
-                                    {% if property.host.phone %}
-                                        <p class="text-xs text-gray-400 mt-0.5"><i class="fa-solid fa-phone"></i> {{ property.host.phone }}</p>
+                                    <p class="text-sm text-gray-500">{{ reservation.host.email }}</p>
+                                    {% if reservation.host.phone %}
+                                        <p class="text-xs text-gray-400 mt-0.5"><i class="fa-solid fa-phone"></i> {{ reservation.host.phone }}</p>
                                     {% endif %}
                                 </div>
                             </div>
                         {% else %}
-                            <p class="text-sm text-gray-500">{{ property.host.email }}</p>
+                            <p class="text-sm text-gray-500">{{ reservation.host.email }}</p>
                         {% endif %}
                     {% endif %}
                 </section>
@@ -212,7 +212,7 @@
             </div>
 
             <aside class="space-y-6">
-                {% set isHost = property and property.host and property.host.id == app.user.id %}
+                {% set isHost = reservation.host and reservation.host.id == app.user.id %}
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28 bg-white shadow-sm">
                     <h2 class="text-base font-semibold mb-4 text-gray-500">Récapitulatif</h2>
                     <p class="text-3xl font-bold text-gray-900 mb-6">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
