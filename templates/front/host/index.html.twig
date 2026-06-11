@@ -1,0 +1,94 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Espace hôte{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Espace hôte</h1>
+        <p class="text-gray-500 mb-8">Gérez le calendrier et les disponibilités de vos logements.</p>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <a href="{{ path('app_host_reservations') }}" class="flex items-center justify-between gap-4 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition mb-8">
+            <div class="flex items-center gap-4">
+                <div class="w-11 h-11 rounded-full bg-brand/10 flex items-center justify-center">
+                    <i class="fa-solid fa-inbox text-brand"></i>
+                </div>
+                <div>
+                    <h3 class="font-semibold text-gray-900">Demandes de réservation</h3>
+                    <p class="text-sm text-gray-500">Validez ou refusez les réservations sur demande.</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                {% if pendingCount > 0 %}
+                    <span class="text-xs font-bold px-2.5 py-1 rounded-full bg-brand text-white">{{ pendingCount }} en attente</span>
+                {% else %}
+                    <span class="text-xs font-medium text-gray-400">À jour</span>
+                {% endif %}
+                <i class="fa-solid fa-chevron-right text-gray-300"></i>
+            </div>
+        </a>
+
+        {% if properties|length > 0 %}
+            <div class="space-y-4">
+                {% for property in properties %}
+                    {% set cover = property.coverMedia %}
+                    <div class="flex flex-col sm:flex-row items-stretch gap-4 bg-white border border-gray-200 rounded-2xl p-4 shadow-sm">
+                        <div class="w-full sm:w-40 h-32 shrink-0 overflow-hidden rounded-xl bg-gray-100">
+                            <img
+                                class="h-full w-full object-cover"
+                                src="{{ cover ? cover.fileUrl : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' }}"
+                                alt="{{ property.title }}"
+                            >
+                        </div>
+                        <div class="flex-grow flex flex-col">
+                            <div class="flex items-start justify-between gap-2">
+                                <h3 class="font-semibold text-gray-900">{{ property.title }}</h3>
+                                {% set badge = {
+                                    'published': 'bg-emerald-50 text-emerald-700',
+                                    'pending': 'bg-amber-50 text-amber-700',
+                                    'draft': 'bg-gray-100 text-gray-600'
+                                } %}
+                                {% set statusLabel = {
+                                    'published': 'Publié',
+                                    'pending': 'En attente',
+                                    'draft': 'Brouillon'
+                                } %}
+                                <span class="text-xs font-semibold px-2.5 py-1 rounded-full {{ badge[property.status] ?? 'bg-gray-100 text-gray-600' }}">
+                                    {{ statusLabel[property.status] ?? property.status }}
+                                </span>
+                            </div>
+                            {% if property.address %}
+                                <p class="text-gray-500 text-sm mt-1">{{ property.address.city }}{% if property.address.country %}, {{ property.address.country }}{% endif %}</p>
+                            {% endif %}
+                            <p class="text-sm text-gray-600 mt-1">
+                                {{ property.maxGuests }} voyageurs · {{ property.pricePerNight|number_format(0, ',', ' ') }} € / nuit
+                            </p>
+                            <div class="mt-auto pt-3 flex flex-wrap gap-2">
+                                <a href="{{ path('app_host_calendar', { id: property.id }) }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brandHover text-white text-sm font-semibold px-4 py-2 rounded-xl transition">
+                                    <i class="fa-solid fa-calendar-days"></i>
+                                    Gérer le calendrier
+                                </a>
+                                <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 border border-gray-300 hover:bg-gray-50 text-gray-700 text-sm font-semibold px-4 py-2 rounded-xl transition">
+                                    <i class="fa-solid fa-eye"></i>
+                                    Voir l'annonce
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-16 border border-dashed border-gray-200 rounded-xl">
+                <i class="fa-solid fa-house text-4xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500">Vous n'avez encore aucun logement à gérer.</p>
+            </div>
+        {% endif %}
+    </main>
+{% endblock %}
