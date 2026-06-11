@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\DataFixtures\Faker;
 
 use App\Entity\User;
+use App\Enum\UnavailabilityReason;
 use Symfony\Component\DependencyInjection\Attribute\AutoconfigureTag;
 use Symfony\Component\PasswordHasher\Hasher\PasswordHasherFactoryInterface;
 
@@ -50,5 +51,15 @@ final class AppFakerProvider
         $cents = random_int($min * 100, $max * 100);
 
         return number_format($cents / 100, 2, '.', '');
+    }
+
+    /**
+     * Renvoie un motif d'indisponibilité (enum), Faker ne sachant pas instancier d'enum natif.
+     */
+    public function unavailabilityReason(): UnavailabilityReason
+    {
+        $cases = UnavailabilityReason::cases();
+
+        return $cases[random_int(0, count($cases) - 1)];
     }
 }

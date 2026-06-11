@@ -1,0 +1,18 @@
+# Périodes bloquées par l'hôte (spec A.2, condition « jours manuellement bloqués »).
+# Une période par annonce, placée loin dans le futur (start +10..+40, end +45..+90) :
+# end est toujours > start et ne chevauche pas les réservations seedées court terme.
+App\Entity\PropertyUnavailability:
+    unavailability_{1..12}:
+        property: '@property_<current()>'
+        startDate: '<dateImmutable("+10 days", "+40 days")>'
+        endDate: '<dateImmutable("+45 days", "+90 days")>'
+        reason: '<unavailabilityReason()>'
+        note: '<sentence(6)>'
+    # Indisponibilités sur les annonces du compte de démo (hote@airbnb-clone.fr),
+    # pour que le calendrier hôte soit démontrable en stack Alice également.
+    unavailability_demo_{1..2}:
+        property: '@property_demo_<current()>'
+        startDate: '<dateImmutable("+10 days", "+40 days")>'
+        endDate: '<dateImmutable("+45 days", "+90 days")>'
+        reason: '<unavailabilityReason()>'
+        note: '<sentence(6)>'
