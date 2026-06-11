@@ -88,6 +88,42 @@
                     </section>
                 {% endif %}
 
+                <section class="pb-8 border-b border-gray-200">
+                    <h2 class="text-xl font-semibold text-gray-900 mb-6">Disponibilités</h2>
+                    {% set calMonth = 'now'|date_modify('first day of this month') %}
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                        {% for m in 0..1 %}
+                            {% set monthStart = calMonth|date_modify('+' ~ m ~ ' months') %}
+                            {% set daysInMonth = monthStart|date_modify('last day of this month')|date('j') %}
+                            {% set firstWeekday = monthStart|date('N') %}
+                            <div>
+                                {% set monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'] %}
+                        <p class="text-sm font-semibold text-gray-700 mb-2">{{ monthNames[monthStart|date('n') - 1] }} {{ monthStart|date('Y') }}</p>
+                                <div class="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-1">
+                                    {% for d in ['L','M','M','J','V','S','D'] %}<div>{{ d }}</div>{% endfor %}
+                                </div>
+                                <div class="grid grid-cols-7 gap-1 text-center text-xs">
+                                    {% if firstWeekday > 1 %}{% for blank in 1..(firstWeekday - 1) %}<div></div>{% endfor %}{% endif %}
+                                    {% for day in 1..daysInMonth %}
+                                        {% set dayStr = monthStart|date_modify('+' ~ (day - 1) ~ ' days')|date('Y-m-d') %}
+                                        {% set isPast = dayStr < 'now'|date('Y-m-d') %}
+                                        {% set isUnavailable = unavailableDates[dayStr] is defined %}
+                                        <div class="py-1.5 rounded
+                                            {% if isPast %} text-gray-300
+                                            {% elseif isUnavailable %} bg-gray-100 text-gray-400 line-through
+                                            {% else %} text-gray-800
+                                            {% endif %}">{{ day }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                    <div class="flex gap-4 mt-4 text-xs text-gray-500">
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-gray-100 inline-block"></span> Indisponible</span>
+                        <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-white border border-gray-300 inline-block"></span> Disponible</span>
+                    </div>
+                </section>
+
                 <section>
                     <h2 class="text-xl font-semibold text-gray-900 mb-6">
                         Avis ({{ totalReviews|default(property.reviews|length) }})

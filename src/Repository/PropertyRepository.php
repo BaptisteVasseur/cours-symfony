@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Property;
+use App\Entity\PropertyAvailability;
+use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -96,6 +98,61 @@ class PropertyRepository extends ServiceEntityRepository
             ->setMaxResults(6)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
+    public function search(
+        ?string $destination,
+        ?\DateTimeImmutable $checkinDate,
+        ?\DateTimeImmutable $checkoutDate,
+        int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :published')
+            ->setParameter('published', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.addressLine1) LIKE :destination')
+                ->setParameter('destination', '%' . mb_strtolower($destination) . '%');
+        }
+
+        if ($guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkinDate !== null && $checkoutDate !== null && $checkinDate < $checkoutDate) {
+            $overlap = $this->getEntityManager()->createQueryBuilder()
+                ->select('IDENTITY(res.property)')
+                ->from(Reservation::class, 'res')
+                ->where('res.status = :confirmed')
+                ->andWhere('res.checkinDate < :checkout')
+                ->andWhere('res.checkoutDate > :checkin');
+
+            $blocked = $this->getEntityManager()->createQueryBuilder()
+                ->select('IDENTITY(av.property)')
+                ->from(PropertyAvailability::class, 'av')
+                ->where('av.isAvailable = false')
+                ->andWhere('av.availableDate >= :checkin')
+                ->andWhere('av.availableDate < :checkout');
+
+            $qb->andWhere($qb->expr()->notIn('p.id', $overlap->getDQL()))
+                ->andWhere($qb->expr()->notIn('p.id', $blocked->getDQL()))
+                ->setParameter('confirmed', 'confirmed')
+                ->setParameter('checkin', $checkinDate)
+                ->setParameter('checkout', $checkoutDate);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     public function findOneForDetail(Property $property): ?Property

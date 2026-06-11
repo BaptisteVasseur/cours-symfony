@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Property;
-use App\Entity\Reservation;
 use App\Entity\User;
+use App\Exception\UnavailableDatesException;
 use App\Form\BookingType;
+use App\Repository\PropertyAvailabilityRepository;
 use App\Repository\PropertyRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Repository\ReservationRepository;
+use App\Service\ReservationService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +28,9 @@ final class BookingController extends AbstractController
         Request $request,
         Property $property,
         PropertyRepository $propertyRepository,
-        EntityManagerInterface $entityManager,
+        ReservationService $reservationService,
+        ReservationRepository $reservationRepository,
+        PropertyAvailabilityRepository $availabilityRepository,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -56,52 +60,53 @@ final class BookingController extends AbstractController
             if ($checkin >= $checkout) {
                 $this->addFlash('error', 'La date de départ doit être postérieure à la date d\'arrivée.');
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
 
             if ($guestsCount > $property->getMaxGuests()) {
                 $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
 
-            $nights = (int) $checkin->diff($checkout)->days;
-            $nightlyRate = (float) $property->getPricePerNight();
-            $subtotal = $nightlyRate * $nights;
-            $cleaningFee = (float) ($property->getCleaningFee() ?? 0);
-            $serviceFee = round($subtotal * 0.12, 2);
-            $totalPrice = round($subtotal + $cleaningFee + $serviceFee, 2);
+            try {
+                $reservation = $reservationService->create($property, $user, $checkin, $checkout, $guestsCount);
+            } catch (UnavailableDatesException) {
+                $this->addFlash('error', 'Ces dates ne sont plus disponibles pour ce logement.');
 
-            $reservation = new Reservation();
-            $reservation->setProperty($property);
-            $reservation->setGuest($user);
-            $reservation->setCheckinDate($checkin);
-            $reservation->setCheckoutDate($checkout);
-            $reservation->setGuestsCount($guestsCount);
-            $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
-            $reservation->setTotalPrice((string) $totalPrice);
-            $reservation->setCleaningFee($cleaningFee > 0 ? (string) $cleaningFee : null);
-            $reservation->setServiceFee((string) $serviceFee);
-            $reservation->setSecurityDeposit($property->getSecurityDeposit());
-            $reservation->setCurrency('EUR');
-
-            $entityManager->persist($reservation);
-            $entityManager->flush();
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
+            }
 
             $this->addFlash('success', 'Votre réservation a été enregistrée.');
 
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }
 
+        $blockedDays = [];
+        foreach ($availabilityRepository->findBlockedForProperty($property) as $avail) {
+            $blockedDays[] = $avail->getAvailableDate()->format('Y-m-d');
+        }
+
+        $unavailableForCheckin = $blockedDays;
+        $unavailableForCheckout = $blockedDays;
+
+        foreach ($reservationRepository->findConfirmedForProperty($property) as $reservation) {
+            $d = $reservation->getCheckinDate();
+            while ($d < $reservation->getCheckoutDate()) {
+                $unavailableForCheckin[] = $d->format('Y-m-d');
+                // checkout on the checkin day of another reservation is valid [checkin, checkout)
+                if ($d > $reservation->getCheckinDate()) {
+                    $unavailableForCheckout[] = $d->format('Y-m-d');
+                }
+                $d = $d->modify('+1 day');
+            }
+        }
+
         return $this->render('front/property/booking.html.twig', [
             'property' => $property,
             'form' => $form,
+            'unavailableForCheckin' => array_values(array_unique($unavailableForCheckin)),
+            'unavailableForCheckout' => array_values(array_unique($unavailableForCheckout)),
         ]);
     }
 }

@@ -18,11 +18,14 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
                 <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
-                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm"
+                     data-controller="datepicker"
+                     data-datepicker-unavailable-checkin-value="{{ unavailableForCheckin|json_encode }}"
+                     data-datepicker-unavailable-checkout-value="{{ unavailableForCheckout|json_encode }}">
                     {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', 'data-datepicker-checkin': '' } }) }}
+                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', 'data-datepicker-checkout': '' } }) }}
                         </div>
                         {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
                         <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
