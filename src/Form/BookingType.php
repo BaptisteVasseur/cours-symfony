@@ -18,13 +18,15 @@ class BookingType extends AbstractType
     {
         $builder
             ->add('checkinDate', DateType::class, [
-                'label' => 'Arrivée',
-                'widget' => 'single_text',
+                'label'       => 'Arrivée',
+                'widget'      => 'single_text',
+                'input'       => 'datetime_immutable',
                 'constraints' => [new NotBlank(message: 'La date d\'arrivée est obligatoire.')],
             ])
             ->add('checkoutDate', DateType::class, [
-                'label' => 'Départ',
-                'widget' => 'single_text',
+                'label'       => 'Départ',
+                'widget'      => 'single_text',
+                'input'       => 'datetime_immutable',
                 'constraints' => [
                     new NotBlank(message: 'La date de départ est obligatoire.'),
                 ],

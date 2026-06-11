@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -77,6 +78,9 @@ class ReservationRepository extends ServiceEntityRepository
     /**
      * @return list<Reservation>
      */
+    /**
+     * @return list<Reservation>
+     */
     public function findByGuestForListing(User $guest): array
     {
         return $this->createQueryBuilder('r')
@@ -91,5 +95,62 @@ class ReservationRepository extends ServiceEntityRepository
             ->orderBy('r.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Returns all booked date ranges for a property as [['from' => 'Y-m-d', 'to' => 'Y-m-d'], ...].
+     * The range covers [checkinDate, checkoutDate - 1 day] (semi-open interval: checkout day is free).
+     * Used to feed the front-end calendar so users cannot select already-booked nights.
+     *
+     * @return list<array{from: string, to: string}>
+     */
+    public function getBookedRanges(Property $property): array
+    {
+        $rows = $this->createQueryBuilder('r')
+            ->select('r.checkinDate', 'r.checkoutDate')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkoutDate >= :today')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->setParameter('today', new \DateTimeImmutable('today'))
+            ->getQuery()
+            ->getResult();
+
+        return array_map(static function (array $row): array {
+            /** @var \DateTimeImmutable $checkin */
+            $checkin = $row['checkinDate'];
+            /** @var \DateTimeImmutable $checkout */
+            $checkout = $row['checkoutDate'];
+
+            return [
+                'from' => $checkin->format('Y-m-d'),
+                'to'   => $checkout->modify('-1 day')->format('Y-m-d'),
+            ];
+        }, $rows);
+    }
+
+    /**
+     * Checks if a confirmed reservation overlaps with the given dates using a
+     * semi-open interval [checkin, checkout): a new checkin on the same day as
+     * an existing checkout is NOT a conflict.
+     */
+    public function hasOverlappingReservation(
+        Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+    ): bool {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout)
+            ->getQuery()
+            ->getSingleScalarResult() > 0;
     }
 }
