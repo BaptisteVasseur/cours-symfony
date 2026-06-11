@@ -1,0 +1,24 @@
+{% extends 'emails/_base.html.twig' %}
+
+{% block body %}
+    <h1 style="font-size:18px;margin:0 0 16px;">Demande de réservation refusée</h1>
+    <p style="margin:0 0 12px;">Bonjour {{ booking.guest.firstName }},</p>
+    <p style="margin:0 0 16px;">
+        Nous sommes désolés : votre demande pour <strong>{{ booking.listing.title }}</strong>
+        ({{ booking.checkIn|date('d/m/Y') }} → {{ booking.checkOut|date('d/m/Y') }}) a été refusée par l'hôte.
+    </p>
+
+    {% if booking.cancellationReason %}
+        <div style="background:#fef2f2;border-left:4px solid #ef4444;padding:12px 16px;margin:16px 0;font-size:14px;">
+            <strong>Motif :</strong> {{ booking.cancellationReason }}
+        </div>
+    {% endif %}
+
+    <p style="margin:0 0 16px;font-size:14px;color:#71717a;">
+        Aucun montant ne vous a été débité. Vous pouvez rechercher d'autres logements disponibles.
+    </p>
+
+    <a href="http://localhost:8089/search" style="display:inline-block;background:#FF385C;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:bold;">
+        Trouver un autre logement
+    </a>
+{% endblock %}

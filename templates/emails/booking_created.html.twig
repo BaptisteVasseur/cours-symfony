@@ -1,0 +1,21 @@
+{% extends 'emails/_base.html.twig' %}
+
+{% block body %}
+    <h1 style="font-size:18px;margin:0 0 16px;">Nouvelle demande de réservation</h1>
+    <p style="margin:0 0 12px;">Bonjour {{ booking.listing.host.firstName }},</p>
+    <p style="margin:0 0 16px;">
+        {{ booking.guest.firstName }} {{ booking.guest.lastName }} souhaite réserver votre logement
+        <strong>{{ booking.listing.title }}</strong>. Cette demande est en attente de votre validation.
+    </p>
+
+    <table cellpadding="0" cellspacing="0" style="width:100%;font-size:14px;border-collapse:collapse;margin:16px 0;">
+        <tr><td style="padding:6px 0;color:#71717a;">Dates</td><td style="padding:6px 0;text-align:right;">{{ booking.checkIn|date('d/m/Y') }} → {{ booking.checkOut|date('d/m/Y') }} ({{ booking.nightsCount }} nuit(s))</td></tr>
+        <tr><td style="padding:6px 0;color:#71717a;">Voyageurs</td><td style="padding:6px 0;text-align:right;">{{ booking.guestsCount }}</td></tr>
+        <tr><td style="padding:6px 0;color:#71717a;">Voyageur</td><td style="padding:6px 0;text-align:right;">{{ booking.guest.email }}</td></tr>
+        <tr><td style="padding:6px 0;color:#71717a;border-top:1px solid #e4e4e7;">Total</td><td style="padding:6px 0;text-align:right;font-weight:bold;border-top:1px solid #e4e4e7;">{{ booking.totalAmount }} {{ booking.currency }}</td></tr>
+    </table>
+
+    <a href="http://localhost:8089/host/bookings" style="display:inline-block;background:#FF385C;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:bold;">
+        Accepter ou refuser la demande
+    </a>
+{% endblock %}

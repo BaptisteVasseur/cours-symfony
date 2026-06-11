@@ -1,0 +1,7 @@
+# En test, les notifications de réservation ne partent pas en base/SMTP : on
+# route le transport « async » vers in-memory (pas d'effet de bord, messages
+# inspectables). Les handlers d'email ne sont donc pas exécutés pendant les tests.
+framework:
+    messenger:
+        transports:
+            async: 'in-memory://'
