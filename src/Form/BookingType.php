@@ -45,6 +45,7 @@ class BookingType extends AbstractType
     {
         $resolver->setDefaults([
             'csrf_token_id' => 'booking',
+            'data_class' => null,
         ]);
     }
 }
