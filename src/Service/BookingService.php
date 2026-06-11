@@ -58,6 +58,8 @@ final class BookingService
             $reservation->setServiceFee($breakdown['serviceFee']);
             $reservation->setSecurityDeposit($property->getSecurityDeposit());
             $reservation->setCurrency('EUR');
+            $reservation->setHost($property->getHost());
+            $reservation->setUpdatedAt(new \DateTimeImmutable());
 
             $this->entityManager->persist($reservation);
             $this->appendHistory($reservation, null, BookingStatus::PENDING, $guest);
@@ -209,6 +211,18 @@ final class BookingService
         }
 
         $reservation->setBookingStatus($newStatus);
+        $reservation->setUpdatedAt(new \DateTimeImmutable());
+
+        if ($newStatus === BookingStatus::CANCELLED) {
+            if ($actor === null) {
+                $reservation->setCancelledBy('system');
+            } elseif ($reservation->getGuest() !== null && $actor->getId() === $reservation->getGuest()->getId()) {
+                $reservation->setCancelledBy('guest');
+            } else {
+                $reservation->setCancelledBy('host');
+            }
+        }
+
         $this->appendHistory($reservation, $oldStatus, $newStatus, $actor);
     }
 

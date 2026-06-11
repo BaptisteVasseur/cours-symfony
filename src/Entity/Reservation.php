@@ -38,7 +38,9 @@ use Symfony\Component\Validator\Constraints as Assert;
     message: 'Le motif d\'annulation est obligatoire pour une réservation annulée.',
 )]
 #[ORM\Entity(repositoryClass: BookingRepository::class)]
-#[ORM\Table(name: 'reservations')]
+#[ORM\Table(name: 'booking')]
+#[ORM\Index(columns: ['property_id', 'status'], name: 'idx_booking_property_status')]
+#[ORM\Index(columns: ['checkin_date', 'checkout_date'], name: 'idx_booking_dates')]
 class Reservation
 {
     use UuidEntityTrait;
@@ -111,6 +113,17 @@ class Reservation
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[Assert\NotNull(message: 'L\'hôte est obligatoire.')]
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?User $host = null;
+
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $cancelledBy = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
+    private ?\DateTimeImmutable $updatedAt = null;
+
     #[ORM\OneToOne(mappedBy: 'reservation', targetEntity: Invoice::class, cascade: ['persist', 'remove'])]
     private ?Invoice $invoice = null;
 
@@ -148,6 +161,7 @@ class Reservation
         $this->conversations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
+        $this->updatedAt = new \DateTimeImmutable();
     }
 
     public function getProperty(): ?Property
@@ -467,6 +481,42 @@ class Reservation
     public function removeReview(Review $review): static
     {
         $this->reviews->removeElement($review);
+
+        return $this;
+    }
+
+    public function getHost(): ?User
+    {
+        return $this->host;
+    }
+
+    public function setHost(?User $host): static
+    {
+        $this->host = $host;
+
+        return $this;
+    }
+
+    public function getCancelledBy(): ?string
+    {
+        return $this->cancelledBy;
+    }
+
+    public function setCancelledBy(?string $cancelledBy): static
+    {
+        $this->cancelledBy = $cancelledBy;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
 
         return $this;
     }

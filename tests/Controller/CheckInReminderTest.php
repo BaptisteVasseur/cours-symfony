@@ -46,6 +46,8 @@ final class CheckInReminderTest extends KernelTestCase
         $reservation = new Reservation();
         $reservation->setProperty($property);
         $reservation->setGuest($guest);
+        $reservation->setHost($property->getHost());
+        $reservation->setUpdatedAt(new \DateTimeImmutable());
         $reservation->setCheckinDate($tomorrow);
         $reservation->setCheckoutDate($tomorrow->modify('+2 days'));
         $reservation->setGuestsCount(2);

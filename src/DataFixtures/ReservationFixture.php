@@ -79,6 +79,8 @@ class ReservationFixture extends Fixture implements DependentFixtureInterface
             $reservation = new Reservation();
             $reservation->setProperty($property);
             $reservation->setGuest($guest);
+            $reservation->setHost($property->getHost());
+            $reservation->setUpdatedAt(new \DateTimeImmutable());
             $reservation->setCheckinDate(new \DateTimeImmutable($checkin));
             $reservation->setCheckoutDate(new \DateTimeImmutable($checkout));
             $reservation->setGuestsCount($guestsCount);

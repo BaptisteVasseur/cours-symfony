@@ -133,6 +133,8 @@ class ReviewFixture extends Fixture implements DependentFixtureInterface
                 $reservation = new Reservation();
                 $reservation->setProperty($property);
                 $reservation->setGuest($guest);
+                $reservation->setHost($property->getHost());
+                $reservation->setUpdatedAt(new \DateTimeImmutable());
                 $reservation->setCheckinDate(new \DateTimeImmutable(sprintf('-%d days', $daysAgo + 3)));
                 $reservation->setCheckoutDate(new \DateTimeImmutable(sprintf('-%d days', $daysAgo)));
                 $reservation->setGuestsCount(random_int(1, min(4, $property->getMaxGuests() ?? 4)));
