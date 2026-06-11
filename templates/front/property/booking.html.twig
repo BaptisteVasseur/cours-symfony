@@ -6,7 +6,9 @@
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full"
+          data-realtime-view="booking-checkout"
+          data-realtime-property-id="{{ property.id }}">
         <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
             <i class="fa-solid fa-arrow-left"></i> Retour au logement
         </a>

@@ -20,7 +20,9 @@
 } %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full"
+          data-realtime-view="reservation-show"
+          data-realtime-reservation-id="{{ reservation.id }}">
         <a href="{{ path('app_reservation_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
             <i class="fa-solid fa-arrow-left"></i> Retour aux réservations
         </a>
