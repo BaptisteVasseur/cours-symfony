@@ -17,4 +17,24 @@ admin@example.com / password
 host@example.com / password
 user@example.com / password
 
+## USEFUL COMMANDS
+
+seed :
+
+```bash
+make fixtures
+```
+
+migrate :
+
+```bash
+make migrate
+```
+
+migration roll back :
+
+```bash
+docker compose exec -it php php bin/console doctrine:migrations:migrate prev
+```
+
 By Dilan EESHVARAN 4IW1
