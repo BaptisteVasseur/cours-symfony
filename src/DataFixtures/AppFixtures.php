@@ -22,82 +22,35 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
 {
     public function getDependencies(): array
     {
-        return [UserFixtures::class];
+        return [
+            UserFixtures::class,
+            AmenityFixture::class,
+            CancellationPolicyFixture::class,
+        ];
     }
 
     public function load(ObjectManager $manager): void
     {
-        $cancellationPolicies = $this->loadCancellationPolicies($manager);
-        $amenities            = $this->loadAmenities($manager);
-        $manager->flush();
-
-        $this->loadProperties($manager, $cancellationPolicies, $amenities);
-        $manager->flush();
-    }
-
-    /** @return CancellationPolicy[] */
-    private function loadCancellationPolicies(ObjectManager $manager): array
-    {
-        $data = [
-            ['flexible',  'Flexible',   'Remboursement intégral jusqu\'à 24h avant l\'arrivée.'],
-            ['moderate',  'Modérée',    'Remboursement intégral jusqu\'à 5 jours avant l\'arrivée.'],
-            ['strict',    'Stricte',    'Remboursement à 50% jusqu\'à 1 semaine avant l\'arrivée.'],
-            ['non_refundable', 'Non remboursable', 'Aucun remboursement possible après la réservation.'],
-        ];
-
+        /** @var array<string, CancellationPolicy> $policies */
         $policies = [];
-        foreach ($data as [$code, $label, $description]) {
-            $policy = new CancellationPolicy();
-            $policy->setCode($code);
-            $policy->setLabel($label);
-            $policy->setDescription($description);
-            $manager->persist($policy);
-            $policies[$code] = $policy;
+        foreach (['flexible', 'moderate', 'strict'] as $code) {
+            $policy = $manager->getRepository(CancellationPolicy::class)->findOneBy(['code' => $code]);
+            if ($policy !== null) {
+                $policies[$code] = $policy;
+            }
         }
 
-        return $policies;
-    }
-
-    /** @return Amenity[] */
-    private function loadAmenities(ObjectManager $manager): array
-    {
-        $data = [
-            ['wifi',           'Wi-Fi',               'essentiel'],
-            ['parking',        'Parking gratuit',      'essentiel'],
-            ['pool',           'Piscine',              'luxe'],
-            ['jacuzzi',        'Jacuzzi',              'luxe'],
-            ['kitchen',        'Cuisine équipée',      'essentiel'],
-            ['washer',         'Lave-linge',           'confort'],
-            ['dryer',          'Sèche-linge',          'confort'],
-            ['ac',             'Climatisation',        'confort'],
-            ['heating',        'Chauffage',            'essentiel'],
-            ['tv',             'Télévision',           'confort'],
-            ['gym',            'Salle de sport',       'luxe'],
-            ['bbq',            'Barbecue',             'extérieur'],
-            ['terrace',        'Terrasse',             'extérieur'],
-            ['garden',         'Jardin',               'extérieur'],
-            ['fireplace',      'Cheminée',             'confort'],
-            ['ev_charger',     'Borne de recharge',    'essentiel'],
-            ['baby_crib',      'Lit bébé',             'famille'],
-            ['high_chair',     'Chaise haute',         'famille'],
-            ['workspace',      'Espace de travail',    'confort'],
-            ['coffee_machine', 'Machine à café',       'essentiel'],
-        ];
-
+        /** @var array<string, Amenity> $amenities */
         $amenities = [];
-        foreach ($data as [$code, $label, $category]) {
-            $amenity = new Amenity();
-            $amenity->setCode($code);
-            $amenity->setLabel($label);
-            $amenity->setCategory($category);
-            $manager->persist($amenity);
-            $amenities[$code] = $amenity;
+        foreach ($manager->getRepository(Amenity::class)->findAll() as $amenity) {
+            $amenities[$amenity->getCode()] = $amenity;
         }
 
-        return $amenities;
+        $this->loadProperties($manager, $policies, $amenities);
+        $manager->flush();
     }
 
-    /** @param CancellationPolicy[] $policies @param Amenity[] $amenities */
+    /** @param array<string, CancellationPolicy> $policies @param array<string, Amenity> $amenities */
     private function loadProperties(ObjectManager $manager, array $policies, array $amenities): void
     {
         $propertiesData = [
@@ -123,11 +76,10 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'address'     => '12 Avenue des Fleurs',
                 'lat'         => '43.7102',
                 'lng'         => '7.2620',
-                'amenities'   => ['wifi', 'pool', 'parking', 'kitchen', 'ac', 'terrace', 'bbq'],
+                'amenities'   => ['wifi', 'pool', 'parking', 'kitchen', 'ac'],
                 'images'      => [
                     'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=800&q=80',
                     'https://images.unsplash.com/photo-1575517111839-3a3843ee7f5d?w=800&q=80',
-                    'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?w=800&q=80',
                 ],
                 'smokingAllowed' => false,
                 'petsAllowed'    => false,
@@ -155,7 +107,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'address'     => '8 Rue des Rosiers',
                 'lat'         => '48.8553',
                 'lng'         => '2.3535',
-                'amenities'   => ['wifi', 'kitchen', 'ac', 'heating', 'washer', 'workspace', 'coffee_machine'],
+                'amenities'   => ['wifi', 'kitchen', 'ac', 'washer'],
                 'images'      => [
                     'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=800&q=80',
                     'https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=800&q=80',
@@ -186,11 +138,10 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'address'     => '3 Route du Mont-Blanc',
                 'lat'         => '45.9237',
                 'lng'         => '6.8694',
-                'amenities'   => ['wifi', 'fireplace', 'jacuzzi', 'parking', 'kitchen', 'heating', 'tv', 'bbq'],
+                'amenities'   => ['wifi', 'fireplace', 'parking', 'kitchen', 'tv'],
                 'images'      => [
                     'https://images.unsplash.com/photo-1542718610-a1d656d1884c?w=800&q=80',
                     'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?w=800&q=80',
-                    'https://images.unsplash.com/photo-1612899744640-6e29f4d95476?w=800&q=80',
                 ],
                 'smokingAllowed' => false,
                 'petsAllowed'    => true,
@@ -218,7 +169,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'address'     => '27 Rue du Port',
                 'lat'         => '48.6493',
                 'lng'         => '-2.0254',
-                'amenities'   => ['wifi', 'parking', 'kitchen', 'washer', 'garden', 'bbq', 'tv'],
+                'amenities'   => ['wifi', 'parking', 'kitchen', 'washer', 'tv'],
                 'images'      => [
                     'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=800&q=80',
                     'https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=800&q=80',
@@ -229,8 +180,8 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             ],
             [
                 'host'        => 9,
-                'title'       => 'Loft industriel avec terrasse',
-                'description' => "Loft atypique dans une ancienne usine rénovée, terrasse privée de 40m².\nDécoration industrielle chic, idéal pour les voyageurs en quête d'originalité.",
+                'title'       => 'Loft industriel avec balcon',
+                'description' => "Loft atypique dans une ancienne usine rénovée, balcon privé de 40m².\nDécoration industrielle chic, idéal pour les voyageurs en quête d'originalité.",
                 'type'        => 'loft',
                 'maxGuests'   => 3,
                 'bedrooms'    => 1,
@@ -249,7 +200,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'address'     => '15 Rue de la Soie',
                 'lat'         => '45.7640',
                 'lng'         => '4.8357',
-                'amenities'   => ['wifi', 'terrace', 'kitchen', 'ac', 'workspace', 'coffee_machine', 'tv'],
+                'amenities'   => ['wifi', 'balcony', 'kitchen', 'ac', 'tv'],
                 'images'      => [
                     'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80',
                     'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=800&q=80',
@@ -280,11 +231,10 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'address'     => 'Route des Bories',
                 'lat'         => '43.9116',
                 'lng'         => '5.2012',
-                'amenities'   => ['wifi', 'pool', 'parking', 'kitchen', 'ac', 'garden', 'bbq', 'terrace', 'fireplace', 'jacuzzi'],
+                'amenities'   => ['wifi', 'pool', 'parking', 'kitchen', 'ac', 'fireplace'],
                 'images'      => [
                     'https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=800&q=80',
                     'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
-                    'https://images.unsplash.com/photo-1613977257592-4871e5fcd7c4?w=800&q=80',
                 ],
                 'smokingAllowed' => false,
                 'petsAllowed'    => false,
@@ -312,7 +262,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'address'     => '22 Rue de Bretagne',
                 'lat'         => '48.8632',
                 'lng'         => '2.3606',
-                'amenities'   => ['wifi', 'heating', 'kitchen', 'coffee_machine', 'workspace'],
+                'amenities'   => ['wifi', 'kitchen'],
                 'images'      => [
                     'https://images.unsplash.com/photo-1501183638710-841dd1904471?w=800&q=80',
                 ],
@@ -342,11 +292,10 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 'address'     => 'Plage de Pianterella',
                 'lat'         => '41.3882',
                 'lng'         => '9.1628',
-                'amenities'   => ['wifi', 'pool', 'parking', 'kitchen', 'ac', 'terrace', 'gym', 'bbq', 'jacuzzi', 'ev_charger'],
+                'amenities'   => ['wifi', 'pool', 'parking', 'kitchen', 'ac', 'elevator'],
                 'images'      => [
                     'https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=800&q=80',
                     'https://images.unsplash.com/photo-1602343168117-bb8ffe3e2e9f?w=800&q=80',
-                    'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800&q=80',
                 ],
                 'smokingAllowed' => false,
                 'petsAllowed'    => false,
@@ -355,7 +304,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
         ];
 
         foreach ($propertiesData as $i => $data) {
-            /** @var \App\Entity\User $host */
+            /** @var User $host */
             $host = $this->getReference('user_' . $data['host'], User::class);
 
             $property = new Property();
@@ -363,7 +312,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             $property->setTitle($data['title']);
             $property->setDescription($data['description']);
             $property->setPropertyType($data['type']);
-            $property->setStatus('active');
+            $property->setStatus('published');
             $property->setMaxGuests($data['maxGuests']);
             $property->setBedrooms($data['bedrooms']);
             $property->setBeds($data['beds']);
@@ -374,10 +323,9 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             $property->setCheckinTime(new \DateTimeImmutable('2000-01-01 ' . $data['checkin']));
             $property->setCheckoutTime(new \DateTimeImmutable('2000-01-01 ' . $data['checkout']));
             $property->setInstantBooking($data['instant']);
-            $property->setCancellationPolicy($policies[$data['policy']]);
+            $property->setCancellationPolicy($policies[$data['policy']] ?? null);
             $property->setCreatedAt(new \DateTimeImmutable(sprintf('-%d days', random_int(10, 180))));
 
-            // Address
             $address = new PropertyAddress();
             $address->setCity($data['city']);
             $address->setCountry($data['country']);
@@ -388,7 +336,6 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             $property->setAddress($address);
             $manager->persist($address);
 
-            // Rules
             $rules = new PropertyRule();
             $rules->setSmokingAllowed($data['smokingAllowed']);
             $rules->setPetsAllowed($data['petsAllowed']);
@@ -396,7 +343,6 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
             $property->setRules($rules);
             $manager->persist($rules);
 
-            // Media
             foreach ($data['images'] as $j => $url) {
                 $media = new PropertyMedia();
                 $media->setFileUrl($url);
@@ -407,7 +353,6 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
                 $manager->persist($media);
             }
 
-            // Amenities
             foreach ($data['amenities'] as $code) {
                 if (!isset($amenities[$code])) {
                     continue;
@@ -420,10 +365,9 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
 
             $manager->persist($property);
 
-            // Reservations
             $this->addReservations($manager, $property, $i);
 
-            $this->addReference('property_' . $i, $property);
+            $this->addReference('app_property_' . $i, $property);
         }
     }
 
@@ -438,7 +382,7 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
         $pick = $reservationData[$propertyIndex % count($reservationData)];
 
         $guestIndex = ($pick['guestRef'] + $propertyIndex) % 10;
-        /** @var \App\Entity\User $guest */
+        /** @var User $guest */
         $guest = $this->getReference('user_' . $guestIndex, User::class);
 
         if ($guest === $property->getHost()) {
@@ -447,9 +391,8 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
 
         $checkin  = new \DateTimeImmutable(($pick['daysFromNow'] >= 0 ? '+' : '') . $pick['daysFromNow'] . ' days');
         $checkout = $checkin->modify('+' . $pick['nights'] . ' days');
-        $nights   = $pick['nights'];
 
-        $basePrice   = (float) $property->getPricePerNight() * $nights;
+        $basePrice   = (float) $property->getPricePerNight() * $pick['nights'];
         $cleaningFee = (float) ($property->getCleaningFee() ?? 0);
         $serviceFee  = round($basePrice * 0.12, 2);
         $totalPrice  = $basePrice + $cleaningFee + $serviceFee;
@@ -469,7 +412,6 @@ class AppFixtures extends Fixture implements DependentFixtureInterface
 
         $manager->persist($reservation);
 
-        // Review pour les réservations terminées
         if ($pick['status'] === 'completed') {
             $review = new Review();
             $review->setProperty($property);
