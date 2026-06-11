@@ -107,7 +107,8 @@ construit un TemplatedEmail (templates/email/) et envoie.
 
 10. SECURITE
 --------------------------------------------------------------------------------
-  - Espace hote = ROLE_HOST. Voters (Property/Reservation) : un hote n'agit que
+  - Espace hote = ROLE_HOST. Verification de propriete directement dans les
+    controleurs (denyUnlessOwner / denyUnlessParticipant) : un hote n'agit que
     sur SES logements, un voyageur n'annule que SES reservations.
   - Endpoint .ics hors firewall (calendrier externe sans session) : protege
     uniquement par le token en base, compare en temps constant.
