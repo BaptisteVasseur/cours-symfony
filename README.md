@@ -67,13 +67,13 @@ php bin/console doctrine:fixtures:load --no-interaction
 
 Comptes créés :
 
-| Email                  | Mot de passe | Rôle      |
-|------------------------|--------------|-----------|
-| admin@airbnb.com       | password     | Admin     |
-| alice@host.com         | password     | Hôte      |
-| bob@host.com           | password     | Hôte      |
-| carol@traveler.com     | password     | Voyageur  |
-| david@traveler.com     | password     | Voyageur  |
+| Email                  | Mot de passe  | Rôle      |
+|------------------------|---------------|-----------|
+| admin@airbnb.com       | password123   | Admin     |
+| alice@host.com         | password123   | Hôte      |
+| bob@host.com           | password123   | Hôte      |
+| carol@traveler.com     | password123   | Voyageur  |
+| david@traveler.com     | password123   | Voyageur  |
 
 ---
 

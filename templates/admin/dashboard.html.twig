@@ -59,7 +59,7 @@
                             {% elseif booking.status.value == 'PENDING' %}bg-yellow-100 text-yellow-700
                             {% elseif booking.status.value == 'CANCELLED' %}bg-red-100 text-red-700
                             {% else %}bg-gray-100 text-gray-700{% endif %}">
-                            {{ booking.status.value|lower|capitalize }}
+                            {{ booking.status.label() }}
                         </span>
                     </div>
                 {% endfor %}

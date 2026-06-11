@@ -44,7 +44,7 @@
                                     {% if property.status.value == 'PUBLISHED' %}bg-green-100 text-green-700
                                     {% elseif property.status.value == 'DRAFT' %}bg-gray-100 text-gray-600
                                     {% else %}bg-red-100 text-red-700{% endif %}">
-                                    {{ property.status.value|lower|capitalize }}
+                                    {{ property.status.label() }}
                                 </span>
                             </td>
                             <td class="px-6 py-4">
