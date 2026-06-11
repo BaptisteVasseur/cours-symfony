@@ -46,6 +46,7 @@ final class ReservationStatusChangedMessageHandler
             if ($recipient === null) {
                 continue;
             }
+
             $this->mailer->send(
                 (new TemplatedEmail())
                     ->from($this->senderEmail)

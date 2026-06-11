@@ -15,6 +15,58 @@
         </a>
 
         {% if app.user %}
+            {% set _unread = unread_notifications_count() %}
+            {% set _notifications = recent_notifications() %}
+            <div class="relative" id="notif-dropdown-wrapper">
+                <button id="notif-btn" class="relative p-2 text-gray-600 hover:bg-gray-50 rounded-full focus:outline-none" aria-label="Notifications">
+                    <i class="fa-regular fa-bell text-lg"></i>
+                    {% if _unread > 0 %}
+                        <span class="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-white text-[10px] font-bold leading-none">
+                            {{ _unread > 9 ? '9+' : _unread }}
+                        </span>
+                    {% endif %}
+                </button>
+                <div id="notif-panel" class="hidden absolute right-0 mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                        <span class="text-sm font-semibold text-gray-800">Notifications</span>
+                        {% if _unread > 0 %}
+                            <form method="post" action="{{ path('app_notifications_mark_all_read') }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('mark_notif_read') }}">
+                                <button type="submit" class="text-xs text-brand font-medium hover:underline">
+                                    Tout marquer comme lu
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                    {% if _notifications is empty %}
+                        <div class="px-4 py-6 text-center text-sm text-gray-400">Aucune notification</div>
+                    {% else %}
+                        <ul class="divide-y divide-gray-100 max-h-72 overflow-y-auto">
+                            {% for notif in _notifications %}
+                                <li class="px-4 py-3 flex gap-3 {{ not notif.isRead ? 'bg-blue-50' : '' }}">
+                                    <div class="mt-0.5 shrink-0 w-8 h-8 rounded-full bg-brand/10 flex items-center justify-center text-brand text-sm">
+                                        <i class="fa-solid {{ notif.type == 'reservation_confirmed' ? 'fa-check' : (notif.type == 'reservation_cancelled' ? 'fa-xmark' : 'fa-bell') }}"></i>
+                                    </div>
+                                    <div class="min-w-0">
+                                        <p class="text-sm font-medium text-gray-800 truncate">{{ notif.title }}</p>
+                                        <p class="text-xs text-gray-500 line-clamp-2">{{ notif.content }}</p>
+                                        <p class="text-xs text-gray-400 mt-1">{{ notif.createdAt|date('d/m/Y à H:i') }}</p>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                </div>
+                <script>
+                (function() {
+                    var btn = document.getElementById('notif-btn');
+                    var panel = document.getElementById('notif-panel');
+                    if (!btn || !panel) return;
+                    btn.addEventListener('click', function(e) { e.stopPropagation(); panel.classList.toggle('hidden'); });
+                    document.addEventListener('click', function(e) { if (!panel.contains(e.target)) panel.classList.add('hidden'); });
+                })();
+                </script>
+            </div>
             {% include 'layout/partials/app/header_profile_menu.html.twig' %}
         {% else %}
             <a href="{{ path('app_login') }}" class="text-sm font-semibold py-2 px-4 border border-gray-200 rounded-full hover:shadow-md transition whitespace-nowrap">

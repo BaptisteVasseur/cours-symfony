@@ -12,6 +12,7 @@ use App\Form\BookingType;
 use App\Message\ReservationCreatedMessage;
 use App\Repository\PropertyRepository;
 use App\Service\AvailabilityService;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -33,6 +34,7 @@ final class BookingController extends AbstractController
         EntityManagerInterface $entityManager,
         AvailabilityService $availabilityService,
         MessageBusInterface $bus,
+        NotificationService $notificationService,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -115,6 +117,7 @@ final class BookingController extends AbstractController
             $entityManager->persist($history);
 
             $entityManager->persist($reservation);
+            $notificationService->notifyReservationCreated($reservation);
             $entityManager->flush();
 
             $bus->dispatch(new ReservationCreatedMessage((string) $reservation->getId()));

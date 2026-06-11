@@ -9,6 +9,7 @@ use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Form\CancellationReasonType;
 use App\Message\ReservationStatusChangedMessage;
+use App\Service\NotificationService;
 use App\Repository\ReservationRepository;
 use App\Security\Voter\ReservationVoter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -43,6 +44,7 @@ final class HostReservationController extends AbstractController
         Reservation $reservation,
         EntityManagerInterface $entityManager,
         MessageBusInterface $bus,
+        NotificationService $notificationService,
     ): Response {
         if (!$this->isCsrfTokenValid('accept_reservation_' . $reservation->getId(), (string) $request->request->get('_token'))) {
             $this->addFlash('error', 'Token de sécurité invalide.');
@@ -64,6 +66,7 @@ final class HostReservationController extends AbstractController
         $entityManager->persist($history);
 
         $reservation->setStatus('confirmed');
+        $notificationService->notifyStatusChanged($reservation, 'confirmed');
         $entityManager->flush();
 
         $bus->dispatch(new ReservationStatusChangedMessage((string) $reservation->getId(), 'confirmed'));
@@ -80,6 +83,7 @@ final class HostReservationController extends AbstractController
         Reservation $reservation,
         EntityManagerInterface $entityManager,
         MessageBusInterface $bus,
+        NotificationService $notificationService,
     ): Response {
         if ($reservation->getStatus() !== 'pending') {
             $this->addFlash('error', 'Cette réservation ne peut plus être refusée.');
@@ -103,6 +107,7 @@ final class HostReservationController extends AbstractController
 
             $reservation->setStatus('cancelled');
             $reservation->setCancellationReason($form->get('reason')->getData());
+            $notificationService->notifyStatusChanged($reservation, 'cancelled');
             $entityManager->flush();
 
             $bus->dispatch(new ReservationStatusChangedMessage((string) $reservation->getId(), 'cancelled'));

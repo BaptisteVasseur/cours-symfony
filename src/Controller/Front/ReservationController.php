@@ -9,6 +9,7 @@ use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Form\CancellationReasonType;
 use App\Message\ReservationStatusChangedMessage;
+use App\Service\NotificationService;
 use App\Repository\ReservationRepository;
 use App\Security\Voter\ReservationVoter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -59,6 +60,7 @@ final class ReservationController extends AbstractController
         Reservation $reservation,
         EntityManagerInterface $entityManager,
         MessageBusInterface $bus,
+        NotificationService $notificationService,
     ): Response {
         $user = $this->getUser();
         if (!$user instanceof User) {
@@ -94,6 +96,7 @@ final class ReservationController extends AbstractController
 
             $reservation->setStatus('cancelled');
             $reservation->setCancellationReason($form->get('reason')->getData());
+            $notificationService->notifyStatusChanged($reservation, 'cancelled');
             $entityManager->flush();
 
             $bus->dispatch(new ReservationStatusChangedMessage((string) $reservation->getId(), 'cancelled'));
