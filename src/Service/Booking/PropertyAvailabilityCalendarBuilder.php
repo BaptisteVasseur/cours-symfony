@@ -43,7 +43,7 @@ final class PropertyAvailabilityCalendarBuilder
                 continue;
             }
 
-            $overridesByDate[$date->format('Y-m-d')] = $availabilityOverride;
+            $overridesByDate[$date->format('Y-m-d')][] = $availabilityOverride;
         }
 
         $bookingsByDate = [];
@@ -78,22 +78,52 @@ final class PropertyAvailabilityCalendarBuilder
         $cursor = $gridStart;
         while ($cursor <= $gridEnd) {
             $dateKey = $cursor->format('Y-m-d');
-            $override = $overridesByDate[$dateKey] ?? null;
+            $dayOverrides = $overridesByDate[$dateKey] ?? [];
             $bookings = $bookingsByDate[$dateKey] ?? [];
-            $hasPriceOverride = $override !== null && $override->getPriceOverride() !== null;
-            $minimumStay = $override?->getMinimumStay();
+            $hasPriceOverride = false;
+            $minimumStay = null;
+            $price = (float) $property->getPricePerNight();
+            $hasManualBlock = false;
+            $hasImportedBlock = false;
+
+            foreach ($dayOverrides as $override) {
+                if ($override->getPriceOverride() !== null && !$hasPriceOverride) {
+                    $price = (float) $override->getPriceOverride();
+                    $hasPriceOverride = true;
+                }
+
+                $minimumStay = max($minimumStay ?? 0, $override->getMinimumStay() ?? 0);
+
+                if (!$override->isAvailable()) {
+                    if ($override->getSource() === 'ical_import') {
+                        $hasImportedBlock = true;
+                    } else {
+                        $hasManualBlock = true;
+                    }
+                }
+            }
+
+            if ($minimumStay === 0) {
+                $minimumStay = null;
+            }
             $isCurrentMonth = $cursor->format('Y-m') === $monthStart->format('Y-m');
 
             if ($bookings !== []) {
                 $state = 'booked';
-            } elseif ($override !== null && !$override->isAvailable()) {
+            } elseif ($hasManualBlock) {
                 $state = 'blocked';
+            } elseif ($hasImportedBlock) {
+                $state = 'imported';
             } else {
                 $state = 'available';
             }
 
             if ($isCurrentMonth) {
-                $summary[$state]++;
+                if ($state === 'imported') {
+                    $summary['blocked']++;
+                } else {
+                    $summary[$state]++;
+                }
 
                 if ($hasPriceOverride) {
                     $summary['customPrice']++;
@@ -109,7 +139,7 @@ final class PropertyAvailabilityCalendarBuilder
                 'state' => $state,
                 'isCurrentMonth' => $isCurrentMonth,
                 'isToday' => $cursor->format('Y-m-d') === $today->format('Y-m-d'),
-                'price' => $hasPriceOverride ? (float) $override->getPriceOverride() : (float) $property->getPricePerNight(),
+                'price' => $price,
                 'hasPriceOverride' => $hasPriceOverride,
                 'minimumStay' => $minimumStay,
                 'bookings' => $bookings,

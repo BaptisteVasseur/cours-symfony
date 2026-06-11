@@ -51,7 +51,7 @@ final class PropertyAvailabilityManager
         $indexedEntries = [];
         foreach ($existingEntries as $entry) {
             $date = $entry->getAvailableDate();
-            if ($date === null) {
+            if ($date === null || $entry->getSource() !== 'manual') {
                 continue;
             }
 
@@ -78,12 +78,16 @@ final class PropertyAvailabilityManager
                 $entry = new PropertyAvailability();
                 $entry->setProperty($property);
                 $entry->setAvailableDate($cursor);
+                $entry->setSource('manual');
+                $entry->setPropertyICalSync(null);
                 $this->entityManager->persist($entry);
             }
 
             $entry->setIsAvailable($isAvailable);
             $entry->setMinimumStay($minimumStay);
             $entry->setPriceOverride($priceOverride !== null ? number_format($priceOverride, 2, '.', '') : null);
+            $entry->setSource('manual');
+            $entry->setPropertyICalSync(null);
 
             $cursor = $cursor->modify('+1 day');
         }

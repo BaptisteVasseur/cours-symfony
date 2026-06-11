@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Property;
 use App\Entity\PropertyAvailability;
+use App\Entity\PropertyICalSync;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -34,6 +35,19 @@ class PropertyAvailabilityRepository extends ServiceEntityRepository
             ->setParameter('property', $property)
             ->setParameter('checkin', $checkin)
             ->setParameter('checkout', $checkout)
+            ->orderBy('pa.availableDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<PropertyAvailability>
+     */
+    public function findImportedForSync(PropertyICalSync $sync): array
+    {
+        return $this->createQueryBuilder('pa')
+            ->andWhere('pa.propertyICalSync = :sync')
+            ->setParameter('sync', $sync)
             ->orderBy('pa.availableDate', 'ASC')
             ->getQuery()
             ->getResult();

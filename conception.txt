@@ -1,45 +1,347 @@
-Conception du module moteur de réservation et calendrier iCal
+Conception du module de recherche, reservation et calendrier iCal
 
-L’objectif du module est d’ajouter au projet un vrai workflow de réservation de type Airbnb, en séparant clairement la logique métier de la couche HTTP. Je souhaite centraliser les règles de réservation dans des services Symfony dédiés afin d’éviter de placer des règles complexes dans les contrôleurs ou dans les entités. Les entités restent responsables de la persistance, tandis que les services pilotent les décisions métier.
+1. Objectif du module
 
-Je m’appuie sur les entités existantes Property, Reservation, ReservationStatusHistory, PropertyAvailability et PropertyICalSync. Le logement porte les informations stables comme le prix par nuit, la capacité maximale, les heures d’arrivée et de départ, ainsi que le mode instantBooking. La réservation porte la période, le voyageur, le montant total et le statut. L’historique des changements d’état est conservé dans ReservationStatusHistory pour assurer la traçabilité. La table PropertyAvailability sert à stocker les exceptions de calendrier au jour le jour, par exemple un blocage manuel, un prix spécifique ou une durée minimale de séjour. PropertyICalSync servira à l’import iCal, et j’ajouterai un mécanisme de token secret pour l’export iCal sécurisé.
+Le but de cette partie du projet est de realiser le coeur fonctionnel d'une plateforme de location type Airbnb pour le parcours principal suivant :
 
-Le workflow retenu est le suivant. Un voyageur choisit ses dates et son nombre de voyageurs. Au moment de la soumission, le système vérifie que le logement est publié, que la capacité est suffisante, qu’aucun jour n’est bloqué manuellement, et qu’aucune réservation confirmée ne chevauche la période demandée. Si le logement est en instant booking, la réservation est créée directement avec le statut confirmed. Sinon, elle est créée avec le statut pending et devra être acceptée ou refusée par l’hôte. Chaque changement de statut important est historisé et déclenche une notification asynchrone.
+- rechercher un logement publie
+- verifier sa disponibilite sur une periode
+- calculer un prix coherent
+- creer une reservation
+- permettre a l'hote de confirmer ou refuser une demande
+- gerer le calendrier du logement
+- exporter et importer un calendrier iCal
 
-Concernant les statuts, je retiens les transitions suivantes. Une réservation peut passer de pending vers confirmed ou cancelled. Une réservation confirmed peut ensuite passer vers completed à la fin du séjour, ou vers cancelled si une annulation est autorisée. Une réservation cancelled ou completed est considérée comme terminale. Les annulations doivent obligatoirement porter un motif afin de conserver une traçabilité claire.
+La logique metier ne doit pas etre dispersee dans les controleurs. Les controleurs doivent surtout gerer la requete HTTP, les formulaires et la redirection. Les decisions metier importantes doivent etre centralisees dans des services dedies.
 
-Modélisation temporelle
+2. Principes d'architecture retenus
 
-Je considère que le jour de check-out est réservable par un autre voyageur. En pratique, une réservation occupe les nuits comprises entre la date de check-in incluse et la date de check-out exclue. Ce choix correspond au fonctionnement habituel des plateformes de location courte durée. Il permet de gérer correctement un départ à 11h et une arrivée à 15h le même jour, sans les considérer comme un conflit. Dans le schéma métier, cela revient à raisonner avec des intervalles semi-ouverts de type [checkin, checkout). Deux réservations se chevauchent uniquement si la date d’arrivée de la première est strictement inférieure à la date de départ de la seconde, et si la date de départ de la première est strictement supérieure à la date d’arrivée de la seconde.
+Nous retenons une architecture Symfony classique et lisible :
 
-Gestion des états
+- les entites representent les donnees persistantes
+- les repositories servent a lire les donnees en base
+- les services portent les regles metier
+- les formulaires encapsulent les saisies utilisateur
+- les controleurs restent fins
 
-Je choisis de ne pas bloquer les dates lorsqu’une réservation est seulement en pending. Le blocage réel du calendrier intervient uniquement pour les réservations confirmed ou pour les indisponibilités manuelles définies par l’hôte. Ce choix limite le risque de blocage abusif, par exemple si plusieurs voyageurs envoient des demandes sans intention ferme de réserver. Si un statut pending bloquait déjà les dates, un utilisateur pourrait monopoliser un logement sans payer et sans validation. L’inconvénient de mon choix est qu’il peut y avoir plusieurs demandes pending en parallèle sur la même période. Ce risque est acceptable, car la décision finale se fait au moment de la confirmation par l’hôte ou de la validation instantanée, avec une revérification stricte de disponibilité avant de confirmer.
+Cette separation est importante pour eviter de dupliquer les verifications. La meme regle de disponibilite doit servir a la fois pour la recherche, pour le formulaire de reservation et pour la confirmation par l'hote.
 
-Concurrence
+3. Entites metier utilisees
 
-Si deux utilisateurs essaient de réserver le même logement au même moment pour la même période, je ne dois pas me contenter d’une simple vérification avant le flush, car cela peut produire un double booking. Je prévois donc une transaction Doctrine autour de la création ou de la confirmation d’une réservation. Dans cette transaction, le système relit le logement et les disponibilités concernées avec verrouillage pessimiste, puis relance la vérification de chevauchement juste avant de persister le statut final. Si une autre réservation confirmed a été créée entre-temps, la seconde transaction doit échouer proprement avec un message indiquant que les dates ne sont plus disponibles. Ce contrôle final est indispensable même si une première vérification a déjà été faite côté formulaire.
+Property
 
-Performance
+L'entite Property represente le logement. Elle contient les informations stables necessaires a la reservation :
 
-Je ne veux pas valider une plage de 20 nuits en faisant 20 requêtes SQL ou en bouclant jour par jour côté PHP. Je préfère une stratégie en quelques requêtes ciblées. Premièrement, je vérifie en une requête si le logement est publié et si sa capacité est suffisante. Deuxièmement, je cherche en une requête s’il existe au moins une réservation confirmed qui chevauche l’intervalle demandé. Troisièmement, je charge en une requête l’ensemble des lignes PropertyAvailability comprises entre check-in et la veille du check-out pour détecter des jours bloqués, des prix spécifiques ou une contrainte de minimum stay. Cette approche limite le nombre de requêtes et s’appuie sur la base pour faire le filtrage, ce qui est bien plus efficace qu’un traitement itératif.
+- le statut du logement
+- le nombre maximum de voyageurs
+- le prix par nuit
+- les frais de menage
+- la caution
+- les horaires d'arrivee et de depart
+- le mode instant booking
+- le token d'export iCal
 
-Asynchronisme
+Le logement est la racine du module : toutes les disponibilites, reservations et synchronisations iCal sont rattachees a lui.
 
-L’envoi des emails doit intervenir après le flush de l’ORM, car avant le flush l’état métier n’est pas garanti en base. Si un email part avant la validation réelle de la transaction, on risque d’envoyer une confirmation pour une réservation finalement rejetée ou rollbackée. Je préfère donc déclencher un message Messenger après la persistance effective de la réservation ou du changement de statut. Si RabbitMQ est indisponible, il faut prévoir une stratégie de secours. Dans le cadre de ce projet, l’usage du transport Doctrine est une bonne solution de repli, car il permet de stocker les messages en base locale. En complément, je veux utiliser les mécanismes de retry et de failure transport pour ne pas perdre les notifications en cas d’échec temporaire.
+Reservation
 
-Structure SQL du calendrier
+L'entite Reservation represente un sejour reserve ou demande. Elle contient :
 
-Je choisis une architecture hybride. Les réservations restent stockées sous forme de périodes avec checkinDate et checkoutDate dans la table reservations, car cela représente naturellement un séjour. En revanche, les exceptions de calendrier sont stockées au jour le jour dans PropertyAvailability. Ce choix est cohérent avec le besoin de blocage manuel, de prix journalier spécifique et de durée minimale ponctuelle. Je ne souhaite pas pré-générer tout le calendrier d’un logement sur plusieurs années, car cela créerait beaucoup de lignes inutiles. Par défaut, un jour est considéré disponible tant qu’aucune ligne PropertyAvailability ne le bloque et qu’aucune réservation confirmed ne le recouvre. J’utilise donc PropertyAvailability comme table d’override métier et non comme copie exhaustive de tous les jours du calendrier.
+- le logement
+- le voyageur
+- la date d'arrivee
+- la date de depart
+- le nombre de voyageurs
+- le statut
+- le prix total
+- les frais calcules
+- la devise
+- le motif d'annulation si besoin
 
-Conception de la recherche
+Les statuts actuellement utilises dans le projet sont :
 
-La route /search doit filtrer uniquement les logements publiés. Si destination est renseignée, j’effectue une recherche textuelle sur la ville, le pays ou l’adresse. Si guests est fourni, j’exclus les logements dont maxGuests est inférieur. Si checkin et checkout sont présents, je combine la recherche avec la logique de disponibilité en excluant les logements ayant un chevauchement avec une réservation confirmed ou un blocage manuel dans PropertyAvailability. L’objectif est que la recherche et le checkout reposent sur la même logique métier, afin d’éviter les incohérences entre la liste des résultats et la validation finale.
+- pending
+- confirmed
+- completed
+- cancelled
 
-Conception iCal
+ReservationStatusHistory
 
-Pour l’export iCal, chaque logement doit exposer un flux .ics sécurisé accessible via un token secret révocable. Je ne veux pas baser cette sécurité sur l’identifiant du logement seul. Le token doit être suffisamment aléatoire, stocké en base et régénérable par l’hôte. Le flux exportera uniquement les séjours confirmed, avec les champs nécessaires au standard iCal comme UID, DTSTART, DTEND, SUMMARY et DESCRIPTION. Pour l’import iCal bonus, je m’appuierai sur PropertyICalSync pour stocker les URL externes par fournisseur. Une commande Symfony dédiée lancera la synchronisation périodique. En cas de conflit entre un événement distant et une réservation locale confirmed, la réservation locale doit rester prioritaire et l’événement importé doit uniquement créer ou maintenir un blocage externe compatible.
+Cette entite sert a garder une trace des changements de statut. Cela permet de savoir :
 
-Conclusion
+- quel etait l'ancien statut
+- quel est le nouveau statut
+- qui a fait l'action
+- a quel moment le changement a ete effectue
 
-Le cœur de ma conception repose sur trois idées. Premièrement, la disponibilité est une règle métier centralisée et revérifiée au moment critique. Deuxièmement, les réservations confirmed sont la seule source de blocage automatique des nuits, les pending restant de simples demandes. Troisièmement, le calendrier combine un modèle par périodes pour les séjours et un modèle journalier pour les exceptions. Cette architecture reste lisible, performante et compatible avec les besoins du sujet, y compris l’export iCal et les notifications asynchrones.
+Cette tracabilite est importante pour justifier les actions de l'hote et garder un historique clair.
+
+PropertyAvailability
+
+Cette entite represente les exceptions de calendrier jour par jour. Elle ne stocke pas tout le calendrier complet, seulement les jours qui ont une regle particuliere :
+
+- un jour bloque
+- un jour explicitement remis disponible
+- un tarif personnalise
+- une duree minimale de sejour
+- une provenance du blocage
+
+Le champ source permet de distinguer :
+
+- manual : modification faite par l'hote
+- ical_import : blocage importe depuis un calendrier externe
+
+PropertyICalSync
+
+Cette entite stocke les connexions vers des calendriers externes. Elle contient :
+
+- le logement concerne
+- le nom du fournisseur
+- l'URL iCal distante
+- la date de derniere synchronisation
+
+Elle sert a relier proprement un import externe aux jours bloques qui en resultent.
+
+4. Modelisation temporelle
+
+Le systeme raisonne avec des intervalles de type [checkin, checkout).
+
+Cela signifie :
+
+- le jour d'arrivee est inclus
+- le jour de depart est exclu
+
+Concretement, une reservation du 10 au 12 occupe les nuits du 10 et du 11. Le 12 peut etre reserve par un autre voyageur. Cette regle correspond au fonctionnement habituel d'une plateforme de location courte duree.
+
+Ce choix est essentiel pour eviter les faux conflits de reservation.
+
+5. Regle de disponibilite
+
+La disponibilite d'un logement repose sur une regle unique centralisee dans PropertyAvailabilityService.
+
+Pour qu'un logement soit reservable, il faut que :
+
+- le logement soit publie
+- la date de depart soit strictement apres la date d'arrivee
+- le nombre de voyageurs soit valide
+- le nombre de voyageurs ne depasse pas la capacite maximale
+- aucune reservation confirmee ne chevauche la periode
+- aucun jour de la periode ne soit bloque
+- la duree minimale de sejour soit respectee
+
+Cette centralisation est un choix fort de conception. Sans cela, la recherche pourrait afficher un logement disponible alors que le checkout le refuserait ensuite.
+
+6. Choix sur les statuts de reservation
+
+Nous avons retenu le comportement suivant :
+
+- si instant booking est actif, la reservation est creee directement en confirmed
+- sinon, la reservation est creee en pending
+
+Une reservation pending ne bloque pas automatiquement les dates. Ce blocage n'existe qu'a partir d'une reservation confirmed, ou d'un blocage manuel/externe dans le calendrier.
+
+Ce choix est volontaire. Il evite qu'un simple voyageur monopolise un logement sans validation reelle. En contrepartie, plusieurs demandes pending peuvent exister sur une meme periode. Le controle final se fait donc au moment de l'acceptation par l'hote, avec une reverification complete de la disponibilite.
+
+7. Creation d'une reservation
+
+La creation d'une reservation est confiee a ReservationManager.
+
+Ce service applique l'ordre logique suivant :
+
+1. verifier que le voyageur ne reserve pas son propre logement
+2. verifier la disponibilite complete
+3. calculer le prix
+4. creer la reservation avec le bon statut initial
+5. enregistrer une premiere ligne d'historique
+6. persister le tout en base
+
+Ce choix permet d'avoir un seul point d'entree metier pour la creation d'une reservation.
+
+8. Calcul du prix
+
+Le calcul du prix est gere par BookingPricingService.
+
+Le principe retenu est :
+
+- prix de base du logement par nuit
+- surcharge eventuelle par jour via priceOverride
+- ajout des frais de menage
+- calcul des frais de service
+- conservation eventuelle de la caution
+
+Le total affiche au voyageur et le total enregistre sur la reservation proviennent de la meme logique, ce qui evite les incoherences entre l'ecran de confirmation et la base.
+
+9. Moderation par l'hote
+
+L'hote doit pouvoir traiter les demandes pending. Cette logique est centralisee dans ReservationStatusManager.
+
+Deux actions sont prevues :
+
+- confirmer une demande pending
+- refuser une demande pending
+
+Lors d'une confirmation :
+
+- la reservation doit encore etre pending
+- la disponibilite est reverifiee au dernier moment
+- le statut passe a confirmed
+- un historique est ajoute
+
+Lors d'un refus :
+
+- la reservation doit encore etre pending
+- un motif est obligatoire
+- le statut passe a cancelled
+- le motif est conserve
+- un historique est ajoute
+
+Cette conception protege le systeme contre le cas suivant : une demande etait valide au moment de sa creation, mais les dates ont ete prises entre temps.
+
+10. Gestion du calendrier par l'hote
+
+La gestion manuelle du calendrier est prise en charge par PropertyAvailabilityManager.
+
+L'hote peut appliquer une plage de dates avec :
+
+- un mode blocked
+- un mode available
+- une duree minimale de sejour
+- un tarif personnalise
+
+Le choix de modeliser ces regles jour par jour dans PropertyAvailability est pertinent car :
+
+- un tarif peut changer d'un jour a l'autre
+- une duree minimale peut etre ponctuelle
+- un blocage peut concerner seulement quelques dates
+
+Quand l'hote remet une plage en disponible sans autre regle, les lignes manuelles inutiles sont supprimees. Cela evite de surcharger la base avec des entrees sans valeur metier.
+
+11. Construction du calendrier visuel
+
+L'affichage mensuel du calendrier repose sur PropertyAvailabilityCalendarBuilder.
+
+Le calendrier croise deux sources :
+
+- les reservations confirmed
+- les overrides de PropertyAvailability
+
+Chaque jour du calendrier est classe dans un etat principal :
+
+- available
+- booked
+- blocked
+- imported
+
+Le calendrier peut aussi afficher :
+
+- un tarif personnalise
+- une contrainte de minimumStay
+
+Ce choix de conception est utile pour l'interface hote, car il permet de distinguer visuellement :
+
+- un jour reserve par un voyageur
+- un jour bloque manuellement
+- un jour bloque par import iCal
+
+12. Conception de la recherche
+
+La recherche frontale est centralisee dans PropertySearchService.
+
+La logique retenue est la suivante :
+
+- charger uniquement les logements publies
+- filtrer par destination si elle est renseignee
+- filtrer par capacite minimale
+- si des dates sont donnees, reutiliser exactement la regle de disponibilite metier
+
+Le point important est que la recherche ne repose pas sur une logique simplifiee differente. Elle appelle la meme verification que le module de reservation. Cela garantit une coherence entre :
+
+- la liste des resultats
+- la page logement
+- le formulaire de reservation
+- la confirmation par l'hote
+
+13. Conception de l'export iCal
+
+L'export iCal a ete pense comme un flux securise par token.
+
+Chaque logement possede un iCalExportToken unique et regenerable. Le choix d'un token dedie est preferable a une URL basee uniquement sur l'identifiant du logement, car :
+
+- l'URL est difficile a deviner
+- l'hote peut invalider un ancien lien
+- plusieurs plateformes externes peuvent consommer le flux sans compte local
+
+Le flux exporte uniquement les reservations confirmed a venir. Cela correspond au besoin reel : informer les calendriers externes des nuits deja prises.
+
+Les evenements iCal contiennent les informations minimales utiles :
+
+- UID
+- DTSTART
+- DTEND
+- SUMMARY
+- DESCRIPTION
+- STATUS
+
+14. Conception de l'import iCal
+
+L'import iCal permet de bloquer localement des dates venant d'une autre plateforme.
+
+Le fonctionnement retenu est le suivant :
+
+1. l'hote enregistre un fournisseur et une URL iCal
+2. une synchronisation lit le fichier distant
+3. les evenements sont traduits en jours bloques
+4. ces jours sont stockes dans PropertyAvailability avec source = ical_import
+5. les anciennes lignes importees de cette meme source sont mises a jour ou supprimees selon le nouveau contenu
+
+Ce choix presente plusieurs avantages :
+
+- l'import reste lisible en base
+- chaque source iCal garde sa propre trace
+- la suppression d'une source n'efface pas les reglages manuels
+- les blocages externes sont reutilises par la recherche et la reservation sans logique speciale supplementaire
+
+La synchronisation est actuellement declenchee :
+
+- soit depuis l'interface hote
+- soit via la commande app:property:ical:sync
+
+Donc la mise a jour n'est pas automatique en continu. Si plus tard on veut une synchronisation reguliere, il suffira d'executer cette commande via cron ou scheduler.
+
+15. Priorite des sources de blocage
+
+L'ordre metier retenu est le suivant :
+
+- une reservation confirmed prime comme indisponibilite reelle
+- un blocage manual bloque la date
+- un blocage iCal importe bloque aussi la date
+- une reservation pending ne bloque pas la date
+
+Cette hierarchie est coherente avec le besoin du sujet : ne pas autoriser de double reservation, tout en conservant de la souplesse pour les demandes non encore validees.
+
+16. Coherence globale du systeme
+
+Le coeur de la conception repose sur une idee simple : une seule verite metier pour la disponibilite.
+
+Cette verite est ensuite reutilisee partout :
+
+- dans la recherche
+- dans la creation d'une reservation
+- dans la moderation par l'hote
+- dans le calendrier visuel
+- dans les imports iCal
+
+Ce choix rend le module plus fiable, plus facile a maintenir et plus proche d'un comportement attendu sur une vraie plateforme de location.
+
+17. Conclusion
+
+Pour cette partie du projet, nous avons retenu une conception volontairement propre et evolutive :
+
+- les reservations restent stockees sous forme de periodes
+- les exceptions de calendrier sont stockees jour par jour
+- la verification de disponibilite est centralisee
+- la moderation hote recontrole la disponibilite avant confirmation
+- l'iCal exporte les sejours confirmes
+- l'iCal importe des blocages externes reutilisables par tout le systeme
+
+Cette conception repond bien au besoin principal du sujet pour le bloc recherche, reservation et synchronisation de calendrier, tout en restant compatible avec les futures evolutions du projet.

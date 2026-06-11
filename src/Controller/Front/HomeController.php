@@ -7,11 +7,12 @@ namespace App\Controller\Front;
 use App\Entity\Property;
 use App\Repository\PropertyRepository;
 use App\Repository\ReviewRepository;
+use App\Service\PropertySearchService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\PropertyVoter;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 class HomeController extends AbstractController
@@ -53,17 +54,32 @@ class HomeController extends AbstractController
     }
 
     #[Route('/search', name: 'app_search', methods: ['GET'])]
-    public function search(Request $request, PropertyRepository $propertyRepository): Response
+    public function search(Request $request, PropertySearchService $propertySearchService): Response
     {
+        $destination = trim($request->query->getString('destination'));
         $checkin = $this->parseDate($request->query->get('checkin'));
         $checkout = $this->parseDate($request->query->get('checkout'));
+        $guests = max(1, $request->query->getInt('guests', 1));
+
+        $properties = [];
+
+        if ($checkin !== null && $checkout !== null && $checkin >= $checkout) {
+            $this->addFlash('error', 'La date de depart doit etre posterieure a la date d\'arrivee.');
+        } else {
+            $properties = $propertySearchService->search(
+                $destination !== '' ? $destination : null,
+                $checkin,
+                $checkout,
+                $guests,
+            );
+        }
 
         return $this->render('front/search/index.html.twig', [
-            'properties' => $propertyRepository->findForListing('published'),
+            'properties' => $properties,
             'checkin' => $checkin,
             'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'guests' => $guests,
+            'destination' => $destination,
         ]);
     }
 

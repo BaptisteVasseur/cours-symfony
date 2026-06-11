@@ -29,7 +29,7 @@ final class BookingPricingService
                 continue;
             }
 
-            $indexedOverrides[$date->format('Y-m-d')] = $override;
+            $indexedOverrides[$date->format('Y-m-d')][] = $override;
         }
 
         $subtotal = 0.0;
@@ -38,9 +38,16 @@ final class BookingPricingService
 
         while ($cursor < $checkout) {
             $key = $cursor->format('Y-m-d');
-            $nightPrice = isset($indexedOverrides[$key]) && $indexedOverrides[$key]->getPriceOverride() !== null
-                ? (float) $indexedOverrides[$key]->getPriceOverride()
-                : (float) $property->getPricePerNight();
+            $nightPrice = (float) $property->getPricePerNight();
+
+            foreach ($indexedOverrides[$key] ?? [] as $override) {
+                if ($override->getPriceOverride() === null) {
+                    continue;
+                }
+
+                $nightPrice = (float) $override->getPriceOverride();
+                break;
+            }
 
             $subtotal += $nightPrice;
             $nights++;

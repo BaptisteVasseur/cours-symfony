@@ -107,6 +107,8 @@
                                         {% set dayClasses = dayClasses ~ 'border-emerald-200 bg-emerald-50' %}
                                     {% elseif day.state == 'blocked' %}
                                         {% set dayClasses = dayClasses ~ 'border-red-200 bg-red-50' %}
+                                    {% elseif day.state == 'imported' %}
+                                        {% set dayClasses = dayClasses ~ 'border-amber-200 bg-amber-50' %}
                                     {% else %}
                                         {% set dayClasses = dayClasses ~ 'border-gray-200 bg-white' %}
                                     {% endif %}
@@ -124,6 +126,8 @@
                                                 <span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">Reserve</span>
                                             {% elseif day.state == 'blocked' %}
                                                 <span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700">Bloque</span>
+                                            {% elseif day.state == 'imported' %}
+                                                <span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-amber-100 text-amber-700">iCal</span>
                                             {% else %}
                                                 <span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-600">Libre</span>
                                             {% endif %}
@@ -140,13 +144,13 @@
 
                                             {% if day.state == 'booked' %}
                                                 {% for booking in day.bookings|slice(0, 2) %}
-                                                    <p class="truncate">
-                                                        {{ booking.checkinDate|date('d/m') }} - {{ booking.checkoutDate|date('d/m') }}
-                                                    </p>
+                                                    <p class="truncate">{{ booking.checkinDate|date('d/m') }} - {{ booking.checkoutDate|date('d/m') }}</p>
                                                 {% endfor %}
                                                 {% if day.bookings|length > 2 %}
                                                     <p>+ {{ day.bookings|length - 2 }} autre{{ day.bookings|length - 2 > 1 ? 's' : '' }}</p>
                                                 {% endif %}
+                                            {% elseif day.state == 'imported' %}
+                                                <p class="text-amber-700">Blocage importe</p>
                                             {% elseif not day.hasPriceOverride and not day.minimumStay %}
                                                 <p class="text-gray-400">Tarif standard</p>
                                             {% endif %}
@@ -217,6 +221,26 @@
                 </div>
 
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-2">Import iCal</h2>
+                    <p class="text-sm text-gray-500 mb-5">Ajoutez un calendrier externe pour bloquer automatiquement les dates provenant d'une autre plateforme.</p>
+
+                    {{ form_start(icalSyncForm, { attr: { class: 'space-y-4' } }) }}
+                        {% if icalSyncForm.vars.errors|length > 0 %}
+                            <div class="px-4 py-3 rounded-xl text-sm bg-red-50 text-red-800">
+                                {{ form_errors(icalSyncForm) }}
+                            </div>
+                        {% endif %}
+
+                        {{ form_row(icalSyncForm.providerName, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                        {{ form_row(icalSyncForm.iCalUrl, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+
+                        <button type="submit" class="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3 rounded-xl transition">
+                            Ajouter et synchroniser
+                        </button>
+                    {{ form_end(icalSyncForm) }}
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                     <h2 class="text-lg font-semibold text-gray-900 mb-2">Modifier une plage</h2>
                     <p class="text-sm text-gray-500 mb-5">Bloquez des dates, reouvrez-les ou appliquez un prix et un minimum de sejour sur une plage.</p>
 
@@ -254,6 +278,10 @@
                             Blocage manuel
                         </div>
                         <div class="flex items-center gap-3">
+                            <span class="w-4 h-4 rounded-full bg-amber-100 border border-amber-200"></span>
+                            Blocage importe depuis iCal
+                        </div>
+                        <div class="flex items-center gap-3">
                             <span class="w-4 h-4 rounded-full bg-white border border-gray-200"></span>
                             Date ouverte a la reservation
                         </div>
@@ -268,22 +296,45 @@
                     {% endif %}
                 </div>
 
-                {% if property.iCalSyncs|length > 0 %}
-                    <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                        <h2 class="text-lg font-semibold text-gray-900 mb-4">Calendriers externes relies</h2>
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Calendriers externes relies</h2>
+
+                    {% if property.iCalSyncs|length > 0 %}
                         <div class="space-y-3">
                             {% for sync in property.iCalSyncs %}
-                                <article class="border border-gray-200 rounded-xl p-4">
-                                    <p class="font-semibold text-gray-900">{{ sync.providerName }}</p>
-                                    <p class="text-xs text-gray-500 break-all mt-1">{{ sync.iCalUrl }}</p>
-                                    {% if sync.lastSyncAt %}
-                                        <p class="text-xs text-gray-400 mt-2">Derniere synchro : {{ sync.lastSyncAt|date('d/m/Y H:i') }}</p>
-                                    {% endif %}
+                                <article class="border border-gray-200 rounded-xl p-4 space-y-3">
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ sync.providerName }}</p>
+                                        <p class="text-xs text-gray-500 break-all mt-1">{{ sync.iCalUrl }}</p>
+                                        {% if sync.lastSyncAt %}
+                                            <p class="text-xs text-gray-400 mt-2">Derniere synchro : {{ sync.lastSyncAt|date('d/m/Y H:i') }}</p>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <form method="post" action="{{ path('app_host_property_ical_sync_now', { id: property.id, sync: sync.id }) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('property_ical_sync_now_' ~ sync.id) }}">
+                                            <input type="hidden" name="month" value="{{ monthStart|date('Y-m') }}">
+                                            <button type="submit" class="w-full border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-3 rounded-xl transition">
+                                                Synchroniser maintenant
+                                            </button>
+                                        </form>
+
+                                        <form method="post" action="{{ path('app_host_property_ical_sync_delete', { id: property.id, sync: sync.id }) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('property_ical_sync_delete_' ~ sync.id) }}">
+                                            <input type="hidden" name="month" value="{{ monthStart|date('Y-m') }}">
+                                            <button type="submit" class="w-full border border-red-200 hover:bg-red-50 text-red-700 font-semibold py-3 rounded-xl transition">
+                                                Supprimer
+                                            </button>
+                                        </form>
+                                    </div>
                                 </article>
                             {% endfor %}
                         </div>
-                    </div>
-                {% endif %}
+                    {% else %}
+                        <p class="text-sm text-gray-500">Aucun calendrier externe n'est relie a ce logement.</p>
+                    {% endif %}
+                </div>
             </aside>
         </div>
     </main>

@@ -5,11 +5,15 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Property;
+use App\Entity\PropertyICalSync;
 use App\Exception\PropertyAvailabilityException;
+use App\Exception\PropertyICalSyncException;
 use App\Form\PropertyAvailabilityRangeType;
+use App\Form\PropertyICalSyncType;
 use App\Security\Voter\PropertyVoter;
 use App\Service\Booking\PropertyAvailabilityCalendarBuilder;
 use App\Service\Booking\PropertyAvailabilityManager;
+use App\Service\PropertyICalSyncService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
@@ -30,6 +34,7 @@ final class HostPropertyAvailabilityController extends AbstractController
         Property $property,
         PropertyAvailabilityCalendarBuilder $calendarBuilder,
         PropertyAvailabilityManager $propertyAvailabilityManager,
+        PropertyICalSyncService $propertyICalSyncService,
         EntityManagerInterface $entityManager,
     ): Response {
         $displayedMonth = $this->resolveDisplayedMonth($request->query->getString('month'));
@@ -39,15 +44,39 @@ final class HostPropertyAvailabilityController extends AbstractController
             $entityManager->flush();
         }
 
-        $form = $this->createForm(PropertyAvailabilityRangeType::class, [
+        $availabilityForm = $this->createForm(PropertyAvailabilityRangeType::class, [
             'startDate' => $displayedMonth,
             'endDate' => $displayedMonth,
             'mode' => 'blocked',
         ]);
-        $form->handleRequest($request);
+        $availabilityForm->handleRequest($request);
 
-        if ($form->isSubmitted() && $form->isValid()) {
-            $data = $form->getData();
+        $iCalSync = new PropertyICalSync();
+        $iCalSync->setProperty($property);
+        $iCalSyncForm = $this->createForm(PropertyICalSyncType::class, $iCalSync);
+        $iCalSyncForm->handleRequest($request);
+
+        if ($iCalSyncForm->isSubmitted() && $iCalSyncForm->isValid()) {
+            $entityManager->persist($iCalSync);
+            $entityManager->flush();
+
+            try {
+                $blockedDays = $propertyICalSyncService->sync($iCalSync);
+                $this->addFlash('success', sprintf('Le calendrier externe a ete ajoute et synchronise (%d jours bloques).', $blockedDays));
+
+                return $this->redirectToRoute('app_host_property_availability_show', [
+                    'id' => $property->getId(),
+                    'month' => $displayedMonth->format('Y-m'),
+                ]);
+            } catch (PropertyICalSyncException $e) {
+                $entityManager->remove($iCalSync);
+                $entityManager->flush();
+                $iCalSyncForm->addError(new FormError($e->getMessage()));
+            }
+        }
+
+        if ($availabilityForm->isSubmitted() && $availabilityForm->isValid()) {
+            $data = $availabilityForm->getData();
             $priceOverride = $data['priceOverride'] ?? null;
             $minimumStay = $data['minimumStay'] ?? null;
 
@@ -68,13 +97,14 @@ final class HostPropertyAvailabilityController extends AbstractController
                     'month' => $displayedMonth->format('Y-m'),
                 ]);
             } catch (PropertyAvailabilityException $e) {
-                $form->addError(new FormError($e->getMessage()));
+                $availabilityForm->addError(new FormError($e->getMessage()));
             }
         }
 
         return $this->render('front/property_availability/show.html.twig', [
             'property' => $property,
-            'form' => $form,
+            'form' => $availabilityForm,
+            'icalSyncForm' => $iCalSyncForm,
             'icalExportUrl' => $this->generateUrl('app_property_ical_export', [
                 'token' => $property->getICalExportToken(),
             ], UrlGeneratorInterface::ABSOLUTE_URL),
@@ -103,6 +133,71 @@ final class HostPropertyAvailabilityController extends AbstractController
             'id' => $property->getId(),
             'month' => $this->resolveDisplayedMonth($request->request->getString('month'))->format('Y-m'),
         ]);
+    }
+
+    #[Route('/{id}/disponibilites/ical-sync/{sync}/sync', name: 'app_host_property_ical_sync_now', methods: ['POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function syncNow(
+        Request $request,
+        Property $property,
+        PropertyICalSync $sync,
+        PropertyICalSyncService $propertyICalSyncService,
+    ): Response {
+        if (!$this->isOwnedSync($property, $sync)) {
+            throw $this->createNotFoundException();
+        }
+
+        if (!$this->isCsrfTokenValid('property_ical_sync_now_' . $sync->getId(), $request->request->getString('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        try {
+            $blockedDays = $propertyICalSyncService->sync($sync);
+            $this->addFlash('success', sprintf('Synchronisation terminee (%d jours bloques).', $blockedDays));
+        } catch (PropertyICalSyncException $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('app_host_property_availability_show', [
+            'id' => $property->getId(),
+            'month' => $this->resolveDisplayedMonth($request->request->getString('month'))->format('Y-m'),
+        ]);
+    }
+
+    #[Route('/{id}/disponibilites/ical-sync/{sync}/delete', name: 'app_host_property_ical_sync_delete', methods: ['POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function deleteSync(
+        Request $request,
+        Property $property,
+        PropertyICalSync $sync,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        if (!$this->isOwnedSync($property, $sync)) {
+            throw $this->createNotFoundException();
+        }
+
+        if (!$this->isCsrfTokenValid('property_ical_sync_delete_' . $sync->getId(), $request->request->getString('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        foreach ($sync->getImportedAvailabilities() as $availability) {
+            $entityManager->remove($availability);
+        }
+
+        $entityManager->remove($sync);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Le calendrier externe a ete supprime.');
+
+        return $this->redirectToRoute('app_host_property_availability_show', [
+            'id' => $property->getId(),
+            'month' => $this->resolveDisplayedMonth($request->request->getString('month'))->format('Y-m'),
+        ]);
+    }
+
+    private function isOwnedSync(Property $property, PropertyICalSync $sync): bool
+    {
+        return (string) $sync->getProperty()?->getId() === (string) $property->getId();
     }
 
     private function resolveDisplayedMonth(string $value): \DateTimeImmutable
