@@ -57,12 +57,58 @@
                     </dl>
                 </section>
             </div>
-            <aside>
+            <aside class="space-y-6">
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
                     <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
                     <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+
+                    {% if reservation.status in ['pending', 'confirmed'] %}
+                        <div class="mt-6 pt-6 border-t border-gray-100" data-cancel-block>
+                            <button type="button" class="w-full border border-red-200 text-red-700 hover:bg-red-50 text-sm font-semibold py-2.5 rounded-xl" data-cancel-toggle>
+                                Annuler la réservation
+                            </button>
+                            <div class="hidden mt-4" data-cancel-form>
+                                {{ form_start(cancelForm, { attr: { class: 'space-y-3' } }) }}
+                                    {{ form_row(cancelForm.reason, { label: 'Motif de l\'annulation', attr: { rows: 3, class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm' } }) }}
+                                    <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2.5 rounded-xl">Confirmer l'annulation</button>
+                                {{ form_end(cancelForm) }}
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {% if reservation.cancellationReason %}
+                        <div class="mt-6 pt-6 border-t border-gray-100 text-sm">
+                            <p class="text-gray-500">Motif de l'annulation</p>
+                            <p class="text-gray-800 mt-1">{{ reservation.cancellationReason }}</p>
+                        </div>
+                    {% endif %}
                 </div>
+
+                {% if reservation.statusHistory is not empty %}
+                    <div class="border border-gray-200 rounded-xl p-6">
+                        <h2 class="text-lg font-semibold mb-4">Historique</h2>
+                        <ol class="space-y-3 text-sm">
+                            {% for history in reservation.statusHistory %}
+                                <li class="flex items-start gap-3">
+                                    <span class="mt-1 w-2 h-2 rounded-full bg-brand shrink-0"></span>
+                                    <div>
+                                        <span class="font-semibold">{{ statusLabels[history.newStatus]|default(history.newStatus) }}</span>
+                                        <span class="text-gray-400"> · {{ history.createdAt|date('d/m/Y H:i') }}</span>
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ol>
+                    </div>
+                {% endif %}
             </aside>
         </div>
     </main>
+
+    <script>
+        document.querySelectorAll('[data-cancel-block]').forEach((block) => {
+            const toggle = block.querySelector('[data-cancel-toggle]');
+            const form = block.querySelector('[data-cancel-form]');
+            toggle?.addEventListener('click', () => form?.classList.toggle('hidden'));
+        });
+    </script>
 {% endblock %}

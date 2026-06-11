@@ -167,6 +167,9 @@ class Property
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'property')]
     private Collection $reviews;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $calendarToken = null;
+
     public function __construct()
     {
         $this->propertyAmenities = new ArrayCollection();
@@ -588,5 +591,24 @@ class Property
         }
 
         return round($total / $this->reviews->count(), 2);
+    }
+
+    public function getCalendarToken(): ?string
+    {
+        return $this->calendarToken;
+    }
+
+    public function setCalendarToken(?string $calendarToken): static
+    {
+        $this->calendarToken = $calendarToken;
+
+        return $this;
+    }
+
+    public function regenerateCalendarToken(): static
+    {
+        $this->calendarToken = bin2hex(random_bytes(24));
+
+        return $this;
     }
 }
