@@ -23,7 +23,7 @@ final class HostICalSyncType extends AbstractType
                 ],
                 'constraints' => [
                     new Assert\NotBlank(message: 'Le nom du calendrier est obligatoire.'),
-                    new Assert\Length(max: 100, maxMessage: 'Le nom ne peut pas depasser {{ limit }} caracteres.'),
+                    new Assert\Length(max: 100, maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères.'),
                 ],
             ])
             ->add('iCalUrl', UrlType::class, [
@@ -32,8 +32,8 @@ final class HostICalSyncType extends AbstractType
                     'placeholder' => 'https://...',
                 ],
                 'constraints' => [
-                    new Assert\NotBlank(message: 'L URL iCal est obligatoire.'),
-                    new Assert\Url(protocols: ['http', 'https'], requireTld: false, message: 'L URL iCal doit etre valide.'),
+                    new Assert\NotBlank(message: 'L’URL iCal est obligatoire.'),
+                    new Assert\Url(protocols: ['http', 'https'], requireTld: false, message: 'L’URL iCal doit être valide.'),
                 ],
             ]);
     }

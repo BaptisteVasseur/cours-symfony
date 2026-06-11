@@ -35,7 +35,7 @@ final class SyncICalCommand extends Command
                 $blocked = $this->syncService->sync($sync);
                 $blockedCount += $blocked;
                 ++$successCount;
-                $io->writeln(sprintf('%s: %d nuit(s) bloquee(s)', $sync->getProviderName(), $blocked));
+                $io->writeln(sprintf('%s: %d nuit(s) bloquée(s)', $sync->getProviderName(), $blocked));
             } catch (\Throwable $exception) {
                 ++$errorCount;
                 $io->error(sprintf('%s: %s', $sync->getProviderName() ?? 'Flux iCal', $exception->getMessage()));
@@ -43,12 +43,12 @@ final class SyncICalCommand extends Command
         }
 
         if ($successCount === 0 && $errorCount === 0) {
-            $io->success('Aucun flux iCal a synchroniser.');
+            $io->success('Aucun flux iCal à synchroniser.');
 
             return Command::SUCCESS;
         }
 
-        $io->success(sprintf('%d flux synchronise(s), %d erreur(s), %d nuit(s) bloquee(s).', $successCount, $errorCount, $blockedCount));
+        $io->success(sprintf('%d flux synchronisé(s), %d erreur(s), %d nuit(s) bloquée(s).', $successCount, $errorCount, $blockedCount));
 
         return $errorCount > 0 ? Command::FAILURE : Command::SUCCESS;
     }

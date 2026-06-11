@@ -112,13 +112,13 @@ final class HostCalendarController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('host_ical_token'.$property->getId(), $request->getPayload()->getString('_token'))) {
-            $this->addFlash('error', 'Jeton de securite invalide.');
+            $this->addFlash('error', 'Jeton de sécurité invalide.');
 
             return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()], Response::HTTP_SEE_OTHER);
         }
 
         $iCalManager->generateExportToken($property);
-        $this->addFlash('success', 'Le lien iCal prive a ete genere.');
+        $this->addFlash('success', 'Le lien iCal privé a été généré.');
 
         return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()], Response::HTTP_SEE_OTHER);
     }
@@ -138,13 +138,13 @@ final class HostCalendarController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('host_ical_revoke'.$property->getId(), $request->getPayload()->getString('_token'))) {
-            $this->addFlash('error', 'Jeton de securite invalide.');
+            $this->addFlash('error', 'Jeton de sécurité invalide.');
 
             return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()], Response::HTTP_SEE_OTHER);
         }
 
         $iCalManager->revokeExportToken($property);
-        $this->addFlash('success', 'Le lien iCal prive a ete revoque.');
+        $this->addFlash('success', 'Le lien iCal privé a été révoqué.');
 
         return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()], Response::HTTP_SEE_OTHER);
     }
@@ -164,7 +164,7 @@ final class HostCalendarController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('host_ical_import'.$property->getId(), $request->getPayload()->getString('_token'))) {
-            $this->addFlash('error', 'Jeton de securite invalide.');
+            $this->addFlash('error', 'Jeton de sécurité invalide.');
 
             return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()], Response::HTTP_SEE_OTHER);
         }
@@ -175,7 +175,7 @@ final class HostCalendarController extends AbstractController
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
             $iCalManager->addImport($property, (string) $data['providerName'], (string) $data['iCalUrl']);
-            $this->addFlash('success', 'Le flux iCal a ete ajoute.');
+            $this->addFlash('success', 'Le flux iCal a été ajouté.');
         } else {
             foreach ($form->getErrors(true) as $error) {
                 $this->addFlash('error', $error->getMessage());
@@ -211,13 +211,13 @@ final class HostCalendarController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('host_ical_delete'.$sync->getId(), $request->getPayload()->getString('_token'))) {
-            $this->addFlash('error', 'Jeton de securite invalide.');
+            $this->addFlash('error', 'Jeton de sécurité invalide.');
 
             return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()], Response::HTTP_SEE_OTHER);
         }
 
         $iCalManager->removeImport($sync);
-        $this->addFlash('success', 'Le flux iCal a ete supprime.');
+        $this->addFlash('success', 'Le flux iCal a été supprimé.');
 
         return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()], Response::HTTP_SEE_OTHER);
     }
@@ -244,14 +244,14 @@ final class HostCalendarController extends AbstractController
         }
 
         if (!$this->isCsrfTokenValid('host_ical_sync_now'.$sync->getId(), $request->getPayload()->getString('_token'))) {
-            $this->addFlash('error', 'Jeton de securite invalide.');
+            $this->addFlash('error', 'Jeton de sécurité invalide.');
 
             return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()], Response::HTTP_SEE_OTHER);
         }
 
         try {
             $blocked = $iCalSyncService->sync($sync);
-            $this->addFlash('success', sprintf('%d nuit%s synchronisee%s depuis %s.', $blocked, $blocked > 1 ? 's' : '', $blocked > 1 ? 's' : '', $sync->getProviderName()));
+            $this->addFlash('success', sprintf('%d nuit%s synchronisée%s depuis %s.', $blocked, $blocked > 1 ? 's' : '', $blocked > 1 ? 's' : '', $sync->getProviderName()));
         } catch (\Throwable $exception) {
             $this->addFlash('error', sprintf('Synchronisation impossible pour %s : %s', $sync->getProviderName(), $exception->getMessage()));
         }
@@ -369,7 +369,7 @@ final class HostCalendarController extends AbstractController
 
                 $dayReservations[] = [
                     'status' => $reservation->getStatus() ?? 'pending',
-                    'label' => $reservation->getStatus() === 'confirmed' ? 'Reservation confirmee' : 'Demande en attente',
+                    'label' => $reservation->getStatus() === 'confirmed' ? 'Réservation confirmée' : 'Demande en attente',
                 ];
             }
 

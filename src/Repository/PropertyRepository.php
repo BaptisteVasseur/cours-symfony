@@ -20,12 +20,6 @@ class PropertyRepository extends ServiceEntityRepository
     }
 
 
-    /**
-     * @return list<Property>
-     */
-    /**
-     * @return list<Property>
-     */
     public function findForListing(?string $status = null): array
     {
         $qb = $this->createQueryBuilder('p')
@@ -40,6 +34,59 @@ class PropertyRepository extends ServiceEntityRepository
         if ($status !== null && $status !== '') {
             $qb->andWhere('p.status = :status')
                 ->setParameter('status', $status);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
+    public function findForSearch(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->andWhere('p.maxGuests >= :guests')
+            ->setParameter('status', 'published')
+            ->setParameter('guests', max(1, $guests))
+            ->orderBy('p.createdAt', 'DESC');
+
+        $destination = trim((string) $destination);
+        if ($destination !== '') {
+            $qb
+                ->andWhere('LOWER(p.title) LIKE :destination OR LOWER(a.city) LIKE :destination OR LOWER(a.country) LIKE :destination')
+                ->setParameter('destination', '%'.strtolower($destination).'%');
+        }
+
+        if ($checkin !== null && $checkout !== null && $checkout > $checkin) {
+            $qb
+                ->leftJoin(
+                    'p.reservations',
+                    'reserved',
+                    'WITH',
+                    'reserved.status = :confirmedStatus AND reserved.checkinDate < :checkout AND reserved.checkoutDate > :checkin',
+                )
+                ->leftJoin(
+                    'p.availabilities',
+                    'blocked',
+                    'WITH',
+                    'blocked.isAvailable = false AND blocked.availableDate >= :checkin AND blocked.availableDate < :checkout',
+                )
+                ->andWhere('reserved.id IS NULL')
+                ->andWhere('blocked.id IS NULL')
+                ->setParameter('confirmedStatus', 'confirmed')
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout);
         }
 
         return $qb->getQuery()->getResult();

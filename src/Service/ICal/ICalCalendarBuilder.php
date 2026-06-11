@@ -31,7 +31,7 @@ final readonly class ICalCalendarBuilder
             $lines[] = 'DTSTART;VALUE=DATE:'.$this->formatDate($reservation->getCheckinDate());
             $lines[] = 'DTEND;VALUE=DATE:'.$this->formatDate($reservation->getCheckoutDate());
             $lines[] = 'SUMMARY:'.$this->escapeText($property->getTitle() ?? 'Reservation');
-            $lines[] = 'DESCRIPTION:'.$this->escapeText('Reservation confirmee');
+            $lines[] = 'DESCRIPTION:'.$this->escapeText('Réservation confirmée');
             $lines[] = 'END:VEVENT';
         }
 
@@ -43,7 +43,7 @@ final readonly class ICalCalendarBuilder
     private function formatDate(?\DateTimeImmutable $date): string
     {
         if ($date === null) {
-            throw new \LogicException('Une reservation exportee doit avoir des dates.');
+            throw new \LogicException('Une réservation exportée doit avoir des dates.');
         }
 
         return $date->format('Ymd');

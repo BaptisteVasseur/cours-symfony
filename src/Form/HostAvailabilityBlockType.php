@@ -19,13 +19,13 @@ class HostAvailabilityBlockType extends AbstractType
     {
         $builder
             ->add('startDate', DateType::class, [
-                'label' => 'Debut',
+                'label' => 'Début',
                 'widget' => 'single_text',
                 'attr' => [
                     'data-calendar-start' => '1',
                 ],
                 'constraints' => [
-                    new NotNull(message: 'La date de debut est obligatoire.'),
+                    new NotNull(message: 'La date de début est obligatoire.'),
                 ],
             ])
             ->add('endDate', DateType::class, [
@@ -43,17 +43,17 @@ class HostAvailabilityBlockType extends AbstractType
                 'required' => false,
                 'scale' => 2,
                 'constraints' => [
-                    new GreaterThanOrEqual(value: 0, message: 'Le tarif ne peut pas etre negatif.'),
+                    new GreaterThanOrEqual(value: 0, message: 'Le tarif ne peut pas être négatif.'),
                 ],
             ])
             ->add('minimumStay', IntegerType::class, [
-                'label' => 'Sejour min.',
+                'label' => 'Séjour min.',
                 'required' => false,
                 'attr' => [
                     'min' => 1,
                 ],
                 'constraints' => [
-                    new GreaterThanOrEqual(value: 1, message: 'Le sejour minimum doit etre superieur a zero.'),
+                    new GreaterThanOrEqual(value: 1, message: 'Le séjour minimum doit être supérieur à zéro.'),
                 ],
             ]);
     }

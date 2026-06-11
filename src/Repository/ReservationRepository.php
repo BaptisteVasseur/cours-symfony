@@ -135,6 +135,29 @@ class ReservationRepository extends ServiceEntityRepository
     /**
      * @return list<Reservation>
      */
+    public function findConfirmedStartingOnWithoutReminder(\DateTimeImmutable $date): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'a', 'g', 'gp', 'host', 'hostProfile')
+            ->innerJoin('r.property', 'p')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate = :date')
+            ->andWhere('r.reminderSentAt IS NULL')
+            ->setParameter('status', 'confirmed')
+            ->setParameter('date', $date)
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
     public function findAllForListing(): array
     {
         return $this->createQueryBuilder('r')

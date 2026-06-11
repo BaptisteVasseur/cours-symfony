@@ -31,8 +31,8 @@
         <div class="grid grid-cols-1 xl:grid-cols-4 gap-8">
             <div class="xl:col-span-1 space-y-6">
                 <section class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
-                    <h2 class="text-lg font-semibold text-gray-900 mb-2">Bloquer une periode</h2>
-                    <p class="text-sm text-gray-500 mb-5">Cliquez sur une premiere nuit puis sur une derniere nuit dans le calendrier.</p>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-2">Bloquer une période</h2>
+                    <p class="text-sm text-gray-500 mb-5">Cliquez sur une première nuit puis sur une dernière nuit dans le calendrier.</p>
 
                     {{ form_start(availabilityForm) }}
                         {{ form_errors(availabilityForm) }}
@@ -46,7 +46,7 @@
                             </div>
                         </div>
 
-                        <p data-calendar-selection-label class="mt-4 text-sm text-gray-500">Aucune periode selectionnee.</p>
+                        <p data-calendar-selection-label class="mt-4 text-sm text-gray-500">Aucune période sélectionnée.</p>
 
                         <button type="submit" class="mt-6 w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition">
                             Bloquer les dates
@@ -58,21 +58,21 @@
                     <h2 class="text-lg font-semibold text-gray-900 mb-5">Export iCal</h2>
 
                     {% if property.iCalExportToken %}
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Lien prive</label>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Lien privé</label>
                         <input type="text" readonly value="{{ absolute_url(path('app_property_calendar_export', { id: property.id, token: property.iCalExportToken })) }}" class="w-full rounded-lg border-gray-300 text-sm text-gray-700">
                         <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
                             <form method="post" action="{{ path('app_host_property_calendar_export_token', { id: property.id }) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token('host_ical_token' ~ property.id) }}">
                                 <button type="submit" class="w-full inline-flex justify-center items-center gap-2 border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold text-sm px-4 py-2.5 rounded-lg transition">
                                     <i class="fa-solid fa-rotate"></i>
-                                    Regenerer
+                                    Régénérer
                                 </button>
                             </form>
                             <form method="post" action="{{ path('app_host_property_calendar_revoke_export_token', { id: property.id }) }}">
                                 <input type="hidden" name="_token" value="{{ csrf_token('host_ical_revoke' ~ property.id) }}">
                                 <button type="submit" class="w-full inline-flex justify-center items-center gap-2 border border-red-200 text-red-700 hover:bg-red-50 font-semibold text-sm px-4 py-2.5 rounded-lg transition">
                                     <i class="fa-solid fa-link-slash"></i>
-                                    Revoquer
+                                    Révoquer
                                 </button>
                             </form>
                         </div>
@@ -81,7 +81,7 @@
                         <form method="post" action="{{ path('app_host_property_calendar_export_token', { id: property.id }) }}">
                             <input type="hidden" name="_token" value="{{ csrf_token('host_ical_token' ~ property.id) }}">
                             <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition">
-                                Generer un lien iCal
+                                Générer un lien iCal
                             </button>
                         </form>
                     {% endif %}
@@ -109,9 +109,9 @@
                                     <p class="text-xs text-gray-500 truncate">{{ sync.iCalUrl }}</p>
                                     <p class="text-xs text-gray-400 mt-1">
                                         {% if sync.lastSyncAt %}
-                                            Derniere synchro le {{ sync.lastSyncAt|date('d/m/Y H:i') }}
+                                            Dernière synchro le {{ sync.lastSyncAt|date('d/m/Y H:i') }}
                                         {% else %}
-                                            Jamais synchronise
+                                            Jamais synchronisé
                                         {% endif %}
                                     </p>
                                 </div>
@@ -133,7 +133,7 @@
                                 </div>
                             </div>
                         {% else %}
-                            <p class="text-sm text-gray-500 pt-1">Aucun flux importe.</p>
+                            <p class="text-sm text-gray-500 pt-1">Aucun flux importé.</p>
                         {% endfor %}
                     </div>
                 </section>
@@ -160,10 +160,10 @@
 
                 <div class="px-6 pt-5 flex flex-wrap gap-3 text-xs text-gray-600">
                     <span class="inline-flex items-center gap-2"><span class="w-3 h-3 rounded bg-emerald-100 border border-emerald-200"></span>Libre</span>
-                    <span class="inline-flex items-center gap-2"><span class="w-3 h-3 rounded bg-gray-200 border border-gray-300"></span>Bloque manuel ou iCal</span>
-                    <span class="inline-flex items-center gap-2"><span class="w-3 h-3 rounded bg-rose-100 border border-rose-200"></span>Reservation confirmee</span>
+                    <span class="inline-flex items-center gap-2"><span class="w-3 h-3 rounded bg-gray-200 border border-gray-300"></span>Bloqué manuel ou iCal</span>
+                    <span class="inline-flex items-center gap-2"><span class="w-3 h-3 rounded bg-rose-100 border border-rose-200"></span>Réservation confirmée</span>
                     <span class="inline-flex items-center gap-2"><span class="w-3 h-3 rounded bg-amber-100 border border-amber-200"></span>Demande pending</span>
-                    <span class="inline-flex items-center gap-2"><span class="w-3 h-3 rounded bg-brand"></span>Selection</span>
+                    <span class="inline-flex items-center gap-2"><span class="w-3 h-3 rounded bg-brand"></span>Sélection</span>
                 </div>
 
                 <div class="p-4 md:p-6">
@@ -211,13 +211,13 @@
                                 </span>
 
                                 {% if confirmed %}
-                                    <span class="text-xs font-semibold rounded bg-rose-100 text-rose-800 px-2 py-1">Confirmee</span>
+                                    <span class="text-xs font-semibold rounded bg-rose-100 text-rose-800 px-2 py-1">Confirmée</span>
                                 {% elseif pending %}
                                     <span class="text-xs font-semibold rounded bg-amber-100 text-amber-800 px-2 py-1">Pending</span>
                                 {% endif %}
 
                                 {% if day.isBlocked %}
-                                    <span class="text-xs font-semibold rounded bg-gray-200 text-gray-800 px-2 py-1">Bloque</span>
+                                    <span class="text-xs font-semibold rounded bg-gray-200 text-gray-800 px-2 py-1">Bloqué</span>
                                 {% elseif not confirmed and not day.isPast %}
                                     <span class="text-xs rounded bg-emerald-100 text-emerald-800 px-2 py-1">Libre</span>
                                 {% endif %}
@@ -228,7 +228,7 @@
 
                 <div class="px-6 py-4 border-t border-gray-200">
                     <h3 class="font-semibold text-gray-900">Dates indisponibles</h3>
-                    <p class="text-sm text-gray-500 mb-3">{{ blockedDates|length }} nuit{{ blockedDates|length > 1 ? 's' : '' }} bloquee{{ blockedDates|length > 1 ? 's' : '' }}</p>
+                    <p class="text-sm text-gray-500 mb-3">{{ blockedDates|length }} nuit{{ blockedDates|length > 1 ? 's' : '' }} bloquée{{ blockedDates|length > 1 ? 's' : '' }}</p>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {% for availability in blockedDates|slice(0, 8) %}
@@ -246,8 +246,8 @@
                             </div>
                         {% else %}
                             <div class="md:col-span-2 px-6 py-10 text-center text-gray-500 border border-dashed border-gray-200 rounded-lg">
-                                <p class="font-semibold text-gray-900">Aucune date bloquee</p>
-                                <p class="text-sm mt-1">Le logement est disponible selon les reservations confirmees.</p>
+                                <p class="font-semibold text-gray-900">Aucune date bloquée</p>
+                                <p class="text-sm mt-1">Le logement est disponible selon les réservations confirmées.</p>
                             </div>
                         {% endfor %}
                     </div>
@@ -303,8 +303,8 @@
 
                 if (label) {
                     label.textContent = start
-                        ? `Selection : ${formatDate(start)} au ${formatDate(nextDay(end ?? start))} (depart)`
-                        : 'Aucune periode selectionnee.';
+                        ? `Sélection : ${formatDate(start)} au ${formatDate(nextDay(end ?? start))} (départ)`
+                        : 'Aucune période sélectionnée.';
                 }
             };
 

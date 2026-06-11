@@ -7,6 +7,7 @@ namespace App\Service\Booking;
 use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Service\Notification\ReservationEmailSender;
 use Doctrine\DBAL\Exception\ConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -15,6 +16,7 @@ final readonly class ReservationStatusManager
     public function __construct(
         private EntityManagerInterface $entityManager,
         private AvailabilityChecker $availabilityChecker,
+        private ReservationEmailSender $emailSender,
     ) {
     }
 
@@ -43,6 +45,8 @@ final readonly class ReservationStatusManager
 
                 $this->entityManager->flush();
             });
+
+            $this->emailSender->sendReservationAccepted($reservation);
         } catch (ConstraintViolationException $exception) {
             if ($exception->getSQLState() !== '23P01') {
                 throw $exception;
@@ -69,6 +73,7 @@ final readonly class ReservationStatusManager
         $this->addHistory($reservation, $oldStatus, 'cancelled', $host);
 
         $this->entityManager->flush();
+        $this->emailSender->sendReservationRejected($reservation);
     }
 
     private function addHistory(Reservation $reservation, ?string $oldStatus, string $newStatus, User $changedBy): void

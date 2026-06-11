@@ -17,7 +17,7 @@ class HomeController extends AbstractController
     public function index(PropertyRepository $propertyRepository): Response
     {
         return $this->render('home/index.html.twig', [
-            'properties' => $propertyRepository->findForListing(),
+            'properties' => $propertyRepository->findForListing('published'),
         ]);
     }
 
@@ -34,15 +34,29 @@ class HomeController extends AbstractController
     #[Route('/search', name: 'app_search', methods: ['GET'])]
     public function search(Request $request, PropertyRepository $propertyRepository): Response
     {
-        $checkin = $this->parseDate($request->query->get('checkin'));
-        $checkout = $this->parseDate($request->query->get('checkout'));
+        $destination = trim((string) $request->query->get('destination', ''));
+        $checkinValue = (string) $request->query->get('checkin', '');
+        $checkoutValue = (string) $request->query->get('checkout', '');
+        $guests = max(1, $request->query->getInt('guests', 1));
+        $checkin = $this->parseDate($checkinValue);
+        $checkout = $this->parseDate($checkoutValue);
+        $searchError = null;
+
+        if ($checkin !== null && $checkout !== null && $checkout <= $checkin) {
+            $searchError = 'La date de départ doit être postérieure à la date d’arrivée.';
+            $checkin = null;
+            $checkout = null;
+        }
 
         return $this->render('home/search.html.twig', [
-            'properties' => $propertyRepository->findForListing(),
+            'properties' => $propertyRepository->findForSearch($destination, $checkin, $checkout, $guests),
             'checkin' => $checkin,
             'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'checkinValue' => $checkinValue,
+            'checkoutValue' => $checkoutValue,
+            'guests' => $guests,
+            'destination' => $destination,
+            'searchError' => $searchError,
         ]);
     }
 

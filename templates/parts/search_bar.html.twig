@@ -3,6 +3,8 @@
 {% set checkin = checkin|default('') %}
 {% set checkout = checkout|default('') %}
 {% set guests = guests|default(1) %}
+{% set checkin = checkin ? checkin|date('Y-m-d') : '' %}
+{% set checkout = checkout ? checkout|date('Y-m-d') : '' %}
 
 {% if variant == 'hero' %}
     <div class="mb-10" data-controller="search" data-search-guests-value="{{ guests }}">
@@ -100,6 +102,7 @@
         <div class="flex space-x-4 text-sm font-semibold text-gray-700 flex-1 min-w-0">
             <input type="text" name="destination" value="{{ destination }}" placeholder="N'importe où" class="border-r border-gray-200 pr-4 w-28 truncate focus:outline-none bg-transparent placeholder-gray-700 font-semibold">
             <input type="date" name="checkin" value="{{ checkin }}" class="border-r border-gray-200 pr-4 w-28 text-gray-500 focus:outline-none bg-transparent font-normal">
+            <input type="date" name="checkout" value="{{ checkout }}" class="border-r border-gray-200 pr-4 w-28 text-gray-500 focus:outline-none bg-transparent font-normal">
             <input type="number" name="guests" value="{{ guests }}" min="1" max="16" class="w-20 text-gray-500 focus:outline-none bg-transparent font-normal" title="Voyageurs">
         </div>
         <button type="submit" class="bg-brand text-white p-2.5 rounded-full hover:bg-brandHover transition shrink-0">

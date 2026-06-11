@@ -8,6 +8,7 @@ use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Service\Notification\ReservationEmailSender;
 use Doctrine\DBAL\Exception\ConstraintViolationException;
 use Doctrine\ORM\EntityManagerInterface;
 
@@ -17,13 +18,14 @@ final readonly class BookingManager
         private EntityManagerInterface $entityManager,
         private AvailabilityChecker $availabilityChecker,
         private BookingPriceCalculator $priceCalculator,
+        private ReservationEmailSender $emailSender,
     ) {
     }
 
     public function book(Property $property, User $guest, \DateTimeImmutable $checkin, \DateTimeImmutable $checkout, int $guests): Reservation
     {
         try {
-            return $this->entityManager->wrapInTransaction(function () use ($property, $guest, $checkin, $checkout, $guests): Reservation {
+            $reservation = $this->entityManager->wrapInTransaction(function () use ($property, $guest, $checkin, $checkout, $guests): Reservation {
                 $this->availabilityChecker->assertBookable($property, $checkin, $checkout, $guests);
                 $price = $this->priceCalculator->calculate($property, $checkin, $checkout);
                 $status = $property->isInstantBooking() ? 'confirmed' : 'pending';
@@ -53,6 +55,10 @@ final readonly class BookingManager
 
                 return $reservation;
             });
+
+            $this->emailSender->sendReservationCreated($reservation);
+
+            return $reservation;
         } catch (ConstraintViolationException $exception) {
             if ($exception->getSQLState() !== '23P01') {
                 throw $exception;
