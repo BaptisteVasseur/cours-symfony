@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\ReservationStatusHistoryRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ReservationStatusHistoryRepository::class)]
 #[ORM\Table(name: 'reservation_status_history')]
@@ -15,18 +16,28 @@ class ReservationStatusHistory
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull(message: 'La réservation est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'statusHistory')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Reservation $reservation = null;
 
+    #[Assert\Choice(
+        choices: ['pending', 'confirmed', 'completed', 'cancelled'],
+        message: 'Le statut précédent sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $oldStatus = null;
 
+    #[Assert\NotBlank(message: 'Le nouveau statut est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['pending', 'confirmed', 'completed', 'cancelled'],
+        message: 'Le nouveau statut sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $newStatus = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     private ?User $changedBy = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

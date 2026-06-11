@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: CancellationPolicyRepository::class)]
 #[ORM\Table(name: 'cancellation_policies')]
@@ -17,12 +18,21 @@ class CancellationPolicy
 {
     use UuidEntityTrait;
 
+    #[Assert\NotBlank(message: 'Le code de la politique est obligatoire.')]
+    #[Assert\Length(max: 50, maxMessage: 'Le code ne peut pas dépasser {{ limit }} caractères.')]
+    #[Assert\Regex(
+        pattern: '/^[a-z0-9_]+$/',
+        message: 'Le code ne peut contenir que des lettres minuscules, chiffres et tirets bas.',
+    )]
     #[ORM\Column(length: 50, unique: true)]
     private ?string $code = null;
 
+    #[Assert\NotBlank(message: 'Le libellé est obligatoire.')]
+    #[Assert\Length(max: 100, maxMessage: 'Le libellé ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 100)]
     private ?string $label = null;
 
+    #[Assert\Length(max: 2000, maxMessage: 'La description ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $description = null;
 

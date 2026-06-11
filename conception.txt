@@ -1,0 +1,172 @@
+==============================================================================
+CONCEPTION TECHNIQUE
+Moteur de réservation & synchronisation de calendrier iCal
+
+
+Ce document présente les décisions de conception du moteur de réservation et
+leur justification. (À relire et à vous approprier avant le rendu.)
+
+
+PRINCIPES DIRECTEURS
+--------------------
+1. Disponibilité dérivée (source unique de vérité). La disponibilité n'est jamais
+   dupliquée : elle se déduit de l'état des réservations « confirmed » et des
+   blocages explicites de jours. Une période est libre si et seulement si :
+   (a) le logement est publié, (b) sa capacité couvre le nombre de voyageurs,
+   (c) aucun jour de la période n'est bloqué, (d) aucune réservation confirmée
+   ne la chevauche. Conséquence directe : annuler une réservation libère les
+   dates sans traitement supplémentaire.
+2. Logique métier isolée dans des services dédiés (AvailabilityChecker,
+   PricingCalculator, ReservationStateManager, ICalExporter, ICalParser),
+   testables indépendamment des contrôleurs.
+3. Cycle de vie centralisé. Toutes les transitions de statut passent par
+   ReservationStateManager, qui valide la transition et la journalise dans
+   ReservationStatusHistory (traçabilité complète des actions).
+
+
+1. MODÉLISATION TEMPORELLE
+   « Le jour de check-out est-il réservable ? Comment gérer un départ à 11h et
+   une arrivée à 15h le même jour ? »
+------------------------------------------------------------------------------
+Décision. Les dates sont traitées en intervalle demi-ouvert [arrivée, départ[.
+Une nuitée occupe les nuits de la date d'arrivée jusqu'à la veille du départ ;
+le jour de départ n'est PAS occupé et reste réservable comme jour d'arrivée
+pour un autre voyageur.
+
+Justification. C'est le modèle hôtelier standard et il se traduit par un prédicat
+de chevauchement strict (sans égalité aux bornes) :
+   existante.arrivée < demandée.départ  ET  existante.départ > demandée.arrivée.
+Ainsi, départ et arrivée le même jour calendaire ne sont pas considérés comme un
+conflit. La granularité de la réservation est la journée (checkinDate /
+checkoutDate de type DATE).
+
+Cas 11h / 15h. La fenêtre de rotation (ménage) entre le départ (11h) et l'arrivée
+(15h) est modélisée au niveau du LOGEMENT (Property.checkinTime / checkoutTime),
+et non par réservation : toutes les arrivées et tous les départs d'un même
+logement suivent ses horaires, il est donc inutile de stocker l'heure sur chaque
+séjour. Le même jour peut porter un départ et une arrivée sans conflit de données.
+
+Limite assumée. Aucun délai tampon de plusieurs jours entre deux séjours ; il
+serait ajoutable via un paramètre de rotation au niveau du logement.
+
+
+2. GESTION DES ÉTATS
+   « Une demande pending bloque-t-elle les dates ? Risques associés. »
+------------------------------------------------------------------------------
+Décision. Seules les réservations « confirmed » bloquent les dates ; une demande
+« pending » ne bloque pas le calendrier.
+
+Justification. Bloquer dès la demande exposerait au blocage abusif : une demande
+jamais traitée immobiliserait indéfiniment le calendrier de l'hôte. On privilégie
+donc la liquidité du calendrier et on tranche le conflit au moment décisif (la
+confirmation).
+
+Analyse du risque. Plusieurs demandes « pending » peuvent coexister sur les mêmes
+dates (sur-sollicitation), mais cela ne constitue PAS un overbooking : celui-ci
+est empêché à la confirmation par le verrou de concurrence (cf. §3) — une seule
+demande peut devenir « confirmed ». La sur-sollicitation est en outre bornée par
+l'expiration automatique des demandes non traitées au-delà de 24 h
+(commande app:reservations:expire-pending).
+
+Alternative écartée. Bloquer les dates dès « pending » avec une réservation
+temporaire à durée de vie limitée (hold + TTL) : plus protecteur pour l'hôte,
+mais réintroduit le blocage abusif et la complexité de libération à expiration.
+
+
+3. CONCURRENCE
+   « Deux confirmations à la milliseconde près, même logement, mêmes dates. »
+------------------------------------------------------------------------------
+Décision. La réservation est créée dans une transaction avec verrou pessimiste
+en écriture sur la ligne du logement (EntityManager::lock, PESSIMISTIC_WRITE,
+soit SELECT … FOR UPDATE), suivie d'un nouveau contrôle de disponibilité une fois
+le verrou acquis.
+
+Justification. La première transaction verrouille la ligne « properties »
+concernée ; la seconde attend la libération du verrou, puis ré-évalue la
+disponibilité et constate la réservation déjà confirmée — elle est alors rejetée
+(BookingConflictException). Le verrou porte sur le logement : il sérialise les
+réservations concurrentes d'un même bien sans pénaliser les autres.
+
+Alternatives considérées.
+ - Contrainte d'exclusion SQL (PostgreSQL EXCLUDE USING gist sur un daterange) :
+   garantie la plus forte, au niveau base, mais impose une extension et une
+   colonne intervalle ; écartée pour rester simple et portable.
+ - Isolation SERIALIZABLE : résout aussi le problème, au prix de relances
+   applicatives sur erreur de sérialisation et d'un surcoût global.
+ - Verrou optimiste (version) : inadapté, car le conflit porte sur l'apparition
+   d'une ligne concurrente, non sur la modification d'une ligne existante.
+
+Compromis. Le verrou pessimiste crée une contention par logement, acceptable au
+regard de la faible probabilité de réservations réellement simultanées sur un
+même bien.
+
+
+4. PERFORMANCE
+   « Valider 20 nuits consécutives sans saturer la base de requêtes itératives. »
+------------------------------------------------------------------------------
+Décision. Le contrôle est entièrement ensembliste : aucune boucle jour par jour
+côté SQL, quelle que soit la durée du séjour.
+ - Chevauchement : une seule requête COUNT (ReservationRepository::hasOverlap),
+   avec le prédicat demi-ouvert.
+ - Jours bloqués : une seule requête COUNT
+   (PropertyAvailabilityRepository::hasBlockedNight) sur l'intervalle.
+ - Recherche multi-logements (/search) : filtrage intégral en une requête, via
+   deux sous-requêtes NOT EXISTS (réservation confirmée chevauchante / jour
+   bloqué), ce qui évite tout N+1.
+
+Coût. Deux requêtes COUNT en O(1) au lieu d'une vérification en O(n) sur n nuits.
+La sommation du prix par nuit (surcharges priceOverride) itère en mémoire sur les
+nuits à partir d'UNE seule requête (findForRangeIndexed), sans requête par jour.
+
+Index recommandés. (property_id, checkin_date, checkout_date) sur reservations ;
+(property_id, available_date) sur property_availability.
+
+
+5. ASYNCHRONISME
+   « Pourquoi envoyer l'email après flush() ? Stratégie en cas de panne du broker ? »
+------------------------------------------------------------------------------
+Décision. Les notifications sont dispatchées APRÈS le flush/commit de la
+réservation. Le message ne transporte qu'un identifiant scalaire ; le handler
+recharge l'entité.
+
+Justification. Le worker s'exécute dans un autre processus et une autre connexion :
+si l'entité n'est pas committée avant le dispatch, le handler ne la retrouve pas
+(ou lit un état périmé). Dispatcher après commit garantit la cohérence — on ne
+notifie jamais une réservation inexistante (esprit du pattern « outbox »).
+Transmettre un identifiant plutôt que l'objet Doctrine évite par ailleurs les
+problèmes d'entités détachées à la désérialisation.
+
+Tolérance aux pannes. Le transport est doctrine://default : la file est une table
+(messenger_messages). Si le worker ou le broker est indisponible, les messages
+restent persistés en base et sont traités au redémarrage. La reprise repose sur
+une stratégie de retry (3 tentatives avec backoff) puis un transport « failed »
+permettant l'inspection et le rejeu (messenger:failed:*). Aucune notification
+n'est perdue. Le même raisonnement s'applique si l'on bascule vers RabbitMQ, avec
+la table Doctrine comme filet de sécurité.
+
+
+6. STRUCTURE SQL DU CALENDRIER
+   « Table de jours (PropertyAvailability) ou table de périodes (date_start/end) ? »
+------------------------------------------------------------------------------
+Décision. Modèle hybride, chaque usage adoptant la représentation la plus
+efficace pour ses requêtes.
+ - Indisponibilités hôte et imports iCal : table de JOURS (PropertyAvailability,
+   une ligne par date). Avantages : accès O(1) par date, surcharge de tarif
+   (priceOverride) et durée minimale de séjour (minimumStay) au jour, granularité
+   fine. Inconvénient : volume (une ligne par jour et par logement).
+ - Réservations : table de PÉRIODES (checkin_date, checkout_date). Avantages :
+   compacité, chevauchement testé par le prédicat demi-ouvert.
+
+Le champ PropertyAvailability.source (« host » ou « ical:{fournisseur} »)
+distingue l'origine d'un blocage et permet à la synchronisation iCal de purger
+puis recréer uniquement ses propres blocages, sans toucher aux indisponibilités
+saisies manuellement par l'hôte.
+
+Justification. Disponibilité ponctuelle et tarification ⇒ représentation par jour ;
+occupation continue ⇒ représentation par période. Les deux modèles cohabitent
+sans redondance.
+
+Compromis / évolution. Pour des blocages de longue durée (travaux de plusieurs
+mois), une table de périodes dédiée réduirait le volume. On peut aussi borner
+l'horizon de génération des lignes de jours (par exemple 12 à 24 mois glissants).
+

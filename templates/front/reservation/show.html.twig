@@ -56,6 +56,31 @@
                         <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
                     </dl>
                 </section>
+
+                {% if reservation.status == 'cancelled' and reservation.cancellationReason %}
+                    <section class="border border-red-200 bg-red-50 rounded-xl p-6">
+                        <h2 class="text-sm font-semibold text-red-800 mb-1">Motif de l'annulation</h2>
+                        <p class="text-sm text-red-700">{{ reservation.cancellationReason }}</p>
+                    </section>
+                {% endif %}
+
+                {% include 'front/reservation/partials/timeline.html.twig' %}
+
+                {% if reservation.status in ['pending', 'confirmed'] and is_granted(constant('App\\Security\\Voter\\ReservationVoter::CANCEL'), reservation) %}
+                    <section class="border border-gray-200 rounded-xl p-6">
+                        <details>
+                            <summary class="list-none cursor-pointer text-sm font-semibold text-red-600 hover:text-red-700">
+                                <i class="fa-solid fa-ban"></i> Annuler la réservation
+                            </summary>
+                            <form method="post" action="{{ path('app_reservation_cancel', { id: reservation.id }) }}" class="mt-4 space-y-3">
+                                <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ reservation.id) }}">
+                                <label class="block text-sm font-medium text-gray-700">Motif de l'annulation</label>
+                                <textarea name="reason" rows="3" required class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm" placeholder="Indiquez la raison de l'annulation…"></textarea>
+                                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">Confirmer l'annulation</button>
+                            </form>
+                        </details>
+                    </section>
+                {% endif %}
             </div>
             <aside>
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28">

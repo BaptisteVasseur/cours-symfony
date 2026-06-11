@@ -9,6 +9,21 @@ sh:
 cache:
 	docker compose exec -it php php bin/console cache:clear
 
+fixtures:
+	docker compose exec -T php php bin/console doctrine:fixtures:load --no-interaction
+	@echo "==> Fixtures chargées. Comptes de démo (mot de passe pour tous : password) :"
+	@echo "    - Super admin   : admin@airbnb-clone.fr"
+	@echo "    - Admin / modé  : moderation@airbnb-clone.fr"
+	@echo "    - Hôte          : jeanmarc.dupont@email.com"
+	@echo "    - Voyageur      : sophie.chen@email.com"
+	@echo "    - Hôte + Admin  : test@example.com"
+
+fixtures-fresh:
+	docker compose exec -T php php bin/console doctrine:database:drop --force --if-exists
+	docker compose exec -T php php bin/console doctrine:database:create --if-not-exists
+	docker compose exec -T php php bin/console doctrine:migrations:migrate --no-interaction
+	$(MAKE) fixtures
+
 logs:
 	docker compose logs -f --tail=100 php
 
@@ -31,6 +46,8 @@ help:
 	@echo "  up       - Start the Docker containers"
 	@echo "  down     - Stop and remove the Docker containers"
 	@echo "  restart  - Restart the Docker containers"
-	@echo "  cache    - Clear the Symfony cache"
-	@echo "  logs     - Follow the logs of the PHP container"
-	@echo "  help     - Show this help message"
+	@echo "  cache           - Clear the Symfony cache"
+	@echo "  fixtures        - Recharge les fixtures (purge la base puis recharge)"
+	@echo "  fixtures-fresh  - Drop + recreate DB + migrate + fixtures (reset complet)"
+	@echo "  logs            - Follow the logs of the PHP container"
+	@echo "  help            - Show this help message"

@@ -6,16 +6,19 @@ namespace App\Entity;
 
 use App\Repository\PropertyAmenityRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyAmenityRepository::class)]
 #[ORM\Table(name: 'property_amenities')]
 class PropertyAmenity
 {
+    #[Assert\NotNull(message: 'Le logement est obligatoire.')]
     #[ORM\Id]
     #[ORM\ManyToOne(inversedBy: 'propertyAmenities')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Assert\NotNull(message: 'L\'équipement est obligatoire.')]
     #[ORM\Id]
     #[ORM\ManyToOne(inversedBy: 'propertyAmenities')]
     #[ORM\JoinColumn(nullable: false)]

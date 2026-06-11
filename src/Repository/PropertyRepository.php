@@ -48,6 +48,55 @@ class PropertyRepository extends ServiceEntityRepository
     /**
      * @return list<Property>
      */
+    public function search(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        ?int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :published')
+            ->setParameter('published', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && trim($destination) !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :dest OR LOWER(a.addressLine1) LIKE :dest OR LOWER(a.country) LIKE :dest')
+                ->setParameter('dest', '%' . mb_strtolower(trim($destination)) . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null && $checkin < $checkout) {
+            $qb
+                ->andWhere(
+                    'NOT EXISTS (SELECT res.id FROM App\Entity\Reservation res
+                        WHERE res.property = p AND res.status = :confirmed
+                        AND res.checkinDate < :checkout AND res.checkoutDate > :checkin)'
+                )
+                ->andWhere(
+                    'NOT EXISTS (SELECT av.id FROM App\Entity\PropertyAvailability av
+                        WHERE av.property = p AND av.isAvailable = false
+                        AND av.availableDate >= :checkin AND av.availableDate < :checkout)'
+                )
+                ->setParameter('confirmed', 'confirmed')
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
     public function findPendingForModeration(int $limit = 10): array
     {
         return $this->createQueryBuilder('p')

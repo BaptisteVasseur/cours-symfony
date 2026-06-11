@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\UserDocumentRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserDocumentRepository::class)]
 #[ORM\Table(name: 'user_documents')]
@@ -15,16 +16,33 @@ class UserDocument
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull(message: 'L\'utilisateur est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'documents')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
+    #[Assert\NotBlank(message: 'Le type de document est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['id_card', 'passport', 'driving_license', 'proof_of_address', 'selfie'],
+        message: 'Le type de document sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $type = null;
 
+    #[Assert\NotBlank(message: 'L\'URL du fichier est obligatoire.')]
+    #[Assert\Url(
+        message: 'Le lien du fichier n\'est pas une URL valide.',
+        protocols: ['http', 'https'],
+    )]
+    #[Assert\Length(max: 2048, maxMessage: 'L\'URL du fichier ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(type: Types::TEXT)]
     private ?string $fileUrl = null;
 
+    #[Assert\NotBlank(message: 'Le statut de vérification est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['pending', 'verified', 'rejected'],
+        message: 'Le statut de vérification sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $verificationStatus = null;
 

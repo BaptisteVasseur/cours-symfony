@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ReviewRepository::class)]
 #[ORM\Table(name: 'reviews')]
@@ -17,25 +18,39 @@ class Review
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull(message: 'La réservation associée à l\'avis est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'reviews')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Reservation $reservation = null;
 
+    #[Assert\NotNull(message: 'L\'auteur de l\'avis est obligatoire.')]
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $reviewer = null;
 
+    #[Assert\NotNull(message: 'L\'utilisateur évalué est obligatoire.')]
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $reviewedUser = null;
 
+    #[Assert\NotNull(message: 'Le logement évalué est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'reviews')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Assert\NotNull(message: 'La note est obligatoire.')]
+    #[Assert\Range(
+        notInRangeMessage: 'La note doit être comprise entre {{ min }} et {{ max }}.',
+        min: 1,
+        max: 5,
+    )]
     #[ORM\Column]
     private ?int $rating = null;
 
+    #[Assert\Length(
+        max: 5000,
+        maxMessage: 'Le commentaire ne peut pas dépasser {{ limit }} caractères.',
+    )]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $comment = null;
 

@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ConversationRepository::class)]
 #[ORM\Table(name: 'conversations')]
@@ -17,6 +18,7 @@ class Conversation
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull(message: 'La réservation associée est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'conversations')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Reservation $reservation = null;

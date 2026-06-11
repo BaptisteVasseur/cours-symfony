@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\RefundRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: RefundRepository::class)]
 #[ORM\Table(name: 'refunds')]
@@ -15,16 +16,25 @@ class Refund
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull(message: 'Le paiement associé est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'refunds')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Payment $payment = null;
 
+    #[Assert\NotBlank(message: 'Le montant est obligatoire.')]
+    #[Assert\Positive(message: 'Le montant du remboursement doit être supérieur à zéro.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $amount = null;
 
+    #[Assert\Length(max: 2000, maxMessage: 'La raison ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $reason = null;
 
+    #[Assert\NotBlank(message: 'Le statut est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['pending', 'processing', 'succeeded', 'failed'],
+        message: 'Le statut sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $status = null;
 

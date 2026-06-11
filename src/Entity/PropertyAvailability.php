@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PropertyAvailabilityRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyAvailabilityRepository::class)]
 #[ORM\Table(name: 'property_availability')]
@@ -15,21 +16,35 @@ class PropertyAvailability
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull(message: 'Le logement associé est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'availabilities')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Assert\NotNull(message: 'La date est obligatoire.')]
+    #[Assert\Type(type: \DateTimeImmutable::class)]
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     private ?\DateTimeImmutable $availableDate = null;
 
+    #[Assert\Type(type: 'bool')]
     #[ORM\Column]
     private bool $isAvailable = true;
 
+    #[Assert\PositiveOrZero(message: 'Le prix de remplacement doit être supérieur ou égal à zéro.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $priceOverride = null;
 
+    #[Assert\Positive(message: 'La durée minimale de séjour doit être supérieure à zéro.')]
+    #[Assert\Range(
+        notInRangeMessage: 'La durée minimale doit être comprise entre {{ min }} et {{ max }} nuits.',
+        min: 1,
+        max: 365,
+    )]
     #[ORM\Column(nullable: true)]
     private ?int $minimumStay = null;
+
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $source = null;
 
     public function getProperty(): ?Property
     {
@@ -87,6 +102,18 @@ class PropertyAvailability
     public function setMinimumStay(?int $minimumStay): static
     {
         $this->minimumStay = $minimumStay;
+
+        return $this;
+    }
+
+    public function getSource(): ?string
+    {
+        return $this->source;
+    }
+
+    public function setSource(?string $source): static
+    {
+        $this->source = $source;
 
         return $this;
     }
