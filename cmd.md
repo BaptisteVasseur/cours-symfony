@@ -5,27 +5,6 @@
 
 ---
 
-## Rôles utilisateur
-
-```bash
-# Assigner un rôle
-php bin/console app:user:role <email> <role>
-
-# Retirer un rôle
-php bin/console app:user:role <email> <role> --remove
-```
-
-Rôles disponibles : `ROLE_USER`, `ROLE_ADMIN`, `ROLE_CHEH`
-
-```bash
-# Exemples
-php bin/console app:user:role alice@example.com ROLE_ADMIN
-php bin/console app:user:role bob@example.com ROLE_CHEH
-php bin/console app:user:role alice@example.com ROLE_ADMIN --remove
-```
-
----
-
 ## Base de données
 
 ```bash
@@ -39,10 +18,10 @@ php bin/console make:migration
 php bin/console doctrine:migrations:migrate
 
 # Charger les fixtures (données de test)
-php bin/console doctrine:fixtures:load
-
-# Charger les fixtures sans confirmation
 php bin/console doctrine:fixtures:load --no-interaction
+
+# Voir le statut des migrations
+php bin/console doctrine:migrations:status
 ```
 
 ---
@@ -50,14 +29,20 @@ php bin/console doctrine:fixtures:load --no-interaction
 ## Génération de code (make)
 
 ```bash
-# Créer une entité
-php bin/console make:entity
+# Créer une entité (ou ajouter des champs à une existante)
+php bin/console make:entity NomEntity
 
 # Créer un controller
-php bin/console make:controller NomController
+php bin/console make:controller Front/NomController
 
 # Créer un formulaire
-php bin/console make:form NomFormType
+php bin/console make:form NomType
+
+# Créer un message Messenger
+php bin/console make:message NomMessage
+
+# Créer un voter de sécurité
+php bin/console make:voter NomVoter
 
 # Créer une commande console
 php bin/console make:command app:nom:commande
@@ -65,6 +50,29 @@ php bin/console make:command app:nom:commande
 # Créer une fixture
 php bin/console make:fixtures NomFixtures
 ```
+
+---
+
+## Messenger (emails asynchrones)
+
+```bash
+# Consommer la file de messages (emails)
+php bin/console messenger:consume async
+
+# Consommer avec logs verbeux
+php bin/console messenger:consume async -vv
+
+# Voir les messages en échec
+php bin/console messenger:failed:show
+
+# Rejouer les messages en échec
+php bin/console messenger:failed:retry
+
+# Purger les messages en échec
+php bin/console messenger:failed:remove --all
+```
+
+> Mailpit disponible sur http://localhost:8025 pour voir les emails envoyés.
 
 ---
 
@@ -76,6 +84,9 @@ php bin/console debug:router
 
 # Voir la config du firewall
 php bin/console debug:firewall
+
+# Voir les voters actifs
+php bin/console debug:container --tag=security.voter
 ```
 
 ---
@@ -109,4 +120,28 @@ php bin/console debug:router
 
 # Voir la config Twig
 php bin/console debug:twig
+
+# Voir les événements Doctrine
+php bin/console debug:event-dispatcher doctrine
+```
+
+---
+
+## Docker
+
+```bash
+# Lancer les conteneurs
+docker compose up -d
+
+# Rebuild + lancer
+docker compose up --build -d php
+
+# Voir les logs PHP
+docker compose logs -f php
+
+# Entrer dans le conteneur PHP
+docker compose exec php sh
+
+# Entrer dans PostgreSQL
+docker compose exec database psql -U app -d app
 ```
