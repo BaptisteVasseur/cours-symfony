@@ -242,4 +242,19 @@ class BookingRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedPastCheckout(\DateTimeImmutable $today): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkoutDate < :today')
+            ->setParameter('status', BookingStatus::CONFIRMED)
+            ->setParameter('today', $today)
+            ->orderBy('r.checkoutDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }
