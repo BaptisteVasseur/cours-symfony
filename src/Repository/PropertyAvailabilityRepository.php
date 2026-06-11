@@ -54,4 +54,22 @@ class PropertyAvailabilityRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<PropertyAvailability>
+     */
+    public function findBlockedForPropertyBetween(Property $property, \DateTimeImmutable $startDate, \DateTimeImmutable $endDate): array
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.property = :property')
+            ->andWhere('a.availableDate >= :startDate')
+            ->andWhere('a.availableDate < :endDate')
+            ->andWhere('a.isAvailable = false')
+            ->setParameter('property', $property)
+            ->setParameter('startDate', $startDate)
+            ->setParameter('endDate', $endDate)
+            ->orderBy('a.availableDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

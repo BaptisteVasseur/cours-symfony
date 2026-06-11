@@ -33,7 +33,7 @@ final class HostICalSyncType extends AbstractType
                 ],
                 'constraints' => [
                     new Assert\NotBlank(message: 'L URL iCal est obligatoire.'),
-                    new Assert\Url(message: 'L URL iCal doit etre valide.'),
+                    new Assert\Url(protocols: ['http', 'https'], requireTld: false, message: 'L URL iCal doit etre valide.'),
                 ],
             ]);
     }
@@ -41,7 +41,8 @@ final class HostICalSyncType extends AbstractType
     public function configureOptions(OptionsResolver $resolver): void
     {
         $resolver->setDefaults([
-            'csrf_token_id' => 'host_ical_sync',
+            'data_class' => null,
+            'csrf_protection' => false,
         ]);
     }
 }
