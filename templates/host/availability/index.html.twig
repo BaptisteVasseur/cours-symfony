@@ -9,7 +9,7 @@
             <h1 class="text-2xl font-bold text-gray-900">Gestion des disponibilités</h1>
             <p class="text-gray-500 mt-1">{{ property.title }}</p>
         </div>
-        <a href="{{ path('host_availability_schedule_new', {id: property.id}) }}" class="btn btn-primary">
+        <a href="{{ path('host_availability_schedule_new', {id: property.id}) }}" class="bg-[#FF385C] hover:bg-[#E61E4D] text-white px-4 py-2 rounded-lg font-medium transition text-sm flex items-center gap-1.5 shadow-sm">
             + Ajouter une plage
         </a>
     </div>
@@ -63,7 +63,7 @@
                                 {{ schedule.minimumStay }}{% if schedule.maximumStay %} / {{ schedule.maximumStay }}{% else %} / —{% endif %}
                             </td>
                             <td class="py-3 text-right space-x-2">
-                                <a href="{{ path('host_availability_schedule_edit', {id: property.id, sid: schedule.id}) }}" class="text-blue-600 hover:underline text-xs">Modifier</a>
+                                <a href="{{ path('host_availability_schedule_edit', {id: property.id, sid: schedule.id}) }}" class="text-[#FF385C] hover:underline text-xs font-medium">Modifier</a>
                                 <form method="post" action="{{ path('host_availability_schedule_delete', {id: property.id, sid: schedule.id}) }}" class="inline" onsubmit="return confirm('Supprimer cette plage ?')">
                                     <input type="hidden" name="_token" value="{{ csrf_token('delete_schedule_' ~ schedule.id) }}">
                                     <button type="submit" class="text-red-500 hover:underline text-xs">Supprimer</button>
@@ -81,7 +81,7 @@
     <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold">Dates bloquées</h2>
-            <a href="{{ path('host_availability_exception_new', {id: property.id}) }}" class="text-sm text-blue-600 hover:underline">+ Bloquer une date</a>
+            <a href="{{ path('host_availability_exception_new', {id: property.id}) }}" class="text-sm text-[#FF385C] hover:text-[#E61E4D] hover:underline font-medium">+ Bloquer une date</a>
         </div>
 
         {% set manualExceptions = exceptions|filter(e => e.source == 'manual') %}
@@ -112,7 +112,7 @@
     <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <div class="flex items-center justify-between mb-4">
             <h2 class="text-lg font-semibold">Calendriers externes (import iCal)</h2>
-            <a href="{{ path('host_availability_ical_sync_new', {id: property.id}) }}" class="text-sm text-blue-600 hover:underline">+ Ajouter un calendrier</a>
+            <a href="{{ path('host_availability_ical_sync_new', {id: property.id}) }}" class="text-sm text-[#FF385C] hover:text-[#E61E4D] hover:underline font-medium">+ Ajouter un calendrier</a>
         </div>
 
         {% if icalSyncs is empty %}
@@ -152,14 +152,14 @@
         <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3">
             <input id="ical-url" type="text" readonly value="{{ icalUrl }}" class="flex-1 bg-transparent text-sm text-gray-700 outline-none" onclick="this.select()">
             <button onclick="navigator.clipboard.writeText('{{ icalUrl }}'); this.textContent='Copié !'; setTimeout(() => this.textContent='Copier', 2000)"
-                    class="text-sm text-blue-600 hover:underline whitespace-nowrap">Copier</button>
+                    class="text-sm font-semibold text-[#FF385C] hover:text-[#E61E4D] whitespace-nowrap transition">Copier</button>
         </div>
 
         <div class="mt-4">
             <button
                 id="regenerate-btn"
                 onclick="document.getElementById('regenerate-modal').classList.remove('hidden')"
-                class="text-xs text-gray-400 hover:text-red-500 underline">
+                class="text-xs text-gray-400 hover:text-red-500 underline transition">
                 Régénérer le lien (invalide les abonnements existants)
             </button>
         </div>
@@ -174,12 +174,12 @@
                 </p>
                 <div class="flex gap-3 justify-end">
                     <button onclick="document.getElementById('regenerate-modal').classList.add('hidden')"
-                            class="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">
+                            class="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50 transition">
                         Annuler
                     </button>
                     <form method="post" action="{{ path('host_availability_ical_token_regenerate', {id: property.id}) }}">
                         <input type="hidden" name="_token" value="{{ csrf_token('regenerate_ical_token_' ~ property.id) }}">
-                        <button type="submit" class="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700">
+                        <button type="submit" class="px-4 py-2 text-sm text-white bg-[#FF385C] rounded-lg hover:bg-[#E61E4D] transition">
                             Régénérer quand même
                         </button>
                     </form>

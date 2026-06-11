@@ -13,18 +13,18 @@
                 <label for="providerName" class="block text-sm font-medium text-gray-700 mb-1">Plateforme</label>
                 <input type="text" id="providerName" name="providerName" required maxlength="100"
                        placeholder="Ex : Airbnb, Booking.com..."
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF385C] focus:outline-none">
             </div>
             <div class="mb-6">
                 <label for="iCalUrl" class="block text-sm font-medium text-gray-700 mb-1">URL du calendrier iCal</label>
                 <input type="url" id="iCalUrl" name="iCalUrl" required
                        placeholder="https://www.airbnb.fr/calendar/ical/..."
-                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-[#FF385C] focus:outline-none">
                 <p class="text-xs text-gray-400 mt-1">Trouvez cette URL dans les paramètres de votre logement sur la plateforme source.</p>
             </div>
             <div class="flex justify-end gap-3">
-                <a href="{{ path('host_availability_index', {id: property.id}) }}" class="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">Annuler</a>
-                <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700">Ajouter et synchroniser</button>
+                <a href="{{ path('host_availability_index', {id: property.id}) }}" class="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50 transition">Annuler</a>
+                <button type="submit" class="px-5 py-2 text-sm font-medium text-white bg-[#FF385C] rounded-lg hover:bg-[#E61E4D] transition shadow-sm">Ajouter et synchroniser</button>
             </div>
         </form>
     </div>

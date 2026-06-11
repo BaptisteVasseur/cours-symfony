@@ -59,6 +59,21 @@ final class HostController extends AbstractController
         ]);
     }
 
+    #[Route('/properties/{id}', name: 'host_property_show', methods: ['GET'])]
+    #[IsGranted('PROPERTY_EDIT', subject: 'property')]
+    public function showProperty(Property $property): Response
+    {
+        $reservations = $this->reservationRepo->findBy(
+            ['property' => $property],
+            ['createdAt' => 'DESC']
+        );
+
+        return $this->render('host/properties/show.html.twig', [
+            'property' => $property,
+            'reservations' => $reservations,
+        ]);
+    }
+
     #[Route('/properties/{id}/edit', name: 'host_property_edit', methods: ['GET', 'POST'])]
     #[IsGranted('PROPERTY_EDIT', subject: 'property')]
     public function editProperty(Property $property, Request $request): Response

@@ -9,9 +9,10 @@ use App\Repository\ReservationRepository;
 use Eluceo\iCal\Domain\Entity\Calendar;
 use Eluceo\iCal\Domain\Entity\Event;
 use Eluceo\iCal\Domain\ValueObject\Date;
-use Eluceo\iCal\Domain\ValueObject\DateTimeValue;
 use Eluceo\iCal\Domain\ValueObject\DateTime as iCalDateTime;
 use Eluceo\iCal\Domain\ValueObject\TimeSpan;
+use Eluceo\iCal\Domain\ValueObject\SingleDay;
+use Eluceo\iCal\Domain\ValueObject\MultiDay;
 use Eluceo\iCal\Domain\ValueObject\UniqueIdentifier;
 use Eluceo\iCal\Presentation\Factory\CalendarFactory;
 
@@ -30,7 +31,7 @@ class ICalExportService
         $reservations = $this->reservationRepo->createQueryBuilder('r')
             ->where('r.property = :property')
             ->andWhere('r.status IN (:statuses)')
-            ->setParameter('property', $property->getId(), 'uuid')
+            ->setParameter('property', $property)
             ->setParameter('statuses', ['confirmed', 'completed'])
             ->getQuery()
             ->getResult();
@@ -59,52 +60,62 @@ class ICalExportService
                     new iCalDateTime($dtEnd, false),
                 );
             } else {
-                $occurrence = new TimeSpan(
-                    new DateTimeValue(new Date(
-                        (int) $checkinDate->format('Y'),
-                        (int) $checkinDate->format('m'),
-                        (int) $checkinDate->format('d')
-                    )),
-                    new DateTimeValue(new Date(
-                        (int) $checkoutDate->format('Y'),
-                        (int) $checkoutDate->format('m'),
-                        (int) $checkoutDate->format('d')
-                    )),
-                );
+                if ($checkinDate->format('Y-m-d') === $checkoutDate->format('Y-m-d')) {
+                    $occurrence = new SingleDay(new Date($checkinDate));
+                } else {
+                    $occurrence = new MultiDay(new Date($checkinDate), new Date($checkoutDate));
+                }
             }
 
-            $event = (new Event($uid))
-                ->setSummary('Réservé')
-                ->setOccurrence($occurrence);
+            $guest = $reservation->getGuest();
+            $guestName = 'Voyageur';
+            $guestEmail = '';
+            $guestPhone = '';
+            if ($guest !== null) {
+                $guestEmail = $guest->getEmail() ?? '';
+                $guestPhone = $guest->getPhone() ?? '';
+                $profile = $guest->getProfile();
+                if ($profile !== null && ($profile->getFirstName() !== null || $profile->getLastName() !== null)) {
+                    $guestName = trim(($profile->getFirstName() ?? '') . ' ' . ($profile->getLastName() ?? ''));
+                } else {
+                    $guestName = $guestEmail;
+                }
+            }
 
-            $events[] = $event;
-        }
+            $propertyTitle = $property->getTitle() ?? 'Logement';
 
-        $exceptions = $property->getAvailabilityExceptions()->filter(
-            fn ($e) => $e->getSource() === 'manual'
-        );
+            $summary = sprintf('Réservation : %s - %s', $propertyTitle, $guestName);
 
-        foreach ($exceptions as $exception) {
-            $uid = new UniqueIdentifier('exception-' . (string) $exception->getId() . '@airbnb-clone');
-            $exDate = $exception->getDate();
-
-            $occurrence = new TimeSpan(
-                new DateTimeValue(new Date(
-                    (int) $exDate->format('Y'),
-                    (int) $exDate->format('m'),
-                    (int) $exDate->format('d')
-                )),
-                new DateTimeValue(new Date(
-                    (int) $exDate->format('Y'),
-                    (int) $exDate->format('m'),
-                    (int) $exDate->format('d')
-                )),
+            $descriptionLines = [
+                sprintf('Propriété : %s', $propertyTitle),
+                sprintf('Client/Voyageur : %s', $guestName),
+            ];
+            if ($guestEmail !== '') {
+                $descriptionLines[] = sprintf('Email : %s', $guestEmail);
+            }
+            if ($guestPhone !== '') {
+                $descriptionLines[] = sprintf('Téléphone : %s', $guestPhone);
+            }
+            $descriptionLines[] = sprintf(
+                'Dates : du %s au %s',
+                $checkinDate->format('d/m/Y'),
+                $checkoutDate->format('d/m/Y')
             );
+            $descriptionLines[] = sprintf('Statut : %s', $reservation->getStatus());
+            if ($reservation->getTotalPrice() !== null) {
+                $descriptionLines[] = sprintf(
+                    'Prix total : %s %s',
+                    $reservation->getTotalPrice(),
+                    $reservation->getCurrency() ?? 'EUR'
+                );
+            }
+            $descriptionLines[] = sprintf('Nombre de voyageurs : %d', $reservation->getGuestsCount() ?? 1);
 
-            $summary = $exception->getReason() ?? 'Indisponible';
+            $description = implode("\n", $descriptionLines);
 
             $event = (new Event($uid))
                 ->setSummary($summary)
+                ->setDescription($description)
                 ->setOccurrence($occurrence);
 
             $events[] = $event;

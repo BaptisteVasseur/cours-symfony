@@ -9,7 +9,7 @@
             <h2 class="text-base font-bold text-slate-900">Liste de vos logements</h2>
             <p class="text-xs text-slate-500 mt-1">Gérez vos propriétés, leurs tarifs et plannings.</p>
         </div>
-        <a href="{{ path('app_property_new') }}" class="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition">
+        <a href="{{ path('app_property_new') }}" class="px-4 py-2 text-sm font-semibold text-white bg-[#FF385C] rounded-lg hover:bg-[#E61E4D] transition shadow-sm">
             Créer un nouveau logement
         </a>
     </div>
@@ -21,7 +21,7 @@
             </div>
             <h3 class="text-sm font-bold text-slate-900">Aucun logement pour le moment</h3>
             <p class="text-xs text-slate-500 mt-1">Commencez dès maintenant en publiant votre première annonce.</p>
-            <a href="{{ path('app_property_new') }}" class="mt-4 inline-block px-4 py-2 text-xs font-semibold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition">
+            <a href="{{ path('app_property_new') }}" class="mt-4 inline-block px-4 py-2 text-xs font-semibold text-[#FF385C] border border-[#FF385C] rounded-lg hover:bg-red-50 transition">
                 Créer un logement
             </a>
         </div>
@@ -71,20 +71,23 @@
                                 {{ p.createdAt|date('d/m/Y') }}
                             </td>
                             <td class="px-6 py-4 text-right">
-                                <div class="flex items-center justify-end gap-3">
-                                    <a href="{{ path('host_availability_index', {id: p.id}) }}" class="text-slate-600 hover:text-blue-600 font-medium" title="Disponibilités & Calendrier">
-                                        <i class="fa-solid fa-calendar-days mr-1"></i> Calendrier
-                                    </a>
-                                    <a href="{{ path('host_property_edit', {id: p.id}) }}" class="text-slate-600 hover:text-slate-950 font-medium" title="Modifier">
-                                        <i class="fa-solid fa-pen-to-square mr-1"></i> Modifier
-                                    </a>
-                                    <form method="post" action="{{ path('host_property_delete', {id: p.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce logement ?');" class="inline">
-                                        <input type="hidden" name="_token" value="{{ csrf_token('delete_property_' ~ p.id) }}">
-                                        <button type="submit" class="text-red-500 hover:text-red-700 font-medium">
-                                            <i class="fa-solid fa-trash-can"></i>
-                                        </button>
-                                    </form>
-                                </div>
+                                 <div class="flex items-center justify-end gap-3">
+                                     <a href="{{ path('host_property_show', {id: p.id}) }}" class="text-slate-600 hover:text-slate-950 font-medium" title="Consulter">
+                                         <i class="fa-solid fa-eye mr-1"></i> Consulter
+                                     </a>
+                                     <a href="{{ path('host_availability_index', {id: p.id}) }}" class="text-slate-600 hover:text-[#FF385C] font-medium" title="Disponibilités & Calendrier">
+                                         <i class="fa-solid fa-calendar-days mr-1"></i> Calendrier
+                                     </a>
+                                     <a href="{{ path('host_property_edit', {id: p.id}) }}" class="text-slate-600 hover:text-slate-950 font-medium" title="Modifier">
+                                         <i class="fa-solid fa-pen-to-square mr-1"></i> Modifier
+                                     </a>
+                                     <form method="post" action="{{ path('host_property_delete', {id: p.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce logement ?');" class="inline">
+                                         <input type="hidden" name="_token" value="{{ csrf_token('delete_property_' ~ p.id) }}">
+                                         <button type="submit" class="text-red-500 hover:text-red-700 font-medium">
+                                             <i class="fa-solid fa-trash-can"></i>
+                                         </button>
+                                     </form>
+                                 </div>
                             </td>
                         </tr>
                     {% endfor %}

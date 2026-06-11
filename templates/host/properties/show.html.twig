@@ -1,0 +1,238 @@
+{% extends 'layout/host.html.twig' %}
+
+{% block page_title %}Consultation du logement — {{ property.title }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Header d'actions -->
+    <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div>
+            <a href="{{ path('host_properties') }}" class="inline-flex items-center text-xs font-semibold text-slate-500 hover:text-slate-900 transition gap-1.5 mb-2">
+                <i class="fa-solid fa-arrow-left"></i> Retour à la liste
+            </a>
+            <h1 class="text-xl font-extrabold text-slate-900">{{ property.title }}</h1>
+            <p class="text-xs text-slate-500 mt-1">Consultez les détails, gérez l'export iCal et visualisez toutes les réservations de ce logement.</p>
+        </div>
+        <div class="flex flex-wrap items-center gap-2">
+            <a href="{{ path('host_availability_index', {id: property.id}) }}" class="px-4 py-2 text-xs font-bold text-[#FF385C] border border-[#FF385C] rounded-lg hover:bg-red-50 transition">
+                <i class="fa-solid fa-calendar-days mr-1.5"></i> Gérer les disponibilités
+            </a>
+            <a href="{{ path('host_property_edit', {id: property.id}) }}" class="px-4 py-2 text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition">
+                <i class="fa-solid fa-pen-to-square mr-1.5"></i> Modifier l'annonce
+            </a>
+        </div>
+    </div>
+
+    <!-- Section Détails & Export iCal -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <!-- Informations du logement (2/3 de large) -->
+        <div class="lg:col-span-2 bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+            <div>
+                <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider mb-4 border-b border-slate-100 pb-2">Informations Générales</h2>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <span class="block text-xs font-semibold text-slate-400">Type de bien</span>
+                        <span class="text-sm font-medium text-slate-800">{{ property.propertyType|capitalize }}</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-semibold text-slate-400">Tarif par nuit</span>
+                        <span class="text-sm font-bold text-slate-900">{{ property.pricePerNight }} €</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-semibold text-slate-400">Capacité d'accueil</span>
+                        <span class="text-sm font-medium text-slate-800">{{ property.maxGuests }} voyageur(s) max</span>
+                    </div>
+                    <div>
+                        <span class="block text-xs font-semibold text-slate-400">Réservation instantanée</span>
+                        <span class="text-sm font-medium text-slate-800">
+                            {% if property.instantBooking %}
+                                <span class="text-emerald-600 font-semibold"><i class="fa-solid fa-bolt mr-1"></i>Activée</span>
+                            {% else %}
+                                <span class="text-slate-500">Désactivée (approbation manuelle)</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            {% if property.description is not empty %}
+            <div>
+                <h3 class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Description</h3>
+                <p class="text-sm text-slate-600 leading-relaxed whitespace-pre-line bg-slate-50 rounded-lg p-4 border border-slate-100">
+                    {{ property.description }}
+                </p>
+            </div>
+            {% endif %}
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 bg-slate-50 rounded-xl p-4 border border-slate-100 text-center">
+                <div>
+                    <span class="block text-lg font-bold text-slate-800">{{ property.bedroomsCount ?? 0 }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Chambres</span>
+                </div>
+                <div>
+                    <span class="block text-lg font-bold text-slate-800">{{ property.bedsCount ?? 0 }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Lits</span>
+                </div>
+                <div>
+                    <span class="block text-lg font-bold text-slate-800">{{ property.bathroomsCount ?? 0 }}</span>
+                    <span class="text-[10px] uppercase font-bold text-slate-400">Salles de bain</span>
+                </div>
+                <div>
+                    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 mt-1 text-xs font-bold rounded-full 
+                        {% if property.status == 'published' %}bg-emerald-50 text-emerald-700
+                        {% elseif property.status == 'pending' %}bg-amber-50 text-amber-700
+                        {% else %}bg-slate-100 text-slate-700{% endif %}">
+                        {{ property.status|capitalize }}
+                    </span>
+                    <span class="block text-[10px] uppercase font-bold text-slate-400 mt-1">Statut</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export iCal (1/3 de large) -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 flex flex-col justify-between">
+            <div class="space-y-4">
+                <div class="flex items-center gap-2 text-slate-800 mb-2">
+                    <span class="text-lg text-[#FF385C]"><i class="fa-solid fa-calendar-plus"></i></span>
+                    <h2 class="text-sm font-bold text-slate-900">Synchronisation iCal (Export)</h2>
+                </div>
+                <p class="text-xs text-slate-500 leading-relaxed">
+                    Copiez ce lien unique pour synchroniser les réservations confirmées de ce logement vers d'autres plateformes externes (Airbnb, Booking.com, Google Agenda, etc.).
+                </p>
+                <div class="space-y-2">
+                    <label for="ical-link" class="block text-[10px] uppercase font-bold text-slate-400">Lien d'export unique</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="ical-link" readonly 
+                               value="{{ url('property_ical_export', {icalToken: property.icalToken}) }}" 
+                               class="flex-1 bg-slate-50 border border-slate-200 text-xs rounded-lg px-2.5 py-2 text-slate-600 focus:outline-none select-all">
+                        <button onclick="copyICalLink()" 
+                                class="px-3 py-2 text-xs font-bold text-white bg-[#FF385C] hover:bg-[#E61E4D] rounded-lg transition shadow-sm"
+                                title="Copier le lien">
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                    <span id="copy-success" class="hidden text-[10px] text-emerald-600 font-semibold mt-1">
+                        <i class="fa-solid fa-check mr-1"></i> Lien copié dans le presse-papiers !
+                    </span>
+                </div>
+            </div>
+            
+            <div class="mt-6 pt-4 border-t border-slate-100">
+                <a href="{{ path('property_ical_export', {icalToken: property.icalToken}) }}" 
+                   class="flex items-center justify-center gap-1.5 w-full py-2 text-xs font-bold text-slate-700 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-lg transition">
+                    <i class="fa-solid fa-file-arrow-down text-slate-500"></i> Télécharger le fichier ICS
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Section Réservations -->
+    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+        <div class="p-6 border-b border-slate-100">
+            <h2 class="text-sm font-bold text-slate-900 uppercase tracking-wider">Toutes les réservations associées</h2>
+            <p class="text-xs text-slate-500 mt-1">Historique et réservations à venir reçues pour ce logement.</p>
+        </div>
+
+        {% if reservations is empty %}
+            <div class="p-12 text-center text-slate-400">
+                <div class="text-3xl text-slate-200 mb-2">
+                    <i class="fa-solid fa-calendar-xmark"></i>
+                </div>
+                <p class="text-xs">Aucune réservation pour ce logement pour le moment.</p>
+            </div>
+        {% else %}
+            <div class="overflow-x-auto">
+                <table class="w-full border-collapse text-left text-sm text-slate-500">
+                    <thead class="bg-slate-50 text-xs font-semibold text-slate-700 uppercase">
+                        <tr>
+                            <th class="px-6 py-4">Voyageur</th>
+                            <th class="px-6 py-4">Dates / Durée</th>
+                            <th class="px-6 py-4">Nombre de voyageurs</th>
+                            <th class="px-6 py-4">Montant total</th>
+                            <th class="px-6 py-4">Statut</th>
+                            <th class="px-6 py-4 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 border-t border-slate-100">
+                        {% for r in reservations %}
+                            {% set guestName = 'Voyageur' %}
+                            {% if r.guest is not null %}
+                                {% if r.guest.profile is not null and (r.guest.profile.firstName is not null or r.guest.profile.lastName is not null) %}
+                                    {% set guestName = (r.guest.profile.firstName ~ ' ' ~ r.guest.profile.lastName)|trim %}
+                                {% else %}
+                                    {% set guestName = r.guest.email %}
+                                {% endif %}
+                            {% endif %}
+                            
+                            <tr class="hover:bg-slate-50">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center font-bold text-slate-600 text-xs border border-slate-200 uppercase">
+                                            {{ guestName|slice(0, 2) }}
+                                        </div>
+                                        <div>
+                                            <div class="font-semibold text-slate-900">{{ guestName }}</div>
+                                            {% if r.guest is not null %}
+                                                <div class="text-[10px] text-slate-400 mt-0.5">{{ r.guest.email }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="font-medium text-slate-800">
+                                        {{ r.checkinDate|date('d/m/Y') }} <span class="text-slate-400 font-normal">au</span> {{ r.checkoutDate|date('d/m/Y') }}
+                                    </div>
+                                    <div class="text-xs text-slate-400 mt-0.5">
+                                        {{ r.checkoutDate.diff(r.checkinDate).days }} nuits
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 text-slate-700">
+                                    {{ r.guestsCount ?? 1 }} personne(s)
+                                </td>
+                                <td class="px-6 py-4 font-semibold text-slate-900">
+                                    {{ r.totalPrice }} {{ r.currency ?? '€' }}
+                                </td>
+                                <td class="px-6 py-4">
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full
+                                        {% if r.status == 'confirmed' %}bg-emerald-50 text-emerald-700
+                                        {% elseif r.status == 'pending' %}bg-amber-50 text-amber-700
+                                        {% elseif r.status == 'completed' %}bg-blue-50 text-blue-700
+                                        {% else %}bg-rose-50 text-rose-700{% endif %}">
+                                        <span class="w-1.5 h-1.5 rounded-full
+                                            {% if r.status == 'confirmed' %}bg-emerald-600
+                                            {% elseif r.status == 'pending' %}bg-amber-600
+                                            {% elseif r.status == 'completed' %}bg-blue-600
+                                            {% else %}bg-rose-600{% endif %}"></span>
+                                        {{ r.status|capitalize }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 text-right">
+                                    <a href="{{ path('host_reservation_show', {id: r.id}) }}" class="px-3 py-1.5 text-xs font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 rounded-lg transition">
+                                        Consulter
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<script>
+function copyICalLink() {
+    var copyText = document.getElementById("ical-link");
+    copyText.select();
+    copyText.setSelectionRange(0, 99999); // Pour mobiles
+    navigator.clipboard.writeText(copyText.value).then(function() {
+        var successMessage = document.getElementById("copy-success");
+        successMessage.classList.remove("hidden");
+        setTimeout(function() {
+            successMessage.classList.add("hidden");
+        }, 3000);
+    });
+}
+</script>
+{% endblock %}
