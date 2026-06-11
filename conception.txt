@@ -1,0 +1,144 @@
+Conception - moteur de reservation, calendrier et iCal
+
+Projet : StayShare / clone Airbnb Symfony
+
+1. Idee generale
+
+Le but est de finir proprement le moteur de reservation du projet. On a deja une bonne base avec les entites Logement, Reservation, Disponibilite, Paiement, User et Notification. L'objectif maintenant est de rendre le parcours fiable : verifier les dates, bloquer les bonnes nuits, gerer les annulations, envoyer les notifications et exposer un calendrier iCal.
+
+Je garde l'architecture actuelle au maximum pour ne pas repartir de zero.
+
+2. Calendrier et disponibilites
+
+Le calendrier est gere avec l'entite Disponibilite. Chaque ligne correspond a un jour pour un logement. On a deja une contrainte unique sur logement + date, donc on ne peut pas avoir deux etats differents pour le meme jour.
+
+Je garde ce choix, car c'est simple a comprendre et pratique pour :
+
+- marquer un jour disponible ;
+- bloquer un jour par l'hote ;
+- reserver une nuit ;
+- ajouter plus tard un prix ou une duree minimum par jour.
+
+Une table avec des periodes serait plus compacte, mais plus compliquee pour gerer les chevauchements et les modifications partielles. Pour ce projet, les jours individuels sont plus propres.
+
+3. Dates de reservation
+
+Une reservation a une date d'arrivee et une date de depart. Le jour de depart n'est pas bloque.
+
+Exemple : du 10 au 15 juillet, on bloque les nuits du 10, 11, 12, 13 et 14. Le 15 peut etre reserve par quelqu'un d'autre, car le premier voyageur part ce jour-la.
+
+On ne gere pas les heures exactes dans la base. On part du principe qu'un depart le matin et une arrivee l'apres-midi sont compatibles.
+
+4. Statuts
+
+Les statuts actuels couvrent deja presque tout le sujet :
+
+- EN_ATTENTE_HOTE = Pending ;
+- CONFIRMEE = Confirmed ;
+- REFUSEE, EXPIREE, ANNULEE_PAR_VOYAGEUR, ANNULEE_PAR_HOTE = Cancelled ;
+- TERMINEE = Completed.
+
+Je garde aussi ACCEPTEE_EN_ATTENTE_PAIEMENT, car le projet a deja une etape de paiement simule. Ca permet de dire : l'hote a accepte, mais la reservation n'est pas encore confirmee tant que le voyageur n'a pas paye.
+
+5. Reservation instantanee ou sur demande
+
+Il faut ajouter un champ instantBooking sur Logement.
+
+Si instantBooking est true, et que les dates sont libres, la reservation passe directement en CONFIRMEE.
+
+Si instantBooking est false, la reservation reste en EN_ATTENTE_HOTE et l'hote doit accepter ou refuser.
+
+Je choisis de ne pas bloquer les dates pour une simple demande en attente. Sinon un voyageur pourrait bloquer beaucoup de dates sans payer. Par contre, on reverifie toujours les disponibilites avant de confirmer ou de payer, pour eviter deux confirmations sur les memes dates.
+
+6. Verification des disponibilites
+
+Une plage est disponible si :
+
+- le logement est publie ;
+- le nombre de voyageurs ne depasse pas la capacite ;
+- toutes les nuits entre arrivee incluse et depart exclu existent en Disponibilite ;
+- ces nuits sont au statut DISPONIBLE ;
+- aucune reservation CONFIRMEE ne chevauche la plage.
+
+La verification doit etre centralisee dans un service, par exemple DisponibiliteService. Il ne faut pas faire une requete SQL par jour. On calcule le nombre de nuits attendu, puis on compte en base les jours disponibles sur la periode.
+
+7. Concurrence
+
+Le risque principal est que deux personnes essaient de reserver le meme logement aux memes dates en meme temps.
+
+Pour limiter ce risque :
+
+- on verifie les dates a la demande ;
+- on reverifie juste avant la confirmation ou le paiement ;
+- on passe les jours en RESERVEE seulement quand la reservation est confirmee ;
+- en cas de conflit, on refuse la confirmation avec un message clair.
+
+Si on voulait aller plus loin, on pourrait ajouter une transaction avec verrouillage des lignes Disponibilite concernees.
+
+8. Annulation
+
+Une annulation doit demander un motif.
+
+Si le voyageur annule, on passe en ANNULEE_PAR_VOYAGEUR. Si l'hote annule, on passe en ANNULEE_PAR_HOTE.
+
+Si la reservation etait confirmee, les nuits reservees sont liberees. On repasse les jours RESERVEE en DISPONIBLE. Par contre, on ne touche pas aux jours BLOQUEE, car ils viennent d'un blocage manuel de l'hote.
+
+9. Notifications et emails
+
+Les notifications internes existent deja. Il faut ajouter les emails demandes par le sujet avec Symfony Mailer et Messenger.
+
+Les emails doivent partir apres le flush Doctrine. Comme ca, on evite d'envoyer un email pour une reservation qui n'a finalement pas ete enregistree.
+
+Le projet peut utiliser le transport Messenger Doctrine en local. Mailpit servira a verifier les emails sur http://localhost:8025.
+
+10. Recherche
+
+Il faut ajouter ou adapter une route /search avec :
+
+- destination ;
+- checkin ;
+- checkout ;
+- guests.
+
+Le filtre doit exclure les logements qui n'ont pas toutes les nuits libres sur la periode demandee.
+
+11. Calendrier hote
+
+L'hote doit avoir une vue calendrier mensuelle pour son logement.
+
+Il doit pouvoir bloquer une periode avec un motif : travaux, usage personnel, maintenance, etc. Les jours concernes passent en BLOQUEE avec raisonBlocage.
+
+12. Export iCal
+
+Chaque logement doit avoir un token secret iCal. L'URL sera :
+
+/api/properties/{id}/calendar.ics?token={secret}
+
+Si le token est mauvais, on refuse l'acces. Si le token est bon, on genere un fichier .ics avec les reservations confirmees du logement.
+
+Le flux contiendra :
+
+- un UID base sur la reservation ;
+- le nom du logement et du voyageur ;
+- la date d'arrivee ;
+- la date de depart ;
+- quelques infos utiles en description.
+
+13. Bonus possible
+
+Si on a le temps, on pourra ajouter l'import iCal avec une commande app:ical:sync. L'hote donne une URL externe, le systeme lit les evenements et bloque les nuits correspondantes.
+
+En cas de conflit avec une reservation deja confirmee chez nous, la reservation locale garde la priorite.
+
+14. Ordre de mise en place
+
+Je vais avancer dans cet ordre :
+
+1. ajouter les champs manquants au modele ;
+2. creer le service de disponibilite ;
+3. adapter la recherche par dates ;
+4. ajouter le calendrier hote ;
+5. finaliser reservation instantanee et annulation ;
+6. ajouter les emails asynchrones ;
+7. ajouter l'export iCal ;
+8. mettre a jour l'avancement et tester le parcours complet.
