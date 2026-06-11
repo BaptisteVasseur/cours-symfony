@@ -1,0 +1,104 @@
+Règle: 
+    - Le status "pending", bloque le créneau pendant 15 minutes, si le status de la réservation n'est pas passé en "confirmed" et que la propriété "instantBooking" de Property est "true", alors la reservation est "cancelled" et le créneau est libéré
+    - Le status "pending", ne bloque pas le créneau si la propriété "instantBooking" de Property est "true".
+    - Avant de confirmer le status "pending" pour une réservation dont la propriété "instantBooking" de Property est "true", alors on vérifie qu'il n'y a pas d'autres réservations sur le même créneau qui aurait pu arriver juste avant.
+    - Pour les performances on vérifie lors du filtre des logements disponible d'une certaine période les logements qui n'ont pas de réservation avec un checkout et checkin pendant la période donnée.
+
+A.1 Interface de gestion hôte
+    - En tant qu'hôte, sur la page de mes propriétés (/comptes/proprietes), je veux pouvoir avoir un bouton calendrier sous chaque propriété affiché, qui renvoit vers une page de calendrier de mon logement avec une vue mensuel, et une vue hebdomadaire, permettant de voir les moments de disponibilités à l'heure près sur la vue hebdomadaire.
+    - En tant qu'hôte, sur la page de calendrier (/calendrier), je veux pouvoir déclarer une période d'indisponibilité avec un motif (travaux, usage personnel, ...), qui bloquera la reservation pour cette période d'indisponibilité.
+
+A.2 Algorithme de disponibilité
+    - 
+
+B.1 Expérience Voyageur (Front-end)
+    - En tant qu'utilisateur, sur la page de réservation (/logement/:id/reserver), je veux refaire cette page pour inclure un calendrier avec une vue mensuel ou hebdomadaire, permettant de choisir une plage de date pour la réservation et sur ce calendrier je veux qu'il y ait de manière visuel les dates disponibles mis en avant par rapport au dates indisponibles (qui ne seront pas séléctionnable programatiquement).
+    - En tant qu'utilisateur, sur la page de réservation (/logement/:id/reserver), je veux pouvoir renseigner le nombre de voyageurs, et je souhaite voir visuellement le prix total à payer avant de confirmer la réservation, qui va renvoyer vers la page de récapitulatif (reservations/:id), et qui valide la disponibilité en temps réel pendant la redirection.
+    - En tant qu'utilisateur, sur la page de récapitulatif de réservation (/reservations/:id), je veux pouvoir voir mon récapitulatif, qui indique via un message flash si le logement est disponible pour cette période donnée après la vérification pendant la redirection ou pas, s'il est disponible le message flash démarre un compte à rebour de 15 minutes qui mettra sa réservation en status "pending", pendant et qui "cancelled" si la réservation n'a pas été en état "confirmed" avant les 15 minutes, sur la page avoir un bouton qui permet de procéder au paiement, si le status est en "pending" (ne pas implémenter la redirection seulement le bouton visuellement).
+
+B.2 Espace Hôte : Modération des demandes
+    - En tant qu'hôte, sur la page des demandes (/reservations/demandandes), je veux avoir  un tableau de bord listant les demandes en attente "pending". Je veux pouvoir accepter ou refuser les demandes.
+
+B.3 Processus d'annulation
+    - En tant qu'hôte ou utilisateur, sur la page de réservation (/reservations/:id), si une réservatione est confirmed pouvoir avoir un bouton qui permet d'annuler la réservation et  libère immédiatement les dates dans le calendrier et notifie les deux parties concernées.
+
+C.1 Moteur de recherche
+    - En tant qu'utilisateur, sur la page de recherche (/search), je veux pouvoir avoir un filtre qui filtre sur la destination via la barre de recherche, avoir un filtre sur la période souhaitée, via un input avec une date de checkin et checkout, qui va filtrer sur les logements libre pendant cette période de temps, et un autre input qui va récupérer le nombre de voyageur, qui va filtrer les logements qui accepte ce nombre.
+
+D.1 Notifications Transactionnelles
+    - Envoyer un mail à l'hôte quand il a une nouvelle demande en status "pending", avec les données : Logement, dates, infos voyageur, total, CTA d'action.
+    - Envoyer un mail à l'utilisateur et à l'hôte quand une réservation est validé, avec les données : Logement, dates, infos voyageur, total, CTA d'action.
+    - Envoyer un mail à l'utilisateur en cas de refus de sa réservation en status "pending".
+    - Envoyer un mail à l'utilisateur ou à l'hôte si un des deux annule la réservation en status "confirmed".
+
+E.1 Synchronisation iCal : Export
+    - 
+
+F.1 Synchronisation iCal : Import 
+    - 
+
+Ajout supplémentaires : 
+- Expiration des demandes
+- Rappel Check-in
+- Timeline voyageur
+- Tarification dynamique
+- Notifications In-App
+
+Liste exhaustive de tout ce que j'ai mis en place dans le projet : 
+
+Partie A — Gestion des disponibilités
+A.1 — Interface de gestion hôte ✅
+
+Bouton « Calendrier » sous chaque propriété sur /compte/proprietes.
+Page calendrier /compte/proprietes/{id}/calendrier avec vue mensuelle et vue hebdomadaire à l'heure près.
+Déclaration de périodes d'indisponibilité avec motif (travaux, usage personnel, maintenance), bornées à la minute (ex. 12/06 17:00 → 13/06 11:00), via une entité dédiée PropertyBlockedPeriod.
+Liste des indisponibilités à venir + libération (suppression).
+
+
+A.2 — Algorithme de disponibilité ✅
+
+Vérifie : logement publié, aucun jour bloqué par l'hôte, aucune réservation bloquante qui se superpose, capacité suffisante (maxGuests).
+Optimisé : requêtes de plage uniques (prédicat d'overlap), pas de boucle SQL par nuit.
+⚠️ Optionnel A.1 non implémenté : configuration d'une durée de séjour minimum / tarif journalier spécifique (les colonnes existent mais sans UII hôte).
+
+Partie B — Parcours de réservation
+B.1 — Expérience Voyageur ✅
+
+Page /logement/{id}/reserver refaite avec calendrier interactif (vue mensuelle), nuits indisponibles grisées/non sélectionnables.
+Saisie du nombre de voyageurs + prix total affiché en temps réel.
+Validation de la disponibilité en temps réel à la soumission, redirection vers /reservations/{id} avec message flash.
+Compte à rebours de 15 min sur le récapitulatif + bouton « Procéder au paiement » qui confirme la réservation.
+
+
+B.2 — Modération des demandes (hôte) ✅
+
+Tableau de bord /reservations/demandes listant les demandes pending.
+Accepter / Refuser (motif obligatoire), chaque action notifiant par e-mail asynchrone.
+
+
+B.3 — Processus d'annulation ✅
+
+Bouton d'annulation sur une réservation confirmée (hôte ou voyageur), motif requis.
+Libère immédiatement les dates et notifie les deux parties.
+
+Partie C — Moteur de recherche ✅
+Route /search filtrant sur : destination (ville/adresse/pays), checkin/checkout (disponibilité stricte, en une requête via NOT EXISTS), guests (capacité). Barre de recherche fonctionnelle dans l'en-tête et en hero sur la home.
+
+Partie D — Notifications transactionnelles ✅
+Symfony Messenger (transport Doctrine) + Mailer, vérifiables sur Mailpit. Événements : nouvelle demande → hôte ; réservation validée → voyageur + hôte ; refus/annulation → parties concernées. Envoi après le flush() de l'ORM.
+
+Partie E — Synchronisation iCal : Export ✅
+Endpoint /api/properties/{id}/calendar.ics?token={secret}, token unique par logement, révocable et régénérable par l'hôte.
+Sécurisé par comparaison en temps constant (hash_equals), 403 sans token valide.
+Flux RFC 5545 strict (CRLF, échappement, pliage) des séjours confirmés.
+
+Partie F — Synchronisation iCal : Import (BONUS) ✅
+Commande app:ical:sync (cron) via HTTP Client, UI hôte pour ajouter/supprimer des flux.
+Stratégie de conflits : réconciliation par UID (création/mise à jour/suppression), blocages manuels et réservations jamais modifiés, avertissement de double-booking en cas de chevauchement avec une réservation confirmée, suppression en cascade des nuitées d'un flux retiré.
+
+Partie G — Fonctionnalités avancées (BONUS) — les 5 listées au sujet ✅
+G.1 Expiration des demandes : worker app:reservations:expire (paiement instantané non réglé sous 15 min + demande sur-demande non traitée sous 24 h), annulation système tracée.
+G.2 Rappel Check-in : commande app:reservations:checkin-reminder (J-1) avec infos d'accès (adresse, heures, contact hôte).
+G.5 Timeline voyageur : historique visuel complet des changements de statut sur le détail de la réservation.
+G.6 Tarification dynamique : coût total réactif (nuits × prix + frais) sur le checkout et la fiche logement.
+G.8 Notifications In-App : icône cloche dans l'en-tête (compteur de non-lues), notifications en base, page dédiée, marquage 

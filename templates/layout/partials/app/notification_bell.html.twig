@@ -1,0 +1,60 @@
+<div class="relative" data-notif-bell>
+    <button type="button" data-notif-toggle
+            class="relative p-2.5 text-gray-600 hover:bg-gray-50 rounded-full transition"
+            aria-label="Notifications" aria-expanded="false" aria-haspopup="true">
+        <i class="fa-regular fa-bell text-lg"></i>
+        {% if unreadCount > 0 %}
+            <span class="absolute top-1 right-1 min-w-[16px] h-4 px-1 bg-brand text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {{ unreadCount > 9 ? '9+' : unreadCount }}
+            </span>
+        {% endif %}
+    </button>
+
+    <div data-notif-dropdown class="hidden absolute right-0 top-full mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 z-50 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+            <p class="font-semibold text-gray-900 text-sm">Notifications</p>
+            {% if unreadCount > 0 %}
+                <span class="text-xs text-gray-500">{{ unreadCount }} non lue{{ unreadCount > 1 ? 's' }}</span>
+            {% endif %}
+        </div>
+
+        <div class="max-h-96 overflow-y-auto">
+            {% for notification in notifications %}
+                <a href="{{ path('app_notification_open', { id: notification.id }) }}"
+                   class="flex gap-3 px-4 py-3 hover:bg-gray-50 transition border-b border-gray-50 last:border-b-0 {{ not notification.isRead ? 'bg-brand/5' }}">
+                    <span class="mt-1 w-2 h-2 rounded-full shrink-0 {{ not notification.isRead ? 'bg-brand' : 'bg-transparent' }}"></span>
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">{{ notification.title }}</p>
+                        <p class="text-xs text-gray-500 line-clamp-2">{{ notification.content }}</p>
+                        <p class="text-[11px] text-gray-400 mt-0.5">{{ notification.createdAt|date('d/m/Y H:i') }}</p>
+                    </div>
+                </a>
+            {% else %}
+                <p class="px-4 py-8 text-center text-sm text-gray-500">Aucune notification.</p>
+            {% endfor %}
+        </div>
+
+        <a href="{{ path('app_notifications_index') }}" class="block px-4 py-3 text-center text-sm font-semibold text-brand hover:bg-gray-50 border-t border-gray-100">
+            Voir toutes les notifications
+        </a>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('[data-notif-bell]').forEach((bell) => {
+        const toggle = bell.querySelector('[data-notif-toggle]');
+        const dropdown = bell.querySelector('[data-notif-dropdown]');
+        toggle?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = !dropdown.classList.contains('hidden');
+            dropdown.classList.toggle('hidden', isOpen);
+            toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+        });
+        document.addEventListener('click', (e) => {
+            if (!bell.contains(e.target)) {
+                dropdown.classList.add('hidden');
+                toggle?.setAttribute('aria-expanded', 'false');
+            }
+        });
+    });
+</script>

@@ -118,6 +118,72 @@ class PropertyRepository extends ServiceEntityRepository
     }
 
     /**
+     * Moteur de recherche voyageur (C.1) : destination, capacité et
+     * disponibilité sur la plage [checkin, checkout).
+     *
+     * Performance : un seul SELECT, les logements indisponibles sont écartés
+     * via NOT EXISTS (réservation bloquante OU période hôte qui chevauche la
+     * plage) plutôt qu'en testant chaque nuit une par une.
+     *
+     * @return list<Property>
+     */
+    public function search(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        ?int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.addressLine1) LIKE :destination OR LOWER(a.country) LIKE :destination')
+                ->setParameter('destination', '%' . mb_strtolower($destination) . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        // Filtrage strict sur la disponibilité quand les deux dates sont fournies.
+        if ($checkin !== null && $checkout !== null && $checkin < $checkout) {
+            $qb->andWhere(
+                'NOT EXISTS (
+                    SELECT 1 FROM App\Entity\Reservation res
+                    WHERE res.property = p
+                      AND res.status IN (:blockingStatuses)
+                      AND res.checkinDate < :checkout
+                      AND res.checkoutDate > :checkin
+                )',
+            );
+            $qb->andWhere(
+                'NOT EXISTS (
+                    SELECT 1 FROM App\Entity\PropertyBlockedPeriod bp
+                    WHERE bp.property = p
+                      AND bp.startAt < :checkoutAt
+                      AND bp.endAt > :checkinAt
+                )',
+            );
+            $qb->setParameter('blockingStatuses', ['confirmed', 'pending'])
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout)
+                ->setParameter('checkinAt', $checkin->setTime(0, 0))
+                ->setParameter('checkoutAt', $checkout->setTime(0, 0));
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
      * @return list<Property>
      */
     public function findByHost(User $host): array

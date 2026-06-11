@@ -111,36 +111,71 @@
             </div>
 
             <aside class="lg:col-span-1">
-                <div class="sticky top-28 border border-gray-200 rounded-xl shadow-lg p-6">
-                    <p class="text-2xl font-semibold mb-4">
-                        <span class="font-bold">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span>
-                        <span class="text-base font-normal text-gray-600"> / nuit</span>
-                    </p>
-                    {% if property.cleaningFee %}
-                        <p class="text-sm text-gray-500 mb-4">Frais de ménage : {{ property.cleaningFee|number_format(0, ',', ' ') }} €</p>
-                    {% endif %}
+                <div class="sticky top-28 border border-gray-200 rounded-xl shadow-lg p-6"
+                     data-controller="property-estimate"
+                     data-property-estimate-price-value="{{ property.pricePerNight }}"
+                     data-property-estimate-cleaning-value="{{ property.cleaningFee ?? 0 }}"
+                     data-property-estimate-service-rate-value="0.12"
+                     data-property-estimate-max-guests-value="{{ property.maxGuests }}">
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-2xl font-semibold">
+                            <span class="font-bold">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span>
+                            <span class="text-base font-normal text-gray-600"> / nuit</span>
+                        </p>
+                        {% if property.instantBooking %}
+                            <span class="inline-flex items-center gap-1.5 bg-brand/10 text-brand text-xs font-semibold px-2.5 py-1 rounded-full">
+                                <i class="fa-solid fa-bolt"></i> Réservation instantanée
+                            </span>
+                        {% endif %}
+                    </div>
+
                     <div class="border border-gray-300 rounded-lg mb-4">
                         <div class="grid grid-cols-2 divide-x divide-gray-300">
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Arrivée</p>
-                                <p class="text-sm text-gray-500">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
-                            </div>
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Départ</p>
-                                <p class="text-sm text-gray-500">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
-                            </div>
+                            <label class="p-3 block">
+                                <span class="text-[10px] font-bold uppercase text-gray-800">Arrivée</span>
+                                <input type="date" min="{{ 'now'|date('Y-m-d') }}"
+                                       class="w-full text-sm text-gray-700 focus:outline-none bg-transparent mt-0.5"
+                                       data-property-estimate-target="checkin" data-action="change->property-estimate#update">
+                            </label>
+                            <label class="p-3 block">
+                                <span class="text-[10px] font-bold uppercase text-gray-800">Départ</span>
+                                <input type="date" min="{{ 'now'|date('Y-m-d') }}"
+                                       class="w-full text-sm text-gray-700 focus:outline-none bg-transparent mt-0.5"
+                                       data-property-estimate-target="checkout" data-action="change->property-estimate#update">
+                            </label>
                         </div>
-                        <div class="p-3 border-t border-gray-300">
-                            <p class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</p>
-                            <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
-                        </div>
+                        <label class="p-3 border-t border-gray-300 block">
+                            <span class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</span>
+                            <input type="number" min="1" max="{{ property.maxGuests }}" value="1"
+                                   class="w-full text-sm text-gray-700 focus:outline-none bg-transparent mt-0.5"
+                                   data-property-estimate-target="guests" data-action="change->property-estimate#update">
+                            <span class="text-[11px] text-gray-400">Jusqu'à {{ property.maxGuests }} voyageur{{ property.maxGuests > 1 ? 's' }}</span>
+                        </label>
                     </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
-                        Réserver
+
+                    {# ----- Tarification dynamique (G.6) ----- #}
+                    <div class="hidden space-y-2 text-sm mb-4" data-property-estimate-target="breakdown">
+                        <div class="flex justify-between text-gray-600"><span data-property-estimate-target="nightsLabel"></span><span data-property-estimate-target="subtotal"></span></div>
+                        {% if property.cleaningFee %}
+                            <div class="flex justify-between text-gray-600"><span>Frais de ménage</span><span>{{ property.cleaningFee|number_format(2, ',', ' ') }} €</span></div>
+                        {% endif %}
+                        <div class="flex justify-between text-gray-600"><span>Frais de service (12 %)</span><span data-property-estimate-target="service"></span></div>
+                        <div class="flex justify-between font-bold text-base text-gray-900 border-t border-gray-100 pt-2"><span>Total</span><span data-property-estimate-target="total"></span></div>
+                    </div>
+                    <p class="text-xs text-gray-400 mb-4" data-property-estimate-target="hint">Sélectionnez vos dates pour estimer le total.</p>
+
+                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}"
+                       data-property-estimate-target="cta" data-booking-url="{{ path('app_booking_checkout', { id: property.id }) }}"
+                       class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                        {{ property.instantBooking ? 'Réserver maintenant' : 'Demander à réserver' }}
                     </a>
-                    {% if property.instantBooking %}
-                        <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
-                    {% endif %}
+                    <p class="text-center text-xs text-gray-500 mt-3">
+                        {% if property.instantBooking %}
+                            <i class="fa-solid fa-bolt text-brand"></i> Confirmation immédiate après paiement
+                        {% else %}
+                            Votre demande sera étudiée par l'hôte
+                        {% endif %}
+                    </p>
                 </div>
             </aside>
         </div>

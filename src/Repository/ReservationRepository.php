@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -72,6 +73,103 @@ class ReservationRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
 
         return $result !== null ? (float) $result : 0.0;
+    }
+
+    /**
+     * Réservations d'un logement chevauchant la plage [from, to], en une seule requête
+     * (overlap : checkin <= to AND checkout >= from).
+     *
+     * @param list<string> $statuses
+     *
+     * @return list<Reservation>
+     */
+    public function findOverlappingForProperty(
+        Property $property,
+        \DateTimeImmutable $from,
+        \DateTimeImmutable $to,
+        array $statuses = ['confirmed', 'pending'],
+    ): array {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkinDate <= :to')
+            ->andWhere('r.checkoutDate >= :from')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', $statuses)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Demandes "pending" créées avant une date butoir (worker d'expiration G.1).
+     * Jointures property/host pour éviter les requêtes N+1 lors des notifications.
+     *
+     * @return list<Reservation>
+     */
+    public function findPendingCreatedBefore(\DateTimeImmutable $threshold): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'host', 'g')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('r.guest', 'g')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.createdAt < :threshold')
+            ->setParameter('status', 'pending')
+            ->setParameter('threshold', $threshold)
+            ->orderBy('r.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Réservations confirmées dont l'arrivée tombe un jour donné (rappel J-1, G.2).
+     *
+     * @return list<Reservation>
+     */
+    public function findConfirmedCheckingInOn(\DateTimeImmutable $day): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'host', 'a', 'g')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate = :day')
+            ->setParameter('status', 'confirmed')
+            ->setParameter('day', $day->setTime(0, 0))
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Demandes en attente sur les logements dont l'utilisateur est l'hôte (B.2).
+     *
+     * @return list<Reservation>
+     */
+    public function findPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     /**

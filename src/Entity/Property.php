@@ -131,6 +131,13 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    /**
+     * Token secret du flux iCal d'export ; null = flux désactivé. Révocable
+     * par l'hôte (régénération ou suppression).
+     */
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalExportToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -155,6 +162,10 @@ class Property
     #[ORM\OneToMany(targetEntity: PropertyAvailability::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $availabilities;
 
+    /** @var Collection<int, PropertyBlockedPeriod> */
+    #[ORM\OneToMany(targetEntity: PropertyBlockedPeriod::class, mappedBy: 'property', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $blockedPeriods;
+
     /** @var Collection<int, PropertyICalSync> */
     #[ORM\OneToMany(targetEntity: PropertyICalSync::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $iCalSyncs;
@@ -172,6 +183,7 @@ class Property
         $this->propertyAmenities = new ArrayCollection();
         $this->media = new ArrayCollection();
         $this->availabilities = new ArrayCollection();
+        $this->blockedPeriods = new ArrayCollection();
         $this->iCalSyncs = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
@@ -358,6 +370,18 @@ class Property
         return $this;
     }
 
+    public function getIcalExportToken(): ?string
+    {
+        return $this->icalExportToken;
+    }
+
+    public function setIcalExportToken(?string $icalExportToken): static
+    {
+        $this->icalExportToken = $icalExportToken;
+
+        return $this;
+    }
+
     public function isInstantBooking(): bool
     {
         return $this->instantBooking;
@@ -489,6 +513,29 @@ class Property
     public function removeAvailability(PropertyAvailability $availability): static
     {
         $this->availabilities->removeElement($availability);
+
+        return $this;
+    }
+
+    /** @return Collection<int, PropertyBlockedPeriod> */
+    public function getBlockedPeriods(): Collection
+    {
+        return $this->blockedPeriods;
+    }
+
+    public function addBlockedPeriod(PropertyBlockedPeriod $blockedPeriod): static
+    {
+        if (!$this->blockedPeriods->contains($blockedPeriod)) {
+            $this->blockedPeriods->add($blockedPeriod);
+            $blockedPeriod->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBlockedPeriod(PropertyBlockedPeriod $blockedPeriod): static
+    {
+        $this->blockedPeriods->removeElement($blockedPeriod);
 
         return $this;
     }
