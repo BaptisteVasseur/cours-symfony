@@ -8,14 +8,17 @@ use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
+use App\Message\ReservationConfirmedMessage;
+use App\Message\ReservationPendingMessage;
 use App\Repository\PropertyRepository;
+use App\Security\Voter\PropertyVoter;
 use App\Service\AvailabilityService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
-use App\Security\Voter\PropertyVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
@@ -29,6 +32,7 @@ final class BookingController extends AbstractController
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
         AvailabilityService $availabilityService,
+        MessageBusInterface $bus,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -95,6 +99,12 @@ final class BookingController extends AbstractController
 
             $entityManager->persist($reservation);
             $entityManager->flush();
+
+            if ($reservation->getStatus() === 'pending') {
+                $bus->dispatch(new ReservationPendingMessage((string) $reservation->getId()));
+            } else {
+                $bus->dispatch(new ReservationConfirmedMessage((string) $reservation->getId()));
+            }
 
             $this->addFlash('success', 'Votre réservation a été enregistrée.');
 

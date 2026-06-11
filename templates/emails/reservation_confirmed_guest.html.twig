@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Votre réservation est confirmée</title>
+    <style>
+        body { font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 30px auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: #2a9d8f; color: #fff; padding: 28px 32px; }
+        .header h1 { margin: 0; font-size: 22px; }
+        .body { padding: 28px 32px; }
+        .info-box { background: #f8f8f8; border-left: 4px solid #2a9d8f; padding: 16px 20px; border-radius: 4px; margin: 20px 0; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .info-row:last-child { margin-bottom: 0; }
+        .label { color: #666; font-size: 13px; }
+        .value { font-weight: bold; font-size: 14px; }
+        .total-row { border-top: 2px solid #ddd; padding-top: 10px; margin-top: 10px; }
+        .footer { background: #f0f0f0; padding: 16px 32px; font-size: 12px; color: #888; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Réservation confirmée !</h1>
+    </div>
+    <div class="body">
+        <p>Bonjour {% if reservation.guest.profile %}{{ reservation.guest.profile.firstName }}{% else %}{{ reservation.guest.email }}{% endif %},</p>
+        <p>Bonne nouvelle ! Votre réservation pour <strong>{{ reservation.property.title }}</strong> a été confirmée.</p>
+
+        <div class="info-box">
+            <div class="info-row">
+                <span class="label">Logement</span>
+                <span class="value">{{ reservation.property.title }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Arrivée</span>
+                <span class="value">{{ reservation.checkinDate|date('d/m/Y') }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Départ</span>
+                <span class="value">{{ reservation.checkoutDate|date('d/m/Y') }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Voyageurs</span>
+                <span class="value">{{ reservation.guestsCount }}</span>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <p style="margin:0 0 10px;font-weight:bold;">Récapitulatif financier</p>
+            {% if reservation.cleaningFee %}
+            <div class="info-row">
+                <span class="label">Frais de ménage</span>
+                <span class="value">{{ reservation.cleaningFee }} {{ reservation.currency }}</span>
+            </div>
+            {% endif %}
+            {% if reservation.serviceFee %}
+            <div class="info-row">
+                <span class="label">Frais de service</span>
+                <span class="value">{{ reservation.serviceFee }} {{ reservation.currency }}</span>
+            </div>
+            {% endif %}
+            <div class="info-row total-row">
+                <span class="label">Total</span>
+                <span class="value">{{ reservation.totalPrice }} {{ reservation.currency }}</span>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <p style="margin:0 0 10px;font-weight:bold;">Coordonnées de l'hôte</p>
+            <div class="info-row">
+                <span class="label">Hôte</span>
+                <span class="value">
+                    {% if reservation.property.host.profile %}
+                        {{ reservation.property.host.profile.firstName }} {{ reservation.property.host.profile.lastName }}
+                    {% else %}
+                        {{ reservation.property.host.email }}
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="label">Email</span>
+                <span class="value">{{ reservation.property.host.email }}</span>
+            </div>
+            {% if reservation.property.host.phone %}
+            <div class="info-row">
+                <span class="label">Téléphone</span>
+                <span class="value">{{ reservation.property.host.phone }}</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="footer">
+        Cet email a été envoyé automatiquement. Merci de ne pas y répondre directement.
+    </div>
+</div>
+</body>
+</html>

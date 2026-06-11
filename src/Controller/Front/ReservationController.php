@@ -7,13 +7,15 @@ namespace App\Controller\Front;
 use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Message\ReservationCancelledMessage;
 use App\Repository\ReservationRepository;
+use App\Security\Voter\ReservationVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
-use App\Security\Voter\ReservationVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/reservations')]
@@ -55,6 +57,7 @@ final class ReservationController extends AbstractController
         Reservation $reservation,
         Request $request,
         EntityManagerInterface $em,
+        MessageBusInterface $bus,
     ): Response {
         if (!$this->isCsrfTokenValid('cancel_reservation_' . $reservation->getId(), $request->request->getString('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF invalide.');
@@ -84,6 +87,8 @@ final class ReservationController extends AbstractController
 
         $em->persist($history);
         $em->flush();
+
+        $bus->dispatch(new ReservationCancelledMessage((string) $reservation->getId()));
 
         $this->addFlash('success', 'Réservation annulée.');
 

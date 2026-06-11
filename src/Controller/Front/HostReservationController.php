@@ -7,12 +7,15 @@ namespace App\Controller\Front;
 use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Message\ReservationCancelledMessage;
+use App\Message\ReservationConfirmedMessage;
 use App\Repository\ReservationRepository;
 use App\Security\Voter\ReservationVoter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
@@ -40,6 +43,7 @@ final class HostReservationController extends AbstractController
         Reservation $reservation,
         Request $request,
         EntityManagerInterface $em,
+        MessageBusInterface $bus,
     ): Response {
         if (!$this->isCsrfTokenValid('host_reservation_' . $reservation->getId(), $request->request->getString('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF invalide.');
@@ -60,6 +64,8 @@ final class HostReservationController extends AbstractController
         $em->persist($history);
         $em->flush();
 
+        $bus->dispatch(new ReservationConfirmedMessage((string) $reservation->getId()));
+
         $this->addFlash('success', 'Réservation acceptée.');
 
         return $this->redirectToRoute('app_host_reservations');
@@ -71,6 +77,7 @@ final class HostReservationController extends AbstractController
         Reservation $reservation,
         Request $request,
         EntityManagerInterface $em,
+        MessageBusInterface $bus,
     ): Response {
         if (!$this->isCsrfTokenValid('host_reservation_' . $reservation->getId(), $request->request->getString('_token'))) {
             throw $this->createAccessDeniedException('Token CSRF invalide.');
@@ -97,6 +104,8 @@ final class HostReservationController extends AbstractController
         $reservation->setCancellationReason($reason);
         $em->persist($history);
         $em->flush();
+
+        $bus->dispatch(new ReservationCancelledMessage((string) $reservation->getId()));
 
         $this->addFlash('success', 'Réservation refusée.');
 
