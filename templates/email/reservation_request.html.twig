@@ -1,0 +1,10 @@
+<h2>Nouvelle demande de réservation</h2>
+<p>Bonjour {{ host.profile ? host.profile.firstName : host.email }},</p>
+<p>{{ guest.profile ? guest.profile.firstName : guest.email }} souhaite réserver <strong>{{ property.title }}</strong>.</p>
+<ul>
+    <li>Arrivée : {{ reservation.checkinDate|date('d/m/Y') }}</li>
+    <li>Départ : {{ reservation.checkoutDate|date('d/m/Y') }}</li>
+    <li>Voyageurs : {{ reservation.guestsCount }}</li>
+    <li>Total : {{ reservation.totalPrice }} {{ reservation.currency }}</li>
+</ul>
+<p>Connectez-vous à votre espace hôte pour accepter ou refuser la demande.</p>

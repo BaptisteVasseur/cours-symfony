@@ -1,0 +1,68 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Disponibilités — {{ property.title }}{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-3xl mx-auto w-full">
+        <h1 class="text-2xl font-bold text-gray-900 mb-1">Calendrier — {{ property.title }}</h1>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="my-3 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="flex items-center justify-between my-4">
+            <a href="{{ path('app_host_availability', { id: property.id, month: prevMonth }) }}" class="px-3 py-1 rounded-lg border border-gray-300 hover:bg-gray-50">←</a>
+            <span class="font-semibold text-gray-900">{{ monthLabel }}</span>
+            <a href="{{ path('app_host_availability', { id: property.id, month: nextMonth }) }}" class="px-3 py-1 rounded-lg border border-gray-300 hover:bg-gray-50">→</a>
+        </div>
+
+        <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-500 mb-1">
+            {% for d in ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'] %}<div>{{ d }}</div>{% endfor %}
+        </div>
+        <div class="grid grid-cols-7 gap-1">
+            {% for week in weeks %}
+                {% for cell in week %}
+                    {% if cell is null %}
+                        <div></div>
+                    {% else %}
+                        {% set color = {
+                            'available': 'bg-white border-gray-200 text-gray-800',
+                            'blocked':   'bg-red-100 border-red-200 text-red-700',
+                            'booked':    'bg-gray-200 border-gray-300 text-gray-500',
+                            'past':      'bg-gray-50 border-gray-100 text-gray-300'
+                        } %}
+                        <div class="aspect-square rounded-lg border flex items-center justify-center text-sm {{ color[cell.state] }}" title="{{ cell.state }}">
+                            {{ cell.day }}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            {% endfor %}
+        </div>
+
+        <div class="flex gap-4 text-xs text-gray-500 mt-3">
+            <span><span class="inline-block w-3 h-3 rounded bg-red-100 border border-red-200"></span> Bloqué</span>
+            <span><span class="inline-block w-3 h-3 rounded bg-gray-200 border border-gray-300"></span> Réservé</span>
+            <span><span class="inline-block w-3 h-3 rounded bg-white border border-gray-200"></span> Libre</span>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8">
+            <form method="post" action="{{ path('app_host_availability_block', { id: property.id }) }}" class="border border-gray-200 rounded-2xl p-4">
+                <h3 class="font-semibold text-gray-900 mb-3">Bloquer une période</h3>
+                <input type="hidden" name="_token" value="{{ csrf_token('availability' ~ property.id) }}">
+                <label class="block text-sm text-gray-600">Du <input type="date" name="start" required class="block w-full border border-gray-300 rounded-lg px-2 py-1 mt-1"></label>
+                <label class="block text-sm text-gray-600 mt-2">Au <input type="date" name="end" required class="block w-full border border-gray-300 rounded-lg px-2 py-1 mt-1"></label>
+                <button class="mt-3 w-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2 rounded-xl">Bloquer</button>
+            </form>
+
+            <form method="post" action="{{ path('app_host_availability_unblock', { id: property.id }) }}" class="border border-gray-200 rounded-2xl p-4">
+                <h3 class="font-semibold text-gray-900 mb-3">Débloquer une période</h3>
+                <input type="hidden" name="_token" value="{{ csrf_token('availability' ~ property.id) }}">
+                <label class="block text-sm text-gray-600">Du <input type="date" name="start" required class="block w-full border border-gray-300 rounded-lg px-2 py-1 mt-1"></label>
+                <label class="block text-sm text-gray-600 mt-2">Au <input type="date" name="end" required class="block w-full border border-gray-300 rounded-lg px-2 py-1 mt-1"></label>
+                <button class="mt-3 w-full bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold py-2 rounded-xl">Débloquer</button>
+            </form>
+        </div>
+    </main>
+{% endblock %}

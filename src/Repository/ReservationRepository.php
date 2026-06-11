@@ -8,6 +8,7 @@ use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
+use App\Entity\Property;
 
 /**
  * @extends ServiceEntityRepository<Reservation>
@@ -88,6 +89,56 @@ class ReservationRepository extends ServiceEntityRepository
             ->leftJoin('g.profile', 'gp')
             ->andWhere('r.guest = :guest')
             ->setParameter('guest', $guest)
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+     /**
+     * @return \App\Entity\Reservation[]
+     */
+    public function findConfirmedForProperty(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->leftJoin('r.guest', 'g')->addSelect('g')
+            ->leftJoin('g.profile', 'p')->addSelect('p')
+            ->andWhere('r.property = :property')->setParameter('property', $property)
+            ->andWhere('r.status = :status')->setParameter('status', 'confirmed')
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+    /**
+     * Combien de réservations CONFIRMÉES chevauchent la période demandée.
+     */
+    public function countOverlappingConfirmed(
+        Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+    ): int {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+    /**
+     * @return list<Reservation>
+     */
+    public function findPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->innerJoin('r.property', 'p')->addSelect('p')
+            ->leftJoin('r.guest', 'g')->addSelect('g')
+            ->leftJoin('g.profile', 'gp')->addSelect('gp')
+            ->andWhere('p.host = :host')->setParameter('host', $host)
+            ->andWhere('r.status = :status')->setParameter('status', 'pending')
             ->orderBy('r.createdAt', 'DESC')
             ->getQuery()
             ->getResult();

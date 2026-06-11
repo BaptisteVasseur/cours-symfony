@@ -60,6 +60,7 @@ services:
     depends_on:
       database:
         condition: service_healthy
+    restart: unless-stopped
     command: >
       sh -c "php bin/console messenger:consume async -vv --time-limit=3600"
 

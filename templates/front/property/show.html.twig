@@ -119,27 +119,41 @@
                     {% if property.cleaningFee %}
                         <p class="text-sm text-gray-500 mb-4">Frais de ménage : {{ property.cleaningFee|number_format(0, ',', ' ') }} €</p>
                     {% endif %}
-                    <div class="border border-gray-300 rounded-lg mb-4">
-                        <div class="grid grid-cols-2 divide-x divide-gray-300">
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Arrivée</p>
-                                <p class="text-sm text-gray-500">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
+                    
+                    <form action="{{ path('app_booking_checkout', { id: property.id }) }}" method="get">
+                        <div class="border border-gray-300 rounded-lg mb-4">
+                            <div class="grid grid-cols-2 divide-x divide-gray-300">
+                                <label class="block p-3 cursor-pointer">
+                                    <span class="block text-[10px] font-bold uppercase text-gray-800">Arrivée</span>
+                                    <input type="date" name="checkin" value="{{ app.request.query.get('checkin') }}" required
+                                           class="w-full text-sm text-gray-700 focus:outline-none bg-transparent">
+                                </label>
+                                <label class="block p-3 cursor-pointer">
+                                    <span class="block text-[10px] font-bold uppercase text-gray-800">Départ</span>
+                                    <input type="date" name="checkout" value="{{ app.request.query.get('checkout') }}" required
+                                           class="w-full text-sm text-gray-700 focus:outline-none bg-transparent">
+                                </label>
                             </div>
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Départ</p>
-                                <p class="text-sm text-gray-500">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
-                            </div>
+                            <label class="block p-3 border-t border-gray-300 cursor-pointer">
+                                <span class="block text-[10px] font-bold uppercase text-gray-800">Voyageurs</span>
+                                <input type="number" name="guests" min="1" max="{{ property.maxGuests }}"
+                                       value="{{ app.request.query.get('guests', 1) }}"
+                                       class="w-full text-sm text-gray-700 focus:outline-none bg-transparent">
+                            </label>
                         </div>
-                        <div class="p-3 border-t border-gray-300">
-                            <p class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</p>
-                            <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
-                        </div>
-                    </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
-                        Réserver
-                    </a>
+                        <button type="submit" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                            Réserver
+                        </button>
+                    </form>
+
                     {% if property.instantBooking %}
                         <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
+                    {% endif %}
+                    {% if app.user and property.host and app.user.id == property.host.id %}
+                        <a href="{{ path('app_host_availability', { id: property.id }) }}"
+                        class="inline-block mt-4 text-sm font-semibold text-[#FF385C] hover:underline">
+                            Gérer les disponibilités
+                        </a>
                     {% endif %}
                 </div>
             </aside>

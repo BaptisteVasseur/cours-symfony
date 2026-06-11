@@ -3,19 +3,6 @@
 {% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80' %}
 
-{% set statusLabels = {
-    'confirmed': 'Confirmée',
-    'completed': 'Terminée',
-    'pending': 'En attente',
-    'cancelled': 'Annulée',
-} %}
-{% set statusColors = {
-    'confirmed': 'bg-green-100 text-green-800',
-    'completed': 'bg-blue-100 text-blue-800',
-    'pending': 'bg-yellow-100 text-yellow-800',
-    'cancelled': 'bg-red-100 text-red-800',
-} %}
-
 <a href="{{ path('app_reservation_show', { id: reservation.id }) }}" class="flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-xl hover:shadow-md transition bg-white">
     <div class="w-full sm:w-40 h-32 sm:h-28 shrink-0 rounded-lg overflow-hidden">
         <img
@@ -29,9 +16,8 @@
             <h2 class="font-semibold text-gray-900 truncate">
                 {{ property ? property.title : 'Logement supprimé' }}
             </h2>
-            <span class="text-xs font-semibold px-2.5 py-1 rounded-full {{ statusColors[reservation.status]|default('bg-gray-100 text-gray-800') }}">
-                {{ statusLabels[reservation.status]|default(reservation.status) }}
-            </span>
+            {% include 'components/status_badge.html.twig' with { status: reservation.status } %}
+            
         </div>
         {% if property and property.address %}
             <p class="text-sm text-gray-500 mb-2">{{ property.address.city }}, {{ property.address.country }}</p>

@@ -1,0 +1,4 @@
+<h2>Votre demande de réservation a été refusée</h2>
+<p>Bonjour {{ guest.profile ? guest.profile.firstName : guest.email }},</p>
+<p>L'hôte n'a pas pu accepter votre demande pour <strong>{{ property.title }}</strong>.</p>
+{% if reservation.cancellationReason %}<p><strong>Motif :</strong> {{ reservation.cancellationReason }}</p>{% endif %}

@@ -1,0 +1,63 @@
+Livrable de Conception
+
+1. Modélisation temporelle : Le jour de check-out est-il réservable par un nouveau voyageur ?
+Comment gérez-vous la superposition d'un départ à 11h et d'une arrivée à 15h dans votre schéma
+de données ?
+Oui, il est toujours réservable par un autre voyageur. Cependant, on peut placer un délais par défaut afin qu'après un départ, l'hôte ai le temps de tout vérifier.
+Exemple : impossibilité d'arrivée dans les 4h après un départ.
+Ce qui serait interessant c'est que l'hôte choisisse pour chaque réservation si une autre peut être prise le même jour de checkout. Par défaut c'est 'oui'.
+Mais il peut toggle l'option et ainsi, aucune arrivée ne pourra être réservée le même jour que le checkout. 
+Aussi, il peut choisir le délais après lequel une arrivée est possible après un départ. Donc par défeaut, une arrivée est impossible dans les 4h après un départ.
+Mais l'hôte peut choisir d'augmenter ce laps de temps.
+
+Donc par défaut oui, le jour de check-out est-il réservable par un nouveau voyageur, mais on peut toggle à non,
+afin que si l'hôte sait déjà qu'il ne sera pas dispo le même jour, il a le reste de la journée libre, donc sans réservation. Ou alors, il choisira un délais précis.
+
+Un départ à 11h et une arrivée à 15h ne se rencontreront donc jamais.
+Cela demandera d'ajouter un champ au modèle. Exemple : un « délai de battement » en heures sur le logement, ou alors stocker des heures
+
+
+
+2. Gestion des états : Une demande 
+Pending bloque-t-elle les dates ? Analysez les risques liés à
+ce choix (blocage abusif vs overbooking)
+
+Une demande pending bloque les dates dans les 2h après demande de réservation. Passer les 2h, la réservation reste en statut pending, en attente de validation de l'hôte, mais les dates ne sont plus bloquées.
+Cela afin que chaque utilisateur ai une chance d'avoir une réservation acceptée, mais ne bloque pas non plus les personnes qui la voudrait également.
+Si je demande à réserver à 11h, mes dates sont sécurisées pendant 2h. Sans intervention de l'hôte dans le délais impartis, il pourra toujours l'accepter, mais les dates n'étant plus bloquée pour moi,
+d'autres utilisateur pourront aussi faire leur demande de réservation. Si d'autres utilisateurs font leur demande et qu'elle est acceptée sans passer par le statut 'pending', je perds malheureusement la réservation, elle expire. 
+Pareil si le délais de 24h est dépassé sans réponse.
+
+
+
+3. Concurrence : Comment votre base de données réagit-elle si deux utilisateurs valident un paiement
+à la milliseconde près pour le même logement et les mêmes dates ?
+Elle valide l'utilisateur arrivé en premier dans le tunel de paiement. Ce, en vérifiant la dispo, et je crée la réservation dans une seule transaction avec un verrou, donc la 2e demande attend, puis voit que c'est déjà pris et est refusée.
+
+
+
+4. Performance : Comment valider la disponibilité d'un logement sur 20 nuits consécutives sans
+saturer la base de requêtes SQL itératives ?
+Il vaudra mieux vérifier les 20 nuits d'un coup, sans avoir à faire faire 20 vérifications. Donc je fais une seule requête qui demande : y a-t-il au moins un jour bloqué ou une réservation confirmée sur cette période ? »
+
+
+
+5. Asynchronisme : Pourquoi l'envoi d'email doit-il préférentiellement intervenir après le 
+l'ORM ? Quelle est la stratégie si RabbitMQ tombe en panne ?
+Sinon je risque d'envoyer un mail de confirmation alors que l'enregistrement a planté. Si RabbitMQ tombe, j'utilise un transport de secours (la base de données via Doctrine) pour ne pas perdre les emails : ils sont 
+stockés puis envoyés quand le service revient.
+
+
+
+Structure SQL : Justifiez votre choix d'architecture pour le calendrier : table de jours individuels
+(PropertyAvailability ) ou table de périodes (date_start , date_end ).
+
+Ça ça permet de mettre un prix ou une nuit minimum différent par jour, et de bloquer un jour précis facilement, mais ça fait beaucoup de lignes.
+
+
+-BONUS-
+Synchronisation iCal : Import (Partie F) :
+Ma stratégie de gestion des conflits de chevauchement avec une réservation existante : l'import ne crée que des blocages (PropertyAvailability), il ne touche jamais aux réservations. Si un évènement distant tombe sur des dates déjà réservées, 
+la nuit est simplement marquée bloquée en plus, aucun risque d'overbooking.
+Pour la suppression d'un évènement distant, avec le modèle actuel, on ne distingue pas un blocage « importé » d'un blocage « manuel de l'hôte », donc on ne débloque pas automatiquement. La stratégie robuste serait d'ajouter une colonne source 
+(ical/manuel) à PropertyAvailability, de purger les blocages ical du logement avant chaque synchro, puis de réappliquer. Ainsi, un évènement supprimé à distance libère bien la date. (Petite migration à prévoir.)

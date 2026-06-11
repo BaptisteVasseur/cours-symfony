@@ -131,6 +131,9 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $calendarToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -176,6 +179,7 @@ class Property
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
+        $this->regenerateCalendarToken();
     }
 
     public function getHost(): ?User
@@ -378,6 +382,18 @@ class Property
     public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+        public function getCalendarToken(): ?string
+    {
+        return $this->calendarToken;
+    }
+    
+    public function regenerateCalendarToken(): static
+    {
+        $this->calendarToken = bin2hex(random_bytes(32));
 
         return $this;
     }
