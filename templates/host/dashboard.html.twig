@@ -1,0 +1,147 @@
+{% extends 'host/_layout.html.twig' %}
+
+{% block title %}Tableau de bord hôte — Airbnb{% endblock %}
+
+{% block host_content %}
+<div class="space-y-8">
+    <h1 class="text-2xl font-bold text-gray-900">Bonjour, {{ app.user.firstName }} 👋</h1>
+
+    {# ── Demandes en attente ── #}
+    <section>
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold text-gray-900">
+                Demandes en attente
+                {% if pendingBookings is not empty %}
+                    <span class="ml-2 text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">{{ pendingBookings|length }}</span>
+                {% endif %}
+            </h2>
+        </div>
+
+        {% if pendingBookings is empty %}
+            <div class="bg-white border border-gray-200 rounded-2xl p-10 text-center text-gray-400">
+                Aucune demande en attente.
+            </div>
+        {% else %}
+            <div class="space-y-3">
+                {% for booking in pendingBookings %}
+                    <div class="bg-white border border-yellow-200 rounded-2xl p-5 flex items-start gap-5">
+                        {% if booking.property.images.first %}
+                            <img src="{{ booking.property.images.first.imageUrl }}" alt=""
+                                 class="w-20 h-16 object-cover rounded-xl flex-shrink-0">
+                        {% else %}
+                            <div class="w-20 h-16 bg-gray-100 rounded-xl flex-shrink-0"></div>
+                        {% endif %}
+
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="font-semibold text-gray-900">{{ booking.property.title }}</p>
+                                    <p class="text-sm text-gray-500 mt-0.5">
+                                        {{ booking.traveler.firstName }} {{ booking.traveler.lastName }}
+                                        <span class="text-gray-400">· {{ booking.traveler.email }}</span>
+                                    </p>
+                                    <p class="text-sm text-gray-700 mt-1">
+                                        {{ booking.checkIn|date('d/m/Y') }} → {{ booking.checkOut|date('d/m/Y') }}
+                                        · <strong>{{ booking.nights }} nuit(s)</strong>
+                                        · {{ booking.guestsCount }} voyageur(s)
+                                    </p>
+                                    <p class="text-sm font-bold text-gray-900 mt-0.5">{{ booking.totalPrice }} €</p>
+                                </div>
+                                <p class="text-xs text-gray-400 whitespace-nowrap">
+                                    {{ booking.createdAt|date('d/m/Y H:i') }}
+                                </p>
+                            </div>
+
+                            <div class="flex items-center gap-3 mt-4">
+                                {# Accept #}
+                                <form method="POST" action="{{ path('host_booking_accept', {id: booking.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('accept_booking_' ~ booking.id) }}">
+                                    <button type="submit"
+                                            class="bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-2 rounded-xl font-medium transition">
+                                        Accepter
+                                    </button>
+                                </form>
+
+                                {# Reject with reason #}
+                                <button onclick="document.getElementById('reject-{{ booking.id }}').classList.toggle('hidden')"
+                                        class="border border-red-300 text-red-500 hover:bg-red-50 text-sm px-4 py-2 rounded-xl font-medium transition">
+                                    Refuser
+                                </button>
+                            </div>
+
+                            <div id="reject-{{ booking.id }}" class="hidden mt-3">
+                                <form method="POST" action="{{ path('host_booking_reject', {id: booking.id}) }}"
+                                      class="flex gap-2">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('reject_booking_' ~ booking.id) }}">
+                                    <input type="text" name="reason" placeholder="Motif du refus…"
+                                           class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-rose-400">
+                                    <button type="submit"
+                                            class="bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-2 rounded-lg font-medium transition">
+                                        Confirmer le refus
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+
+    {# ── Toutes les réservations ── #}
+    <section>
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Historique des réservations</h2>
+        {% if allBookings is empty %}
+            <div class="bg-white border border-gray-200 rounded-2xl p-10 text-center text-gray-400">
+                Aucune réservation pour vos logements.
+            </div>
+        {% else %}
+            <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 border-b border-gray-100">
+                        <tr>
+                            <th class="px-6 py-3 text-left font-medium text-gray-500">Logement</th>
+                            <th class="px-6 py-3 text-left font-medium text-gray-500">Voyageur</th>
+                            <th class="px-6 py-3 text-left font-medium text-gray-500">Dates</th>
+                            <th class="px-6 py-3 text-left font-medium text-gray-500">Montant</th>
+                            <th class="px-6 py-3 text-left font-medium text-gray-500">Statut</th>
+                            <th class="px-6 py-3 text-left font-medium text-gray-500">Calendrier</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for booking in allBookings %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-6 py-3 font-medium text-gray-900 max-w-[160px] truncate">
+                                    {{ booking.property.title }}
+                                </td>
+                                <td class="px-6 py-3 text-gray-600">
+                                    {{ booking.traveler.firstName }} {{ booking.traveler.lastName }}
+                                </td>
+                                <td class="px-6 py-3 text-gray-600 whitespace-nowrap">
+                                    {{ booking.checkIn|date('d/m') }} → {{ booking.checkOut|date('d/m/Y') }}
+                                </td>
+                                <td class="px-6 py-3 font-semibold text-gray-900">{{ booking.totalPrice }} €</td>
+                                <td class="px-6 py-3">
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-medium
+                                        {% if booking.status.value == 'CONFIRMED' %}bg-green-100 text-green-700
+                                        {% elseif booking.status.value == 'PENDING' %}bg-yellow-100 text-yellow-700
+                                        {% elseif booking.status.value == 'CANCELLED' %}bg-red-100 text-red-700
+                                        {% else %}bg-gray-100 text-gray-600{% endif %}">
+                                        {{ booking.status.value|lower|capitalize }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-3">
+                                    <a href="{{ path('host_property_calendar', {id: booking.property.id}) }}"
+                                       class="text-rose-500 hover:underline text-xs">
+                                        Calendrier
+                                    </a>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+</div>
+{% endblock %}
