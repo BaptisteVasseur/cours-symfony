@@ -22,6 +22,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/hote')]
@@ -182,12 +183,22 @@ final class HostController extends AbstractController
         $prev = $monthStart->modify('-1 month');
         $next = $monthStart->modify('+1 month');
 
+        // URL d'export iCal (absolue, avec le jeton) si la synchronisation est activée.
+        $icalUrl = $property->getIcalToken() !== null
+            ? $this->generateUrl(
+                'app_property_ical_export',
+                ['id' => $property->getId(), 'token' => $property->getIcalToken()],
+                UrlGeneratorInterface::ABSOLUTE_URL,
+            )
+            : null;
+
         return $this->render('front/host/calendar.html.twig', [
             'property' => $property,
             'year' => $year,
             'month' => $month,
             'monthLabel' => self::MONTH_LABELS[$month] . ' ' . $year,
             'weeks' => $weeks,
+            'icalUrl' => $icalUrl,
             'prevYear' => (int) $prev->format('Y'),
             'prevMonth' => (int) $prev->format('n'),
             'nextYear' => (int) $next->format('Y'),
@@ -199,6 +210,41 @@ final class HostController extends AbstractController
                 'action' => $this->generateUrl('app_host_pricing', ['id' => $property->getId()]),
             ])->createView(),
         ]);
+    }
+
+    #[Route('/logement/{id}/ical/generer', name: 'app_host_ical_generate', methods: ['POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function generateIcalToken(Request $request, Property $property, EntityManagerInterface $entityManager): Response
+    {
+        if (!$this->isCsrfTokenValid('ical_token_' . $property->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Jeton de sécurité invalide.');
+
+            return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
+        }
+
+        // (Re)génère le jeton : régénérer révoque automatiquement l'ancien lien.
+        $property->setIcalToken(bin2hex(random_bytes(32)));
+        $entityManager->flush();
+        $this->addFlash('success', 'Lien de synchronisation iCal généré.');
+
+        return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
+    }
+
+    #[Route('/logement/{id}/ical/revoquer', name: 'app_host_ical_revoke', methods: ['POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function revokeIcalToken(Request $request, Property $property, EntityManagerInterface $entityManager): Response
+    {
+        if (!$this->isCsrfTokenValid('ical_token_' . $property->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Jeton de sécurité invalide.');
+
+            return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
+        }
+
+        $property->setIcalToken(null);
+        $entityManager->flush();
+        $this->addFlash('success', 'Lien de synchronisation iCal révoqué.');
+
+        return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
     }
 
     #[Route('/logement/{id}/indisponibilite', name: 'app_host_block', methods: ['POST'])]
