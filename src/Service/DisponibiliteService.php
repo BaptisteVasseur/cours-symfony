@@ -84,6 +84,7 @@ class DisponibiliteService
             $reservation->dateArrivee,
             $reservation->dateDepart,
             DisponibiliteStatut::RESERVEE,
+            modifierReservees: true,
         );
     }
 
@@ -111,13 +112,28 @@ class DisponibiliteService
         \DateTimeInterface $dateDebut,
         \DateTimeInterface $dateFin,
         string $raison,
-    ): void {
-        $this->changerStatutPeriode(
+    ): int {
+        return $this->changerStatutPeriode(
             $logement,
             $dateDebut,
             $dateFin,
             DisponibiliteStatut::BLOQUEE,
             trim($raison) !== '' ? trim($raison) : 'Blocage manuel',
+            modifierReservees: false,
+        );
+    }
+
+    public function ouvrirPeriode(
+        Logement $logement,
+        \DateTimeInterface $dateDebut,
+        \DateTimeInterface $dateFin,
+    ): int {
+        return $this->changerStatutPeriode(
+            $logement,
+            $dateDebut,
+            $dateFin,
+            DisponibiliteStatut::DISPONIBLE,
+            modifierReservees: false,
         );
     }
 
@@ -127,10 +143,12 @@ class DisponibiliteService
         \DateTimeInterface $dateFin,
         DisponibiliteStatut $statut,
         ?string $raisonBlocage = null,
-    ): void {
+        bool $modifierReservees = true,
+    ): int {
         $date = $this->normaliserDate($dateDebut);
         $fin = $this->normaliserDate($dateFin);
         $disponibilites = [];
+        $nombreJoursModifies = 0;
 
         foreach ($this->trouverDisponibilitesPeriode($logement, $date, $fin) as $disponibilite) {
             $disponibilites[$disponibilite->date->format('Y-m-d')] = $disponibilite;
@@ -148,12 +166,21 @@ class DisponibiliteService
                 $this->entityManager->persist($disponibilite);
             }
 
+            if (!$modifierReservees && $disponibilite->statut === DisponibiliteStatut::RESERVEE) {
+                $date = $date->modify('+1 day');
+
+                continue;
+            }
+
             $disponibilite->statut = $statut;
             $disponibilite->raisonBlocage = $statut === DisponibiliteStatut::BLOQUEE ? $raisonBlocage : null;
             $disponibilite->dateMiseAJour = new \DateTimeImmutable();
+            ++$nombreJoursModifies;
 
             $date = $date->modify('+1 day');
         }
+
+        return $nombreJoursModifies;
     }
 
     /**

@@ -86,6 +86,46 @@ class HostLogementCalendarController extends AbstractController
         return $this->redirectToRoute('app_host_logement_calendar', ['id' => $logement->id, 'mois' => $mois]);
     }
 
+    #[Route('/ouvrir', name: 'app_host_logement_calendar_open', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function open(
+        Logement $logement,
+        Request $request,
+        DisponibiliteService $disponibilites,
+        EntityManagerInterface $entityManager,
+    ): RedirectResponse {
+        $this->verifierAccesHote($logement);
+
+        if (!$this->isCsrfTokenValid('host_logement_calendar_open_'.$logement->id, (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Le formulaire a expire. Reessayez.');
+
+            return $this->redirectToRoute('app_host_logement_calendar', ['id' => $logement->id]);
+        }
+
+        $dateDebut = $this->creerDate((string) $request->request->get('date_debut', ''));
+        $dateFinIncluse = $this->creerDate((string) $request->request->get('date_fin', ''));
+        $mois = (string) $request->request->get('mois', '');
+
+        if ($dateDebut === null || $dateFinIncluse === null) {
+            $this->addFlash('error', 'Renseignez une date de debut et une date de fin.');
+
+            return $this->redirectToRoute('app_host_logement_calendar', ['id' => $logement->id, 'mois' => $mois]);
+        }
+
+        if ($dateDebut > $dateFinIncluse) {
+            $this->addFlash('error', 'La date de fin doit etre posterieure ou egale a la date de debut.');
+
+            return $this->redirectToRoute('app_host_logement_calendar', ['id' => $logement->id, 'mois' => $mois]);
+        }
+
+        $nombreJoursModifies = $disponibilites->ouvrirPeriode($logement, $dateDebut, $dateFinIncluse->modify('+1 day'));
+        $logement->dateMiseAJour = new \DateTimeImmutable();
+        $entityManager->flush();
+
+        $this->addFlash('success', sprintf('%d jour(s) ouverts dans le calendrier. Les dates reservees restent bloquees.', $nombreJoursModifies));
+
+        return $this->redirectToRoute('app_host_logement_calendar', ['id' => $logement->id, 'mois' => $mois]);
+    }
+
     #[Route('/ical/regenerer', name: 'app_host_logement_ical_regenerate', requirements: ['id' => '\\d+'], methods: ['POST'])]
     public function regenerateIcalToken(Logement $logement, Request $request, EntityManagerInterface $entityManager): RedirectResponse
     {

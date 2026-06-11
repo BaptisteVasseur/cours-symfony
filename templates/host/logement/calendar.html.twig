@@ -92,6 +92,28 @@
                 </section>
 
                 <section class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-950">Ouvrir une periode</h2>
+                    <form method="post" action="{{ path('app_host_logement_calendar_open', { id: logement.id }) }}" class="mt-5 space-y-4">
+                        <input type="hidden" name="_token" value="{{ csrf_token('host_logement_calendar_open_' ~ logement.id) }}">
+                        <input type="hidden" name="mois" value="{{ mois|date('Y-m') }}">
+
+                        <label class="block">
+                            <span class="text-sm font-medium text-gray-700">Debut</span>
+                            <input name="date_debut" type="date" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200">
+                        </label>
+
+                        <label class="block">
+                            <span class="text-sm font-medium text-gray-700">Fin incluse</span>
+                            <input name="date_fin" type="date" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-200">
+                        </label>
+
+                        <p class="text-xs leading-5 text-gray-500">Les dates non ouvertes deviennent disponibles, les dates bloquees sont debloquees. Les reservations confirmees ne sont pas modifiees.</p>
+
+                        <button type="submit" class="w-full rounded-md bg-emerald-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-700">Ouvrir / debloquer</button>
+                    </form>
+                </section>
+
+                <section class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
                     <h2 class="text-lg font-semibold text-gray-950">Legende</h2>
                     <div class="mt-4 space-y-2 text-sm text-gray-700">
                         <p><span class="inline-block h-3 w-3 rounded-sm bg-green-100 align-middle ring-1 ring-green-200"></span> Disponible</p>
