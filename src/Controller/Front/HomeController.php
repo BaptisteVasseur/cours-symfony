@@ -55,15 +55,39 @@ class HomeController extends AbstractController
     #[Route('/search', name: 'app_search', methods: ['GET'])]
     public function search(Request $request, PropertyRepository $propertyRepository): Response
     {
-        $checkin = $this->parseDate($request->query->get('checkin'));
-        $checkout = $this->parseDate($request->query->get('checkout'));
+        $destination = trim((string) $request->query->get('destination', ''));
+        $checkinValue = trim((string) $request->query->get('checkin', ''));
+        $checkoutValue = trim((string) $request->query->get('checkout', ''));
+        $checkin = $this->parseDate($checkinValue);
+        $checkout = $this->parseDate($checkoutValue);
+        $guests = max(1, $request->query->getInt('guests', 1));
+        $dateError = null;
+        $properties = [];
+
+        if ($checkinValue !== '' || $checkoutValue !== '') {
+            if ($checkin === null || $checkout === null) {
+                $dateError = 'Les dates d’arrivée et de départ doivent être renseignées ensemble au format valide.';
+            } elseif ($checkin >= $checkout) {
+                $dateError = 'La date de départ doit être postérieure à la date d’arrivée.';
+            }
+        }
+
+        if ($dateError === null) {
+            $properties = $propertyRepository->searchAvailable(
+                $destination !== '' ? $destination : null,
+                $checkin,
+                $checkout,
+                $guests,
+            );
+        }
 
         return $this->render('front/search/index.html.twig', [
-            'properties' => $propertyRepository->findForListing('published'),
-            'checkin' => $checkin,
-            'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'properties' => $properties,
+            'checkin' => $checkin?->format('Y-m-d') ?? $checkinValue,
+            'checkout' => $checkout?->format('Y-m-d') ?? $checkoutValue,
+            'guests' => $guests,
+            'destination' => $destination,
+            'dateError' => $dateError,
         ]);
     }
 
@@ -73,8 +97,8 @@ class HomeController extends AbstractController
             return null;
         }
 
-        $date = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
 
-        return $date !== false ? $date : null;
+        return $date !== false && $date->format('Y-m-d') === $value ? $date : null;
     }
 }
