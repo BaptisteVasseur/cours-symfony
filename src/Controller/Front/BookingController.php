@@ -59,7 +59,35 @@ final class BookingController extends AbstractController
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
                     'form' => $form,
-                ]);
+                ], new Response(null, Response::HTTP_UNPROCESSABLE_ENTITY));
+            }
+
+            // Check availability
+            $isAvailable = count($propertyRepository->findSearch(
+                checkin: $checkin,
+                checkout: $checkout
+            )) > 0;
+            
+            // Better/Specific check:
+            $conflicting = $entityManager->getRepository(Reservation::class)->createQueryBuilder('r')
+                ->select('COUNT(r.id)')
+                ->andWhere('r.property = :property')
+                ->andWhere('r.status != :cancelled')
+                ->andWhere('(r.checkinDate < :checkout AND r.checkoutDate > :checkin)')
+                ->setParameter('property', $property)
+                ->setParameter('cancelled', 'cancelled')
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout)
+                ->getQuery()
+                ->getSingleScalarResult();
+
+            if ($conflicting > 0) {
+                $this->addFlash('error', 'Ce logement n\'est pas disponible pour ces dates.');
+
+                return $this->render('front/property/booking.html.twig', [
+                    'property' => $property,
+                    'form' => $form,
+                ], new Response(null, Response::HTTP_UNPROCESSABLE_ENTITY));
             }
 
             if ($guestsCount > $property->getMaxGuests()) {
@@ -68,7 +96,7 @@ final class BookingController extends AbstractController
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
                     'form' => $form,
-                ]);
+                ], new Response(null, Response::HTTP_UNPROCESSABLE_ENTITY));
             }
 
             $nights = (int) $checkin->diff($checkout)->days;
@@ -81,8 +109,8 @@ final class BookingController extends AbstractController
             $reservation = new Reservation();
             $reservation->setProperty($property);
             $reservation->setGuest($user);
-            $reservation->setCheckinDate($checkin);
-            $reservation->setCheckoutDate($checkout);
+            $reservation->setCheckinDate(\DateTimeImmutable::createFromInterface($checkin));
+            $reservation->setCheckoutDate(\DateTimeImmutable::createFromInterface($checkout));
             $reservation->setGuestsCount($guestsCount);
             $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
             $reservation->setTotalPrice((string) $totalPrice);
