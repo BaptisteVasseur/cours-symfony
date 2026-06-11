@@ -120,6 +120,47 @@ class PropertyRepository extends ServiceEntityRepository
     /**
      * @return list<Property>
      */
+    public function findForSearch(?string $destination, ?\DateTimeImmutable $checkin, ?\DateTimeImmutable $checkout, ?int $guests): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'h', 'hp')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.host', 'h')
+            ->leftJoin('h.profile', 'hp')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('(a.city LIKE :dest OR a.country LIKE :dest)')
+                ->setParameter('dest', '%' . $destination . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            $qb->andWhere('NOT EXISTS (
+                SELECT 1 FROM App\Entity\Reservation r
+                WHERE r.property = p
+                AND r.status IN (:confirmedStatuses)
+                AND r.checkinDate < :checkout
+                AND r.checkoutDate > :checkin
+            )')
+                ->setParameter('confirmedStatuses', ['confirmed', 'completed'])
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
     public function findByHost(User $host): array
     {
         return $this->createQueryBuilder('p')

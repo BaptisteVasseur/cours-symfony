@@ -4,10 +4,40 @@
         <span class="hidden sm:inline">airbnb</span>
     </a>
 
-    <a href="{{ path('app_search') }}" class="flex-1 max-w-sm mx-auto hidden sm:flex items-center gap-2 border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-500 hover:shadow-sm transition min-w-0">
-        <i class="fa-solid fa-magnifying-glass text-brand shrink-0"></i>
-        <span class="truncate">Rechercher un logement</span>
-    </a>
+    <form action="{{ path('app_search') }}" method="GET" class="flex-1 max-w-2xl mx-auto hidden sm:flex items-center gap-0 border border-gray-200 rounded-full shadow-sm hover:shadow-md transition overflow-hidden bg-white divide-x divide-gray-200">
+        <input
+            type="text"
+            name="destination"
+            value="{{ app.request.query.get('destination') }}"
+            placeholder="Destination"
+            class="flex-1 min-w-0 px-4 py-2 text-sm text-gray-700 placeholder-gray-400 bg-transparent outline-none"
+        >
+        <input
+            type="date"
+            name="checkin"
+            value="{{ app.request.query.get('checkin') }}"
+            placeholder="Arrivée"
+            class="w-32 px-3 py-2 text-sm text-gray-700 bg-transparent outline-none"
+        >
+        <input
+            type="date"
+            name="checkout"
+            value="{{ app.request.query.get('checkout') }}"
+            placeholder="Départ"
+            class="w-32 px-3 py-2 text-sm text-gray-700 bg-transparent outline-none"
+        >
+        <input
+            type="number"
+            name="guests"
+            value="{{ app.request.query.get('guests') }}"
+            placeholder="Voyageurs"
+            min="1"
+            class="w-28 px-3 py-2 text-sm text-gray-700 bg-transparent outline-none"
+        >
+        <button type="submit" class="bg-brand text-white px-4 py-2 hover:bg-brand/90 transition shrink-0 flex items-center justify-center" aria-label="Rechercher">
+            <i class="fa-solid fa-magnifying-glass"></i>
+        </button>
+    </form>
 
     <div class="flex items-center gap-2 shrink-0 ml-auto">
         <a href="{{ path('app_search') }}" class="sm:hidden p-2 text-gray-600 hover:bg-gray-50 rounded-full" aria-label="Rechercher">
@@ -15,6 +45,14 @@
         </a>
 
         {% if app.user %}
+            <a href="{{ path('app_notifications_index') }}" class="relative p-2 text-gray-600 hover:text-gray-900">
+                <i class="fa-solid fa-bell text-lg"></i>
+                {% if unreadNotificationCount > 0 %}
+                    <span class="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                        {{ unreadNotificationCount > 9 ? '9+' : unreadNotificationCount }}
+                    </span>
+                {% endif %}
+            </a>
             {% include 'layout/partials/app/header_profile_menu.html.twig' %}
         {% else %}
             <a href="{{ path('app_login') }}" class="text-sm font-semibold py-2 px-4 border border-gray-200 rounded-full hover:shadow-md transition whitespace-nowrap">

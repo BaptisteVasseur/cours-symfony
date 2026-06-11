@@ -131,6 +131,9 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[ORM\Column(type: 'string', length: 64, nullable: true, unique: true)]
+    private ?string $icalToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -588,5 +591,22 @@ class Property
         }
 
         return round($total / $this->reviews->count(), 2);
+    }
+
+    public function getIcalToken(): ?string
+    {
+        return $this->icalToken;
+    }
+
+    public function setIcalToken(?string $icalToken): static
+    {
+        $this->icalToken = $icalToken;
+
+        return $this;
+    }
+
+    public function regenerateIcalToken(): void
+    {
+        $this->icalToken = bin2hex(random_bytes(32));
     }
 }

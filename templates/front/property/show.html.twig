@@ -135,11 +135,17 @@
                             <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
                         </div>
                     </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
-                        Réserver
-                    </a>
-                    {% if property.instantBooking %}
-                        <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
+                    {% if app.user and app.user.id == property.host.id %}
+                        <p class="block w-full text-center text-sm text-gray-500 py-3 border border-gray-200 rounded-lg">
+                            Vous êtes l'hôte de ce logement
+                        </p>
+                    {% else %}
+                        <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                            Réserver
+                        </a>
+                        {% if property.instantBooking %}
+                            <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
+                        {% endif %}
                     {% endif %}
                 </div>
             </aside>

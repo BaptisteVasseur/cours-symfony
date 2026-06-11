@@ -31,6 +31,9 @@ class Notification
     #[ORM\Column(length: 50)]
     private ?string $channel = null;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $link = null;
+
     #[ORM\Column]
     private bool $isRead = false;
 
@@ -98,6 +101,18 @@ class Notification
     public function setChannel(string $channel): static
     {
         $this->channel = $channel;
+
+        return $this;
+    }
+
+    public function getLink(): ?string
+    {
+        return $this->link;
+    }
+
+    public function setLink(?string $link): static
+    {
+        $this->link = $link;
 
         return $this;
     }

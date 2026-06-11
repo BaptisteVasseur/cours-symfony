@@ -1,0 +1,118 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Demandes de réservation{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-1">Demandes de réservation</h1>
+        <p class="text-gray-500 mb-8">Réservations en attente de validation sur vos logements</p>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm
+                    {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' :
+                       label == 'info'    ? 'bg-blue-50 text-blue-800' :
+                                           'bg-red-50 text-red-800' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        {% if reservations|length == 0 %}
+            <div class="text-center py-20 border border-dashed border-gray-200 rounded-2xl">
+                <i class="fa-regular fa-calendar-check text-4xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500 font-medium">Aucune demande en attente</p>
+                <p class="text-gray-400 text-sm mt-1">Toutes vos réservations sont traitées.</p>
+            </div>
+        {% else %}
+            <div class="space-y-4">
+                {% for reservation in reservations %}
+                    {% set guest        = reservation.guest %}
+                    {% set guestProfile = guest ? guest.profile : null %}
+                    {% set property     = reservation.property %}
+                    {% set cover        = property ? property.coverMedia : null %}
+                    {% set nights       = reservation.checkinDate|date('U') is not null
+                        ? ((reservation.checkoutDate.timestamp - reservation.checkinDate.timestamp) / 86400)|round
+                        : 1 %}
+
+                    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
+                        <div class="flex flex-col sm:flex-row">
+
+                            {# Photo du logement #}
+                            <div class="sm:w-44 sm:flex-shrink-0">
+                                <img src="{{ cover ? cover.fileUrl : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80' }}"
+                                     alt="{{ property ? property.title : '' }}"
+                                     class="w-full h-40 sm:h-full object-cover">
+                            </div>
+
+                            {# Détails #}
+                            <div class="flex-1 p-5 flex flex-col justify-between gap-4">
+                                <div class="flex flex-wrap items-start justify-between gap-2">
+                                    <div>
+                                        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 mb-1">
+                                            {{ property ? property.title : '—' }}
+                                        </p>
+                                        <div class="flex items-center gap-2">
+                                            {% if guestProfile and guestProfile.avatarUrl %}
+                                                <img src="{{ guestProfile.avatarUrl }}" alt="" class="w-8 h-8 rounded-full object-cover">
+                                            {% else %}
+                                                <span class="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 text-xs font-bold">
+                                                    {{ guestProfile and guestProfile.firstName ? guestProfile.firstName|first|upper : '?' }}
+                                                </span>
+                                            {% endif %}
+                                            <span class="font-semibold text-gray-900">
+                                                {{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : guest.email }}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <span class="text-xs font-semibold px-3 py-1 rounded-full bg-yellow-100 text-yellow-800">
+                                        En attente
+                                    </span>
+                                </div>
+
+                                <div class="flex flex-wrap gap-4 text-sm text-gray-600">
+                                    <div class="flex items-center gap-1.5">
+                                        <i class="fa-solid fa-right-to-bracket text-gray-400"></i>
+                                        <span>Arrivée : <strong class="text-gray-900">{{ reservation.checkinDate|date('d/m/Y') }}</strong></span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <i class="fa-solid fa-right-from-bracket text-gray-400"></i>
+                                        <span>Départ : <strong class="text-gray-900">{{ reservation.checkoutDate|date('d/m/Y') }}</strong></span>
+                                    </div>
+                                    <div class="flex items-center gap-1.5">
+                                        <i class="fa-solid fa-users text-gray-400"></i>
+                                        <span>{{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' }}</span>
+                                    </div>
+                                </div>
+
+                                <div class="flex items-center justify-between flex-wrap gap-3 pt-3 border-t border-gray-100">
+                                    <p class="text-lg font-bold text-gray-900">
+                                        {{ reservation.totalPrice|number_format(2, ',', ' ') }} €
+                                        <span class="text-sm font-normal text-gray-500">total</span>
+                                    </p>
+                                    <div class="flex gap-2">
+                                        <form method="post" action="{{ path('app_account_host_reject', { id: reservation.id }) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('reject_' ~ reservation.id) }}">
+                                            <button type="submit"
+                                                    class="px-4 py-2 rounded-xl border border-gray-300 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition"
+                                                    onclick="return confirm('Refuser cette réservation ?')">
+                                                <i class="fa-solid fa-xmark mr-1"></i> Refuser
+                                            </button>
+                                        </form>
+                                        <form method="post" action="{{ path('app_account_host_confirm', { id: reservation.id }) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('confirm_' ~ reservation.id) }}">
+                                            <button type="submit"
+                                                    class="px-4 py-2 rounded-xl bg-brand hover:bg-brandHover text-white text-sm font-semibold transition">
+                                                <i class="fa-solid fa-check mr-1"></i> Confirmer
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </main>
+{% endblock %}

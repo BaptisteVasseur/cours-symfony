@@ -1,0 +1,24 @@
+1. Dans notre schema, checkinDate et checkoutDate sont des dates sans heure.
+Une reservation du 10 au 12 juin prend les nuits du 10 et 11. Le 12 est le jour de depart
+donc quelqu'un d'autre peut arriver ce jour la. Les horaires (11h depart, 15h arrivee)
+sont geres dans Property et affiches par l'application.
+
+2. Une reservation en pending ne bloque pas les dates, seules les reservations confirmed les bloquent.
+Ca evite qu'un utilisateur reserve sans payer et bloque le logement.
+Avant de passer en confirmed, on reverifie quand meme la disponibilite.
+
+3. Si deux personnes essayent de reserver au meme moment,
+il y a un risque d'overbooking. Pour l'eviter, on utilise un verrou (FOR UPDATE) et
+une transaction pour qu'une seule reservation soit validee.
+
+4. Pour verifier la disponibilite, on utilise une seule requete SQL sur toute la periode
+au lieu de faire une requete par jour. Avec les bons index,
+la verification reste rapide meme avec beaucoup de reservations.
+
+5. L'email de confirmation est envoye apres le flush() et
+de maniere asynchrone avec Messenger. Comme ca, un probleme d'envoi
+d'email ne bloque pas la reservation.
+
+6. On a choisi une table PropertyAvailability avec une ligne par jour.
+Ca rend les verifications de disponibilite et la gestion des prix beaucoup plus simples.
+Il y a plus de lignes en base, mais ca reste facile a gerer avec des index.

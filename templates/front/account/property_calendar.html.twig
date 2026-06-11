@@ -1,0 +1,111 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Calendrier — {{ property.title }}{% endblock %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+    <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Mes propriétés
+    </a>
+
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-semibold text-gray-900">{{ property.title }}</h1>
+    </div>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    {# Month navigation #}
+    {% set monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'] %}
+    {% set prevMonth = month == 1 ? 12 : month - 1 %}
+    {% set prevYear  = month == 1 ? year - 1 : year %}
+    {% set nextMonth = month == 12 ? 1 : month + 1 %}
+    {% set nextYear  = month == 12 ? year + 1 : year %}
+
+    <div class="flex items-center justify-between mb-6">
+        <a href="{{ path('app_account_property_calendar', {id: property.id, year: prevYear, month: prevMonth}) }}"
+           class="px-3 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm">
+            <i class="fa-solid fa-chevron-left"></i>
+        </a>
+        <h2 class="text-lg font-semibold text-gray-900">{{ monthNames[month - 1] }} {{ year }}</h2>
+        <a href="{{ path('app_account_property_calendar', {id: property.id, year: nextYear, month: nextMonth}) }}"
+           class="px-3 py-2 border border-gray-200 rounded-xl hover:bg-gray-50 text-sm">
+            <i class="fa-solid fa-chevron-right"></i>
+        </a>
+    </div>
+
+    {# Legend #}
+    <div class="flex gap-4 mb-4 text-xs">
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-red-400 inline-block"></span> Bloqué</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-blue-400 inline-block"></span> Réservé</span>
+        <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-white border border-gray-300 inline-block"></span> Disponible</span>
+    </div>
+
+    {# Calendar grid #}
+    {% set firstDayOfMonth = (year ~ '-' ~ month ~ '-01')|date('N') %}  {# 1=Mon, 7=Sun #}
+    {% set daysInMonth = (year ~ '-' ~ month ~ '-01')|date('t') %}
+
+    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+        <div class="grid grid-cols-7 border-b border-gray-100">
+            {% for day in ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'] %}
+                <div class="text-center text-xs font-semibold text-gray-500 py-3">{{ day }}</div>
+            {% endfor %}
+        </div>
+        <div class="grid grid-cols-7">
+            {# Empty cells before first day #}
+            {% for i in 1..(firstDayOfMonth - 1) %}
+                <div class="border-b border-r border-gray-100 min-h-[80px] p-2 bg-gray-50"></div>
+            {% endfor %}
+
+            {# Day cells #}
+            {% for day in 1..daysInMonth %}
+                {% set dateStr = year ~ '-' ~ month|format('%02d') ~ '-' ~ day|format('%02d') %}
+                {% set isBlocked = blockedDates[dateStr] is defined %}
+                {% set isBooked  = false %}
+                {% for range in bookedRanges %}
+                    {% if dateStr >= range.from and dateStr <= range.to %}
+                        {% set isBooked = true %}
+                    {% endif %}
+                {% endfor %}
+                {% set isPast = dateStr < 'now'|date('Y-m-d') %}
+
+                <div class="border-b border-r border-gray-100 min-h-[80px] p-2
+                    {{ isBlocked ? 'bg-red-50' : isBooked ? 'bg-blue-50' : '' }}">
+                    <p class="text-sm font-semibold {{ isPast ? 'text-gray-300' : 'text-gray-900' }} mb-1">{{ day }}</p>
+
+                    {% if not isPast %}
+                        {% if isBlocked %}
+                            <form method="post" action="{{ path('app_account_property_unblock_date', {id: property.id}) }}">
+                                <input type="hidden" name="date"  value="{{ dateStr }}">
+                                <input type="hidden" name="year"  value="{{ year }}">
+                                <input type="hidden" name="month" value="{{ month }}">
+                                <button type="submit" class="text-[10px] text-red-600 hover:underline">Débloquer</button>
+                            </form>
+                        {% elseif not isBooked %}
+                            <form method="post" action="{{ path('app_account_property_block_date', {id: property.id}) }}">
+                                <input type="hidden" name="date"  value="{{ dateStr }}">
+                                <input type="hidden" name="year"  value="{{ year }}">
+                                <input type="hidden" name="month" value="{{ month }}">
+                                <button type="submit" class="text-[10px] text-gray-400 hover:text-gray-700">Bloquer</button>
+                            </form>
+                        {% else %}
+                            <span class="text-[10px] text-blue-600">Réservé</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            {% endfor %}
+
+            {# Fill remaining cells #}
+            {% set lastDayPos = (firstDayOfMonth - 1 + daysInMonth) % 7 %}
+            {% if lastDayPos != 0 %}
+                {% for i in lastDayPos..6 %}
+                    <div class="border-b border-r border-gray-100 min-h-[80px] p-2 bg-gray-50"></div>
+                {% endfor %}
+            {% endif %}
+        </div>
+    </div>
+</main>
+{% endblock %}
