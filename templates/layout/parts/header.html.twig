@@ -10,7 +10,13 @@
         <a href="{{ path('app_reservation_index') }}" class="text-sm font-semibold py-2 px-4 hover:bg-gray-50 rounded-full hidden lg:inline-block">
             Mes réservations
         </a>
-        <span class="text-sm font-semibold py-2 px-4 hover:bg-gray-50 rounded-full cursor-pointer hidden lg:inline-block">Mettre mon logement sur Airbnb</span>
+        {% if is_granted('ROLE_HOST') %}
+            <a href="{{ path('app_host_property_index') }}" class="text-sm font-semibold py-2 px-4 hover:bg-gray-50 rounded-full hidden lg:inline-block">
+                Espace hôte
+            </a>
+        {% else %}
+            <span class="text-sm font-semibold py-2 px-4 hover:bg-gray-50 rounded-full cursor-pointer hidden lg:inline-block">Mettre mon logement sur Airbnb</span>
+        {% endif %}
         <button class="text-gray-600 hover:bg-gray-50 p-2 rounded-full hidden sm:block">
             <i class="fa-solid fa-globe"></i>
         </button>
