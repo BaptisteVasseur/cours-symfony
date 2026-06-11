@@ -49,4 +49,10 @@ class ReservationStatusManager
         $this->em->persist($history);
         $this->em->flush();
     }
+    
+    public function cancel(Reservation $reservation, User $actor, string $reason): void
+    {
+        $this->transition($reservation, 'cancelled', $actor, $reason);
+        $this->mailer->sendCancellation($reservation);
+    }
 }

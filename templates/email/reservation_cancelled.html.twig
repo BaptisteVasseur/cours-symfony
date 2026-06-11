@@ -1,0 +1,7 @@
+<h2>Réservation annulée</h2>
+<p>La réservation pour <strong>{{ property.title }}</strong>
+   ({{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }})
+   a été annulée.</p>
+{% if reservation.cancellationReason %}
+    <p><strong>Motif :</strong> {{ reservation.cancellationReason }}</p>
+{% endif %}
