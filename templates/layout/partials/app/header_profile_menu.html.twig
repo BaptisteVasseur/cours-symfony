@@ -21,10 +21,16 @@
                 <i class="fa-solid fa-suitcase-rolling w-4 text-center text-gray-400"></i>
                 Mes réservations
             </a>
-            <a href="{{ path('app_account_properties') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
+           <a href="{{ path('app_account_properties') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                 <i class="fa-solid fa-house w-4 text-center text-gray-400"></i>
                 Mes propriétés
             </a>
+            {% if is_granted('ROLE_HOST') %}
+            <a href="{{ path('app_host_reservations') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-clock w-4 text-center text-gray-400"></i>
+                Demandes reçues
+            </a>
+            {% endif %}
             <a href="{{ path('app_messages_index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                 <i class="fa-solid fa-envelope w-4 text-center text-gray-400"></i>
                 Mes messages

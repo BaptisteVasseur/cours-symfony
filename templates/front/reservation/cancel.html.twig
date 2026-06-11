@@ -1,0 +1,52 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set property = reservation.property %}
+{% set cover = property ? property.coverMedia : null %}
+{% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-2xl mx-auto w-full">
+        <a href="{{ path('app_reservation_show', { id: reservation.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Retour à la réservation
+        </a>
+
+        <div class="mb-8">
+            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Annuler la réservation</h1>
+            <p class="text-gray-500 mt-1">Cette action est irréversible.</p>
+        </div>
+
+        {% if property %}
+            <div class="border border-gray-200 rounded-xl overflow-hidden mb-6">
+                <div class="flex flex-col sm:flex-row">
+                    <div class="sm:w-40 h-32 sm:h-auto shrink-0">
+                        <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-5">
+                        <h2 class="text-base font-semibold">{{ property.title }}</h2>
+                        <p class="text-sm text-gray-500 mt-1">
+                            {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                        </p>
+                        <p class="text-sm text-gray-500">{{ reservation.guestsCount }} voyageur(s)</p>
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        {{ form_start(form, { attr: { class: 'space-y-6' } }) }}
+            <div>
+                {{ form_label(form.reason, 'Motif d\'annulation', { label_attr: { class: 'block text-sm font-medium text-gray-700 mb-1' } }) }}
+                {{ form_widget(form.reason, { attr: { class: 'w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand', rows: 4, placeholder: 'Expliquez la raison de votre annulation...' } }) }}
+                {{ form_errors(form.reason) }}
+            </div>
+
+            <div class="flex gap-3">
+                <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-lg text-sm transition">
+                    Confirmer l'annulation
+                </button>
+                <a href="{{ path('app_reservation_show', { id: reservation.id }) }}" class="border border-gray-300 text-gray-700 font-semibold px-6 py-3 rounded-lg text-sm hover:bg-gray-50 transition">
+                    Annuler
+                </a>
+            </div>
+        {{ form_end(form) }}
+    </main>
+{% endblock %}

@@ -1,0 +1,36 @@
+1-Oui, le jour du check-out est réservable. 
+    Je modélise les réservations comme des intervalles de nuits [check-in, check-out), donc la date de check-out n’est pas incluse dans l’occupation.
+    Ainsi, un client qui part le 5 juillet libère le logement ce jour-là, et un autre peut arriver le même jour sans conflit.
+    Pour la superposition entre un départ à 11h et une arrivée à 15h, je ne la gère pas comme un conflit dans le schéma de données,
+    car la disponibilité est basée uniquement sur les dates et non les heures. Les heures de check-in et check-out servent
+    uniquement à organiser la logistique (ménage et préparation du logement) entre deux réservations, pas à déterminer la disponibilité.
+
+
+
+2- Oui, une demande en `pending` peut bloquer les dates de façon temporaire pour éviter l’overbooking,
+    mais ce blocage doit être limité dans le temps. L’idée est de réserver les dates dès la création de la demande pour éviter que deux personnes valident en même temps,
+    puis de prévoir une expiration automatique si le paiement n’est pas confirmé.
+    Sinon, on risque soit de bloquer abusivement des logements sans paiement, soit de créer des conflits de réservation si on ne bloque pas du tout.
+
+
+3- Si deux utilisateurs valident un paiement exactement en même temps pour les mêmes dates, je sécurise ça côté base de données avec une logique de concurrence.
+   Au moment de confirmer la réservation, je refais un contrôle dans une transaction, et je m’assure qu’une seule opération peut réserver les dates.
+   Du coup, la première transaction qui passe bloque les dates et confirme la réservation, et la seconde échoue car elle détecte que les dates ne sont plus disponibles.
+   Cela évite toute double réservation même en cas d’exécution simultanée
+
+
+4- Pour éviter de faire 20 requêtes SQL (une par nuit), je ne vérifie pas nuit par nuit. Je fais une seule requête sur les intervalles de dates.
+   Concrètement, je cherche s’il existe une réservation pour ce logement qui chevauche la période demandée avec la condition `checkinDate < endDate AND checkoutDate > startDate`.
+   Si aucune ligne n’est retournée, ça veut dire que tout le bloc de 20 nuits est disponible. Comme ça, je fais une seule requête optimisée au lieu d’une boucle,
+   ce qui évite de saturer la base et reste performant même sur de longues périodes.
+
+
+5- L’envoi d’email doit se faire après la transaction ORM pour éviter les incohérences. Si on envoie un email avant le flush/commit, on peut notifier une réservation qui n’a finalement pas été enregistrée (rollback), ce qui crée des erreurs côté utilisateur.
+   Donc je m’assure d’abord que la donnée est bien persistée en base, puis je déclenche l’email.
+   Pour l’asynchronisme avec RabbitMQ, la stratégie consiste à ne pas dépendre uniquement du broker.
+   Si RabbitMQ tombe en panne, j’ai soit un mécanisme de retry avec persistance des messages (queue durable + ack), soit un fallback qui enregistre l’événement en base (outbox pattern) pour le rejouer plus tard dès que le service est de nouveau disponible. Comme ça, aucun email n’est perdu et le système reste cohérent même en cas de panne.
+
+
+6- Je choisirais une table de périodes (date_start, date_end) plutôt qu’une table de jours individuels.
+   Une réservation représente déjà une plage continue, donc il est beaucoup plus efficace de stocker des intervalles que de générer une ligne par jour.
+Ça réduit fortement le volume de données et simplifie les requêtes de disponibilité avec une simple vérification de chevauchement.
