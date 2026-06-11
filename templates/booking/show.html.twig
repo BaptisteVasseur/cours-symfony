@@ -1,0 +1,109 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block page_title %}Réservation #{{ booking.id }}{% endblock %}
+
+{% block body %}
+<div class="max-w-2xl mx-auto px-4 py-10">
+
+    <a href="{{ path('app_home') }}" class="text-sm text-airbnb hover:underline">← Retour à l'accueil</a>
+
+    <h1 class="text-2xl font-bold text-gray-900 mt-4 mb-6">Suivi de réservation</h1>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 rounded-lg px-4 py-3 text-sm font-medium
+                {% if label == 'success' %}bg-green-50 text-green-700 border border-green-200
+                {% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {# Statut #}
+    {% set statusConfig = {
+        'pending':   {label: 'En attente',  bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200', dot: 'bg-yellow-400'},
+        'confirmed': {label: 'Confirmée',   bg: 'bg-green-50',  text: 'text-green-700',  border: 'border-green-200',  dot: 'bg-green-500'},
+        'cancelled': {label: 'Annulée',     bg: 'bg-red-50',    text: 'text-red-700',    border: 'border-red-200',    dot: 'bg-red-400'},
+        'completed': {label: 'Terminée',    bg: 'bg-gray-50',   text: 'text-gray-600',   border: 'border-gray-200',   dot: 'bg-gray-400'},
+    } %}
+    {% set s = statusConfig[booking.status] ?? statusConfig['pending'] %}
+
+    <div class="flex items-center gap-2 mb-6">
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-semibold {{ s.bg }} {{ s.text }} border {{ s.border }}">
+            <span class="w-2 h-2 rounded-full {{ s.dot }}"></span>
+            {{ s.label }}
+        </span>
+        {% if booking.status == 'pending' %}
+            <span class="text-sm text-gray-500">L'hôte va traiter votre demande prochainement.</span>
+        {% endif %}
+    </div>
+
+    {# Détails de la réservation #}
+    <div class="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden mb-6">
+        <div class="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+            <h2 class="font-semibold text-gray-900">{{ booking.listing.title }}</h2>
+            <span class="text-sm text-gray-400">Réf. #{{ booking.id }}</span>
+        </div>
+        <div class="px-5 py-4 space-y-3 text-sm">
+            <div class="flex justify-between">
+                <span class="text-gray-500">Arrivée</span>
+                <span class="font-medium text-gray-900">{{ booking.startDate|date('d/m/Y') }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Départ</span>
+                <span class="font-medium text-gray-900">{{ booking.endDate|date('d/m/Y') }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Voyageurs</span>
+                <span class="font-medium text-gray-900">{{ booking.guestsCount }}</span>
+            </div>
+            <div class="flex justify-between border-t border-gray-100 pt-3">
+                <span class="text-gray-500">Total</span>
+                <span class="font-bold text-gray-900 text-base">{{ booking.totalPrice }} €</span>
+            </div>
+        </div>
+    </div>
+
+    {% if booking.cancelReason %}
+    <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700 mb-6">
+        <strong>Motif d'annulation :</strong> {{ booking.cancelReason }}
+    </div>
+    {% endif %}
+
+    {# Bouton annulation #}
+    {% if booking.status in ['pending', 'confirmed'] %}
+    <div x-data="{ open: false }" class="mt-4">
+        <button @click="open = true"
+                class="text-sm text-red-600 hover:text-red-800 border border-red-200 px-4 py-2 rounded-lg hover:bg-red-50 transition-colors">
+            Annuler cette réservation
+        </button>
+
+        <div x-show="open" x-cloak
+             class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+            <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4" @click.outside="open = false">
+                <h3 class="font-semibold text-gray-900 text-lg">Annuler la réservation</h3>
+                <p class="text-sm text-gray-500">Un motif est obligatoire. L'hôte en sera informé par email.</p>
+
+                <form method="post" action="{{ path('booking_cancel', {id: booking.id}) }}" class="space-y-3">
+                    <input type="hidden" name="_token" value="{{ csrf_token('cancel_booking_' ~ booking.id) }}">
+                    <textarea name="cancelReason" rows="3" required
+                              placeholder="Expliquez votre motif d'annulation…"
+                              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-airbnb"></textarea>
+                    <div class="flex gap-2 justify-end">
+                        <button type="button" @click="open = false"
+                                class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Retour
+                        </button>
+                        <button type="submit"
+                                class="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700">
+                            Confirmer l'annulation
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

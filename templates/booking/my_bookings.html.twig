@@ -1,0 +1,61 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block page_title %}Mes réservations{% endblock %}
+
+{% block body %}
+<div class="max-w-3xl mx-auto px-4 py-8">
+
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Mes réservations</h1>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 rounded-lg px-4 py-3 text-sm font-medium
+                {% if label == 'success' %}bg-green-50 text-green-700 border border-green-200
+                {% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% set statusConfig = {
+        'pending':   {label: 'En attente',  bg: 'bg-yellow-50', text: 'text-yellow-700', border: 'border-yellow-200', dot: 'bg-yellow-400'},
+        'confirmed': {label: 'Confirmée',   bg: 'bg-green-50',  text: 'text-green-700',  border: 'border-green-200',  dot: 'bg-green-500'},
+        'cancelled': {label: 'Annulée',     bg: 'bg-red-50',    text: 'text-red-700',    border: 'border-red-200',    dot: 'bg-red-400'},
+        'completed': {label: 'Terminée',    bg: 'bg-gray-50',   text: 'text-gray-600',   border: 'border-gray-200',   dot: 'bg-gray-400'},
+    } %}
+
+    {% if bookings is empty %}
+        <div class="text-center py-16 text-gray-400">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 mx-auto mb-3 opacity-40" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <p class="text-base">Vous n'avez aucune réservation pour le moment.</p>
+            <a href="{{ path('app_home') }}" class="mt-3 inline-block text-sm text-airbnb hover:underline">Découvrir des logements</a>
+        </div>
+    {% else %}
+        <div class="space-y-4">
+            {% for booking in bookings|sort((a, b) => b.createdAt <=> a.createdAt) %}
+                {% set s = statusConfig[booking.status] ?? statusConfig['pending'] %}
+                <a href="{{ path('booking_show', {id: booking.id}) }}"
+                   class="block bg-white border border-gray-200 rounded-xl shadow-sm p-5 hover:shadow-md transition-shadow">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div class="space-y-1">
+                            <p class="font-semibold text-gray-900">{{ booking.listing.title }}</p>
+                            <p class="text-sm text-gray-500">
+                                {{ booking.startDate|date('d/m/Y') }} → {{ booking.endDate|date('d/m/Y') }}
+                                · {{ booking.guestsCount }} voyageur{{ booking.guestsCount > 1 ? 's' }}
+                            </p>
+                            <p class="text-sm font-medium text-gray-700">{{ booking.totalPrice }} €</p>
+                        </div>
+                        <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold {{ s.bg }} {{ s.text }} border {{ s.border }} self-start sm:self-auto shrink-0">
+                            <span class="w-1.5 h-1.5 rounded-full {{ s.dot }}"></span>
+                            {{ s.label }}
+                        </span>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}
