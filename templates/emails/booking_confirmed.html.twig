@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="fr">
+<body style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 24px;">
+    <h2 style="color: #16a34a;">Réservation confirmée ✓</h2>
+    <p>La réservation pour <strong>{{ reservation.property.title }}</strong> est <strong>confirmée</strong>.</p>
+
+    <table style="width:100%; border-collapse: collapse; margin: 16px 0;">
+        <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Logement</td><td style="padding: 8px; border-bottom: 1px solid #eee;">{{ reservation.property.title }}</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Arrivée</td><td style="padding: 8px; border-bottom: 1px solid #eee;">{{ reservation.checkinDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Départ</td><td style="padding: 8px; border-bottom: 1px solid #eee;">{{ reservation.checkoutDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Voyageurs</td><td style="padding: 8px; border-bottom: 1px solid #eee;">{{ reservation.guestsCount }}</td></tr>
+        <tr><td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Voyageur</td><td style="padding: 8px; border-bottom: 1px solid #eee;">{{ reservation.guest.email }}</td></tr>
+        <tr><td style="padding: 8px; color: #666;">Montant total</td><td style="padding: 8px;"><strong>{{ reservation.totalPrice|number_format(2, ',', ' ') }} €</strong></td></tr>
+    </table>
+
+    <p style="color: #999; font-size: 12px; margin-top: 32px;">Clone Airbnb — message automatique</p>
+</body>
+</html>

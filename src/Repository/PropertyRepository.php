@@ -118,6 +118,71 @@ class PropertyRepository extends ServiceEntityRepository
     }
 
     /**
+     * Recherche des logements disponibles avec filtres destination / dates / voyageurs.
+     * Exclut les logements ayant une réservation confirmée chevauchant les dates demandées.
+     *
+     * @return list<Property>
+     */
+    public function findAvailableWithFilters(
+        ?string $destination = null,
+        ?\DateTimeImmutable $checkin = null,
+        ?\DateTimeImmutable $checkout = null,
+        ?int $guests = null,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->andWhere('p.status = :published')
+            ->setParameter('published', 'published');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere(
+                $qb->expr()->orX(
+                    'a.city LIKE :dest',
+                    'a.addressLine1 LIKE :dest',
+                    'a.country LIKE :dest',
+                    'p.title LIKE :dest',
+                )
+            )->setParameter('dest', '%' . $destination . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            $sub = $this->getEntityManager()->createQueryBuilder()
+                ->select('IDENTITY(r2.property)')
+                ->from(\App\Entity\Reservation::class, 'r2')
+                ->where('r2.status = :confirmed')
+                ->andWhere('r2.checkinDate < :checkout')
+                ->andWhere('r2.checkoutDate > :checkin')
+                ->getDQL();
+
+            $qb->andWhere($qb->expr()->notIn('p.id', $sub))
+                ->setParameter('confirmed', 'confirmed')
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout);
+
+            // Exclure aussi les logements avec des jours manuellement bloqués dans la plage
+            $subBlocked = $this->getEntityManager()->createQueryBuilder()
+                ->select('IDENTITY(av.property)')
+                ->from(\App\Entity\PropertyAvailability::class, 'av')
+                ->where('av.isAvailable = false')
+                ->andWhere('av.availableDate >= :checkin')
+                ->andWhere('av.availableDate < :checkout')
+                ->getDQL();
+
+            $qb->andWhere($qb->expr()->notIn('p.id', $subBlocked));
+        }
+
+        return $qb->orderBy('p.createdAt', 'DESC')->getQuery()->getResult();
+    }
+
+    /**
      * @return list<Property>
      */
     public function findByHost(User $host): array

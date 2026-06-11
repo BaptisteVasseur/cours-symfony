@@ -6,13 +6,18 @@ namespace App\Controller\Front;
 
 use App\Entity\Property;
 use App\Entity\Reservation;
+use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Form\BookingType;
+use App\Message\BookingConfirmedMessage;
+use App\Message\BookingRequestedMessage;
 use App\Repository\PropertyRepository;
+use App\Service\AvailabilityService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\PropertyVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -27,6 +32,8 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
+        AvailabilityService $availabilityService,
+        MessageBusInterface $bus,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -49,8 +56,8 @@ final class BookingController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
-            $checkin = $data['checkinDate'];
-            $checkout = $data['checkoutDate'];
+            $checkin = \DateTimeImmutable::createFromInterface($data['checkinDate']);
+            $checkout = \DateTimeImmutable::createFromInterface($data['checkoutDate']);
             $guestsCount = (int) $data['guestsCount'];
 
             if ($checkin >= $checkout) {
@@ -59,16 +66,16 @@ final class BookingController extends AbstractController
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
                     'form' => $form,
-                ]);
+                ], new Response(null, 422));
             }
 
-            if ($guestsCount > $property->getMaxGuests()) {
-                $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
+            if (!$availabilityService->isAvailable($property, $checkin, $checkout, $guestsCount)) {
+                $this->addFlash('error', 'Ce logement n\'est pas disponible pour les dates ou le nombre de voyageurs sélectionnés.');
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
                     'form' => $form,
-                ]);
+                ], new Response(null, 422));
             }
 
             $nights = (int) $checkin->diff($checkout)->days;
@@ -78,30 +85,49 @@ final class BookingController extends AbstractController
             $serviceFee = round($subtotal * 0.12, 2);
             $totalPrice = round($subtotal + $cleaningFee + $serviceFee, 2);
 
+            $status = $property->isInstantBooking() ? 'confirmed' : 'pending';
+
             $reservation = new Reservation();
             $reservation->setProperty($property);
             $reservation->setGuest($user);
             $reservation->setCheckinDate($checkin);
             $reservation->setCheckoutDate($checkout);
             $reservation->setGuestsCount($guestsCount);
-            $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
+            $reservation->setStatus($status);
             $reservation->setTotalPrice((string) $totalPrice);
             $reservation->setCleaningFee($cleaningFee > 0 ? (string) $cleaningFee : null);
             $reservation->setServiceFee((string) $serviceFee);
             $reservation->setSecurityDeposit($property->getSecurityDeposit());
             $reservation->setCurrency('EUR');
 
+            $history = new ReservationStatusHistory();
+            $history->setReservation($reservation);
+            $history->setNewStatus($status);
+            $history->setChangedBy($user);
+            $reservation->addStatusHistory($history);
+
             $entityManager->persist($reservation);
+            $entityManager->persist($history);
             $entityManager->flush();
 
-            $this->addFlash('success', 'Votre réservation a été enregistrée.');
+            $reservationId = (string) $reservation->getId();
 
-            return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
+            if ($status === 'confirmed') {
+                $bus->dispatch(new BookingConfirmedMessage($reservationId));
+                $this->addFlash('success', 'Votre réservation est confirmée !');
+            } else {
+                $bus->dispatch(new BookingRequestedMessage($reservationId));
+                $this->addFlash('success', 'Votre demande a été envoyée à l\'hôte. Vous recevrez une réponse prochainement.');
+            }
+
+            return $this->redirectToRoute('app_reservation_show', ['id' => $reservationId]);
         }
+
+        $status = $form->isSubmitted() && !$form->isValid() ? 422 : 200;
 
         return $this->render('front/property/booking.html.twig', [
             'property' => $property,
             'form' => $form,
-        ]);
+        ], new Response(null, $status));
     }
 }
