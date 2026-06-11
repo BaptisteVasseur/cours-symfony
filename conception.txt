@@ -1,0 +1,133 @@
+CONCEPTION TECHNIQUE - Moteur de réservation
+============================================
+
+Ryadh Farouzi
+
+--------------------------------------------------------------------------------
+1. Modèle de données
+--------------------------------------------------------------------------------
+
+Les entités principales :
+
+- Property : le logement, avec instant_booking (bool) qui détermine si la
+  réservation est automatique ou sur demande, et calendar_token pour l'iCal.
+
+- Reservation : checkin_date, checkout_date, status (pending/confirmed/
+  cancelled/completed), total_price, cancellation_reason.
+
+- PropertyAvailability : table de jours bloqués par l'hôte. Par défaut rien
+  n'existe = le logement est dispo. On crée une ligne seulement quand l'hôte
+  bloque un jour (is_available = false). C'est le principe de la sparse table.
+
+- ReservationStatusHistory : on trace chaque changement de statut pour avoir
+  un historique propre.
+
+- PropertyICalSync : stocke l'URL iCal externe à synchroniser.
+
+--------------------------------------------------------------------------------
+2. Règles métier
+--------------------------------------------------------------------------------
+
+instant_booking = true  --> réservation directement Confirmed
+instant_booking = false --> passe en Pending, l'hôte doit accepter manuellement
+
+L'algo de dispo vérifie :
+  1. logement publié
+  2. pas de jour bloqué manuellement dans la plage
+  3. pas de réservation Confirmed qui chevauche les dates
+  4. capacité suffisante (maxGuests)
+
+--------------------------------------------------------------------------------
+3. Réponses aux questions de conception
+--------------------------------------------------------------------------------
+
+Q1 - Le jour de checkout est-il réservable ?
+---------------------------------------------
+Oui. On travaille en intervalles ouverts à droite : [checkin, checkout[.
+Si R1 va du 10 au 15 juillet, le 15 est libre pour une arrivée.
+La formule de chevauchement : R1.checkin < R2.checkout AND R1.checkout > R2.checkin
+Pour R1=[10,15] et R2=[15,20] : 10<20 ET 15>15 = faux --> pas de conflit, ok.
+Les heures (check-in 15h, check-out 11h) sont stockées sur Property pour
+l'affichage mais n'entrent pas dans le calcul des dispos.
+
+
+Q2 - Une demande Pending bloque-t-elle les dates ?
+---------------------------------------------------
+Non, j'ai choisi de ne pas bloquer les dates en Pending.
+
+Risque si on bloque : un utilisateur malveillant peut spammer des demandes
+pour bloquer le calendrier d'un hôte.
+
+Risque si on ne bloque pas : deux voyageurs peuvent demander les mêmes dates,
+l'hôte doit n'en valider qu'une seule. S'il valide les deux par erreur, y a
+overbooking.
+
+Solution retenue : on ne bloque pas en Pending, mais quand une réservation
+passe en Confirmed, le service doit annuler les autres Pending qui chevauchent
+les mêmes dates. L'hôte reçoit une alerte, les voyageurs refusés aussi.
+
+
+Q3 - Deux paiements simultanés sur les mêmes dates
+---------------------------------------------------
+Classique race condition. Les deux requêtes lisent en même temps "c'est libre"
+et les deux créent une réservation.
+
+Solution : verrou pessimiste SQL (SELECT ... FOR UPDATE via Doctrine
+LockMode::PESSIMISTIC_WRITE) au moment de la vérification de dispo. La
+transaction B attend que A finisse. Quand B reprend, les dates sont prises.
+
+En backup, on pourrait aussi mettre un index UNIQUE sur (property_id, date)
+dans la table de dispo pour que la BDD rejette la double écriture.
+
+
+Q4 - Valider la dispo sur 20 nuits sans 20 requêtes SQL
+--------------------------------------------------------
+On fait une seule requête avec un COUNT :
+
+  SELECT COUNT(*) FROM reservations
+  WHERE property_id = X AND status = 'confirmed'
+  AND checkin_date < :checkout AND checkout_date > :checkin
+
+Si count = 0, c'est libre. Pareil pour les jours bloqués :
+
+  SELECT COUNT(*) FROM property_availability
+  WHERE property_id = X AND is_available = false
+  AND available_date >= :checkin AND available_date < :checkout
+
+Deux requêtes en tout, peu importe le nombre de nuits. Les index B-Tree sur
+les colonnes de dates font le job.
+
+
+Q5 - Pourquoi envoyer l'email après le flush() ?
+-------------------------------------------------
+Si on envoie l'email avant le flush() et que la transaction plante après,
+l'utilisateur reçoit une confirmation pour une réservation qui n'existe pas en
+base. C'est catastrophique.
+
+Donc on dispatch le message Messenger seulement après que le flush() a réussi.
+Symfony Messenger stocke le message dans la table messenger_messages (transport
+doctrine) dans la même transaction, donc si le flush plante, le message n'est
+pas envoyé non plus.
+
+Si RabbitMQ tombe : avec le transport doctrine (configuré par défaut ici),
+les messages restent en base et sont traités dès que le worker redémarre.
+Les messages en échec vont dans la file "failed" et peuvent être rejoués avec
+messenger:failed:retry.
+
+
+Q6 - Jours individuels (PropertyAvailability) vs périodes (date_start, date_end)
+---------------------------------------------------------------------------------
+J'ai choisi l'approche hybride :
+
+- Les réservations = périodes (checkin_date / checkout_date). Simple, efficace,
+  correspond bien à la réalité métier.
+
+- Les blocages hôte = jours individuels dans PropertyAvailability. Ça permet à
+  l'hôte de bloquer n'importe quel jour précis et de mettre un tarif ou séjour
+  minimum différent par jour si besoin.
+
+La table PropertyAvailability est sparse : par défaut elle est vide, une ligne
+n'est créée que si l'hôte modifie quelque chose pour un jour donné. Ça évite
+de remplir la BDD avec 365 lignes "dispo=true" par logement par an.
+
+================================================================================

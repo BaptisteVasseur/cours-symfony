@@ -1,0 +1,119 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set statusLabels = { 'confirmed': 'Confirmée', 'completed': 'Terminée', 'pending': 'En attente', 'cancelled': 'Annulée' } %}
+{% set statusColors = { 'confirmed': 'bg-green-100 text-green-800', 'completed': 'bg-blue-100 text-blue-800', 'pending': 'bg-yellow-100 text-yellow-800', 'cancelled': 'bg-red-100 text-red-800' } %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+    <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-8">Mes réservations (espace hôte)</h1>
+
+    {% for message in app.flashes('success') %}
+        <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl">{{ message }}</div>
+    {% endfor %}
+    {% for message in app.flashes('error') %}
+        <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl">{{ message }}</div>
+    {% endfor %}
+
+    {# ---- Export iCal par logement ---- #}
+    {% if properties is not empty %}
+    <section class="mb-8">
+        <h2 class="text-base font-semibold text-gray-700 mb-3">Export calendrier (iCal)</h2>
+        <div class="grid gap-3 sm:grid-cols-2">
+        {% for property in properties %}
+            {% if property.calendarToken %}
+            <div class="flex items-center justify-between border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
+                <div class="min-w-0 mr-3">
+                    <p class="text-sm font-medium text-gray-800 truncate">{{ property.title }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">
+                        {{ property.instantBooking ? 'Réservation instantanée' : 'Confirmation requise' }}
+                    </p>
+                </div>
+                <a href="{{ path('api_ical_export', {id: property.id}) }}?token={{ property.calendarToken }}"
+                   download="calendrier-{{ property.id }}.ics"
+                   class="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100 transition">
+                    <i class="fa-regular fa-calendar text-brand"></i>
+                    Exporter .ics
+                </a>
+            </div>
+            {% endif %}
+        {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    {% if reservations is empty %}
+        <p class="text-gray-500">Aucune réservation pour le moment.</p>
+    {% else %}
+        <div class="space-y-4">
+        {% for reservation in reservations %}
+            {% set property = reservation.property %}
+            {% set cover = property ? property.coverMedia : null %}
+            <div class="border border-gray-200 rounded-xl p-5 flex flex-col sm:flex-row gap-4">
+                <div class="sm:w-24 sm:h-20 shrink-0">
+                    {% if cover %}
+                        <img src="{{ cover.fileUrl }}" alt="{{ property.title }}" class="w-full h-full object-cover rounded-lg">
+                    {% else %}
+                        <div class="w-full h-full bg-gray-100 rounded-lg"></div>
+                    {% endif %}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                        <span class="font-semibold text-gray-900">{{ property ? property.title : '—' }}</span>
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded-full {{ statusColors[reservation.status]|default('bg-gray-100 text-gray-800') }}">
+                            {{ statusLabels[reservation.status]|default(reservation.status) }}
+                        </span>
+                    </div>
+                    <p class="text-sm text-gray-600">
+                        Voyageur : <strong>{{ reservation.guest ? reservation.guest.email : '—' }}</strong>
+                    </p>
+                    <p class="text-sm text-gray-600">
+                        {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                        · {{ reservation.guestsCount }} voyageur(s)
+                        · <strong>{{ reservation.totalPrice|number_format(2, ',', ' ') }} €</strong>
+                    </p>
+                </div>
+                <div class="flex flex-col gap-2 items-end shrink-0">
+                    {% if reservation.status == 'pending' %}
+                        {# Accepter #}
+                        <form method="post" action="{{ path('app_host_reservation_accept', {id: reservation.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('reservation_accept_' ~ reservation.id) }}">
+                            <button type="submit" class="px-4 py-1.5 text-sm font-semibold bg-green-600 text-white rounded-lg hover:bg-green-700">
+                                Accepter
+                            </button>
+                        </form>
+                        {# Refuser #}
+                        <details class="relative">
+                            <summary class="px-4 py-1.5 text-sm font-semibold bg-red-100 text-red-700 rounded-lg cursor-pointer hover:bg-red-200 list-none text-center">
+                                Refuser
+                            </summary>
+                            <form method="post" action="{{ path('app_host_reservation_refuse', {id: reservation.id}) }}" class="absolute right-0 top-full mt-2 z-10 bg-white border border-gray-200 rounded-xl shadow-lg p-4 w-72">
+                                <input type="hidden" name="_token" value="{{ csrf_token('reservation_refuse_' ~ reservation.id) }}">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Motif de refus *</label>
+                                <textarea name="reason" rows="3" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-red-400" placeholder="Ex : dates personnelles..."></textarea>
+                                <button type="submit" class="mt-2 w-full px-4 py-1.5 text-sm font-semibold bg-red-600 text-white rounded-lg hover:bg-red-700">
+                                    Confirmer le refus
+                                </button>
+                            </form>
+                        </details>
+                    {% elseif reservation.status == 'confirmed' %}
+                        <details class="relative">
+                            <summary class="px-4 py-1.5 text-sm font-semibold bg-gray-100 text-gray-700 rounded-lg cursor-pointer hover:bg-gray-200 list-none text-center">
+                                Annuler
+                            </summary>
+                            <form method="post" action="{{ path('app_host_reservation_cancel', {id: reservation.id}) }}" class="absolute right-0 top-full mt-2 z-10 bg-white border border-gray-200 rounded-xl shadow-lg p-4 w-72">
+                                <input type="hidden" name="_token" value="{{ csrf_token('reservation_cancel_' ~ reservation.id) }}">
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Motif d'annulation *</label>
+                                <textarea name="reason" rows="3" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-gray-400" placeholder="Ex : problème technique..."></textarea>
+                                <button type="submit" class="mt-2 w-full px-4 py-1.5 text-sm font-semibold bg-gray-700 text-white rounded-lg hover:bg-gray-800">
+                                    Confirmer l'annulation
+                                </button>
+                            </form>
+                        </details>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% endif %}
+</main>
+{% endblock %}

@@ -15,6 +15,77 @@
         </a>
 
         {% if app.user %}
+            {# Cloche notifications G.8 #}
+            <div class="relative" id="notif-wrapper">
+                <button id="notif-toggle" class="relative p-2 text-gray-600 hover:bg-gray-50 rounded-full" aria-label="Notifications">
+                    <i class="fa-regular fa-bell text-lg"></i>
+                    <span id="notif-badge" class="hidden absolute -top-0.5 -right-0.5 w-4 h-4 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center"></span>
+                </button>
+                <div id="notif-dropdown" class="hidden absolute right-0 top-full mt-2 w-80 bg-white border border-gray-200 rounded-xl shadow-lg z-50 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                        <span class="text-sm font-semibold text-gray-800">Notifications</span>
+                        <a href="{{ path('app_notifications_mark_read') }}" class="text-xs text-brand hover:underline">Tout marquer lu</a>
+                    </div>
+                    <div id="notif-list" class="max-h-64 overflow-y-auto divide-y divide-gray-100 text-sm text-gray-600">
+                        <p class="p-4 text-center text-gray-400 text-xs">Chargement…</p>
+                    </div>
+                </div>
+            </div>
+            <script>
+            (function () {
+                const toggle = document.getElementById('notif-toggle');
+                const dropdown = document.getElementById('notif-dropdown');
+                const badge = document.getElementById('notif-badge');
+                const list = document.getElementById('notif-list');
+                let loaded = false;
+
+                toggle.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    dropdown.classList.toggle('hidden');
+                    if (!loaded) {
+                        loaded = true;
+                        fetch('{{ path('app_notifications_unread') }}')
+                            .then(r => r.json())
+                            .then(data => {
+                                if (data.count > 0) {
+                                    badge.textContent = data.count > 9 ? '9+' : data.count;
+                                    badge.classList.remove('hidden');
+                                }
+                                if (data.items.length === 0) {
+                                    list.innerHTML = '<p class="p-4 text-center text-gray-400 text-xs">Aucune notification</p>';
+                                    return;
+                                }
+                                list.textContent = '';
+                                data.items.forEach(function (n) {
+                                    const wrap = document.createElement('div');
+                                    wrap.className = 'px-4 py-3' + (n.isRead ? '' : ' bg-blue-50');
+
+                                    const title = document.createElement('p');
+                                    title.className = 'font-semibold text-gray-800 text-xs';
+                                    title.textContent = n.title;
+
+                                    const content = document.createElement('p');
+                                    content.className = 'text-gray-500 text-xs mt-0.5';
+                                    content.textContent = n.content ?? '';
+
+                                    const date = document.createElement('p');
+                                    date.className = 'text-gray-400 text-[10px] mt-1';
+                                    date.textContent = n.createdAt;
+
+                                    wrap.appendChild(title);
+                                    wrap.appendChild(content);
+                                    wrap.appendChild(date);
+                                    list.appendChild(wrap);
+                                });
+                            });
+                    }
+                });
+
+                document.addEventListener('click', function () {
+                    dropdown.classList.add('hidden');
+                });
+            })();
+            </script>
             {% include 'layout/partials/app/header_profile_menu.html.twig' %}
         {% else %}
             <a href="{{ path('app_login') }}" class="text-sm font-semibold py-2 px-4 border border-gray-200 rounded-full hover:shadow-md transition whitespace-nowrap">
