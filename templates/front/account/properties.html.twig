@@ -4,13 +4,48 @@
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Mes propriétés</h1>
-        <p class="text-gray-500 mb-8">Annonces dont vous êtes l'hôte</p>
+        <div class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between mb-8">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Mes propriétés</h1>
+                <p class="text-gray-500">Annonces dont vous êtes l'hôte</p>
+            </div>
+            <a href="{{ path('app_host_reservation_index') }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-50">
+                <i class="fa-solid fa-inbox"></i>
+                Voir les demandes reçues
+            </a>
+        </div>
 
         {% if properties|length > 0 %}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {% for property in properties %}
-                    {% include 'components/card.html.twig' with { property: property } %}
+                    {% set cover = property.coverMedia %}
+                    <article class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+                        <div class="grid gap-0 md:grid-cols-[220px_1fr]">
+                            <div class="h-52 md:h-full">
+                                <img src="{{ cover ? cover.fileUrl : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=900&q=80' }}" alt="{{ property.title }}" class="h-full w-full object-cover">
+                            </div>
+                            <div class="p-6">
+                                <div class="flex flex-wrap items-center gap-3">
+                                    <h2 class="text-xl font-semibold text-gray-900">{{ property.title }}</h2>
+                                    <span class="rounded-full px-3 py-1 text-xs font-semibold {{ property.status == 'published' ? 'bg-emerald-100 text-emerald-800' : (property.status == 'pending' ? 'bg-amber-100 text-amber-800' : 'bg-gray-100 text-gray-700') }}">
+                                        {{ property.status == 'published' ? 'Publiée' : (property.status == 'pending' ? 'En attente' : 'Brouillon') }}
+                                    </span>
+                                </div>
+                                {% if property.address %}
+                                    <p class="mt-2 text-sm text-gray-500">{{ property.address.city }}, {{ property.address.country }}</p>
+                                {% endif %}
+                                <p class="mt-4 text-sm text-gray-600">{{ property.maxGuests }} voyageur{{ property.maxGuests > 1 ? 's' : '' }} · {{ property.pricePerNight|number_format(0, ',', ' ') }} EUR / nuit</p>
+                                <div class="mt-6 flex flex-wrap gap-3">
+                                    <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center justify-center rounded-xl bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+                                        Voir l'annonce
+                                    </a>
+                                    <a href="{{ path('app_host_property_calendar', { id: property.id }) }}" class="inline-flex items-center justify-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-50">
+                                        Gérer le calendrier
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
                 {% endfor %}
             </div>
         {% else %}

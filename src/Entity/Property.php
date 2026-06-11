@@ -137,6 +137,9 @@ class Property
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column(length: 64, unique: true)]
+    private ?string $calendarExportToken = null;
+
     #[ORM\OneToOne(mappedBy: 'property', targetEntity: PropertyAddress::class, cascade: ['persist', 'remove'])]
     private ?PropertyAddress $address = null;
 
@@ -176,6 +179,7 @@ class Property
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
+        $this->calendarExportToken = self::generateCalendarExportToken();
     }
 
     public function getHost(): ?User
@@ -394,6 +398,25 @@ class Property
         return $this;
     }
 
+    public function getCalendarExportToken(): ?string
+    {
+        return $this->calendarExportToken;
+    }
+
+    public function setCalendarExportToken(string $calendarExportToken): static
+    {
+        $this->calendarExportToken = $calendarExportToken;
+
+        return $this;
+    }
+
+    public function refreshCalendarExportToken(): static
+    {
+        $this->calendarExportToken = self::generateCalendarExportToken();
+
+        return $this;
+    }
+
     public function getAddress(): ?PropertyAddress
     {
         return $this->address;
@@ -588,5 +611,10 @@ class Property
         }
 
         return round($total / $this->reviews->count(), 2);
+    }
+
+    private static function generateCalendarExportToken(): string
+    {
+        return bin2hex(random_bytes(32));
     }
 }

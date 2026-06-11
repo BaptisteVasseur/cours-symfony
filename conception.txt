@@ -1,0 +1,134 @@
+Livrable conception
+
+
+1. Modelisation temporelle
+
+C'est logique selon moi qu'un nouveau voyageur puisse réserver un aibnb le jour du checkout d'un ancien voyageur puisque cet ancien voyageur ne dormira pas la nuit en question
+je vais donc mettre en place un intervalle semi-ouvert : une reservation occupe la periode, Le jour d'arrivee est inclus, mais le jour de depart ne bloque pas une nouvelle nuit.
+
+Dans le schema de donnees, je garde donc deux dates metier sur Reservation : checkinDate et checkoutDate. Je ne stocke pas chaque sejour sous forme de datetime de debut et de fin, car ici
+on raisonne en nuits reservees et le projet existant est deja modelé avec des dates immuable : deux reservations se chevauchent si la reservation existante commence avant le checkout demande et se termine apres le checkin demande. En pratique, on verifie :
+
+- reservation.checkinDate < requestedCheckout
+- ET reservation.checkoutDate > requestedCheckin
+
+AINSI il n'y aura pas de conflit de date
+
+2. Gestion des états
+
+Je choisis qu'une reservation au statut Pending ne bloquera pas les dates. Seule une reservation Confirmed la bloque
+
+pourquoi ?
+
+car ainsi l'hote peut se permettre de refuser une réservation pour x critères (profil jeunes donc peur qu'il y ait une fete dans le airbnb par exemple)
+
+En revanche, je veux qu'il y ait une transparence donc l'utilisateur voyageur lui verra combien il est dans la file d'attente des pendings et ce sera ensuite à
+l'hote dans un délai de 24h d'accepter ou de refuser les demandes pending
+
+Le cycle de vie retenu est donc :
+
+- Pending : demande envoyee, en attente d'action de l'hote
+- Confirmed : reservation acceptee, dates bloquees
+- Cancelled : reservation annulee, dates liberees
+- Completed : sejour terminé
+
+
+pour résumer pk autoriser plusieurs pendings ? 
+
+pour laisser le choix à l'hote
+
+comment garantir un rapport sain voyageur potentiel-hote ?
+
+obliger l'hote à accepter ou refuser  dans les 24h à partir du moment ou une demande est faite, avec justification si refus.
+
+3. Concurrence
+
+Si deux utilisateurs valident un paiement a la milliseconde près pour le meme logement et les memes dates, ma bdd ne va pas confirmer deux reservations.
+Elle doit en accepter une seule et refuser l'autre.
+
+Concretement, je ferai ainsi dans la logique métier :
+
+- je verifie une premiere fois la disponibilite avant le paiement pour informer l'utilisateur : au moment de la creation finale de la reservation, j'ouvre une transaction, 
+dans cette transaction, je pose un verrou pessimiste sur le logement
+- je relance immediatement la verification de disponibilite sur les reservations "confirmed" qui chevauchent la plage demandée
+- si aucune reservation conflictuelle n'existe, je cree la reservation et je fais le flush
+- si une reservation conflictuelle existe deja, j'annule l'operation et je retourne une erreur metier du type "ces dates ne sont plus disponibles".
+
+Donc si deux paiements arrivent exactement au meme moment :
+
+- le premier traitement prend le verrou, verifie, puis confirme la reservation
+- le second attend que le premier ait terminé
+- quand le second reprend, il reverifie la disponibilite
+- il voit alors que les dates sont deja prises et il ne confirme pas la reservation
+
+La reaction attendue de la base est donc simple : un seul gagnant, jamais deux reservations "confirmed" sur la meme plage. Je retiens cette solution car elle est claire, robuste et compatible avec Doctrine dans le cadre du TP.
+
+4. Performance
+
+Pour verifier qu'un logement est disponible sur 20 nuits consecutives, je ne veux surtout pas faire 20 requetes SQL, ni boucler jour par jour sinon ca risque de saturer la base à grande échelle de flux sur le suite.
+en plus des couts que ca engendrerait donc 
+
+Je retiens une strategie en deux requetes metier
+
+- une requete pour detecter l'existence d'au moins une reservation Confirmed qui chevauche la plage demandée
+- une requete pour recuperer les jours explicitement bloques ou personnalises dans PropertyAvailability sur cette meme plage.
+
+Ensuite, l'analyse se fait en memoire a partir d'un petit jeu de resultats. ca limite au max les a/R SQL, ca reste lisible et ca exploite bien les index.
+
+Je conserve donc une table journaliere PropertyAvailability, mais en mode sparse : une ligne n'existe que si un jour a ete bloque manuellement.
+L'absence de ligne signifie "jour disponible par defaut", sous reserve qu'aucune reservation "confirmed" ne couvre la periode.
+Cela permet d'eviter de pre-remplir tout le calendrier avec des jours inutiles.
+
+Pour la recherche /search, la meme logique  des requetes ciblés : filtre sur logement publié, capacite suffisante, absence de chevauchement de reservation "confirmed" et absence de jours bloqués sur la plage.
+
+5. Asynchronisme
+
+L'envoi d'email doit intervenir apres le flush() de l'ORM, pas avant pcq :
+Tant que la transaction n'est pas vrailent écrite en base, la reservation n'est pas fiable. Si on envoie un email avant flush() et que la persistence echoue, on envoie une information fausse a l'hote et/ou au voyageur.
+
+la logique est donc :
+
+- creation ou modification de la reservation
+- flush() reussi
+- dispatch d'un message Messenger pour envoyer l'email en asynchrone
+
+Cette approche garantit une meilleure coherence fonctionnelle et evite de ralentir la reponse avec un traitement reseau.
+
+Si RabbitMQ tombe en panne, la strategie est de pas coupler le coeur metier a RabbitMQ
+Dans ce projet, Messenger est deja configure avec le transport doctrine://default, Les messages restent stockes en base et peuvent etre consommés plus tard.
+ L'application continue donc a creer les reservations; seul le traitement des emails peut etre différé, c'est mieux qu'un echec global du parcours de reservation.
+
+6. Structure SQL du calendrier
+
+Je choisis une architecture basée sur une table de jours, en m'appuyant sur PropertyAvailability, plutot qu'une table de periodes avec date_start et date_end.
+
+pcq :
+
+- le sujet demande une interface calendrier coté hote
+- un blocage manuel "du 12 au 15" = tout simplement 4 jours
+- la feature iCal pourra aussi bloquer facilement des jours individuels.
+
+MAIS J'utiliserai pas cette table comme un calendrier rempli pour toutes les dates futures. Je retiens une structure sparse :
+
+- Reservation represente les sejours reservés
+- PropertyAvailability represente les exceptions de calendrier, en particulier les jours bloqués par l'hote et les eventuelles surcharges locales ;
+- contrainte d'unicité sur (property_id, available_date) evite les doublons.
+
+Cette solution est plus simple, plus lisible et plus cohérente avec le projet courant. Elle permet aussi d'ecrire un code propre.
+
+pr résumer :
+
+- ReservationRepository gere les conflits de sejour
+- PropertyAvailabilityRepository gere les jours bloques ou personnalises
+- un service de disponibilite centralise la regle metier finale
+
+Conclusion
+
+Les choix que je retiens pour la suite du developpement sont donc :
+
+- modele temporel [checkin, checkout)
+- Pending non bloquant, Confirmed bloquant
+- reverification transactionnelle pour prevenir le surbooking
+- verification de disponibilite par requetes de plage et non par iteration SQL
+- emails declenches apres flush() via Messenger
+- calendrier fonde sur PropertyAvailability en table journaliere sparse

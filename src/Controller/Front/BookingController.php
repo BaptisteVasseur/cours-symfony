@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Property;
-use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
 use App\Repository\PropertyRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\BookingAvailabilityResult;
+use App\Service\BookingAvailabilityService;
+use App\Service\ReservationWorkflowService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +27,8 @@ final class BookingController extends AbstractController
         Request $request,
         Property $property,
         PropertyRepository $propertyRepository,
-        EntityManagerInterface $entityManager,
+        BookingAvailabilityService $bookingAvailabilityService,
+        ReservationWorkflowService $reservationWorkflowService,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -53,8 +55,9 @@ final class BookingController extends AbstractController
             $checkout = $data['checkoutDate'];
             $guestsCount = (int) $data['guestsCount'];
 
-            if ($checkin >= $checkout) {
-                $this->addFlash('error', 'La date de départ doit être postérieure à la date d\'arrivée.');
+            $availability = $bookingAvailabilityService->check($property, $checkin, $checkout, $guestsCount);
+            if (!$availability->isAvailable()) {
+                $this->addFlash('error', $this->availabilityErrorMessage($availability, $property));
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
@@ -62,8 +65,16 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            if ($guestsCount > $property->getMaxGuests()) {
-                $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
+            try {
+                $reservation = $reservationWorkflowService->createReservation(
+                    $property,
+                    $user,
+                    $checkin,
+                    $checkout,
+                    $guestsCount,
+                );
+            } catch (\DomainException $exception) {
+                $this->addFlash('error', $this->availabilityErrorMessageFromCode($exception->getMessage(), $property));
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
@@ -71,30 +82,12 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            $nights = (int) $checkin->diff($checkout)->days;
-            $nightlyRate = (float) $property->getPricePerNight();
-            $subtotal = $nightlyRate * $nights;
-            $cleaningFee = (float) ($property->getCleaningFee() ?? 0);
-            $serviceFee = round($subtotal * 0.12, 2);
-            $totalPrice = round($subtotal + $cleaningFee + $serviceFee, 2);
-
-            $reservation = new Reservation();
-            $reservation->setProperty($property);
-            $reservation->setGuest($user);
-            $reservation->setCheckinDate($checkin);
-            $reservation->setCheckoutDate($checkout);
-            $reservation->setGuestsCount($guestsCount);
-            $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
-            $reservation->setTotalPrice((string) $totalPrice);
-            $reservation->setCleaningFee($cleaningFee > 0 ? (string) $cleaningFee : null);
-            $reservation->setServiceFee((string) $serviceFee);
-            $reservation->setSecurityDeposit($property->getSecurityDeposit());
-            $reservation->setCurrency('EUR');
-
-            $entityManager->persist($reservation);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'Votre réservation a été enregistrée.');
+            $this->addFlash(
+                'success',
+                $reservation->getStatus() === 'confirmed'
+                    ? 'Votre réservation est confirmée.'
+                    : 'Votre demande de réservation a été envoyée à l’hôte.',
+            );
 
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }
@@ -103,5 +96,23 @@ final class BookingController extends AbstractController
             'property' => $property,
             'form' => $form,
         ]);
+    }
+
+    private function availabilityErrorMessage(BookingAvailabilityResult $availability, Property $property): string
+    {
+        return $this->availabilityErrorMessageFromCode($availability->getPrimaryReasonCode(), $property);
+    }
+
+    private function availabilityErrorMessageFromCode(?string $reasonCode, Property $property): string
+    {
+        return match ($reasonCode) {
+            BookingAvailabilityService::INVALID_DATE_RANGE => 'La date de départ doit être postérieure à la date d\'arrivée.',
+            BookingAvailabilityService::GUEST_CAPACITY_EXCEEDED => sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()),
+            BookingAvailabilityService::DATES_ALREADY_BOOKED => 'Ce logement n\'est plus disponible sur les dates sélectionnées.',
+            BookingAvailabilityService::DATES_MANUALLY_BLOCKED => 'Ce logement est indisponible sur les dates sélectionnées.',
+            BookingAvailabilityService::MINIMUM_STAY_NOT_MET => 'La durée sélectionnée ne respecte pas le séjour minimum demandé pour cette période.',
+            BookingAvailabilityService::PROPERTY_NOT_PUBLISHED => 'Ce logement n\'est pas disponible à la réservation.',
+            default => 'La réservation ne peut pas être effectuée pour les dates sélectionnées.',
+        };
     }
 }

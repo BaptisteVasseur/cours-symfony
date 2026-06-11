@@ -1,0 +1,37 @@
+<h1>{{ subject }}</h1>
+
+<p>
+    {% if event == 'pending_created' %}
+        Une nouvelle demande de réservation nécessite votre validation.
+    {% elseif event == 'confirmed_created' %}
+        La réservation a été confirmée automatiquement.
+    {% elseif event == 'confirmed' %}
+        La demande de réservation a été acceptée.
+    {% elseif event == 'refused' %}
+        La demande de réservation a été refusée.
+    {% elseif event == 'cancelled' %}
+        La réservation a été annulée.
+    {% else %}
+        Une mise à jour a été effectuée sur la réservation.
+    {% endif %}
+</p>
+
+<ul>
+    <li>Logement : {{ property.title }}</li>
+    <li>Dates : {{ reservation.checkinDate|date('d/m/Y') }} au {{ reservation.checkoutDate|date('d/m/Y') }}</li>
+    <li>Voyageurs : {{ reservation.guestsCount }}</li>
+    <li>Total : {{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</li>
+    <li>Statut : {{ reservation.status }}</li>
+</ul>
+
+{% if reservation.cancellationReason %}
+    <p>Motif : {{ reservation.cancellationReason }}</p>
+{% endif %}
+
+<p>
+    {% if isRecipientHost %}
+        Voyageur : {{ guest.email }}
+    {% else %}
+        Hôte : {{ host.email }}
+    {% endif %}
+</p>

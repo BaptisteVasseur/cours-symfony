@@ -36,6 +36,7 @@ security:
         ROLE_SUPER_ADMIN: ROLE_ADMIN
 
     access_control:
+        - { path: ^/api/properties/.+/calendar\.ics$, roles: PUBLIC_ACCESS }
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
         - { path: ^/api/contexts, roles: PUBLIC_ACCESS }
         - { path: ^/api/validation_errors, roles: PUBLIC_ACCESS }
