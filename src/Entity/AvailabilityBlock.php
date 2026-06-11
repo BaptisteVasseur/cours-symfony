@@ -13,6 +13,7 @@ use Doctrine\ORM\Mapping as ORM;
 #[ORM\Entity(repositoryClass: AvailabilityBlockRepository::class)]
 #[ORM\Table(name: 'availability_block')]
 #[ORM\Index(columns: ['property_id', 'start_date', 'end_date'], name: 'idx_avail_block')]
+#[ORM\Index(columns: ['property_id', 'external_uid'], name: 'idx_avail_block_external_uid')]
 class AvailabilityBlock
 {
     use UuidEntityTrait;
@@ -29,6 +30,9 @@ class AvailabilityBlock
 
     #[ORM\Column(enumType: BlockReason::class)]
     private BlockReason $reason = BlockReason::HOST;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $externalUid = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $notes = null;
@@ -85,6 +89,18 @@ class AvailabilityBlock
     public function setReason(BlockReason $reason): static
     {
         $this->reason = $reason;
+
+        return $this;
+    }
+
+    public function getExternalUid(): ?string
+    {
+        return $this->externalUid;
+    }
+
+    public function setExternalUid(?string $externalUid): static
+    {
+        $this->externalUid = $externalUid;
 
         return $this;
     }

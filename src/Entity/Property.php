@@ -131,8 +131,14 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalToken = null;
+
     #[ORM\Column(nullable: true)]
     private ?int $minStayNights = null;
+
+    #[ORM\Column(length: 500, nullable: true)]
+    private ?string $externalIcalUrl = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
@@ -383,6 +389,25 @@ class Property
         return $this;
     }
 
+    public function getIcalToken(): ?string
+    {
+        return $this->icalToken;
+    }
+
+    public function setIcalToken(?string $icalToken): static
+    {
+        $this->icalToken = $icalToken;
+
+        return $this;
+    }
+
+    public function refreshIcalToken(): static
+    {
+        $this->icalToken = bin2hex(random_bytes(32));
+
+        return $this;
+    }
+
     public function getMinStayNights(): ?int
     {
         return $this->minStayNights;
@@ -391,6 +416,19 @@ class Property
     public function setMinStayNights(?int $minStayNights): static
     {
         $this->minStayNights = $minStayNights;
+
+        return $this;
+    }
+
+    public function getExternalIcalUrl(): ?string
+    {
+        return $this->externalIcalUrl;
+    }
+
+    public function setExternalIcalUrl(?string $externalIcalUrl): static
+    {
+        $externalIcalUrl = $externalIcalUrl !== null ? trim($externalIcalUrl) : null;
+        $this->externalIcalUrl = $externalIcalUrl !== '' ? $externalIcalUrl : null;
 
         return $this;
     }
