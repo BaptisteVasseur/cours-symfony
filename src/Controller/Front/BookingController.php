@@ -13,6 +13,7 @@ use App\Repository\PropertyAvailabilityRepository;
 use App\Repository\PropertyRepository;
 use App\Repository\ReservationRepository;
 use App\Message\ReservationCreatedMessage;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -73,47 +74,62 @@ final class BookingController extends AbstractController
                 return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
 
-            if ($availabilityRepository->hasBlockedDays($property, $checkin, $checkout)) {
-                $this->addFlash('error', 'Ce logement est indisponible sur certaines dates de votre séjour.');
+            try {
+                $reservation = $entityManager->wrapInTransaction(function () use (
+                    $property, $user, $checkin, $checkout, $guestsCount,
+                    $availabilityRepository, $reservationRepository, $entityManager,
+                ) {
+                    $entityManager->lock($property, LockMode::PESSIMISTIC_WRITE);
+
+                    if ($availabilityRepository->hasBlockedDays($property, $checkin, $checkout)) {
+                        throw new \RuntimeException('blocked');
+                    }
+
+                    if ($reservationRepository->hasOverlap($property, $checkin, $checkout)) {
+                        throw new \RuntimeException('overlap');
+                    }
+
+                    $nights = (int) $checkin->diff($checkout)->days;
+                    $nightlyRate = (float) $property->getPricePerNight();
+                    $subtotal = $nightlyRate * $nights;
+                    $cleaningFee = (float) ($property->getCleaningFee() ?? 0);
+                    $serviceFee = round($subtotal * 0.12, 2);
+                    $totalPrice = round($subtotal + $cleaningFee + $serviceFee, 2);
+
+                    $reservation = new Reservation();
+                    $reservation->setProperty($property);
+                    $reservation->setGuest($user);
+                    $reservation->setCheckinDate($checkin);
+                    $reservation->setCheckoutDate($checkout);
+                    $reservation->setGuestsCount($guestsCount);
+                    $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
+                    $reservation->setTotalPrice((string) $totalPrice);
+                    $reservation->setCleaningFee($cleaningFee > 0 ? (string) $cleaningFee : null);
+                    $reservation->setServiceFee((string) $serviceFee);
+                    $reservation->setSecurityDeposit($property->getSecurityDeposit());
+                    $reservation->setCurrency('EUR');
+
+                    $history = new ReservationStatusHistory();
+                    $history->setReservation($reservation);
+                    $history->setOldStatus(null);
+                    $history->setNewStatus($reservation->getStatus());
+                    $history->setChangedBy($user);
+
+                    $entityManager->persist($reservation);
+                    $entityManager->persist($history);
+                    $entityManager->flush();
+
+                    return $reservation;
+                });
+            } catch (\RuntimeException $e) {
+                if ($e->getMessage() === 'blocked') {
+                    $this->addFlash('error', 'Ce logement est indisponible sur certaines dates de votre séjour.');
+                } else {
+                    $this->addFlash('error', 'Ce logement est déjà réservé sur ces dates.');
+                }
 
                 return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
-
-            if ($reservationRepository->hasOverlap($property, $checkin, $checkout)) {
-                $this->addFlash('error', 'Ce logement est déjà réservé sur ces dates.');
-
-                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
-            }
-
-            $nights = (int) $checkin->diff($checkout)->days;
-            $nightlyRate = (float) $property->getPricePerNight();
-            $subtotal = $nightlyRate * $nights;
-            $cleaningFee = (float) ($property->getCleaningFee() ?? 0);
-            $serviceFee = round($subtotal * 0.12, 2);
-            $totalPrice = round($subtotal + $cleaningFee + $serviceFee, 2);
-
-            $reservation = new Reservation();
-            $reservation->setProperty($property);
-            $reservation->setGuest($user);
-            $reservation->setCheckinDate($checkin);
-            $reservation->setCheckoutDate($checkout);
-            $reservation->setGuestsCount($guestsCount);
-            $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
-            $reservation->setTotalPrice((string) $totalPrice);
-            $reservation->setCleaningFee($cleaningFee > 0 ? (string) $cleaningFee : null);
-            $reservation->setServiceFee((string) $serviceFee);
-            $reservation->setSecurityDeposit($property->getSecurityDeposit());
-            $reservation->setCurrency('EUR');
-
-            $history = new ReservationStatusHistory();
-            $history->setReservation($reservation);
-            $history->setOldStatus(null);
-            $history->setNewStatus($reservation->getStatus());
-            $history->setChangedBy($user);
-
-            $entityManager->persist($reservation);
-            $entityManager->persist($history);
-            $entityManager->flush();
 
             $messageBus->dispatch(new ReservationCreatedMessage((string) $reservation->getId()));
 
