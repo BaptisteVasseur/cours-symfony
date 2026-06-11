@@ -41,6 +41,20 @@ final class NewFeaturesTest extends WebTestCase
         $this->assertResponseRedirects('/admin');
     }
 
+    public function testAdminHasInAppNotificationsInAdminDashboard(): void
+    {
+        $client = static::createClient();
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        $admin = $userRepository->findOneBy(['email' => 'moderation@airbnb-clone.fr']);
+        $this->assertNotNull($admin);
+
+        $client->loginUser($admin);
+        $client->request('GET', '/admin');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorExists('[data-notifications-menu]');
+    }
+
     public function testHostDashboardButtonHiddenForAdmin(): void
     {
         $client = static::createClient();
