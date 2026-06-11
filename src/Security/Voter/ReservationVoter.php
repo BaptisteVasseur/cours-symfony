@@ -13,10 +13,11 @@ final class ReservationVoter extends Voter
 {
     public const VIEW = 'RESERVATION_VIEW';
     public const MANAGE = 'RESERVATION_MANAGE';
+    public const CANCEL = 'RESERVATION_CANCEL';
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return in_array($attribute, [self::VIEW, self::MANAGE], true)
+        return in_array($attribute, [self::VIEW, self::MANAGE, self::CANCEL], true)
             && $subject instanceof Reservation;
     }
 
@@ -40,6 +41,8 @@ final class ReservationVoter extends Voter
         return match ($attribute) {
             self::VIEW => $isGuest || $isHost,
             self::MANAGE => $isHost,
+            // Une annulation peut être à l'initiative du voyageur OU de l'hôte.
+            self::CANCEL => $isGuest || $isHost,
             default => false,
         };
     }
