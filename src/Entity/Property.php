@@ -131,6 +131,9 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[ORM\Column(nullable: true)]
+    private ?int $minStayNights = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -155,6 +158,10 @@ class Property
     #[ORM\OneToMany(targetEntity: PropertyAvailability::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $availabilities;
 
+    /** @var Collection<int, AvailabilityBlock> */
+    #[ORM\OneToMany(targetEntity: AvailabilityBlock::class, mappedBy: 'property', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $availabilityBlocks;
+
     /** @var Collection<int, PropertyICalSync> */
     #[ORM\OneToMany(targetEntity: PropertyICalSync::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $iCalSyncs;
@@ -176,6 +183,7 @@ class Property
         $this->propertyAmenities = new ArrayCollection();
         $this->media = new ArrayCollection();
         $this->availabilities = new ArrayCollection();
+        $this->availabilityBlocks = new ArrayCollection();
         $this->iCalSyncs = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
@@ -375,6 +383,18 @@ class Property
         return $this;
     }
 
+    public function getMinStayNights(): ?int
+    {
+        return $this->minStayNights;
+    }
+
+    public function setMinStayNights(?int $minStayNights): static
+    {
+        $this->minStayNights = $minStayNights;
+
+        return $this;
+    }
+
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
@@ -494,6 +514,33 @@ class Property
     public function removeAvailability(PropertyAvailability $availability): static
     {
         $this->availabilities->removeElement($availability);
+
+        return $this;
+    }
+
+    /** @return Collection<int, AvailabilityBlock> */
+    public function getAvailabilityBlocks(): Collection
+    {
+        return $this->availabilityBlocks;
+    }
+
+    public function addAvailabilityBlock(AvailabilityBlock $availabilityBlock): static
+    {
+        if (!$this->availabilityBlocks->contains($availabilityBlock)) {
+            $this->availabilityBlocks->add($availabilityBlock);
+            $availabilityBlock->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAvailabilityBlock(AvailabilityBlock $availabilityBlock): static
+    {
+        if ($this->availabilityBlocks->removeElement($availabilityBlock)) {
+            if ($availabilityBlock->getProperty() === $this) {
+                $availabilityBlock->setProperty(null);
+            }
+        }
 
         return $this;
     }

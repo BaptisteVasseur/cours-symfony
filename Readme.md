@@ -1,5 +1,7 @@
 # AIRBNP
 
+Just a weak clone, nothing more.
+
 ## STARTING INSTRUCTIONS
 
 Start docker before running the commands
