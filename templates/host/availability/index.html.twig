@@ -1,0 +1,191 @@
+{% extends 'layout/user.html.twig' %}
+
+{% block title %}Disponibilités — {{ property.title }}{% endblock %}
+
+{% block body %}
+<div class="container mx-auto px-4 py-8 max-w-5xl">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Gestion des disponibilités</h1>
+            <p class="text-gray-500 mt-1">{{ property.title }}</p>
+        </div>
+        <a href="{{ path('host_availability_schedule_new', {id: property.id}) }}" class="btn btn-primary">
+            + Ajouter une plage
+        </a>
+    </div>
+
+    {% for message in app.flashes('success') %}
+        <div class="alert alert-success mb-4">{{ message }}</div>
+    {% endfor %}
+    {% for message in app.flashes('warning') %}
+        <div class="alert alert-warning mb-4">{{ message }}</div>
+    {% endfor %}
+    {% for message in app.flashes('info') %}
+        <div class="alert alert-info mb-4">{{ message }}</div>
+    {% endfor %}
+
+    {# Plages de disponibilité #}
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <h2 class="text-lg font-semibold mb-4">Plages de disponibilité</h2>
+
+        {% if schedules is empty %}
+            <p class="text-gray-400 text-sm italic">Aucune plage définie. Ajoutez-en au moins une avant de publier votre annonce.</p>
+        {% else %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="text-gray-500 border-b">
+                        <tr>
+                            <th class="pb-2 text-left">Période</th>
+                            <th class="pb-2 text-left">Jours</th>
+                            <th class="pb-2 text-left">Arrivée / Départ</th>
+                            <th class="pb-2 text-left">Min / Max nuits</th>
+                            <th class="pb-2"></th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50">
+                        {% for schedule in schedules %}
+                        <tr>
+                            <td class="py-3">
+                                {{ schedule.startDate|date('d/m/Y') }} → {{ schedule.endDate|date('d/m/Y') }}
+                            </td>
+                            <td class="py-3">
+                                {% if schedule.daysOfWeek is null %}
+                                    Tous les jours
+                                {% else %}
+                                    {% set dayNames = {1: 'Lun', 2: 'Mar', 3: 'Mer', 4: 'Jeu', 5: 'Ven', 6: 'Sam', 7: 'Dim'} %}
+                                    {% for d in schedule.daysOfWeek %}{{ dayNames[d] }}{% if not loop.last %}, {% endif %}{% endfor %}
+                                {% endif %}
+                            </td>
+                            <td class="py-3">
+                                {{ schedule.checkInTime|date('H:i') }} / {{ schedule.checkOutTime|date('H:i') }}
+                            </td>
+                            <td class="py-3">
+                                {{ schedule.minimumStay }}{% if schedule.maximumStay %} / {{ schedule.maximumStay }}{% else %} / —{% endif %}
+                            </td>
+                            <td class="py-3 text-right space-x-2">
+                                <a href="{{ path('host_availability_schedule_edit', {id: property.id, sid: schedule.id}) }}" class="text-blue-600 hover:underline text-xs">Modifier</a>
+                                <form method="post" action="{{ path('host_availability_schedule_delete', {id: property.id, sid: schedule.id}) }}" class="inline" onsubmit="return confirm('Supprimer cette plage ?')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_schedule_' ~ schedule.id) }}">
+                                    <button type="submit" class="text-red-500 hover:underline text-xs">Supprimer</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+
+    {# Indisponibilités exceptionnelles #}
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">Dates bloquées</h2>
+            <a href="{{ path('host_availability_exception_new', {id: property.id}) }}" class="text-sm text-blue-600 hover:underline">+ Bloquer une date</a>
+        </div>
+
+        {% set manualExceptions = exceptions|filter(e => e.source == 'manual') %}
+        {% set importedExceptions = exceptions|filter(e => e.source == 'ical_import') %}
+
+        {% if exceptions is empty %}
+            <p class="text-gray-400 text-sm italic">Aucune date bloquée.</p>
+        {% else %}
+            <div class="flex flex-wrap gap-2">
+                {% for ex in manualExceptions %}
+                    <div class="flex items-center gap-1 bg-red-50 border border-red-200 rounded-lg px-3 py-1 text-sm">
+                        <span class="text-red-700 font-medium">{{ ex.date|date('d/m/Y') }}</span>
+                        {% if ex.reason %}<span class="text-gray-500">— {{ ex.reason }}</span>{% endif %}
+                        <form method="post" action="{{ path('host_availability_exception_delete', {id: property.id, eid: ex.id}) }}" class="inline ml-1">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete_exception_' ~ ex.id) }}">
+                            <button type="submit" class="text-red-400 hover:text-red-600 font-bold leading-none">×</button>
+                        </form>
+                    </div>
+                {% endfor %}
+                {% if importedExceptions|length > 0 %}
+                    <div class="w-full mt-2 text-xs text-gray-400">+ {{ importedExceptions|length }} date(s) bloquée(s) par import iCal</div>
+                {% endif %}
+            </div>
+        {% endif %}
+    </section>
+
+    {# Synchronisation iCal #}
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
+        <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-semibold">Calendriers externes (import iCal)</h2>
+            <a href="{{ path('host_availability_ical_sync_new', {id: property.id}) }}" class="text-sm text-blue-600 hover:underline">+ Ajouter un calendrier</a>
+        </div>
+
+        {% if icalSyncs is empty %}
+            <p class="text-gray-400 text-sm italic">Aucun calendrier externe synchronisé.</p>
+        {% else %}
+            <ul class="divide-y divide-gray-50">
+                {% for sync in icalSyncs %}
+                <li class="py-3 flex items-center justify-between">
+                    <div>
+                        <span class="font-medium text-sm">{{ sync.providerName }}</span>
+                        <span class="ml-2 text-xs px-2 py-0.5 rounded-full {% if sync.syncStatus == 'success' %}bg-green-100 text-green-700{% elseif sync.syncStatus == 'error' %}bg-red-100 text-red-700{% else %}bg-gray-100 text-gray-500{% endif %}">
+                            {{ sync.syncStatus }}
+                        </span>
+                        {% if sync.lastSyncAt %}
+                            <span class="text-xs text-gray-400 ml-2">Dernière sync : {{ sync.lastSyncAt|date('d/m/Y H:i') }}</span>
+                        {% endif %}
+                        {% if sync.errorMessage %}
+                            <p class="text-xs text-red-500 mt-1">{{ sync.errorMessage }}</p>
+                        {% endif %}
+                    </div>
+                    <form method="post" action="{{ path('host_availability_ical_sync_delete', {id: property.id, sid: sync.id}) }}" onsubmit="return confirm('Supprimer ce calendrier externe ?')">
+                        <input type="hidden" name="_token" value="{{ csrf_token('delete_sync_' ~ sync.id) }}">
+                        <button type="submit" class="text-red-500 text-xs hover:underline">Supprimer</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+
+    {# Export iCal #}
+    <section class="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
+        <h2 class="text-lg font-semibold mb-2">Exporter mon calendrier (iCal)</h2>
+        <p class="text-sm text-gray-500 mb-4">Utilisez ce lien pour synchroniser vos réservations sur Airbnb, Booking.com, Google Calendar, etc.</p>
+
+        {% set icalUrl = url('property_ical_export', {icalToken: property.icalToken}) %}
+        <div class="flex items-center gap-3 bg-gray-50 rounded-lg px-4 py-3">
+            <input id="ical-url" type="text" readonly value="{{ icalUrl }}" class="flex-1 bg-transparent text-sm text-gray-700 outline-none" onclick="this.select()">
+            <button onclick="navigator.clipboard.writeText('{{ icalUrl }}'); this.textContent='Copié !'; setTimeout(() => this.textContent='Copier', 2000)"
+                    class="text-sm text-blue-600 hover:underline whitespace-nowrap">Copier</button>
+        </div>
+
+        <div class="mt-4">
+            <button
+                id="regenerate-btn"
+                onclick="document.getElementById('regenerate-modal').classList.remove('hidden')"
+                class="text-xs text-gray-400 hover:text-red-500 underline">
+                Régénérer le lien (invalide les abonnements existants)
+            </button>
+        </div>
+
+        {# Modal de confirmation #}
+        <div id="regenerate-modal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-xl shadow-xl p-6 max-w-md w-full mx-4">
+                <h3 class="text-lg font-semibold mb-2 text-gray-900">Régénérer le lien iCal ?</h3>
+                <p class="text-sm text-gray-600 mb-6">
+                    ⚠️ Attention : tous vos abonnements calendrier sur des plateformes tierces
+                    (Airbnb, Booking.com, Google Calendar...) devront être mis à jour avec la nouvelle URL.
+                </p>
+                <div class="flex gap-3 justify-end">
+                    <button onclick="document.getElementById('regenerate-modal').classList.add('hidden')"
+                            class="px-4 py-2 text-sm text-gray-600 border rounded-lg hover:bg-gray-50">
+                        Annuler
+                    </button>
+                    <form method="post" action="{{ path('host_availability_ical_token_regenerate', {id: property.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('regenerate_ical_token_' ~ property.id) }}">
+                        <button type="submit" class="px-4 py-2 text-sm text-white bg-red-600 rounded-lg hover:bg-red-700">
+                            Régénérer quand même
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+</div>
+{% endblock %}

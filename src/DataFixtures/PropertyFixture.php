@@ -9,7 +9,7 @@ use App\Entity\CancellationPolicy;
 use App\Entity\Property;
 use App\Entity\PropertyAddress;
 use App\Entity\PropertyAmenity;
-use App\Entity\PropertyAvailability;
+use App\Entity\AvailabilitySchedule;
 use App\Entity\PropertyICalSync;
 use App\Entity\PropertyMedia;
 use App\Entity\PropertyRule;
@@ -225,15 +225,16 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         $gallery->setIsCover(false);
         $manager->persist($gallery);
 
-        for ($day = 0; $day < 30; $day++) {
-            $availability = new PropertyAvailability();
-            $availability->setProperty($property);
-            $availability->setAvailableDate(new \DateTimeImmutable(sprintf('+%d days', $day)));
-            $availability->setIsAvailable($day % 7 !== 0);
-            $availability->setPriceOverride($day % 5 === 0 ? (string) ((float) $price * 1.2) : null);
-            $availability->setMinimumStay($day % 10 === 0 ? 3 : 1);
-            $manager->persist($availability);
-        }
+        $schedule = new AvailabilitySchedule();
+        $schedule->setProperty($property);
+        $schedule->setStartDate(new \DateTimeImmutable('today'));
+        $schedule->setEndDate(new \DateTimeImmutable('+30 days'));
+        $schedule->setDaysOfWeek([1, 2, 3, 4, 5, 6, 7]);
+        $schedule->setCheckInTime(new \DateTimeImmutable('15:00'));
+        $schedule->setCheckOutTime(new \DateTimeImmutable('11:00'));
+        $schedule->setMinimumStay(1);
+        $schedule->setMaximumStay(30);
+        $manager->persist($schedule);
 
         if ($withICal) {
             $iCalSync = new PropertyICalSync();

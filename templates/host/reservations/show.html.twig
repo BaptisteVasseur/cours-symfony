@@ -1,0 +1,106 @@
+{% extends 'layout/host.html.twig' %}
+
+{% block page_title %}Détail de la réservation{% endblock %}
+
+{% block content %}
+<div class="mb-6">
+    <a href="{{ path('host_reservations') }}" class="inline-flex items-center gap-2 text-sm text-slate-500 hover:text-slate-900 transition">
+        <i class="fa-solid fa-arrow-left text-xs"></i>
+        Retour aux réservations
+    </a>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    {# Informations principales #}
+    <div class="lg:col-span-2 space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-4">
+                <div>
+                    <h3 class="text-lg font-bold text-slate-950">{{ reservation.property.title }}</h3>
+                    <p class="text-xs text-slate-500 mt-1">Réservation #{{ reservation.id|slice(0,8)|upper }} • Reçue le {{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full 
+                    {% if reservation.status == 'confirmed' %}bg-emerald-50 text-emerald-700
+                    {% elseif reservation.status == 'pending' %}bg-amber-50 text-amber-700
+                    {% elseif reservation.status == 'cancelled' %}bg-red-50 text-red-700
+                    {% else %}bg-slate-100 text-slate-700{% endif %}">
+                    {{ reservation.status|capitalize }}
+                </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-6">
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Date d'arrivée</p>
+                    <p class="text-base font-bold text-slate-900 mt-1">{{ reservation.checkinDate|date('d F Y') }}</p>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider">Date de départ</p>
+                    <p class="text-base font-bold text-slate-900 mt-1">{{ reservation.checkoutDate|date('d F Y') }}</p>
+                </div>
+            </div>
+
+            <div class="border-t border-slate-100 pt-6">
+                <h4 class="text-sm font-bold text-slate-900 mb-3">Informations du voyageur</h4>
+                <div class="flex items-center gap-4">
+                    <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center font-bold text-lg">
+                        {{ reservation.guest.email|first|upper }}
+                    </div>
+                    <div>
+                        <p class="text-sm font-semibold text-slate-900">
+                            {{ reservation.guest.profile.firstName ?? '' }} {{ reservation.guest.profile.lastName ?? '' }}
+                        </p>
+                        <p class="text-xs text-slate-500">{{ reservation.guest.email }}</p>
+                        {% if reservation.guest.phone %}
+                            <p class="text-xs text-slate-500 mt-0.5">{{ reservation.guest.phone }}</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Détails de paiement et actions #}
+    <div class="space-y-6">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-6">
+            <h4 class="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">Détail financier</h4>
+            
+            <div class="space-y-3">
+                <div class="flex justify-between text-sm">
+                    <span class="text-slate-500">Logement</span>
+                    <span class="font-medium text-slate-900">{{ reservation.totalPrice }} €</span>
+                </div>
+                <div class="flex justify-between text-sm border-t border-slate-100 pt-3 font-bold">
+                    <span class="text-slate-900">Revenu total</span>
+                    <span class="text-blue-600">{{ reservation.totalPrice }} €</span>
+                </div>
+            </div>
+
+            {% if reservation.status == 'pending' %}
+                <div class="border-t border-slate-100 pt-6 space-y-3">
+                    <form method="post" action="{{ path('host_reservation_confirm', {id: reservation.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('confirm_reservation_' ~ reservation.id) }}">
+                        <button type="submit" class="w-full py-2.5 px-4 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg transition">
+                            Confirmer la réservation
+                        </button>
+                    </form>
+                    <form method="post" action="{{ path('host_reservation_cancel', {id: reservation.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cette réservation ?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('cancel_reservation_' ~ reservation.id) }}">
+                        <button type="submit" class="w-full py-2.5 px-4 text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 rounded-lg transition">
+                            Refuser la réservation
+                        </button>
+                    </form>
+                </div>
+            {% elseif reservation.status == 'confirmed' %}
+                <div class="border-t border-slate-100 pt-6">
+                    <form method="post" action="{{ path('host_reservation_cancel', {id: reservation.id}) }}" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cette réservation confirmée ?');">
+                        <input type="hidden" name="_token" value="{{ csrf_token('cancel_reservation_' ~ reservation.id) }}">
+                        <button type="submit" class="w-full py-2.5 px-4 text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 rounded-lg transition">
+                            Annuler la réservation
+                        </button>
+                    </form>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

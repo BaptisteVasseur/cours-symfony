@@ -13,7 +13,7 @@ services:
     volumes:
       - database_data:/var/lib/postgresql/data:rw
     ports:
-      - "5439:5432"
+      - "5432:5432"
 
   adminer:
     image: adminer:latest

@@ -1,0 +1,71 @@
+{% extends 'layout/host.html.twig' %}
+
+{% block page_title %}Réservations reçues{% endblock %}
+
+{% block content %}
+<div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+    <div class="p-6 border-b border-slate-100">
+        <h2 class="text-base font-bold text-slate-900">Réservations sur vos logements</h2>
+        <p class="text-xs text-slate-500 mt-1">Consultez l'historique et gérez les réservations en attente.</p>
+    </div>
+
+    {% if reservations is empty %}
+        <div class="p-12 text-center">
+            <div class="text-4xl text-slate-300 mb-3">
+                <i class="fa-solid fa-calendar-xmark"></i>
+            </div>
+            <h3 class="text-sm font-bold text-slate-900">Aucune réservation</h3>
+            <p class="text-xs text-slate-500 mt-1">Vous n'avez pas encore reçu de demandes de réservations pour le moment.</p>
+        </div>
+    {% else %}
+        <div class="overflow-x-auto">
+            <table class="w-full border-collapse text-left text-sm text-slate-500">
+                <thead class="bg-slate-50 text-xs font-semibold text-slate-700 uppercase">
+                    <tr>
+                        <th class="px-6 py-4">Logement</th>
+                        <th class="px-6 py-4">Voyageur</th>
+                        <th class="px-6 py-4">Dates</th>
+                        <th class="px-6 py-4">Prix Total</th>
+                        <th class="px-6 py-4">Statut</th>
+                        <th class="px-6 py-4 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100 border-t border-slate-100">
+                    {% for r in reservations %}
+                        <tr class="hover:bg-slate-50">
+                            <td class="px-6 py-4 font-medium text-slate-900">
+                                {{ r.property.title }}
+                            </td>
+                            <td class="px-6 py-4">
+                                <div class="font-medium text-slate-950">{{ r.guest.profile.firstName ?? '' }} {{ r.guest.profile.lastName ?? '' }}</div>
+                                <div class="text-xs text-slate-400 mt-0.5">{{ r.guest.email }}</div>
+                            </td>
+                            <td class="px-6 py-4">
+                                <div>Du {{ r.checkinDate|date('d/m/Y') }}</div>
+                                <div class="text-xs text-slate-400 mt-0.5">au {{ r.checkoutDate|date('d/m/Y') }}</div>
+                            </td>
+                            <td class="px-6 py-4 font-semibold text-slate-900">
+                                {{ r.totalPrice }} €
+                            </td>
+                            <td class="px-6 py-4">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full 
+                                    {% if r.status == 'confirmed' %}bg-emerald-50 text-emerald-700
+                                    {% elseif r.status == 'pending' %}bg-amber-50 text-amber-700
+                                    {% elseif r.status == 'cancelled' %}bg-red-50 text-red-700
+                                    {% else %}bg-slate-100 text-slate-700{% endif %}">
+                                    {{ r.status|capitalize }}
+                                </span>
+                            </td>
+                            <td class="px-6 py-4 text-right">
+                                <a href="{{ path('host_reservation_show', {id: r.id}) }}" class="text-blue-600 hover:text-blue-700 font-semibold">
+                                    Voir les détails
+                                </a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -49,7 +49,8 @@ security:
     access_control:
         - { path: ^/(login|register), roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
-        - { path: ^/property, roles: ROLE_ADMIN }
+        - { path: ^/host, roles: ROLE_HOST }
+        - { path: ^/profile, roles: ROLE_USER }
         - { path: ^/user, roles: ROLE_ADMIN }
 
 when@test:

@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PropertyICalSyncRepository::class)]
 #[ORM\Table(name: 'property_ical_sync')]
+#[ORM\UniqueConstraint(name: 'uniq_ical_sync_property_url', columns: ['property_id', 'i_cal_url'])]
 class PropertyICalSync
 {
     use UuidEntityTrait;
@@ -27,6 +28,12 @@ class PropertyICalSync
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $lastSyncAt = null;
+
+    #[ORM\Column(length: 50)]
+    private string $syncStatus = 'pending';
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $errorMessage = null;
 
     public function getProperty(): ?Property
     {
@@ -72,6 +79,30 @@ class PropertyICalSync
     public function setLastSyncAt(?\DateTimeImmutable $lastSyncAt): static
     {
         $this->lastSyncAt = $lastSyncAt;
+
+        return $this;
+    }
+
+    public function getSyncStatus(): string
+    {
+        return $this->syncStatus;
+    }
+
+    public function setSyncStatus(string $syncStatus): static
+    {
+        $this->syncStatus = $syncStatus;
+
+        return $this;
+    }
+
+    public function getErrorMessage(): ?string
+    {
+        return $this->errorMessage;
+    }
+
+    public function setErrorMessage(?string $errorMessage): static
+    {
+        $this->errorMessage = $errorMessage;
 
         return $this;
     }

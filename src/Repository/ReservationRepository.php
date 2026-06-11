@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -72,4 +73,44 @@ class ReservationRepository extends ServiceEntityRepository
 
         return $result !== null ? (float) $result : 0.0;
     }
+
+    /**
+     * Retourne les réservations actives qui chevauchent la plage [checkin, checkout[.
+     * Règle : checkout existant = checkin nouveau → autorisé (non retourné).
+     *
+     * @return Reservation[]
+     */
+    public function findConflictingReservations(
+        Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+    ): array {
+        return $this->createQueryBuilder('r')
+            ->where('r.property = :property')
+            ->andWhere('r.status != :cancelled')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property->getId(), 'uuid')
+            ->setParameter('cancelled', 'cancelled')
+            ->setParameter('checkin', $checkin->format('Y-m-d'))
+            ->setParameter('checkout', $checkout->format('Y-m-d'))
+            ->orderBy('r.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return Reservation[]
+     */
+    public function findByHost(\App\Entity\User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->join('r.property', 'p')
+            ->where('p.host = :host')
+            ->setParameter('host', $host->getId(), 'uuid')
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }
+

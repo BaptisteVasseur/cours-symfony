@@ -12,6 +12,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource(
@@ -137,9 +138,17 @@ class Property
     #[ORM\OneToMany(targetEntity: PropertyMedia::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $media;
 
-    /** @var Collection<int, PropertyAvailability> */
-    #[ORM\OneToMany(targetEntity: PropertyAvailability::class, mappedBy: 'property', orphanRemoval: true)]
-    private Collection $availabilities;
+    #[ORM\Column(type: 'uuid', unique: true)]
+    private Uuid $icalToken;
+
+    #[Assert\Count(min: 1, minMessage: 'Le logement doit avoir au moins une plage de disponibilité avant publication.', groups: ['publish'])]
+    /** @var Collection<int, AvailabilitySchedule> */
+    #[ORM\OneToMany(targetEntity: AvailabilitySchedule::class, mappedBy: 'property', orphanRemoval: true, cascade: ['persist'])]
+    private Collection $availabilitySchedules;
+
+    /** @var Collection<int, AvailabilityException> */
+    #[ORM\OneToMany(targetEntity: AvailabilityException::class, mappedBy: 'property', orphanRemoval: true, cascade: ['persist'])]
+    private Collection $availabilityExceptions;
 
     /** @var Collection<int, PropertyICalSync> */
     #[ORM\OneToMany(targetEntity: PropertyICalSync::class, mappedBy: 'property', orphanRemoval: true)]
@@ -155,9 +164,11 @@ class Property
 
     public function __construct()
     {
+        $this->icalToken = Uuid::v4();
         $this->propertyAmenities = new ArrayCollection();
         $this->media = new ArrayCollection();
-        $this->availabilities = new ArrayCollection();
+        $this->availabilitySchedules = new ArrayCollection();
+        $this->availabilityExceptions = new ArrayCollection();
         $this->iCalSyncs = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
@@ -456,25 +467,60 @@ class Property
         return $this;
     }
 
-    /** @return Collection<int, PropertyAvailability> */
-    public function getAvailabilities(): Collection
+    public function getIcalToken(): Uuid
     {
-        return $this->availabilities;
+        return $this->icalToken;
     }
 
-    public function addAvailability(PropertyAvailability $availability): static
+    public function regenerateIcalToken(): static
     {
-        if (!$this->availabilities->contains($availability)) {
-            $this->availabilities->add($availability);
-            $availability->setProperty($this);
+        $this->icalToken = Uuid::v4();
+
+        return $this;
+    }
+
+    /** @return Collection<int, AvailabilitySchedule> */
+    public function getAvailabilitySchedules(): Collection
+    {
+        return $this->availabilitySchedules;
+    }
+
+    public function addAvailabilitySchedule(AvailabilitySchedule $schedule): static
+    {
+        if (!$this->availabilitySchedules->contains($schedule)) {
+            $this->availabilitySchedules->add($schedule);
+            $schedule->setProperty($this);
         }
 
         return $this;
     }
 
-    public function removeAvailability(PropertyAvailability $availability): static
+    public function removeAvailabilitySchedule(AvailabilitySchedule $schedule): static
     {
-        $this->availabilities->removeElement($availability);
+        $this->availabilitySchedules->removeElement($schedule);
+
+        return $this;
+    }
+
+    /** @return Collection<int, AvailabilityException> */
+    public function getAvailabilityExceptions(): Collection
+    {
+        return $this->availabilityExceptions;
+    }
+
+    public function addAvailabilityException(AvailabilityException $exception): static
+    {
+        if (!$this->availabilityExceptions->contains($exception)) {
+            $this->availabilityExceptions->add($exception);
+            $exception->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAvailabilityException(AvailabilityException $exception): static
+    {
+        $this->availabilityExceptions->removeElement($exception);
 
         return $this;
     }

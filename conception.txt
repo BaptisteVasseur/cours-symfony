@@ -1,0 +1,249 @@
+========================================================
+CONCEPTION — Gestion des disponibilités & Export iCal
+Projet : Plateforme de location type Airbnb (Symfony 8)
+Mise à jour : 2026-06-11
+========================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. MODÈLE DE DISPONIBILITÉS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+L'hôte définit des plages de disponibilité récurrentes ou ponctuelles,
+puis des indisponibilités exceptionnelles dans ces périodes.
+
+1.1 AvailabilitySchedule (plages de disponibilité)
+---------------------------------------------------
+Représente une règle de disponibilité récurrente ou bornée dans le temps.
+
+AvailabilitySchedule {
+    id            : UUID                    — PK, via UuidEntityTrait
+    property      : uuid (FK -> properties) — NOT NULL, ManyToOne
+    startDate     : DATE_IMMUTABLE          — début de la période d'application
+    endDate       : DATE_IMMUTABLE          — fin de la période d'application
+    daysOfWeek    : JSON (nullable)         — ex : [1,2,3,4,5] (1=lundi...7=dimanche ISO 8601)
+                                              null = tous les jours de la période
+    checkInTime   : TIME_IMMUTABLE          — heure d'arrivée (ex : 15:00)
+    checkOutTime  : TIME_IMMUTABLE          — heure de départ (ex : 11:00)
+    minimumStay   : INT NOT NULL DEFAULT 1  — durée min en nuits
+    maximumStay   : INT NULLABLE            — durée max en nuits (null = illimité)
+    createdAt     : DATETIME_IMMUTABLE
+}
+
+Note : l'acceptation automatique ou manuelle est portée par Property::$instantBooking
+(champ existant, conservé). Voir section 2 pour la logique détaillée.
+
+Choix techniques :
+- Type Doctrine "json" pour daysOfWeek (compatible jsonb PostgreSQL).
+- Numérotation ISO-8601 : 1=lundi, 7=dimanche (conforme DateTimeInterface::N).
+- Index composite (property_id, startDate, endDate) via #[ORM\Index].
+- L'entité PropertyAvailability existante (modèle date-par-date) est
+  REMPLACÉE par ce modèle. Migration : DROP TABLE property_availability,
+  CREATE TABLE availability_schedules.
+
+Exemples daysOfWeek :
+  [1,2,3,4,5] -> du lundi au vendredi
+  [6,7]       -> week-end seulement
+  null         -> tous les jours
+  [1]          -> tous les lundis
+
+1.2 AvailabilityException (indisponibilités exceptionnelles)
+-------------------------------------------------------------
+Représente une date bloquée dans une plage de disponibilité.
+
+AvailabilityException {
+    id       : UUID
+    property : uuid (FK -> properties) — NOT NULL, ManyToOne
+    date     : DATE_IMMUTABLE           — jour bloqué
+    reason   : VARCHAR(255) NULLABLE    — motif (ménage, travaux, usage perso...)
+    source   : VARCHAR(50) DEFAULT 'manual'
+                                        — 'manual' | 'ical_import' | 'reservation'
+}
+
+Choix techniques :
+- Index UNIQUE (property_id, date) : #[ORM\UniqueConstraint].
+- Champ source pour distinguer blocs manuels / imports iCal / réservations.
+
+1.3 Règle de chevauchement check-in / check-out
+------------------------------------------------
+Le checkout du jour J et le check-in du jour J sont autorisés simultanément.
+La date de départ d'une réservation existante N'EST PAS bloquante pour une
+nouvelle arrivée le même jour. La requête exclut les conflits de type :
+  existing.checkoutDate = new.checkinDate
+Cette logique est encapsulée dans AvailabilityCheckerService.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. PROCESSUS DE RÉSERVATION (règles métier)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Vérifications dans l'ordre (AvailabilityCheckerService) :
+
+  1. Chaque jour du séjour est couvert par au moins un AvailabilitySchedule
+     actif (startDate <= jour <= endDate ET daysOfWeek contient le jour,
+     ou daysOfWeek est null).
+  2. Aucune AvailabilityException ne couvre une des dates du séjour.
+  3. Aucune réservation (status != 'cancelled') ne chevauche la période
+     (avec la règle : checkout existant = checkin nouveau = OK).
+  4. La durée en nuits respecte minimumStay et maximumStay du schedule.
+
+Si tout est valide — règle de confirmation (Property::$instantBooking) :
+  - instantBooking = true  -> Reservation.status = 'confirmed' immédiatement
+    (premier arrivé premier servi : la première réservation non-annulée, triée
+    par createdAt ASC, est automatiquement acceptée ; toute demande ultérieure
+    sur les mêmes dates est rejetée avec un message d'indisponibilité).
+  - instantBooking = false -> Reservation.status = 'pending'
+    L'hôte choisit manuellement depuis son back-office.
+
+Depuis le back-office hôte (instantBooking = false) :
+  - Accepter -> status = 'confirmed'
+  - Refuser  -> status = 'cancelled' (motif obligatoire)
+Le voyageur peut aussi annuler (status = 'cancelled').
+
+Obligation à la publication du logement :
+  Au moins un AvailabilitySchedule requis avant status='published'.
+  Constraint : #[Assert\Count(min: 1)] sur Property::$availabilitySchedules.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. EXPORT iCAL
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+URL publique : GET /property/{icalToken}/calendar.ics
+
+Choix techniques :
+- icalToken : UUID v4 généré à la création du logement, stocké dans Property.
+  Accès sans authentification (compatible Google Calendar, Airbnb, Booking.com).
+- Bibliothèque : eluceo/ical ^2.0
+  composer require eluceo/ical
+- Contenu : un VEVENT par réservation (confirmed ou completed)
+  + un VEVENT par AvailabilityException (source=manual).
+- Fuseau horaire : UTC dans le .ics. Heures check-in/out intégrées aux DTSTART/DTEND.
+- PRODID : -//MonSite//Airbnb-Clone//FR
+- Content-Type : text/calendar; charset=utf-8
+- Cache HTTP : Cache-Control: public, max-age=3600
+- Régénération token : bouton dans le dashboard avec confirmation JS obligatoire
+  (modal : "Attention, vos abonnements existants sur Airbnb, Booking.com etc.
+  devront être mis à jour avec la nouvelle URL.") avant de générer un nouveau UUID.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. IMPORT iCAL (synchronisation depuis plateformes externes)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+L'hôte renseigne l'URL d'un calendrier externe dans PropertyICalSync.
+L'import est asynchrone via Symfony Messenger.
+
+PropertyICalSync (entité existante, champs ajoutés) {
+    + syncStatus   : VARCHAR(50) DEFAULT 'pending' — 'pending'|'success'|'error'
+    + errorMessage : TEXT NULLABLE
+}
+
+Choix techniques :
+- Parsing iCal : sabre/vobject ^4.0 (RFC 5545)
+  composer require sabre/vobject
+- Transport Messenger : 'doctrine://default' (déjà configuré)
+- Message : ICalImportMessage { propertyICalSyncId: string }
+- Handler : ICalImportHandler
+    1. Récupère PropertyICalSync
+    2. Télécharge le flux (Symfony HttpClient)
+    3. Parse les VEVENT (sabre/vobject)
+    4. UPSERT des AvailabilityException (source='ical_import') :
+       — Identifiant métier : (property_id, date, source='ical_import')
+       — Si la ligne existe déjà : mise à jour du reason uniquement
+       — Si elle n'existe pas : insertion
+       — Les exceptions 'ical_import' devenues absentes du flux sont SUPPRIMÉES
+         (sync complet = suppression des dates disparues du calendrier source)
+    5. Met à jour lastSyncAt, syncStatus, errorMessage
+- Déduplication des calendriers : unicité (property_id, iCalUrl) via index UNIQUE
+  sur PropertyICalSync. Si l'hôte soumet deux fois la même URL, on retourne
+  le sync existant au lieu d'en créer un second.
+- Déclenchement : à la sauvegarde d'un PropertyICalSync + commande console.
+- Commande CLI : php bin/console app:ical:sync [--property-id=<uuid>]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. ARCHITECTURE DES SERVICES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+AvailabilityCheckerService
+  isAvailable(Property, DateTimeImmutable $in, DateTimeImmutable $out): bool
+  getConflicts(Property, DateTimeImmutable $in, DateTimeImmutable $out): array
+  findMatchingSchedule(Property, DateTimeImmutable $in, DateTimeImmutable $out): ?AvailabilitySchedule
+
+ICalExportService
+  generateCalendar(Property): string  — retourne le contenu .ics brut
+
+ICalImportService
+  importFromUrl(PropertyICalSync): void  — parse + persiste les exceptions
+
+ReservationService
+  create(Property, User $guest, DateTimeImmutable $in, DateTimeImmutable $out, int $guests): Reservation
+    — appelle AvailabilityCheckerService
+    — lève DomainException si indisponible
+    — définit status selon autoConfirm
+    — dispatch notification (Messenger)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. SÉCURITÉ & AUTORISATION
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+- AvailabilitySchedule / Exception CRUD : ROLE_HOST + PropertyVoter
+- Export iCal (/property/{icalToken}/calendar.ics) : PUBLIC
+- Import iCal (PropertyICalSync CRUD) : ROLE_HOST + PropertyVoter
+- Régénération icalToken : ROLE_HOST + PropertyVoter
+- Back-office réservations : ROLE_HOST + PropertyVoter
+
+PropertyVoter — attributs : VIEW, EDIT, MANAGE_AVAILABILITY, MANAGE_ICAL
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. DÉPENDANCES COMPOSER À AJOUTER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  composer require eluceo/ical
+  composer require sabre/vobject
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. COMMANDES CLI SYMFONY UTILISÉES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  # Entités
+  php bin/console make:entity AvailabilitySchedule
+  php bin/console make:entity AvailabilityException
+
+  # Migrations
+  php bin/console doctrine:migrations:diff
+  php bin/console doctrine:migrations:migrate
+
+  # Contrôleurs
+  php bin/console make:controller AvailabilityController
+  php bin/console make:controller ICalController
+
+  # Messenger
+  php bin/console make:message ICalImportMessage
+
+  # Commande console custom
+  php bin/console make:command app:ical:sync
+
+  # Tests
+  php bin/console make:test WebTestCase AvailabilityCheckerServiceTest
+  php bin/console make:test WebTestCase ReservationServiceTest
+
+  # Vérification
+  php bin/console doctrine:schema:validate
+  php bin/console debug:router | grep ical
+  php bin/console debug:router | grep availability
+  php bin/console messenger:consume async --limit=5
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. CONTRAINTES MÉTIER RÉSUMÉES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  [x] Au moins 1 AvailabilitySchedule par logement avant publication
+  [x] minimumStay >= 1 nuit
+  [x] maximumStay >= minimumStay si défini
+  [x] checkInTime et checkOutTime requis dans le schedule
+  [x] endDate > startDate dans le schedule
+  [x] daysOfWeek : valeurs 1-7, pas de doublons
+  [x] Une AvailabilityException ne peut pas bloquer une date déjà réservée (confirmed)
+  [x] instantBooking sur Property (conservé) : true = first-come-first-served, false = validation hôte
+  [x] Première réservation non-annulée (ORDER BY createdAt ASC) prime pour instantBooking=true
+  [x] Le checkout du jour J ne bloque pas le checkin du jour J
+  [x] L'icalToken est unique par logement et régénérable par l'hôte (confirmation JS obligatoire)
+  [x] Unicité (property_id, iCalUrl) sur PropertyICalSync (pas de doublon de calendrier)
+  [x] Import iCal = upsert : MAJ des exceptions existantes, suppression de celles disparues du flux

@@ -1,0 +1,57 @@
+{% extends 'layout/user.html.twig' %}
+
+{% block title %}Mon profil - Airbnb Clone{% endblock %}
+
+{% block content %}
+<div class="container mx-auto px-6 md:px-12 py-10 max-w-4xl">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Informations personnelles</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        {# Colonne gauche : infos sommaires et avatar #}
+        <div class="space-y-6">
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 flex flex-col items-center text-center shadow-sm">
+                <div class="w-24 h-24 bg-gray-900 text-white rounded-full flex items-center justify-center font-bold text-3xl mb-4 overflow-hidden">
+                    {% if profile.avatarUrl %}
+                        <img src="{{ profile.avatarUrl }}" alt="Avatar" class="w-full h-full object-cover">
+                    {% else %}
+                        {{ user.email|first|upper }}
+                    {% endif %}
+                </div>
+                <h2 class="text-lg font-bold text-gray-900">
+                    {{ profile.firstName ?? '' }} {{ profile.lastName ?? '' }}
+                </h2>
+                <p class="text-sm text-gray-500 mt-1">{{ user.email }}</p>
+                <span class="mt-3 px-3 py-1 text-xs font-semibold rounded-full bg-slate-100 text-slate-700">
+                    Voyageur
+                </span>
+            </div>
+        </div>
+
+        {# Colonne droite : formulaire d'édition #}
+        <div class="md:col-span-2">
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <h3 class="text-base font-bold text-gray-950 mb-6">Mettre à jour vos informations</h3>
+
+                {% form_theme form 'form/admin_theme.html.twig' %}
+                {{ form_start(form) }}
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {{ form_row(form.firstName) }}
+                    {{ form_row(form.lastName) }}
+                </div>
+                
+                {{ form_row(form.birthDate) }}
+                {{ form_row(form.avatarUrl) }}
+                {{ form_row(form.bio) }}
+
+                <div class="flex justify-end gap-3 pt-6 mt-6 border-t border-gray-100">
+                    <button type="submit" class="bg-brand hover:bg-brandHover text-white font-semibold text-sm px-5 py-2.5 rounded-lg transition">
+                        Enregistrer les modifications
+                    </button>
+                </div>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

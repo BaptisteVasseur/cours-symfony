@@ -1,0 +1,129 @@
+{% extends 'layout/host.html.twig' %}
+
+{% block page_title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    {# Statistiques #}
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Mes logements</p>
+                    <p class="text-2xl font-bold text-slate-900 mt-1">{{ properties|length }}</p>
+                </div>
+                <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-house"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Réservations totales</p>
+                    <p class="text-2xl font-bold text-slate-900 mt-1">{{ reservations|length }}</p>
+                </div>
+                <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-calendar-days"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">En attente de validation</p>
+                    <p class="text-2xl font-bold text-amber-600 mt-1">{{ pendingCount }}</p>
+                </div>
+                <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-hourglass-half"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <p class="text-sm font-medium text-slate-500">Réservations confirmées</p>
+                    <p class="text-2xl font-bold text-emerald-600 mt-1">{{ confirmedCount }}</p>
+                </div>
+                <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center text-xl">
+                    <i class="fa-solid fa-circle-check"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Contenu principal #}
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {# Dernières réservations #}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 lg:col-span-2 space-y-4">
+            <h2 class="text-base font-bold text-slate-900">Dernières réservations reçues</h2>
+            {% if reservations is empty %}
+                <p class="text-sm text-slate-500 py-6 text-center">Aucune réservation pour le moment.</p>
+            {% else %}
+                <div class="divide-y divide-slate-100">
+                    {% for r in reservations|slice(0, 5) %}
+                        <div class="py-3 flex items-center justify-between">
+                            <div>
+                                <p class="text-sm font-semibold text-slate-950">{{ r.property.title }}</p>
+                                <p class="text-xs text-slate-500">
+                                    Par {{ r.guest.profile.firstName ?? r.guest.email }} — du {{ r.checkinDate|date('d/m/Y') }} au {{ r.checkoutDate|date('d/m/Y') }}
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="px-2.5 py-1 text-xs font-semibold rounded-full 
+                                    {% if r.status == 'confirmed' %}bg-emerald-50 text-emerald-700
+                                    {% elseif r.status == 'pending' %}bg-amber-50 text-amber-700
+                                    {% else %}bg-slate-100 text-slate-600{% endif %}">
+                                    {{ r.status }}
+                                </span>
+                                <a href="{{ path('host_reservation_show', {id: r.id}) }}" class="text-slate-400 hover:text-slate-600">
+                                    <i class="fa-solid fa-chevron-right"></i>
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="pt-3 border-t border-slate-100 text-right">
+                    <a href="{{ path('host_reservations') }}" class="text-sm font-semibold text-blue-600 hover:text-blue-700">Toutes mes réservations</a>
+                </div>
+            {% endif %}
+        </div>
+
+        {# Mes logements récents #}
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 space-y-4">
+            <div class="flex items-center justify-between">
+                <h2 class="text-base font-bold text-slate-900">Mes logements</h2>
+                <a href="{{ path('app_property_new') }}" class="text-xs font-semibold text-blue-600 hover:text-blue-700">Ajouter</a>
+            </div>
+            {% if properties is empty %}
+                <p class="text-sm text-slate-500 py-6 text-center">Vous n'avez aucun logement en ligne.</p>
+            {% else %}
+                <div class="space-y-3">
+                    {% for p in properties|slice(0, 4) %}
+                        <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                            <div class="min-w-0">
+                                <p class="text-sm font-semibold text-slate-900 truncate">{{ p.title }}</p>
+                                <p class="text-xs text-slate-500">{{ p.pricePerNight }} € / nuit • {{ p.status|capitalize }}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <a href="{{ path('host_property_edit', {id: p.id}) }}" class="text-slate-500 hover:text-slate-700" title="Modifier">
+                                    <i class="fa-solid fa-pen-to-square"></i>
+                                </a>
+                                <a href="{{ path('host_availability_index', {id: p.id}) }}" class="text-slate-500 hover:text-slate-700" title="Calendrier">
+                                    <i class="fa-solid fa-calendar"></i>
+                                </a>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="pt-3 border-t border-slate-100 text-right">
+                    <a href="{{ path('host_properties') }}" class="text-sm font-semibold text-blue-600 hover:text-blue-700">Gérer tous mes logements</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
