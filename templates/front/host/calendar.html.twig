@@ -1,0 +1,143 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Calendrier — {{ property.title }}{% endblock %}
+
+{% set prevMonth = month == 1 ? 12 : month - 1 %}
+{% set prevYear  = month == 1 ? year - 1 : year %}
+{% set nextMonth = month == 12 ? 1 : month + 1 %}
+{% set nextYear  = month == 12 ? year + 1 : year %}
+
+{% set firstDay    = date(year ~ '-' ~ '%02d'|format(month) ~ '-01') %}
+{% set daysInMonth = firstDay|date('t') %}
+{% set startDow    = firstDay|date('N') %} {# 1=Lun, 7=Dim #}
+
+{# Construire les ensembles de dates pour coloriser le calendrier #}
+{% set blockedDays = [] %}
+{% for block in blocks %}
+    {% set d = block.dateStart %}
+    {% for i in 0..(block.dateEnd|date('U') - block.dateStart|date('U')) // 86400 - 1 %}
+        {% set blockedDays = blockedDays|merge([d|date_modify('+' ~ i ~ ' days')|date('Y-m-d')]) %}
+    {% endfor %}
+{% endfor %}
+
+{% set reservedDays = [] %}
+{% for res in reservations %}
+    {% set d = res.checkinDate %}
+    {% for i in 0..(res.checkoutDate|date('U') - res.checkinDate|date('U')) // 86400 - 1 %}
+        {% set reservedDays = reservedDays|merge([d|date_modify('+' ~ i ~ ' days')|date('Y-m-d')]) %}
+    {% endfor %}
+{% endfor %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+    <div class="flex items-center gap-4 mb-6">
+        <a href="{{ path('app_account_properties') }}" class="text-sm text-gray-500 hover:text-gray-800">
+            <i class="fa-solid fa-arrow-left"></i> Mes propriétés
+        </a>
+        <h1 class="text-2xl font-semibold text-gray-900">{{ property.title }}</h1>
+    </div>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {# Calendrier mensuel #}
+        <div class="lg:col-span-2">
+            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <a href="{{ path('app_host_calendar', {id: property.id, month: prevMonth, year: prevYear}) }}" class="p-2 hover:bg-gray-100 rounded-lg">
+                        <i class="fa-solid fa-chevron-left text-sm"></i>
+                    </a>
+                    <h2 class="font-semibold text-gray-900">
+                        {{ firstDay|date('F Y') }}
+                    </h2>
+                    <a href="{{ path('app_host_calendar', {id: property.id, month: nextMonth, year: nextYear}) }}" class="p-2 hover:bg-gray-100 rounded-lg">
+                        <i class="fa-solid fa-chevron-right text-sm"></i>
+                    </a>
+                </div>
+
+                <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-500 mb-2">
+                    {% for day in ['L', 'M', 'M', 'J', 'V', 'S', 'D'] %}
+                        <div>{{ day }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="grid grid-cols-7 gap-1 text-sm text-center">
+                    {# Cellules vides avant le 1er #}
+                    {% for i in 1..(startDow - 1) %}
+                        <div></div>
+                    {% endfor %}
+
+                    {% for day in 1..daysInMonth %}
+                        {% set dateStr = year ~ '-' ~ '%02d'|format(month) ~ '-' ~ '%02d'|format(day) %}
+                        {% set isBlocked  = dateStr in blockedDays %}
+                        {% set isReserved = dateStr in reservedDays %}
+                        {% set cellClass = 'h-9 w-full flex items-center justify-center rounded-lg text-sm' %}
+                        {% if isReserved %}
+                            {% set cellClass = cellClass ~ ' bg-green-100 text-green-800 font-semibold' %}
+                        {% elseif isBlocked %}
+                            {% set cellClass = cellClass ~ ' bg-red-100 text-red-600 line-through' %}
+                        {% else %}
+                            {% set cellClass = cellClass ~ ' text-gray-700 hover:bg-gray-50' %}
+                        {% endif %}
+                        <div class="{{ cellClass }}">{{ day }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="mt-4 flex gap-4 text-xs text-gray-500">
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-green-100 inline-block"></span> Réservé</span>
+                    <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-red-100 inline-block"></span> Bloqué</span>
+                </div>
+            </div>
+
+            {# Liste des blocages actifs #}
+            <div class="mt-6">
+                <h3 class="font-semibold text-gray-900 mb-3">Périodes bloquées</h3>
+                {% if blocks|length > 0 %}
+                    <div class="space-y-2">
+                        {% for block in blocks %}
+                            <div class="flex items-center justify-between bg-white border border-gray-200 rounded-xl px-4 py-3">
+                                <div>
+                                    <span class="font-medium text-sm">{{ block.dateStart|date('d/m/Y') }} → {{ block.dateEnd|date('d/m/Y') }}</span>
+                                    <span class="ml-2 text-gray-500 text-sm">{{ block.reason }}</span>
+                                </div>
+                                <form method="POST" action="{{ path('app_host_block_delete', {id: property.id, blockId: block.id}) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_block_' ~ block.id) }}">
+                                    <button type="submit" class="text-red-500 hover:text-red-700 text-sm" onclick="return confirm('Supprimer ce blocage ?')">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-gray-400 text-sm">Aucune période bloquée.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Formulaire de blocage #}
+        <div>
+            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                <h3 class="font-semibold text-gray-900 mb-4">Bloquer une période</h3>
+                {{ form_start(form, {attr: {class: 'space-y-4'}}) }}
+                    {{ form_row(form.dateStart, {attr: {class: 'w-full border border-gray-300 rounded-xl px-4 py-2 text-sm'}}) }}
+                    {{ form_row(form.dateEnd,   {attr: {class: 'w-full border border-gray-300 rounded-xl px-4 py-2 text-sm'}}) }}
+                    {{ form_row(form.reason,    {attr: {class: 'w-full border border-gray-300 rounded-xl px-4 py-2 text-sm'}}) }}
+                    <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-2 rounded-xl text-sm">
+                        Bloquer
+                    </button>
+                {{ form_end(form) }}
+            </div>
+
+            <a href="{{ path('app_host_reservations') }}" class="mt-4 flex items-center justify-center gap-2 w-full border border-gray-200 rounded-xl py-2 text-sm text-gray-600 hover:bg-gray-50">
+                <i class="fa-solid fa-list"></i> Gérer les demandes
+            </a>
+        </div>
+    </div>
+</main>
+{% endblock %}

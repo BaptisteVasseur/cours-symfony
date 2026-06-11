@@ -8,9 +8,20 @@
         <p class="text-gray-500 mb-8">Annonces dont vous êtes l'hôte</p>
 
         {% if properties|length > 0 %}
+            <div class="mb-4">
+                <a href="{{ path('app_host_reservations') }}" class="inline-flex items-center gap-2 text-sm bg-brand text-white font-semibold px-4 py-2 rounded-xl hover:bg-brandHover">
+                    <i class="fa-solid fa-list"></i> Gérer les demandes
+                </a>
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for property in properties %}
-                    {% include 'components/card.html.twig' with { property: property } %}
+                    <div class="relative">
+                        {% include 'components/card.html.twig' with { property: property } %}
+                        <a href="{{ path('app_host_calendar', {id: property.id}) }}"
+                           class="mt-2 flex items-center justify-center gap-2 w-full border border-gray-200 rounded-xl py-2 text-sm text-gray-600 hover:bg-gray-50">
+                            <i class="fa-regular fa-calendar"></i> Calendrier
+                        </a>
+                    </div>
                 {% endfor %}
             </div>
         {% else %}

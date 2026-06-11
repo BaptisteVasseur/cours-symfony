@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Réservation annulée</title></head>
+<body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+
+{% set property = reservation.property %}
+{% set guest    = reservation.guest %}
+{% set profile  = guest ? guest.profile : null %}
+
+<div style="background: #dc2626; color: white; padding: 24px; border-radius: 12px 12px 0 0;">
+    <h1 style="margin: 0; font-size: 22px;">Réservation annulée</h1>
+    <p style="margin: 8px 0 0; opacity: .9;">{{ property ? property.title : '' }}</p>
+</div>
+
+<div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 12px 12px;">
+    <p>Bonjour,</p>
+    <p>
+        La réservation pour le logement <strong>{{ property ? property.title : '' }}</strong>
+        (du {{ reservation.checkinDate|date('d/m/Y') }} au {{ reservation.checkoutDate|date('d/m/Y') }})
+        a été annulée par {{ cancelledBy == 'guest' ? 'le voyageur' : "l'hôte" }}.
+    </p>
+
+    {% if reservation.cancellationReason %}
+    <div style="background: #fef2f2; border-left: 4px solid #dc2626; padding: 12px 16px; margin: 20px 0; border-radius: 0 8px 8px 0;">
+        <p style="margin: 0; font-weight: bold; color: #dc2626;">Motif</p>
+        <p style="margin: 4px 0 0;">{{ reservation.cancellationReason }}</p>
+    </div>
+    {% endif %}
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr style="background: #f9fafb;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Logement</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">{{ property ? property.title : '—' }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Dates</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">
+                {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+            </td>
+        </tr>
+        <tr style="background: #f9fafb;">
+            <td style="padding: 10px 14px; font-weight: bold;">Voyageur</td>
+            <td style="padding: 10px 14px;">
+                {{ profile ? profile.firstName ~ ' ' ~ profile.lastName : (guest ? guest.email : '—') }}
+            </td>
+        </tr>
+    </table>
+
+    <p>Les dates sont à nouveau disponibles.</p>
+    <p style="color: #6b7280; font-size: 13px;">Ce message a été envoyé automatiquement depuis Clone Airbnb.</p>
+</div>
+</body>
+</html>

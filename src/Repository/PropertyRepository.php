@@ -120,6 +120,66 @@ class PropertyRepository extends ServiceEntityRepository
     /**
      * @return list<Property>
      */
+    public function findForSearch(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('a.city LIKE :dest OR a.addressLine1 LIKE :dest')
+                ->setParameter('dest', '%'.$destination.'%');
+        }
+
+        if ($guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null && $checkin < $checkout) {
+            $qb->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        'SELECT r2 FROM App\Entity\Reservation r2
+                         WHERE r2.property = p
+                         AND r2.status = :confirmed
+                         AND r2.checkinDate < :checkout
+                         AND r2.checkoutDate > :checkin'
+                    )
+                )
+            )
+            ->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        'SELECT b FROM App\Entity\PropertyBlock b
+                         WHERE b.property = p
+                         AND b.dateStart < :checkout
+                         AND b.dateEnd > :checkin'
+                    )
+                )
+            )
+            ->setParameter('confirmed', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
     public function findByHost(User $host): array
     {
         return $this->createQueryBuilder('p')

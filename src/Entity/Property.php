@@ -131,6 +131,9 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[ORM\Column(length: 64, nullable: true, unique: true)]
+    private ?string $calendarToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -159,6 +162,10 @@ class Property
     #[ORM\OneToMany(targetEntity: PropertyICalSync::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $iCalSyncs;
 
+    /** @var Collection<int, PropertyBlock> */
+    #[ORM\OneToMany(targetEntity: PropertyBlock::class, mappedBy: 'property', orphanRemoval: true)]
+    private Collection $blocks;
+
     /** @var Collection<int, Reservation> */
     #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'property')]
     private Collection $reservations;
@@ -173,6 +180,7 @@ class Property
         $this->media = new ArrayCollection();
         $this->availabilities = new ArrayCollection();
         $this->iCalSyncs = new ArrayCollection();
+        $this->blocks = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
@@ -370,6 +378,18 @@ class Property
         return $this;
     }
 
+    public function getCalendarToken(): ?string
+    {
+        return $this->calendarToken;
+    }
+
+    public function setCalendarToken(?string $calendarToken): static
+    {
+        $this->calendarToken = $calendarToken;
+
+        return $this;
+    }
+
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
@@ -558,6 +578,29 @@ class Property
     public function removeReview(Review $review): static
     {
         $this->reviews->removeElement($review);
+
+        return $this;
+    }
+
+    /** @return Collection<int, PropertyBlock> */
+    public function getBlocks(): Collection
+    {
+        return $this->blocks;
+    }
+
+    public function addBlock(PropertyBlock $block): static
+    {
+        if (!$this->blocks->contains($block)) {
+            $this->blocks->add($block);
+            $block->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBlock(PropertyBlock $block): static
+    {
+        $this->blocks->removeElement($block);
 
         return $this;
     }
