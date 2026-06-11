@@ -64,6 +64,50 @@
                     </dl>
                 </section>
             </div>
+            {% if reservation.statusHistory|length > 0 %}
+                <section class="border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4">Historique</h2>
+                    <ol class="relative border-l border-gray-200 space-y-5 ml-2">
+                        {% set statusLabelsHistory = {
+                            'pending': 'En attente',
+                            'confirmed': 'Confirmée',
+                            'cancelled': 'Annulée',
+                            'completed': 'Terminée',
+                        } %}
+                        {% set statusIcons = {
+                            'pending': 'fa-clock',
+                            'confirmed': 'fa-check',
+                            'cancelled': 'fa-xmark',
+                            'completed': 'fa-flag-checkered',
+                        } %}
+                        {% set statusIconColors = {
+                            'pending': 'bg-yellow-100 text-yellow-600',
+                            'confirmed': 'bg-green-100 text-green-600',
+                            'cancelled': 'bg-red-100 text-red-600',
+                            'completed': 'bg-blue-100 text-blue-600',
+                        } %}
+                        {% for entry in reservation.statusHistory %}
+                            <li class="ml-5">
+                                <span class="absolute -left-3 flex items-center justify-center w-6 h-6 rounded-full {{ statusIconColors[entry.newStatus]|default('bg-gray-100 text-gray-500') }}">
+                                    <i class="fa-solid {{ statusIcons[entry.newStatus]|default('fa-circle') }} text-xs"></i>
+                                </span>
+                                <div>
+                                    <p class="text-sm font-semibold text-gray-900">
+                                        {{ statusLabelsHistory[entry.newStatus]|default(entry.newStatus) }}
+                                    </p>
+                                    <p class="text-xs text-gray-500">
+                                        {{ entry.createdAt|date('d/m/Y à H:i') }}
+                                        {% if entry.changedBy %}
+                                            · {{ entry.changedBy.profile ? entry.changedBy.profile.firstName : entry.changedBy.email }}
+                                        {% endif %}
+                                    </p>
+                                </div>
+                            </li>
+                        {% endfor %}
+                    </ol>
+                </section>
+            {% endif %}
+
             <aside>
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28 space-y-4">
                     <div>
