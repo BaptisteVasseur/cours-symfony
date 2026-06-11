@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Booking;
 use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
@@ -12,13 +13,13 @@ use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<Reservation>
+ * @extends ServiceEntityRepository<Booking>
  */
 class BookingRepository extends ServiceEntityRepository
 {
-    public function __construct(ManagerRegistry $registry)
+    public function __construct(ManagerRegistry $registry, string $entityClass = Booking::class)
     {
-        parent::__construct($registry, Reservation::class);
+        parent::__construct($registry, $entityClass);
     }
 
     /**

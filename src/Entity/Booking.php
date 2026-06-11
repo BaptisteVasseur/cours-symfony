@@ -27,6 +27,9 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Post(
             security: "is_granted('ROLE_USER')",
             securityPostDenormalize: "object.getGuest() == user",
+            processor: \App\State\BookingProcessor::class,
+            validate: false,
+            stateless: false,
         ),
         new Put(security: "is_granted('ROLE_ADMIN')"),
         new Patch(security: "is_granted('ROLE_ADMIN')"),
