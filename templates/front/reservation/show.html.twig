@@ -18,21 +18,55 @@
     'pending': 'bg-yellow-100 text-yellow-800',
     'cancelled': 'bg-red-100 text-red-800',
 } %}
+{% set statusIcons = {
+    'confirmed': 'fa-circle-check text-green-500',
+    'completed': 'fa-flag-checkered text-blue-500',
+    'pending': 'fa-clock text-yellow-500',
+    'cancelled': 'fa-circle-xmark text-red-400',
+} %}
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
         <a href="{{ path('app_reservation_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
             <i class="fa-solid fa-arrow-left"></i> Retour aux réservations
         </a>
+
+        {# Flash messages #}
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-6 flex items-start gap-3 px-5 py-4 rounded-xl text-sm font-medium
+                    {{ label == 'success' ? 'bg-emerald-50 border border-emerald-200 text-emerald-800' : 'bg-red-50 border border-red-200 text-red-800' }}">
+                    <i class="fa-solid {{ label == 'success' ? 'fa-circle-check mt-0.5' : 'fa-circle-exclamation mt-0.5' }}"></i>
+                    <span>{{ message }}</span>
+                </div>
+            {% endfor %}
+        {% endfor %}
+
         <div class="mb-8">
             <div class="flex flex-wrap items-center gap-3 mb-2">
-                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Confirmation de réservation</h1>
-                <span class="text-sm font-semibold px-3 py-1 rounded-full {{ statusColors[reservation.status]|default('bg-gray-100 text-gray-800') }}">
+                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Suivi de réservation</h1>
+                <span class="inline-flex items-center gap-1.5 text-sm font-semibold px-3 py-1 rounded-full {{ statusColors[reservation.status]|default('bg-gray-100 text-gray-800') }}">
+                    <i class="fa-solid {{ statusIcons[reservation.status]|default('fa-circle') }} text-xs"></i>
                     {{ statusLabels[reservation.status]|default(reservation.status) }}
                 </span>
             </div>
-            <p class="text-gray-500">Réservation effectuée le {{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
+            <p class="text-gray-500 text-sm">Réservation effectuée le {{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
+            {% if reservation.status == 'pending' and reservation.expiresAt %}
+                <p class="mt-1 text-xs text-yellow-600">
+                    <i class="fa-solid fa-triangle-exclamation mr-1"></i>
+                    Cette demande expire le {{ reservation.expiresAt|date('d/m/Y à H:i') }}. L'hôte doit répondre avant cette date.
+                </p>
+            {% endif %}
+            {% if reservation.status in ['pending', 'confirmed'] and is_granted('RESERVATION_CANCEL', reservation) %}
+                <div class="mt-4">
+                    <a href="{{ path('app_reservation_cancel', {id: reservation.id}) }}"
+                       class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-red-300 hover:bg-red-50 text-red-700 text-sm font-semibold rounded-xl transition shadow-sm">
+                        <i class="fa-solid fa-ban"></i> Annuler la réservation
+                    </a>
+                </div>
+            {% endif %}
         </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2 space-y-6">
                 {% if property %}
@@ -43,24 +77,85 @@
                             </div>
                             <div class="p-5">
                                 <h2 class="text-lg font-semibold">{{ property.title }}</h2>
-                                <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="text-sm font-semibold text-brand hover:underline mt-2 inline-block">Voir le logement</a>
+                                {% if property.address %}
+                                    <p class="text-sm text-gray-500 mt-1">{{ property.address.city }}, {{ property.address.country }}</p>
+                                {% endif %}
+                                <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="text-sm font-semibold text-brand hover:underline mt-3 inline-block">Voir le logement</a>
                             </div>
                         </div>
                     </section>
                 {% endif %}
+
                 <section class="border border-gray-200 rounded-xl p-6">
                     <h2 class="text-lg font-semibold mb-4">Détails du séjour</h2>
-                    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                        <div><dt class="text-gray-500">Arrivée</dt><dd class="font-semibold">{{ reservation.checkinDate|date('d/m/Y') }}</dd></div>
-                        <div><dt class="text-gray-500">Départ</dt><dd class="font-semibold">{{ reservation.checkoutDate|date('d/m/Y') }}</dd></div>
-                        <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
+                    <dl class="grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <dt class="text-gray-500 text-xs uppercase font-medium mb-1">Arrivée</dt>
+                            <dd class="font-semibold">{{ reservation.checkinDate|date('d/m/Y') }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500 text-xs uppercase font-medium mb-1">Départ</dt>
+                            <dd class="font-semibold">{{ reservation.checkoutDate|date('d/m/Y') }}</dd>
+                        </div>
+                        <div>
+                            <dt class="text-gray-500 text-xs uppercase font-medium mb-1">Voyageurs</dt>
+                            <dd class="font-semibold">{{ reservation.guestsCount }}</dd>
+                        </div>
                     </dl>
                 </section>
+
+                {% if hostProfile or (property and property.host) %}
+                    <section class="border border-gray-200 rounded-xl p-6">
+                        <h2 class="text-lg font-semibold mb-4">Votre hôte</h2>
+                        <div class="flex items-center gap-4">
+                            <div class="w-12 h-12 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                                {% if hostProfile and hostProfile.avatarUrl %}
+                                    <img src="{{ hostProfile.avatarUrl }}" alt="Hôte" class="w-full h-full object-cover">
+                                {% else %}
+                                    <div class="w-full h-full flex items-center justify-center text-gray-600 font-bold text-lg">
+                                        {{ hostProfile and hostProfile.firstName ? hostProfile.firstName|first|upper : 'H' }}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            <div>
+                                <p class="font-semibold text-gray-900">{{ hostProfile ? hostProfile.firstName ~ ' ' ~ hostProfile.lastName : 'Hôte' }}</p>
+                                <p class="text-xs text-gray-500">Hôte</p>
+                            </div>
+                        </div>
+                    </section>
+                {% endif %}
             </div>
+
             <aside>
-                <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
-                    <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
-                    <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                <div class="border border-gray-200 rounded-xl p-6 sticky top-28 space-y-3">
+                    <h2 class="text-lg font-semibold">Récapitulatif</h2>
+                    {% set nights = reservation.checkinDate|date('U') is not null and reservation.checkoutDate|date('U') is not null
+                        ? (reservation.checkoutDate|date('U') - reservation.checkinDate|date('U')) / 86400
+                        : 0 %}
+                    {% set nights = nights|round(0, 'ceil')|abs %}
+                    {% if nights > 0 and property %}
+                        <div class="text-sm space-y-2">
+                            <div class="flex justify-between text-gray-600">
+                                <span>{{ property.pricePerNight|number_format(0, ',', ' ') }} € × {{ nights }} nuit{{ nights > 1 ? 's' : '' }}</span>
+                                <span>{{ (property.pricePerNight * nights)|number_format(2, ',', ' ') }} €</span>
+                            </div>
+                            {% if reservation.cleaningFee %}
+                                <div class="flex justify-between text-gray-600">
+                                    <span>Frais de ménage</span>
+                                    <span>{{ reservation.cleaningFee|number_format(2, ',', ' ') }} €</span>
+                                </div>
+                            {% endif %}
+                            {% if reservation.serviceFee %}
+                                <div class="flex justify-between text-gray-600">
+                                    <span>Frais de service</span>
+                                    <span>{{ reservation.serviceFee|number_format(2, ',', ' ') }} €</span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    <div class="pt-3 border-t border-gray-100">
+                        <p class="text-xl font-bold text-gray-900">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                    </div>
                 </div>
             </aside>
         </div>

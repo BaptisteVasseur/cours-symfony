@@ -29,6 +29,9 @@ class ReservationStatusHistory
     #[ORM\JoinColumn(nullable: false)]
     private ?User $changedBy = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $reason = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -81,6 +84,18 @@ class ReservationStatusHistory
     public function setChangedBy(?User $changedBy): static
     {
         $this->changedBy = $changedBy;
+
+        return $this;
+    }
+
+    public function getReason(): ?string
+    {
+        return $this->reason;
+    }
+
+    public function setReason(?string $reason): static
+    {
+        $this->reason = $reason;
 
         return $this;
     }

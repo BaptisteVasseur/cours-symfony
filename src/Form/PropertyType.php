@@ -6,7 +6,6 @@ namespace App\Form;
 
 use App\Entity\CancellationPolicy;
 use App\Entity\Property;
-use App\Entity\User;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
 use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
@@ -25,21 +24,12 @@ class PropertyType extends AbstractType
     {
         $builder
             ->add('title', TextType::class, [
-                'label' => 'Titre',
+                'label' => 'Titre de l\'annonce',
             ])
             ->add('description', TextareaType::class, [
                 'label' => 'Description',
                 'required' => false,
-            ])
-            ->add('host', EntityType::class, [
-                'class' => User::class,
-                'choice_label' => 'email',
-                'label' => 'Hôte',
-            ])
-            ->add('cancellationPolicy', EntityType::class, [
-                'class' => CancellationPolicy::class,
-                'choice_label' => 'label',
-                'label' => 'Politique d\'annulation',
+                'attr' => ['rows' => 5],
             ])
             ->add('propertyType', ChoiceType::class, [
                 'label' => 'Type de logement',
@@ -50,40 +40,46 @@ class PropertyType extends AbstractType
                     'Maison' => 'house',
                     'Chalet' => 'chalet',
                 ],
+                'placeholder' => 'Sélectionner un type',
             ])
-            ->add('status', ChoiceType::class, [
-                'label' => 'Statut',
-                'choices' => [
-                    'Brouillon' => 'draft',
-                    'En attente' => 'pending',
-                    'Publiée' => 'published',
-                ],
+            ->add('cancellationPolicy', EntityType::class, [
+                'class' => CancellationPolicy::class,
+                'choice_label' => 'label',
+                'label' => 'Politique d\'annulation',
+                'placeholder' => 'Sélectionner une politique',
             ])
             ->add('maxGuests', IntegerType::class, [
                 'label' => 'Voyageurs max.',
+                'attr' => ['min' => 1],
             ])
             ->add('bedrooms', IntegerType::class, [
                 'label' => 'Chambres',
+                'attr' => ['min' => 0],
             ])
             ->add('beds', IntegerType::class, [
                 'label' => 'Lits',
+                'attr' => ['min' => 1],
             ])
             ->add('bathrooms', IntegerType::class, [
                 'label' => 'Salles de bain',
+                'attr' => ['min' => 1],
             ])
             ->add('pricePerNight', NumberType::class, [
                 'label' => 'Prix / nuit (€)',
                 'scale' => 2,
+                'attr' => ['min' => 0, 'step' => '0.01'],
             ])
             ->add('cleaningFee', NumberType::class, [
                 'label' => 'Frais de ménage (€)',
                 'required' => false,
                 'scale' => 2,
+                'attr' => ['min' => 0, 'step' => '0.01'],
             ])
             ->add('securityDeposit', NumberType::class, [
                 'label' => 'Caution (€)',
                 'required' => false,
                 'scale' => 2,
+                'attr' => ['min' => 0, 'step' => '0.01'],
             ])
             ->add('checkinTime', TimeType::class, [
                 'label' => 'Heure d\'arrivée',
@@ -98,6 +94,12 @@ class PropertyType extends AbstractType
             ->add('instantBooking', CheckboxType::class, [
                 'label' => 'Réservation instantanée',
                 'required' => false,
+            ])
+            ->add('address', PropertyAddressType::class, [
+                'label' => false,
+            ])
+            ->add('rules', PropertyRuleType::class, [
+                'label' => false,
             ])
         ;
     }

@@ -1,0 +1,79 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Réglages de disponibilité — {{ property.title }}{% endblock %}
+
+{% block content %}
+<main class="flex-grow px-4 md:px-10 py-8 max-w-3xl mx-auto w-full">
+
+    {# Breadcrumb #}
+    <nav class="text-sm text-gray-400 mb-4 flex items-center gap-2">
+        <a href="{{ path('app_account_properties') }}" class="hover:text-brand transition">Mes annonces</a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <a href="{{ path('app_host_property_calendar', {id: property.id}) }}" class="hover:text-brand transition truncate max-w-xs">{{ property.title }}</a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <span class="text-gray-600 font-medium">Réglages de disponibilité</span>
+    </nav>
+
+    <h1 class="text-2xl font-semibold text-gray-900 mb-1 flex items-center gap-2">
+        <i class="fa-solid fa-sliders text-brand"></i>
+        Réglages de disponibilité
+    </h1>
+    <p class="text-gray-500 text-sm mb-8">
+        Configurez la durée minimum de séjour et le tarif de base par nuit pour <strong>{{ property.title }}</strong>.
+    </p>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium
+                {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-6">
+        {{ form_start(form) }}
+
+        <div class="space-y-6">
+            <div>
+                {{ form_label(form.minNights, null, {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+                <div class="flex items-center gap-3">
+                    {{ form_widget(form.minNights, {attr: {class: 'w-32 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-brand focus:border-brand'}}) }}
+                    <span class="text-sm text-gray-500">nuit(s) minimum</span>
+                </div>
+                {{ form_errors(form.minNights) }}
+                <p class="text-xs text-gray-400 mt-1">
+                    Laissez vide pour n'imposer aucune durée minimum. Cette règle s'applique par défaut à toutes les réservations.
+                </p>
+            </div>
+
+            <hr class="border-gray-100">
+
+            <div>
+                {{ form_label(form.pricePerNight, null, {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+                <div class="flex items-center gap-3">
+                    {{ form_widget(form.pricePerNight, {attr: {class: 'w-40 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-brand focus:border-brand'}}) }}
+                </div>
+                {{ form_errors(form.pricePerNight) }}
+                <p class="text-xs text-gray-400 mt-1">
+                    Tarif appliqué par défaut. Vous pouvez définir des exceptions date par date depuis le calendrier.
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-8 flex items-center gap-3">
+            <button type="submit"
+                    class="bg-brand hover:bg-brandHover text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition">
+                <i class="fa-solid fa-floppy-disk mr-1"></i> Enregistrer
+            </button>
+            <a href="{{ path('app_host_property_calendar', {id: property.id}) }}"
+               class="text-sm text-gray-500 hover:text-brand transition">
+                Retour au calendrier
+            </a>
+        </div>
+
+        {{ form_end(form) }}
+    </div>
+
+</main>
+{% endblock %}

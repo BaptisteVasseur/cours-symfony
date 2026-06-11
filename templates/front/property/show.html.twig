@@ -123,24 +123,44 @@
                         <div class="grid grid-cols-2 divide-x divide-gray-300">
                             <div class="p-3">
                                 <p class="text-[10px] font-bold uppercase text-gray-800">Arrivée</p>
-                                <p class="text-sm text-gray-500">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
+                                <input type="date" id="sidebar-checkin" name="checkin" class="text-sm text-gray-700 bg-transparent w-full outline-none cursor-pointer">
                             </div>
                             <div class="p-3">
                                 <p class="text-[10px] font-bold uppercase text-gray-800">Départ</p>
-                                <p class="text-sm text-gray-500">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
+                                <input type="date" id="sidebar-checkout" name="checkout" class="text-sm text-gray-700 bg-transparent w-full outline-none cursor-pointer">
                             </div>
                         </div>
                         <div class="p-3 border-t border-gray-300">
                             <p class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</p>
-                            <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
+                            <input type="number" id="sidebar-guests" min="1" max="{{ property.maxGuests }}" value="1" class="text-sm text-gray-700 bg-transparent w-full outline-none">
                         </div>
                     </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                    <a id="booking-link" href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
                         Réserver
                     </a>
                     {% if property.instantBooking %}
-                        <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
+                        <p class="text-center text-xs text-gray-500 mt-3"><i class="fa-solid fa-bolt mr-1 text-brand"></i>Réservation instantanée disponible</p>
                     {% endif %}
+
+                    <script>
+                        (function () {
+                            const base = {{ path('app_booking_checkout', { id: property.id })|json_encode|raw }};
+                            const ci = document.getElementById('sidebar-checkin');
+                            const co = document.getElementById('sidebar-checkout');
+                            const g = document.getElementById('sidebar-guests');
+                            const link = document.getElementById('booking-link');
+                            function update() {
+                                const params = new URLSearchParams();
+                                if (ci.value) params.set('checkin', ci.value);
+                                if (co.value) params.set('checkout', co.value);
+                                if (g.value) params.set('guests', g.value);
+                                link.href = base + (params.toString() ? '?' + params.toString() : '');
+                            }
+                            ci.addEventListener('change', update);
+                            co.addEventListener('change', update);
+                            g.addEventListener('change', update);
+                        })();
+                    </script>
                 </div>
             </aside>
         </div>
