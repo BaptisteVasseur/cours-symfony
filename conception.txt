@@ -52,4 +52,12 @@ stockés puis envoyés quand le service revient.
 Structure SQL : Justifiez votre choix d'architecture pour le calendrier : table de jours individuels
 (PropertyAvailability ) ou table de périodes (date_start , date_end ).
 
-Ça ça permet de mettre un prix ou une nuit minimum différent par jour, et de bloquer un jour précis facilement, mais ça fait beaucoup de lignes. 
+Ça ça permet de mettre un prix ou une nuit minimum différent par jour, et de bloquer un jour précis facilement, mais ça fait beaucoup de lignes.
+
+
+-BONUS-
+Synchronisation iCal : Import (Partie F) :
+Ma stratégie de gestion des conflits de chevauchement avec une réservation existante : l'import ne crée que des blocages (PropertyAvailability), il ne touche jamais aux réservations. Si un évènement distant tombe sur des dates déjà réservées, 
+la nuit est simplement marquée bloquée en plus, aucun risque d'overbooking.
+Pour la suppression d'un évènement distant, avec le modèle actuel, on ne distingue pas un blocage « importé » d'un blocage « manuel de l'hôte », donc on ne débloque pas automatiquement. La stratégie robuste serait d'ajouter une colonne source 
+(ical/manuel) à PropertyAvailability, de purger les blocages ical du logement avant chaque synchro, puis de réappliquer. Ainsi, un évènement supprimé à distance libère bien la date. (Petite migration à prévoir.)

@@ -38,4 +38,22 @@ class PropertyAvailabilityRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+/**
+ * Jours marqués indisponibles par l'hôte sur une période.
+ *
+ * @return list<\App\Entity\PropertyAvailability>
+ */
+    public function findBlockedDates(Property $property, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.property = :property')
+            ->andWhere('a.isAvailable = false')
+            ->andWhere('a.availableDate >= :from')
+            ->andWhere('a.availableDate <= :to')
+            ->setParameter('property', $property)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->getQuery()
+            ->getResult();
+    }
 }
