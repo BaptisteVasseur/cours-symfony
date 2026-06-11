@@ -18,6 +18,7 @@ use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource(
@@ -136,6 +137,9 @@ class Property
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    #[ORM\Column(type: 'uuid', nullable: true, unique: true)]
+    private ?Uuid $icalToken = null;
 
     #[ORM\OneToOne(mappedBy: 'property', targetEntity: PropertyAddress::class, cascade: ['persist', 'remove'])]
     private ?PropertyAddress $address = null;
@@ -390,6 +394,18 @@ class Property
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    public function getIcalToken(): ?Uuid
+    {
+        return $this->icalToken;
+    }
+
+    public function setIcalToken(?Uuid $icalToken): static
+    {
+        $this->icalToken = $icalToken;
 
         return $this;
     }
