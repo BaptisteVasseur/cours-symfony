@@ -14,7 +14,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:generate-ical-tokens',
-    description: 'Generate iCal tokens for properties that don\'t have one',
+    description: 'Generate iCal tokens for properties and hosts that don\'t have one',
 )]
 final class GenerateICalTokensCommand extends Command
 {
@@ -30,21 +30,34 @@ final class GenerateICalTokensCommand extends Command
         $io = new SymfonyStyle($input, $output);
 
         $properties = $this->propertyRepository->findAll();
-        $count = 0;
+        $propertyCount = 0;
+        $hostCount = 0;
+        $processedHostIds = [];
 
         foreach ($properties as $property) {
             if (!$property->getIcalToken()) {
                 $property->generateIcalToken();
                 $this->entityManager->persist($property);
-                $count++;
+                $propertyCount++;
+            }
+
+            $host = $property->getHost();
+            if ($host && !isset($processedHostIds[$host->getId()])) {
+                $processedHostIds[$host->getId()] = true;
+
+                if (!$host->getHostIcalToken()) {
+                    $host->generateHostIcalToken();
+                    $this->entityManager->persist($host);
+                    $hostCount++;
+                }
             }
         }
 
-        if ($count > 0) {
+        if ($propertyCount > 0 || $hostCount > 0) {
             $this->entityManager->flush();
-            $io->success(sprintf('Generated iCal tokens for %d properties.', $count));
+            $io->success(sprintf('Generated %d property token(s) and %d host token(s).', $propertyCount, $hostCount));
         } else {
-            $io->info('All properties already have iCal tokens.');
+            $io->info('All properties and hosts already have iCal tokens.');
         }
 
         return Command::SUCCESS;

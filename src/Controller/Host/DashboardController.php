@@ -13,6 +13,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\ReservationVoter;
+use App\Service\ICalUrlService;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Mailer\MailerInterface;
 use Twig\Environment;
@@ -37,17 +38,24 @@ final class DashboardController extends AbstractController
     }
 
     #[Route('/calendar', name: 'app_host_calendar', methods: ['GET'])]
-    public function calendar(): Response
+    public function calendar(EntityManagerInterface $entityManager, ICalUrlService $iCalUrlService): Response
     {
         $user = $this->getUser();
         if (!$user instanceof User) {
             return $this->redirectToRoute('app_login');
         }
 
+        if (!$user->getHostIcalToken()) {
+            $user->generateHostIcalToken();
+            $entityManager->persist($user);
+            $entityManager->flush();
+        }
+
         $properties = $user->getProperties();
 
         return $this->render('host/ical.html.twig', [
             'properties' => $properties,
+            'hostIcalUrl' => $iCalUrlService->generateHostICalUrl($user),
         ]);
     }
 

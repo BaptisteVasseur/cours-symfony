@@ -115,6 +115,27 @@ class ReservationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedByHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'h', 'g', 'gp', 'hp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.host', 'h')
+            ->leftJoin('h.profile', 'hp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'confirmed')
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     // Check if there is any confirmed reservation that overlaps with the given dates for the specified property
     public function hasConfirmedReservationOverlap(
         Property $property,

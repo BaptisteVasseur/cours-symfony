@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\Property;
+use App\Entity\User;
 use App\Repository\ReservationRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -13,6 +14,37 @@ use Symfony\Component\Routing\Attribute\Route;
 
 final class ICalController extends AbstractController
 {
+    #[Route('/api/hosts/{id}/calendar.ics', name: 'app_host_ical_export', methods: ['GET'])]
+    public function exportHost(
+        User $host,
+        string $id,
+        ReservationRepository $reservationRepository,
+        Request $request,
+    ): Response {
+        $token = (string) $request->query->get('token', '');
+        $hostToken = $host->getHostIcalToken();
+
+        if ($token === '' || !$hostToken || !hash_equals($hostToken, $token)) {
+            throw $this->createAccessDeniedException('Invalid or missing iCal token.');
+        }
+
+        $reservations = $reservationRepository->findConfirmedByHost($host);
+        $events = $this->buildEvents($reservations);
+        $calendarName = 'Calendrier hote';
+
+        $hostName = $host->getProfile()?->getFirstName();
+        if ($hostName) {
+            $calendarName = sprintf('Calendrier %s', $hostName);
+        }
+
+        $ical = $this->generateICalContent($calendarName, $events);
+
+        return new Response($ical, Response::HTTP_OK, [
+            'Content-Type' => 'text/calendar; charset=utf-8',
+            'Content-Disposition' => sprintf('attachment; filename="host-%s.ics"', $id),
+        ]);
+    }
+
     #[Route('/api/properties/{id}/calendar.ics', name: 'app_ical_export', methods: ['GET'])]
     public function export(
         Property $property,
@@ -20,49 +52,20 @@ final class ICalController extends AbstractController
         ReservationRepository $reservationRepository,
         Request $request,
     ): Response {
-        // Verify token from query parameter
-        $token = $request->query->get('token');
-        if (!$token || $token !== $property->getIcalToken()) {
+        $token = (string) $request->query->get('token', '');
+        $propertyToken = $property->getIcalToken();
+
+        if ($token === '' || !$propertyToken || !hash_equals($propertyToken, $token)) {
             throw $this->createAccessDeniedException('Invalid or missing iCal token.');
         }
 
-        // Get confirmed reservations for this property
         $reservations = $reservationRepository->findBy([
             'property' => $property,
             'status' => 'confirmed',
         ]);
 
-        // Generate iCal format
-        $events = [];
-        foreach ($reservations as $reservation) {
-            $checkin = $reservation->getCheckinDate();
-            $checkout = $reservation->getCheckoutDate();
-            $guest = $reservation->getGuest();
-
-            $uid = $reservation->getId() . '@' . $this->getParameter('app.domain');
-            $summary = sprintf(
-                'Réservation : %s (%s voyageurs)',
-                $guest?->getFirstname() ?? 'Guest',
-                $reservation->getGuestsCount()
-            );
-
-            $events[] = [
-                'uid' => $uid,
-                'summary' => $summary,
-                'description' => sprintf(
-                    "Réservation de %s à %s\nHôte: %s\nPrix: %.2f€",
-                    $guest?->getEmail() ?? 'N/A',
-                    $guest?->getPhone() ?? 'N/A',
-                    $property->getHost()?->getFirstname() ?? 'N/A',
-                    $reservation->getTotalPrice()
-                ),
-                'dtstart' => $checkin->format('Ymd'),
-                'dtend' => $checkout->format('Ymd'),
-                'created' => $reservation->getCreatedAt()->format('Ymd\\THis\\Z'),
-            ];
-        }
-
-        $ical = $this->generateICalContent($property, $events);
+        $events = $this->buildEvents($reservations);
+        $ical = $this->generateICalContent($property->getTitle(), $events);
 
         return new Response($ical, Response::HTTP_OK, [
             'Content-Type' => 'text/calendar; charset=utf-8',
@@ -70,7 +73,7 @@ final class ICalController extends AbstractController
         ]);
     }
 
-    private function generateICalContent(Property $property, array $events): string
+    private function generateICalContent(string $calendarName, array $events): string
     {
         $lines = [
             'BEGIN:VCALENDAR',
@@ -78,7 +81,7 @@ final class ICalController extends AbstractController
             'PRODID:-//Clone Airbnb//FR',
             'CALSCALE:GREGORIAN',
             'METHOD:PUBLISH',
-            'X-WR-CALNAME:' . $property->getTitle(),
+            'X-WR-CALNAME:' . $this->escapeICalText($calendarName),
             'X-WR-TIMEZONE:Europe/Paris',
             'BEGIN:VTIMEZONE',
             'TZID:Europe/Paris',
@@ -99,7 +102,6 @@ final class ICalController extends AbstractController
             'END:VTIMEZONE',
         ];
 
-        // Add events
         foreach ($events as $event) {
             $lines[] = 'BEGIN:VEVENT';
             $lines[] = 'UID:' . $event['uid'];
@@ -115,6 +117,42 @@ final class ICalController extends AbstractController
         $lines[] = 'END:VCALENDAR';
 
         return implode("\r\n", $lines);
+    }
+
+    private function buildEvents(array $reservations): array
+    {
+        $events = [];
+        $domain = (string) $this->getParameter('app.domain');
+
+        foreach ($reservations as $reservation) {
+            $checkin = $reservation->getCheckinDate();
+            $checkout = $reservation->getCheckoutDate();
+            $guest = $reservation->getGuest();
+            $property = $reservation->getProperty();
+
+            $guestName = $guest?->getProfile()?->getFirstName() ?? 'Guest';
+            $hostName = $property?->getHost()?->getProfile()?->getFirstName() ?? 'N/A';
+            $propertyTitle = $property?->getTitle() ?? 'Logement';
+
+            $events[] = [
+                'uid' => sprintf('%s@%s', $reservation->getId(), $domain),
+                'summary' => sprintf('%s - %s (%s voyageurs)', $propertyTitle, $guestName, $reservation->getGuestsCount()),
+                'description' => sprintf(
+                    "Séjour sur %s\nVoyageur: %s\nContact: %s / %s\nHôte: %s\nPrix: %.2f€",
+                    $propertyTitle,
+                    $guestName,
+                    $guest?->getEmail() ?? 'N/A',
+                    $guest?->getPhone() ?? 'N/A',
+                    $hostName,
+                    $reservation->getTotalPrice()
+                ),
+                'dtstart' => $checkin->format('Ymd'),
+                'dtend' => $checkout->format('Ymd'),
+                'created' => $reservation->getCreatedAt()->format('Ymd\\THis\\Z'),
+            ];
+        }
+
+        return $events;
     }
 
     private function escapeICalText(string $text): string
