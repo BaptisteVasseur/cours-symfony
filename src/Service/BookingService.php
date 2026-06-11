@@ -142,26 +142,14 @@ final class BookingService
     }
 
     /**
-     * Annule une demande "pending" dont le verrou de paiement de 15 minutes a
-     * expiré (logement en réservation instantanée uniquement — sur demande,
-     * la décision revient à l'hôte). Retourne true si la réservation vient
-     * d'être annulée.
+     * Le verrou de paiement de 15 min d'une réservation instantanée est-il
+     * dépassé ? (la transition d'annulation est portée par ReservationWorkflow).
      */
-    public function expireStalePending(Reservation $reservation): bool
+    public function isPaymentLockExpired(Reservation $reservation): bool
     {
         $deadline = $this->paymentDeadline($reservation);
-        if ($deadline === null || $deadline > new \DateTimeImmutable()) {
-            return false;
-        }
 
-        $reservation->setStatus('cancelled');
-        $reservation->setCancellationReason(sprintf(
-            'Annulation automatique : paiement non effectué dans le délai de %d minutes.',
-            HostCalendar::PENDING_LOCK_MINUTES,
-        ));
-        $this->entityManager->flush();
-
-        return true;
+        return $deadline !== null && $deadline <= new \DateTimeImmutable();
     }
 
     private function nightStart(Property $property, \DateTimeImmutable $night): \DateTimeImmutable

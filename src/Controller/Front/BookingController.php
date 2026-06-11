@@ -102,8 +102,10 @@ final class BookingController extends AbstractController
             $entityManager->persist($reservation);
             $entityManager->flush();
 
-            // Notification asynchrone à l'hôte, après le flush (la donnée est
-            // persistée, l'envoi ne bloque pas la requête).
+            // Trace l'état initial pour la timeline, puis notifie l'hôte de la
+            // nouvelle demande (après le flush : la donnée est persistée et
+            // l'envoi asynchrone ne bloque pas la requête).
+            $reservationWorkflow->recordCreation($reservation, $user);
             if ($reservation->getStatus() === 'pending') {
                 $reservationWorkflow->notifyRequested($reservation);
             }

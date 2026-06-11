@@ -261,6 +261,20 @@
                 guestsInput.value = Math.min(Math.max(val, 1), max);
             });
 
+            // Pré-sélection depuis l'URL (dates passées par la fiche logement)
+            const params = new URLSearchParams(window.location.search);
+            const qCheckin = params.get('checkin');
+            const qCheckout = params.get('checkout');
+            const qGuests = parseInt(params.get('guests'), 10);
+            if (qGuests > 0) {
+                guestsInput.value = Math.min(Math.max(qGuests, 1), parseInt(guestsInput.max, 10) || qGuests);
+            }
+            if (qCheckin && qCheckout && qCheckin >= MIN_DATE && qCheckout > qCheckin && rangeFree(qCheckin, qCheckout)) {
+                checkin = qCheckin;
+                checkout = qCheckout;
+                view = checkin.slice(0, 7);
+            }
+
             // Restaure une éventuelle sélection après soumission invalide
             if (checkinInput.value && checkoutInput.value) {
                 checkin = checkinInput.value;

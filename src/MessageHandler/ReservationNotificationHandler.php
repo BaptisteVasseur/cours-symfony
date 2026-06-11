@@ -43,6 +43,7 @@ final readonly class ReservationNotificationHandler
             ReservationNotification::EVENT_CONFIRMED => [$guest, $host],
             ReservationNotification::EVENT_REFUSED => [$guest],
             ReservationNotification::EVENT_CANCELLED => [$guest, $host],
+            ReservationNotification::EVENT_CHECKIN_REMINDER => [$guest],
             default => [],
         };
 
@@ -51,6 +52,7 @@ final readonly class ReservationNotificationHandler
             ReservationNotification::EVENT_CONFIRMED => 'Votre réservation est confirmée',
             ReservationNotification::EVENT_REFUSED => 'Votre demande de réservation a été refusée',
             ReservationNotification::EVENT_CANCELLED => 'Réservation annulée',
+            ReservationNotification::EVENT_CHECKIN_REMINDER => 'Votre séjour commence demain',
             default => 'Mise à jour de votre réservation',
         };
 

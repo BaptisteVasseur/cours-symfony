@@ -74,6 +74,45 @@
                         <p class="text-sm text-red-800">{{ reservation.cancellationReason }}</p>
                     </section>
                 {% endif %}
+
+                {# ----- Timeline des changements de statut (G.5) ----- #}
+                {% set history = reservation.statusHistory|sort((a, b) => a.createdAt <=> b.createdAt) %}
+                {% if history|length > 0 %}
+                    <section class="border border-gray-200 rounded-xl p-6">
+                        <h2 class="text-lg font-semibold mb-5">Historique de la réservation</h2>
+                        {% set dot = {
+                            'pending': 'bg-yellow-400',
+                            'confirmed': 'bg-emerald-500',
+                            'completed': 'bg-blue-500',
+                            'cancelled': 'bg-red-500',
+                        } %}
+                        <ol class="relative border-l border-gray-200 ml-2">
+                            {% for entry in history %}
+                                {% set actor = entry.changedBy %}
+                                {% set actorProfile = actor ? actor.profile : null %}
+                                {% set actorName = actor
+                                    ? (actorProfile and (actorProfile.firstName or actorProfile.lastName) ? (actorProfile.firstName ~ ' ' ~ actorProfile.lastName)|trim : actor.email)
+                                    : 'Système' %}
+                                <li class="mb-6 ml-6 last:mb-0">
+                                    <span class="absolute -left-[7px] flex items-center justify-center w-3.5 h-3.5 rounded-full ring-4 ring-white {{ dot[entry.newStatus]|default('bg-gray-400') }}"></span>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <p class="text-sm font-semibold text-gray-900">
+                                            {{ statusLabels[entry.newStatus]|default(entry.newStatus) }}
+                                            {% if entry.oldStatus %}
+                                                <span class="font-normal text-gray-400">depuis {{ statusLabels[entry.oldStatus]|default(entry.oldStatus) }}</span>
+                                            {% else %}
+                                                <span class="font-normal text-gray-400">création de la demande</span>
+                                            {% endif %}
+                                        </p>
+                                    </div>
+                                    <p class="text-xs text-gray-500 mt-0.5">
+                                        {{ entry.createdAt|date('d/m/Y à H:i') }} · par {{ actorName }}
+                                    </p>
+                                </li>
+                            {% endfor %}
+                        </ol>
+                    </section>
+                {% endif %}
             </div>
             <aside>
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28">

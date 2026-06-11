@@ -103,7 +103,61 @@ final readonly class ReservationWorkflow
         $this->notify($reservation, ReservationNotification::EVENT_REQUESTED);
     }
 
-    private function transition(Reservation $reservation, string $newStatus, User $actor): void
+    /**
+     * Enregistre l'état initial d'une réservation fraîchement créée, afin que
+     * la timeline (G.5) parte du premier statut.
+     */
+    public function recordCreation(Reservation $reservation, User $actor): void
+    {
+        $history = new ReservationStatusHistory();
+        $history->setReservation($reservation);
+        $history->setOldStatus(null);
+        $history->setNewStatus($reservation->getStatus() ?? 'pending');
+        $history->setChangedBy($actor);
+        $reservation->addStatusHistory($history);
+
+        $this->entityManager->persist($history);
+        $this->entityManager->flush();
+    }
+
+    /**
+     * Expire la demande instantanée dont le verrou de paiement de 15 min est
+     * dépassé. Appelé paresseusement à l'affichage du récapitulatif et par le
+     * worker d'expiration (G.1).
+     */
+    public function expireStalePaymentLock(Reservation $reservation): bool
+    {
+        if (!$this->bookingService->isPaymentLockExpired($reservation)) {
+            return false;
+        }
+
+        return $this->expirePending($reservation, sprintf(
+            'Annulation automatique : paiement non effectué dans le délai de %d minutes.',
+            HostCalendar::PENDING_LOCK_MINUTES,
+        ));
+    }
+
+    /**
+     * Expiration automatique (système) d'une demande "pending" : verrou de
+     * paiement de 15 min dépassé (réservation instantanée) ou demande non
+     * traitée par l'hôte après le délai (sur demande). Voir ExpirePendingReservationsCommand
+     * pour l'invocation par le worker/cron (G.1).
+     */
+    public function expirePending(Reservation $reservation, string $reason): bool
+    {
+        if ($reservation->getStatus() !== 'pending') {
+            return false;
+        }
+
+        $reservation->setCancellationReason($reason);
+        $this->transition($reservation, 'cancelled', null);
+        $this->entityManager->flush();
+        $this->notify($reservation, ReservationNotification::EVENT_CANCELLED);
+
+        return true;
+    }
+
+    private function transition(Reservation $reservation, string $newStatus, ?User $actor): void
     {
         $history = new ReservationStatusHistory();
         $history->setReservation($reservation);

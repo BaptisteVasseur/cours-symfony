@@ -56,8 +56,9 @@ final class ReservationController extends AbstractController
         Reservation $reservation,
         ReservationRepository $reservationRepository,
         BookingService $bookingService,
+        ReservationWorkflow $workflow,
     ): Response {
-        if ($bookingService->expireStalePending($reservation)) {
+        if ($workflow->expireStalePaymentLock($reservation)) {
             $this->addFlash('error', 'Le délai de paiement de 15 minutes est dépassé : la réservation a été annulée et les dates libérées.');
         }
 

@@ -107,6 +107,49 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Demandes "pending" créées avant une date butoir (worker d'expiration G.1).
+     * Jointures property/host pour éviter les requêtes N+1 lors des notifications.
+     *
+     * @return list<Reservation>
+     */
+    public function findPendingCreatedBefore(\DateTimeImmutable $threshold): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'host', 'g')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('r.guest', 'g')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.createdAt < :threshold')
+            ->setParameter('status', 'pending')
+            ->setParameter('threshold', $threshold)
+            ->orderBy('r.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Réservations confirmées dont l'arrivée tombe un jour donné (rappel J-1, G.2).
+     *
+     * @return list<Reservation>
+     */
+    public function findConfirmedCheckingInOn(\DateTimeImmutable $day): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'host', 'a', 'g')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate = :day')
+            ->setParameter('status', 'confirmed')
+            ->setParameter('day', $day->setTime(0, 0))
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Demandes en attente sur les logements dont l'utilisateur est l'hôte (B.2).
      *
      * @return list<Reservation>

@@ -12,6 +12,7 @@
         {% elseif event == 'confirmed' %}Réservation confirmée
         {% elseif event == 'refused' %}Demande refusée
         {% elseif event == 'cancelled' %}Réservation annulée
+        {% elseif event == 'checkin_reminder' %}Votre séjour commence demain
         {% endif %}
     </h2>
 
@@ -25,6 +26,16 @@
         <p>Votre demande pour <strong>{{ property.title }}</strong> n'a pas pu être acceptée.</p>
     {% elseif event == 'cancelled' %}
         <p>La réservation pour <strong>{{ property.title }}</strong> a été annulée. Les dates ont été libérées dans le calendrier.</p>
+    {% elseif event == 'checkin_reminder' %}
+        <p>Votre arrivée à <strong>{{ property.title }}</strong> est prévue <strong>demain</strong>. Voici vos informations d'accès :</p>
+        <table style="border-collapse: collapse; margin: 16px 0; width: 100%; background:#f7f7f7; border-radius:8px;">
+            <tr><td style="padding: 8px 12px; color: #717171;">Adresse</td><td style="padding: 8px 12px; text-align: right;">
+                {% if property.address %}{{ property.address.addressLine1 }}, {{ property.address.postalCode }} {{ property.address.city }}{% else %}Communiquée par votre hôte{% endif %}
+            </td></tr>
+            <tr><td style="padding: 8px 12px; color: #717171;">Heure d'arrivée</td><td style="padding: 8px 12px; text-align: right;">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</td></tr>
+            <tr><td style="padding: 8px 12px; color: #717171;">Heure de départ</td><td style="padding: 8px 12px; text-align: right;">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</td></tr>
+            {% if property.host and property.host.email %}<tr><td style="padding: 8px 12px; color: #717171;">Contact hôte</td><td style="padding: 8px 12px; text-align: right;">{{ property.host.email }}</td></tr>{% endif %}
+        </table>
     {% endif %}
 
     <table style="border-collapse: collapse; margin: 16px 0; width: 100%;">

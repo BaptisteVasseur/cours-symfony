@@ -25,8 +25,9 @@ class ReservationStatusHistory
     #[ORM\Column(length: 50)]
     private ?string $newStatus = null;
 
+    /** null = action automatique du système (ex. expiration). */
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     private ?User $changedBy = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

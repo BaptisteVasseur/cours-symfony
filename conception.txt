@@ -37,5 +37,68 @@ E.1 Synchronisation iCal : Export
 F.1 Synchronisation iCal : Import 
     - 
 
+Ajout supplémentaires : 
+- Expiration des demandes
+- Rappel Check-in
+- Timeline voyageur
+- Tarification dynamique
+- Notifications In-App
+
+Liste exhaustive de tout ce que j'ai mis en place dans le projet : 
+
+Partie A — Gestion des disponibilités
+A.1 — Interface de gestion hôte ✅
+
+Bouton « Calendrier » sous chaque propriété sur /compte/proprietes.
+Page calendrier /compte/proprietes/{id}/calendrier avec vue mensuelle et vue hebdomadaire à l'heure près.
+Déclaration de périodes d'indisponibilité avec motif (travaux, usage personnel, maintenance), bornées à la minute (ex. 12/06 17:00 → 13/06 11:00), via une entité dédiée PropertyBlockedPeriod.
+Liste des indisponibilités à venir + libération (suppression).
 
 
+A.2 — Algorithme de disponibilité ✅
+
+Vérifie : logement publié, aucun jour bloqué par l'hôte, aucune réservation bloquante qui se superpose, capacité suffisante (maxGuests).
+Optimisé : requêtes de plage uniques (prédicat d'overlap), pas de boucle SQL par nuit.
+⚠️ Optionnel A.1 non implémenté : configuration d'une durée de séjour minimum / tarif journalier spécifique (les colonnes existent mais sans UII hôte).
+
+Partie B — Parcours de réservation
+B.1 — Expérience Voyageur ✅
+
+Page /logement/{id}/reserver refaite avec calendrier interactif (vue mensuelle), nuits indisponibles grisées/non sélectionnables.
+Saisie du nombre de voyageurs + prix total affiché en temps réel.
+Validation de la disponibilité en temps réel à la soumission, redirection vers /reservations/{id} avec message flash.
+Compte à rebours de 15 min sur le récapitulatif + bouton « Procéder au paiement » qui confirme la réservation.
+
+
+B.2 — Modération des demandes (hôte) ✅
+
+Tableau de bord /reservations/demandes listant les demandes pending.
+Accepter / Refuser (motif obligatoire), chaque action notifiant par e-mail asynchrone.
+
+
+B.3 — Processus d'annulation ✅
+
+Bouton d'annulation sur une réservation confirmée (hôte ou voyageur), motif requis.
+Libère immédiatement les dates et notifie les deux parties.
+
+Partie C — Moteur de recherche ✅
+Route /search filtrant sur : destination (ville/adresse/pays), checkin/checkout (disponibilité stricte, en une requête via NOT EXISTS), guests (capacité). Barre de recherche fonctionnelle dans l'en-tête et en hero sur la home.
+
+Partie D — Notifications transactionnelles ✅
+Symfony Messenger (transport Doctrine) + Mailer, vérifiables sur Mailpit. Événements : nouvelle demande → hôte ; réservation validée → voyageur + hôte ; refus/annulation → parties concernées. Envoi après le flush() de l'ORM.
+
+Partie E — Synchronisation iCal : Export ✅
+Endpoint /api/properties/{id}/calendar.ics?token={secret}, token unique par logement, révocable et régénérable par l'hôte.
+Sécurisé par comparaison en temps constant (hash_equals), 403 sans token valide.
+Flux RFC 5545 strict (CRLF, échappement, pliage) des séjours confirmés.
+
+Partie F — Synchronisation iCal : Import (BONUS) ✅
+Commande app:ical:sync (cron) via HTTP Client, UI hôte pour ajouter/supprimer des flux.
+Stratégie de conflits : réconciliation par UID (création/mise à jour/suppression), blocages manuels et réservations jamais modifiés, avertissement de double-booking en cas de chevauchement avec une réservation confirmée, suppression en cascade des nuitées d'un flux retiré.
+
+Partie G — Fonctionnalités avancées (BONUS) — les 5 listées au sujet ✅
+G.1 Expiration des demandes : worker app:reservations:expire (paiement instantané non réglé sous 15 min + demande sur-demande non traitée sous 24 h), annulation système tracée.
+G.2 Rappel Check-in : commande app:reservations:checkin-reminder (J-1) avec infos d'accès (adresse, heures, contact hôte).
+G.5 Timeline voyageur : historique visuel complet des changements de statut sur le détail de la réservation.
+G.6 Tarification dynamique : coût total réactif (nuits × prix + frais) sur le checkout et la fiche logement.
+G.8 Notifications In-App : icône cloche dans l'en-tête (compteur de non-lues), notifications en base, page dédiée, marquage 
