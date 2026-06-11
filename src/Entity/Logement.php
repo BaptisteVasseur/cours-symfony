@@ -53,6 +53,12 @@ class Logement
     #[ORM\Column(enumType: LogementStatut::class)]
     public LogementStatut $statut = LogementStatut::BROUILLON;
 
+    #[ORM\Column]
+    public bool $instantBooking = false;
+
+    #[ORM\Column(length: 64, unique: true)]
+    public string $icalToken = '';
+
     #[ORM\ManyToOne(targetEntity: PolitiqueAnnulation::class)]
     public ?PolitiqueAnnulation $politiqueAnnulation = null;
 
@@ -96,8 +102,20 @@ class Logement
     {
         $this->dateCreation = new \DateTimeImmutable();
         $this->dateMiseAJour = new \DateTimeImmutable();
+        $this->icalToken = $this->genererTokenIcal();
         $this->photos = new ArrayCollection();
         $this->equipements = new ArrayCollection();
         $this->disponibilites = new ArrayCollection();
+    }
+
+    public function regenererTokenIcal(): void
+    {
+        $this->icalToken = $this->genererTokenIcal();
+        $this->dateMiseAJour = new \DateTimeImmutable();
+    }
+
+    private function genererTokenIcal(): string
+    {
+        return bin2hex(random_bytes(32));
     }
 }

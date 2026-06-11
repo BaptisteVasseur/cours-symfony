@@ -72,6 +72,7 @@ class AppFixtures extends Fixture
                 sallesBain: '1.0',
                 politique: $moderee,
                 equipements: [$wifi, $cuisine, $climatisation],
+                instantBooking: false,
             ),
             $this->creerLogement(
                 hote: $hote,
@@ -90,6 +91,7 @@ class AppFixtures extends Fixture
                 sallesBain: '3.0',
                 politique: $moderee,
                 equipements: [$wifi, $cuisine, $parking, $piscine, $climatisation],
+                instantBooking: true,
             ),
             $this->creerLogement(
                 hote: $hote,
@@ -108,6 +110,7 @@ class AppFixtures extends Fixture
                 sallesBain: '1.0',
                 politique: $flexible,
                 equipements: [$wifi, $cuisine],
+                instantBooking: true,
             ),
         ];
 
@@ -189,6 +192,7 @@ class AppFixtures extends Fixture
         string $sallesBain,
         PolitiqueAnnulation $politique,
         array $equipements,
+        bool $instantBooking,
     ): Logement {
         $logement = new Logement();
         $logement->hote = $hote;
@@ -201,6 +205,7 @@ class AppFixtures extends Fixture
         $logement->nombreLits = $lits;
         $logement->nombreSallesBain = $sallesBain;
         $logement->statut = LogementStatut::PUBLIE;
+        $logement->instantBooking = $instantBooking;
         $logement->politiqueAnnulation = $politique;
         $logement->noteMoyenne = '4.80';
         $logement->nombreAvis = 12;

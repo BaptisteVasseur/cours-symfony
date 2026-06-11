@@ -66,6 +66,12 @@ class Reservation
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     public ?string $messageVoyageur = null;
 
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    public ?string $motifRefus = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    public ?string $motifAnnulation = null;
+
     #[ORM\Column]
     public \DateTimeImmutable $dateDemande;
 
