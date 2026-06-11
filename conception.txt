@@ -1,0 +1,472 @@
+================================================================================
+ CONCEPTION TECHNIQUE — PLATEFORME DE RÉSERVATION DE LOGEMENTS (CLONE AIRBNB)
+ Application Symfony 8 / PHP 8 / PostgreSQL 16 / Doctrine ORM
+================================================================================
+
+Auteur  : (à compléter)
+Date     : 2026-06-11
+Objet    : Modèle de données, règles métier et schémas de flux.
+           Ce document justifie les choix techniques et prouve la
+           compréhension du besoin fonctionnel.
+
+
+================================================================================
+ 1. CONTEXTE ET BESOIN
+================================================================================
+
+La plateforme met en relation des VOYAGEURS (guests) et des HÔTES (hosts) :
+
+  - Un hôte publie un ou plusieurs LOGEMENTS, en gère le calendrier de
+    disponibilité et la tarification.
+  - Un voyageur recherche un logement, sélectionne des dates et effectue une
+    RÉSERVATION via un tunnel de réservation (checkout).
+  - L'administrateur supervise (modération des annonces, gestion des comptes,
+    suivi des réservations).
+
+Le coeur métier repose sur deux invariants forts :
+
+  (I1) On ne peut JAMAIS réserver des dates indisponibles
+       (déjà réservées, bloquées par l'hôte, logement non publié,
+        capacité dépassée).
+
+  (I2) Toute action sensible (consulter/gérer un logement ou une réservation)
+       est soumise à une autorisation fondée sur le rôle ET la propriété de la
+       ressource (un hôte ne gère que SES logements).
+
+
+================================================================================
+ 2. MODÈLE DE DONNÉES
+================================================================================
+
+2.1. Vue d'ensemble (entités principales du domaine)
+--------------------------------------------------------------------------------
+
+  User ───< Property ───< PropertyAvailability
+   │           │   │
+   │           │   └────< Reservation >──── User (guest)
+   │           │              │
+   │           │              └──< ReservationStatusHistory
+   │           ├────  PropertyAddress (1-1)
+   │           ├────  PropertyRule    (1-1)
+   │           ├───<  PropertyMedia
+   │           ├───<  PropertyAmenity >──── Amenity
+   │           └────  CancellationPolicy (n-1)
+   │
+   └────  UserProfile (1-1)
+
+  Légende :  ───<  = OneToMany       >────  = ManyToOne
+             (1-1) = OneToOne        (n-1)  = ManyToOne
+
+Choix d'identifiants : toutes les entités principales utilisent un UUID
+(trait UuidEntityTrait). Avantages : identifiants non devinables (sécurité,
+pas d'énumération séquentielle des réservations), génération côté application,
+indépendance vis-à-vis de la base.
+
+
+2.2. Entité User  (table : users)
+--------------------------------------------------------------------------------
+  - id                UUID
+  - email             string, UNIQUE (identifiant de connexion)
+  - passwordHash      string (hashé)
+  - status            string : pending | active | suspended
+  - roles             JSON (rôles assignés)  -> getRoles() ajoute ROLE_USER
+  - isEmailVerified   bool
+  - preferredLanguage / preferredCurrency
+  Relations :
+  - profile           OneToOne  UserProfile (prénom, nom, avatar, bio...)
+  - properties        OneToMany Property   (logements dont il est l'hôte)
+  - reservations      OneToMany Reservation (réservations en tant que voyageur)
+
+  Rôles (src/Security/Roles.php) :
+      ROLE_USER          : utilisateur authentifié de base
+      ROLE_HOST          : hôte (peut gérer ses logements)
+      ROLE_MODERATEUR    : modération
+      ROLE_ADMIN         : administration (hérite de MODERATEUR + HOST)
+      ROLE_SUPER_ADMIN   : super-administration (hérite de ADMIN)
+
+  Hiérarchie (config/packages/security.yaml) :
+      ROLE_ADMIN  ->  ROLE_MODERATEUR, ROLE_HOST  ->  ROLE_USER
+
+
+2.3. Entité Property  (table : properties)
+--------------------------------------------------------------------------------
+  - id                UUID
+  - host              ManyToOne User       (propriétaire/hôte, NOT NULL)
+  - cancellationPolicy ManyToOne CancellationPolicy
+  - title / description / propertyType (villa|loft|apartment|house|chalet)
+  - status            string : draft | pending | published
+                        draft     : brouillon (non visible)
+                        pending   : en attente de modération
+                        published : visible et réservable
+  - maxGuests         int   (capacité d'accueil)
+  - bedrooms / beds / bathrooms
+  - pricePerNight     decimal(10,2)  (tarif de référence)
+  - cleaningFee / securityDeposit  decimal(10,2)
+  - instantBooking    bool  (réservation instantanée vs validation hôte)
+  Relations :
+  - address (1-1), rules (1-1), media (1-n), amenities (n-n via PropertyAmenity)
+  - availabilities    OneToMany PropertyAvailability
+  - reservations      OneToMany Reservation
+
+
+2.4. Entité PropertyAvailability  (table : property_availability)
+--------------------------------------------------------------------------------
+  Granularité : UNE LIGNE = UN JOUR pour un logement.
+  - id                UUID
+  - property          ManyToOne Property (NOT NULL)
+  - availableDate     date
+  - isAvailable       bool   (true = ouvert ; false = bloqué par l'hôte)
+  - blockReason       string|null : travaux | usage_personnel | autre
+                        (renseigné quand isAvailable = false)
+  - priceOverride     decimal(10,2)|null  (tarif journalier spécifique)
+  - minimumStay       int|null            (durée de séjour minimum)
+
+  Justification du modèle "1 jour = 1 ligne" :
+    + Requêtes de disponibilité simples et indexables sur une plage de dates.
+    + Permet de porter, par jour, un blocage ET/OU une surcharge de prix
+      ET/OU un séjour minimum, sans table supplémentaire.
+    + Suffisant à l'échelle d'un projet pédagogique (volumétrie maîtrisée).
+    - Inconvénient : volumétrie (N jours x M logements). Acceptable ici ;
+      une optimisation possible serait un modèle par intervalles [début, fin].
+
+
+2.5. Entité Reservation  (table : reservations)
+--------------------------------------------------------------------------------
+  - id                UUID
+  - property          ManyToOne Property (NOT NULL)
+  - guest             ManyToOne User     (voyageur, NOT NULL)
+  - checkinDate / checkoutDate   date
+  - guestsCount       int
+  - status            string : pending | confirmed | cancelled | completed
+  - totalPrice / cleaningFee / serviceFee / securityDeposit  decimal(10,2)
+  - currency          string (EUR par défaut)
+  - cancellationReason text|null
+  - createdAt         datetime
+  Relations :
+  - statusHistory     OneToMany ReservationStatusHistory (traçabilité)
+
+  Contrainte de validation (entité) :
+    Si status = 'cancelled' ALORS cancellationReason doit être renseigné.
+
+  Sémantique des statuts :
+    pending    : demande envoyée, en attente de validation manuelle par l'hôte.
+    confirmed  : réservation acceptée ; les dates sont verrouillées au calendrier.
+    cancelled  : annulation (voyageur, hôte ou expiration système).
+    completed  : le séjour a eu lieu et est terminé.
+
+
+================================================================================
+ 3. RÈGLES MÉTIER
+================================================================================
+
+3.1. Algorithme de disponibilité  (service AvailabilityChecker)
+--------------------------------------------------------------------------------
+  Une plage de dates [checkin, checkout[ est DISPONIBLE si et seulement si
+  les 4 conditions sont réunies :
+
+    (C1) Le logement est PUBLIÉ            -> property.status === 'published'
+    (C2) Aucun jour de la période n'a été  -> PropertyAvailability.isAvailable
+         manuellement bloqué par l'hôte        = false sur un jour de la plage
+    (C3) Aucune réservation CONFIRMED ne   -> chevauchement si
+         se superpose à ces dates              r.checkin < checkout
+                                                ET r.checkout > checkin
+    (C4) La capacité est suffisante        -> guests <= property.maxGuests
+
+  Implémentation (src/Service/AvailabilityChecker.php) :
+    - isAvailable(...)               -> bool
+    - getUnavailabilityReasons(...)  -> liste des motifs (vide si disponible),
+                                        permet un message d'erreur précis.
+
+  Règle des nuits : on vérifie de la date d'arrivée jusqu'à la VEILLE du départ
+  incluse (le jour de départ est libérable le matin). D'où, pour le chevauchement,
+  la condition stricte sur checkout (> et <).
+
+  Centralisation : la règle est UNIQUE et réutilisée
+    - à la soumission du tunnel de réservation (validation temps réel),
+    - (potentiellement) pour l'affichage du calendrier.
+  -> Évite la duplication de logique et les divergences de comportement.
+
+
+3.2. Règles d'autorisation  (Voters)
+--------------------------------------------------------------------------------
+  PropertyVoter :
+    PROPERTY_VIEW : status = 'published' OU utilisateur = hôte OU ROLE_ADMIN
+    PROPERTY_EDIT : utilisateur = hôte               OU ROLE_ADMIN
+  ReservationVoter :
+    RESERVATION_VIEW   : utilisateur = guest OU hôte du logement OU ROLE_ADMIN
+    RESERVATION_MANAGE : utilisateur = hôte du logement          OU ROLE_ADMIN
+
+  Principe : l'autorisation combine le RÔLE et la PROPRIÉTÉ de la ressource.
+  Un hôte ne peut voir/éditer que SES logements et les réservations associées.
+  Les Voters sont invoqués via #[IsGranted(..., subject: ...)] sur les actions.
+
+
+3.3. Règles de l'espace hôte  (gestion du calendrier)
+--------------------------------------------------------------------------------
+  - L'hôte (ROLE_HOST) accède à /hote et ne gère que ses logements
+    (contrôlé par PropertyVoter::EDIT).
+  - Blocage d'une période : crée/met à jour les PropertyAvailability des jours
+    concernés avec isAvailable = false + blockReason (travaux/usage perso/autre).
+  - Déblocage d'un jour : remet isAvailable = true (et supprime la ligne si elle
+    ne porte ni tarif ni séjour minimum, pour garder la table propre).
+  - Tarification (optionnel) : applique priceOverride et/ou minimumStay sur une
+    plage de dates.
+
+
+3.4. Réservation instantanée vs sur demande (transition de statut)
+--------------------------------------------------------------------------------
+  Le comportement de validation dépend du paramétrage du logement
+  (property.instantBooking) :
+
+    instantBooking = true  (Réservation instantanée) :
+        Si les dates sont libres (algorithme C1..C4), la réservation est
+        AUTOMATIQUEMENT validée -> status = 'confirmed', sans intervention
+        de l'hôte.
+
+    instantBooking = false (Sur demande) :
+        La réservation nécessite une ACTION MANUELLE de l'hôte
+        -> status = 'pending' à la création, puis l'hôte confirme ou refuse.
+
+  Validation manuelle par l'hôte (logements "sur demande") :
+    - L'hôte voit ses demandes entrantes dans /hote/reservations
+      (réservations pending remontées en premier).
+    - CONFIRMER : pending -> confirmed.
+        Une RE-VÉRIFICATION de disponibilité (C1..C4) est effectuée au moment
+        de la confirmation -> évite de confirmer des dates devenues indisponibles
+        (autre réservation entre-temps). Garantit l'invariant (I1).
+    - REFUSER : pending -> cancelled, avec un motif (cancellationReason).
+
+  Autorisation : ReservationVoter::MANAGE (l'hôte du logement, ou ROLE_ADMIN).
+  Sécurité : jeton CSRF par réservation (id 'reservation_manage_<id>').
+
+  Notification : chaque issue (confirmée / refusée) déclenche un email
+  asynchrone au voyageur (cf. 4.4). Le motif de refus est visible par le
+  voyageur sur sa page de réservation ET dans l'email.
+
+  Traçabilité : toute évolution de statut (création incluse) écrit une ligne
+  dans ReservationStatusHistory (ancien statut, nouveau statut, auteur,
+  horodatage).
+
+
+3.5. Annulation d'une réservation
+--------------------------------------------------------------------------------
+  Règle : qu'elle soit à l'initiative de l'HÔTE ou du VOYAGEUR, une annulation
+
+    (1) REQUIERT UN MOTIF (cancellationReason obligatoire, non vide) ;
+    (2) LIBÈRE IMMÉDIATEMENT LES DATES dans le calendrier ;
+    (3) NOTIFIE LES DEUX PARTIES (voyageur + hôte).
+
+  Qui peut annuler quoi (ReservationVoter::CANCEL = voyageur OU hôte du
+  logement, ou ROLE_ADMIN) :
+    - Voyageur : annule SA réservation        (pending ou confirmed).
+    - Hôte     : refuse une demande (pending) OU annule une réservation
+                 confirmée (confirmed).
+    Une réservation déjà 'cancelled' ou 'completed' ne peut plus être annulée.
+
+  (2) Libération immédiate — pourquoi c'est automatique :
+      L'algorithme de disponibilité (C3) et l'affichage du calendrier ne
+      considèrent QUE les réservations au statut 'confirmed'. Dès qu'une
+      réservation passe à 'cancelled', elle cesse instantanément de bloquer
+      les dates : aucune autre action n'est nécessaire.
+
+  (3) Notification des deux parties :
+      Le même message asynchrone (cf. 4.4) envoie, pour un statut 'cancelled',
+      un email AU VOYAGEUR ET À L'HÔTE (sujet « Réservation annulée », motif
+      inclus). Le voyageur voit également le motif sur sa page de réservation.
+
+  Centralisation : la logique est portée par le service ReservationStatusManager
+  (confirm() / cancel()) : transition + ReservationStatusHistory + flush +
+  dispatch de la notification. Réutilisé par l'espace hôte ET l'espace voyageur,
+  ce qui garantit un comportement identique quel que soit l'initiateur.
+
+
+================================================================================
+ 4. SCHÉMAS DE FLUX
+================================================================================
+
+4.1. Tunnel de réservation (expérience voyageur — B.1)
+--------------------------------------------------------------------------------
+
+  [Voyageur]                [Application]                 [Async / Mailer]
+      │                          │                              │
+      │ 1. Sélection des dates   │                              │
+      │ (recherche / fiche)      │                              │
+      ├─────────────────────────>│                              │
+      │                          │                              │
+      │ 2. Page récap (checkout) │                              │
+      │<─────────────────────────┤                              │
+      │                          │                              │
+      │ 3. Soumission            │                              │
+      ├─────────────────────────>│                              │
+      │              4. Validation disponibilité TEMPS RÉEL     │
+      │                 AvailabilityChecker (C1..C4)            │
+      │                          │                              │
+      │            ┌─ indisponible ─> messages flash d'erreur ──┤
+      │            │             │   (retour au récap)          │
+      │            └─ disponible │                              │
+      │                          │                              │
+      │              5. Création Reservation                    │
+      │                 status = confirmed | pending            │
+      │                 (selon instantBooking)                  │
+      │                          │                              │
+      │              6. dispatch(ReservationConfirmationNotif.) │
+      │                          ├─────────────────────────────>│  (file Messenger
+      │                          │                              │   transport async)
+      │ 7. Redirection suivi     │                              │
+      │    + message flash succès│                              │
+      │<─────────────────────────┤                              │
+      │                          │         8. Worker consomme   │
+      │                          │            -> envoi email   │
+      │                          │            (SMTP Mailpit)   │
+      │                          │                              ▼
+      │                          │                       [Email reçu]
+
+  Points clés :
+    - Étape 4 : la disponibilité est revalidée au moment de la soumission
+      (et non seulement à l'affichage) -> garantit l'invariant (I1) en cas de
+      réservation concurrente.
+    - Étape 6/8 : la notification email est DÉCOUPLÉE (asynchrone) -> la réponse
+      HTTP au voyageur n'attend pas l'envoi du mail (meilleure latence,
+      résilience si le serveur mail est lent/indisponible : retries Messenger).
+
+
+4.2. Gestion des disponibilités (espace hôte — A.1)
+--------------------------------------------------------------------------------
+
+  [Hôte] ── GET /hote ──────────────> liste de SES logements
+     │
+     ├── GET /hote/logement/{id}/calendrier?year=&month=
+     │        -> vue mensuelle (jours disponibles / réservés / bloqués)
+     │
+     ├── POST /hote/logement/{id}/indisponibilite
+     │        (startDate, endDate, reason)
+     │        -> pour chaque jour : PropertyAvailability.isAvailable = false
+     │           + blockReason
+     │
+     ├── POST /hote/logement/{id}/disponibilite  (date)
+     │        -> isAvailable = true (déblocage)
+     │
+     └── POST /hote/logement/{id}/tarification
+              (startDate, endDate, priceOverride?, minimumStay?)
+              -> applique le tarif / séjour minimum sur la plage
+
+  Chaque action vérifie PropertyVoter::EDIT (l'hôte agit sur SES logements).
+
+
+4.3. Cycle de vie d'une réservation (états)
+--------------------------------------------------------------------------------
+
+        création
+           │
+   instantBooking ? ── non ──> [PENDING] ──── hôte CONFIRME ────> [CONFIRMED]
+           │                       │           (re-check C1..C4)      │
+          oui                      │                            séjour terminé
+           │                       │                                 │
+           ▼                       ▼                                 ▼
+       [CONFIRMED]            [CANCELLED] <───── annulation ──── [COMPLETED]
+           │                       ▲          (hôte OU voyageur,
+       annulation ─────────────────┘           motif obligatoire,
+   (hôte OU voyageur)                          libère les dates,
+                                               notifie les 2 parties)
+
+  - PENDING   -> CANCELLED : refus de la demande par l'hôte, ou retrait par le
+                             voyageur (motif requis).
+  - CONFIRMED -> CANCELLED : annulation par l'hôte ou le voyageur (motif requis)
+                             -> dates libérées immédiatement.
+  Toute transition -> une ligne dans ReservationStatusHistory.
+
+
+4.4. Validation hôte d'une réservation "sur demande" (workflow + endpoints)
+--------------------------------------------------------------------------------
+
+  [Hôte]                      [Application]                  [Async / Mailer]
+     │                            │                               │
+     │ GET /hote/reservations     │                               │
+     ├───────────────────────────>│  liste (pending en premier)   │
+     │<───────────────────────────┤                               │
+     │                            │                               │
+     │  ┌─ CONFIRMER ─────────────┤                               │
+     │  │ POST /hote/reservation/{id}/confirmer                   │
+     │  │   - CSRF + ReservationVoter::MANAGE                     │
+     │  │   - garde : statut == 'pending'                        │
+     │  │   - RE-CHECK disponibilité (C1..C4)                    │
+     │  │   - pending -> confirmed                               │
+     │  │   - + ReservationStatusHistory                         │
+     │  │   - dispatch(notification) ─────────────────────────────>│ (async)
+     │  │                          │                               │
+     │  └─ REFUSER / ANNULER ─────┤                               │
+     │    POST /hote/reservation/{id}/annuler                     │
+     │      - CSRF + ReservationVoter::MANAGE                     │
+     │      - garde : statut in (pending, confirmed)             │
+     │      - MOTIF OBLIGATOIRE                                   │
+     │      - -> cancelled + cancellationReason                  │
+     │      - + ReservationStatusHistory                         │
+     │      - dispatch(notification) ───────────────────────────────>│ (async)
+     │                            │                               │
+     │ redirection + flash        │            Worker consomme    │
+     │<───────────────────────────┤            -> email aux       │
+     │                            │               2 parties       ▼
+     │                            │            (confirmée / annulée + motif)
+
+  Côté voyageur, annulation symétrique :
+     POST /reservations/{id}/annuler  (ReservationVoter::CANCEL, motif requis,
+     statut in (pending, confirmed)) -> même service ReservationStatusManager.
+
+  Email asynchrone (ReservationConfirmationNotificationHandler) — sujet selon
+  le statut courant de la réservation rechargée, et DESTINATAIRES :
+      confirmed -> "Votre réservation est confirmée"        -> voyageur
+      pending   -> "Votre demande de réservation a bien..."  -> voyageur
+      cancelled -> "Réservation annulée" (+ motif)           -> voyageur ET hôte
+
+  Côté voyageur : le motif d'annulation est affiché sur la page
+  /reservations/{id} lorsque le statut est 'cancelled'.
+
+  Récapitulatif des endpoints (espace hôte + voyageur) :
+      GET  /hote                                     tableau de bord + nb pending
+      GET  /hote/reservations                        demandes entrantes
+      POST /hote/reservation/{id}/confirmer          pending -> confirmed
+      POST /hote/reservation/{id}/annuler            -> cancelled (motif requis)
+      GET  /hote/logement/{id}/calendrier            calendrier mensuel
+      POST /hote/logement/{id}/indisponibilite       bloquer une période
+      POST /hote/logement/{id}/disponibilite         débloquer un jour
+      POST /hote/logement/{id}/tarification          tarif / séjour minimum
+      POST /reservations/{id}/annuler                annulation par le voyageur
+
+
+================================================================================
+ 5. JUSTIFICATION DES CHOIX TECHNIQUES
+================================================================================
+
+  - Symfony + Doctrine ORM : cadre structurant (sécurité, formulaires, validation,
+    Messenger), mapping objet-relationnel, migrations versionnées.
+
+  - PostgreSQL : SGBD robuste, support natif JSON (champ roles), contraintes
+    d'intégrité (clés étrangères NOT NULL sur host, property, guest).
+
+  - UUID comme clés primaires : non-énumérables (on n'expose pas le nombre de
+    réservations), génération applicative, pas de collision en environnement
+    distribué.
+
+  - Service métier dédié (AvailabilityChecker) : la règle de disponibilité
+    (C1..C4) est centralisée, testable et réutilisable. Évite de disperser la
+    logique dans les contrôleurs.
+
+  - Voters Symfony : autorisation fine "rôle + propriété de la ressource",
+    déclarative via #[IsGranted], indépendante des contrôleurs.
+
+  - Messenger (transport doctrine://default) pour l'email : découplage de l'envoi
+    (asynchrone), résilience (stratégie de retry max_retries=3), meilleure
+    latence perçue. Le message ne transporte que l'ID de réservation : le handler
+    recharge l'entité fraîche (évite de sérialiser un objet Doctrine).
+
+  - Mailer + TemplatedEmail (Twig) : email HTML rendu via template, envoi SMTP.
+    En développement, Mailpit capture les mails (port 8025).
+
+  - Modèle de disponibilité "1 jour = 1 ligne" : simplicité des requêtes par
+    plage, support du blocage et de la tarification par jour. Compromis assumé
+    sur la volumétrie pour le périmètre du projet.
+
+
+================================================================================
+ FIN DU DOCUMENT
+================================================================================
