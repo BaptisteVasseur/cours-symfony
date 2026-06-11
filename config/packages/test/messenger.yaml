@@ -1,0 +1,6 @@
+framework:
+    messenger:
+        transports:
+            # En test, on n'exécute pas le worker : les messages restent en
+            # mémoire et sont inspectables (getSent) pour les assertions.
+            async: 'in-memory://'
