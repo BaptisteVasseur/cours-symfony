@@ -17,4 +17,18 @@ class PropertyICalSyncRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, PropertyICalSync::class);
     }
+
+    public function findAllToSync(?string $propertyId = null): array
+    {
+        $qb = $this->createQueryBuilder('s')
+            ->addSelect('p')
+            ->join('s.property', 'p');
+
+        if ($propertyId !== null && $propertyId !== '') {
+            $qb->andWhere('p.id = :propertyId')->setParameter('propertyId', $propertyId);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }
+

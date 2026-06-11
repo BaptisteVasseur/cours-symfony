@@ -1,0 +1,24 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block subject %}Réservation confirmée{% endblock %}
+
+{% block content %}
+    <h1 style="font-size:20px; margin:0 0 12px;">Réservation confirmée</h1>
+    <p style="font-size:14px; line-height:1.6; color:#444;">
+        {% if recipientRole|default('guest') == 'host' %}
+            Une réservation vient d'être confirmée pour votre logement. Les dates sont désormais verrouillées dans votre calendrier.
+        {% else %}
+            Bonne nouvelle, votre séjour est confirmé ! Voici le récapitulatif de votre réservation.
+        {% endif %}
+    </p>
+
+    {{ include('emails/partials/_summary.html.twig') }}
+
+    {% if detailUrl is defined %}
+        <p style="margin:24px 0;">
+            <a href="{{ detailUrl }}" style="display:inline-block; background-color:#FF385C; color:#ffffff; text-decoration:none; padding:12px 22px; border-radius:8px; font-weight:bold; font-size:14px;">
+                Voir la réservation
+            </a>
+        </p>
+    {% endif %}
+{% endblock %}

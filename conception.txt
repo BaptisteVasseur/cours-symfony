@@ -1,0 +1,59 @@
+
+réflexion : 
+Moteur de réservation & calendrier
+
+Avant de coder, j'ai voulu bien comprendre le besoin. 
+comment j'ai pensé le projet et pourquoi j'ai fait ces choix.
+
+
+Comprendre qui utilise le système : 
+
+Je me suis d'abord demandé qui s'en sert. 
+Il y a le voyageur (il cherche, vérifie les dates, réserve), 
+l'hôte (il gère son calendrier, accepte ou refuse, bloque des dates) 
+et le système, dont le rôle principal est d'éviter l'erreur : que deux personnes réservent le même
+logement aux mêmes dates.
+
+
+Le jour du départ est-il réservable ?
+
+La question qui change tout. 
+Comme à l'hôtel, quelqu'un part le matin et un autre arrive l'après-midi le même jour. 
+J'ai donc raisonné en nuits :
+une réservation du 10 au 14 occupe les nuits du 10 au 13, et le 14 reste libre pour le voyageur suivant. 
+
+
+Éviter la double réservation ! 
+
+Deux personnes qui réservent au même instant. 
+La règle : au moment de confirmer, on revérifie une dernière fois que les dates sont libres,
+juste avant d'enregistrer. 
+Le premier qui valide gagne, le second est refusé proprement. 
+
+Pour les emails : 
+
+On veut un email de confirmation, mais l'envoi peut être lent. 
+Je ne voulais pas faire attendre le voyageur. 
+L'email part donc en arrière-plan, juste après l'enregistrement de la réservation.
+
+
+Le calendrier et la synchro : 
+
+Pour les réglages de l'hôte le jours est bloqués, il faut raisonner jour par jour,
+car c'est ainsi qu'il pense.
+Les séjours, eux, sont enregistrés en périodes (du 10 au 14), plus compact. 
+Enfin, chaque logement expose un lien de calendrier (iCal) protégé par un code secret,
+pour que l'hôte synchronise ses dates avec Google Agenda ou Outlook et évite d'accepter deux fois les mêmes dates ailleurs.
+
+
+Pour l'import iCal :
+
+l'hôte peut donner l'adresse de son calendrier Airbnb,
+et une commande (app:ical:sync) va lire ce calendrier et bloquer chez nous les nuits déjà prises ailleurs.
+
+Pour les conflits auxquels j'ai réfléchi, voici les cas :
+
+- L'import est un miroir du calendrier distant : à chaque passage, si une date
+  n'est plus dans le flux alors le séjour a été annulé ailleurs, je la libère automatiquement chez nous.
+- Si une nuit importée tombe sur une réservation déjà confirmée chez nous, je la
+  signale comme conflit pour évite les risque de double  de réservation entre  les plateformes.

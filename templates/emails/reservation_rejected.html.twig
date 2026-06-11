@@ -1,0 +1,18 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block subject %}Demande de réservation refusée{% endblock %}
+
+{% block content %}
+    <h1 style="font-size:20px; margin:0 0 12px;">Demande refusée</h1>
+    <p style="font-size:14px; line-height:1.6; color:#444;">
+        Nous sommes désolés, l'hôte n'a pas pu donner suite à votre demande de réservation.
+    </p>
+
+    {{ include('emails/partials/_summary.html.twig') }}
+
+    {% if reservation.cancellationReason %}
+        <p style="font-size:14px; line-height:1.6; color:#444;">
+            <strong>Motif :</strong> {{ reservation.cancellationReason }}
+        </p>
+    {% endif %}
+{% endblock %}

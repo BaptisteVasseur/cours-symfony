@@ -45,6 +45,56 @@ class PropertyRepository extends ServiceEntityRepository
         return $qb->getQuery()->getResult();
     }
 
+    public function search(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        ?int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :published')
+            ->setParameter('published', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && trim($destination) !== '') {
+            $qb->andWhere('a.city LIKE :destination OR a.addressLine1 LIKE :destination OR a.country LIKE :destination')
+                ->setParameter('destination', '%' . trim($destination) . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null && $checkin < $checkout) {
+            $qb->andWhere(
+                'NOT EXISTS (SELECT 1 FROM App\Entity\Reservation res
+                    WHERE res.property = p
+                      AND res.status = :confirmed
+                      AND res.checkinDate < :checkout
+                      AND res.checkoutDate > :checkin)',
+            )
+                ->andWhere(
+                    'NOT EXISTS (SELECT 1 FROM App\Entity\PropertyAvailability pav
+                        WHERE pav.property = p
+                          AND pav.isAvailable = false
+                          AND pav.availableDate >= :checkin
+                          AND pav.availableDate < :checkout)',
+                )
+                ->setParameter('confirmed', 'confirmed')
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
     /**
      * @return list<Property>
      */
