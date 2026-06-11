@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Property;
+use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -131,5 +132,82 @@ class PropertyRepository extends ServiceEntityRepository
             ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Filtered search for published properties.
+     * Excludes properties with confirmed reservations overlapping [checkin, checkout).
+     * Excludes properties with any blocked date in that range.
+     * Filters by maxGuests >= $guests and city/address ILIKE $destination.
+     *
+     * @return list<Property>
+     */
+    public function findForSearch(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        ?int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere(
+                $qb->expr()->orX(
+                    $qb->expr()->like('LOWER(a.city)', ':dest'),
+                    $qb->expr()->like('LOWER(a.addressLine1)', ':dest'),
+                )
+            )->setParameter('dest', '%' . mb_strtolower($destination) . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            // Exclude properties with a confirmed reservation overlapping the range
+            $qb->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        $this->getEntityManager()->createQueryBuilder()
+                            ->select('1')
+                            ->from(Reservation::class, 'res')
+                            ->where('res.property = p')
+                            ->andWhere('res.status = :resStatus')
+                            ->andWhere('res.checkinDate < :checkout')
+                            ->andWhere('res.checkoutDate > :checkin')
+                            ->getDQL()
+                    )
+                )
+            )
+            ->setParameter('resStatus', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+
+            // Exclude properties with any manually blocked date in range
+            $qb->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        $this->getEntityManager()->createQueryBuilder()
+                            ->select('1')
+                            ->from(\App\Entity\PropertyAvailability::class, 'pa')
+                            ->where('pa.property = p')
+                            ->andWhere('pa.isAvailable = false')
+                            ->andWhere('pa.availableDate >= :checkin')
+                            ->andWhere('pa.availableDate < :checkout')
+                            ->getDQL()
+                    )
+                )
+            );
+        }
+
+        return $qb->getQuery()->getResult();
     }
 }
