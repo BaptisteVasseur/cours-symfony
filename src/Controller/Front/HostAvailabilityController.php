@@ -155,6 +155,7 @@ final class HostAvailabilityController extends AbstractController
 
     #[Route('/ical/generer', name: 'ical_generate', methods: ['POST'])]
     public function generateIcalToken(
+        Request $request,
         Property $property,
         EntityManagerInterface $entityManager,
     ): Response {
@@ -163,7 +164,7 @@ final class HostAvailabilityController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
-        if (!$this->isCsrfTokenValid('ical_generate_' . $property->getId(), $this->container->get('request_stack')->getCurrentRequest()?->request->getString('_token'))) {
+        if (!$this->isCsrfTokenValid('ical_generate_' . $property->getId(), $request->request->getString('_token'))) {
             $this->addFlash('error', 'Invalid security token.');
 
             return $this->redirectToRoute('app_host_availability_index', ['id' => $property->getId()]);
