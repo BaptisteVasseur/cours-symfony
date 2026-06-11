@@ -30,7 +30,7 @@ class HomeController extends AbstractController
     #[Route('/logement/{id}', name: 'app_logement_detail')]
     #[IsGranted('ROLE_USER')]
     #[IsGranted(PropertyVoter::VIEW, subject: 'property')]
-    public function detail(Property $property, PropertyRepository $propertyRepository, ReviewRepository $reviewRepository): Response
+    public function detail(Request $request, Property $property, PropertyRepository $propertyRepository, ReviewRepository $reviewRepository): Response
     {
         $property = $propertyRepository->findOneForDetail($property) ?? $property;
         $allReviews = $reviewRepository->findByPropertyOrdered($property);
@@ -39,6 +39,9 @@ class HomeController extends AbstractController
             'property' => $property,
             'reviews' => \array_slice($allReviews, 0, 5),
             'totalReviews' => \count($allReviews),
+            'checkin' => $request->query->get('checkin'),
+            'checkout' => $request->query->get('checkout'),
+            'guests' => $request->query->get('guests'),
         ]);
     }
 

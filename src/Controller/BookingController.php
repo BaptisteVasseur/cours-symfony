@@ -65,7 +65,28 @@ final class BookingController extends AbstractController
             ? null
             : $this->generateUrl('app_booking_create', ['property_id' => $property->getId()]);
 
-        $form = $this->createForm(BookingType::class, null, array_filter([
+        $defaultData = [];
+        $checkinVal = $request->query->get('checkin');
+        $checkoutVal = $request->query->get('checkout');
+        $guestsVal = $request->query->get('guests');
+
+        if ($checkinVal) {
+            $checkinDate = \DateTimeImmutable::createFromFormat('Y-m-d', $checkinVal);
+            if ($checkinDate) {
+                $defaultData['checkinDate'] = $checkinDate;
+            }
+        }
+        if ($checkoutVal) {
+            $checkoutDate = \DateTimeImmutable::createFromFormat('Y-m-d', $checkoutVal);
+            if ($checkoutDate) {
+                $defaultData['checkoutDate'] = $checkoutDate;
+            }
+        }
+        if ($guestsVal !== null && $guestsVal !== '') {
+            $defaultData['guestsCount'] = (int) $guestsVal;
+        }
+
+        $form = $this->createForm(BookingType::class, $defaultData, array_filter([
             'action' => $actionUrl,
             'method' => 'POST',
         ]));

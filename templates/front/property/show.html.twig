@@ -177,7 +177,12 @@
                             Modifier l'annonce
                         </a>
                     {% else %}
-                        <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                        <a href="{{ path('app_booking_checkout', {
+                            id: property.id,
+                            checkin: checkin|default(null),
+                            checkout: checkout|default(null),
+                            guests: guests|default(null)
+                        }|filter(v => v is not null and v != '')) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
                             Réserver
                         </a>
                     {% endif %}

@@ -54,7 +54,12 @@
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
             {% for property in properties %}
-                {% include 'components/card.html.twig' with { property: property } %}
+                {% include 'components/card.html.twig' with {
+                    property: property,
+                    checkin: checkin,
+                    checkout: checkout,
+                    guests: guests
+                } %}
             {% else %}
                 <p class="col-span-full text-gray-500">Aucun logement trouvé.</p>
             {% endfor %}
