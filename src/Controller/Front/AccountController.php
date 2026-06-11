@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Front;
 
+use App\Entity\Property;
 use App\Entity\User;
 use App\Entity\UserProfile;
 use App\Form\AccountProfileType;
@@ -85,5 +86,21 @@ final class AccountController extends AbstractController
         return $this->render('front/account/properties.html.twig', [
             'properties' => $propertyRepository->findByHost($user),
         ]);
+    }
+
+    #[Route('/proprietes/{id}/regenerer-token', name: 'app_account_property_regen_token', methods: ['POST'])]
+    public function regenCalendarToken(Property $property, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User || $property->getHost()?->getId() !== $user->getId()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $property->regenerateCalendarToken();
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Token iCal régénéré avec succès.');
+
+        return $this->redirectToRoute('app_account_properties');
     }
 }

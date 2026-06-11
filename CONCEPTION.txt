@@ -1,0 +1,152 @@
+CONCEPTION TECHNIQUE — MOTEUR DE RESERVATION ET CALENDRIER ICAL
+===============================================================
+
+
+1. MODELISATION TEMPORELLE
+---------------------------
+
+oui le jour de checkout est reservable par un nouveau voyageur et cest un choix delibere dans notre
+implementation on bloque les jours avec une boucle while ($cursor < $end) donc le curseur sarrette
+avant datteindre la date de fin le dernier jour le jour de depart nest pas inclut dans le blocage
+ca veut dire concretement que si quelqun part le 10 juillet cette date reste disponible pour une
+nouvelle arrivee
+
+pour les reservations confirmed la condition de chevauchement quon utilise cest
+checkinDate < :checkout AND checkoutDate > :checkin ce qui est la formule classique dintersection
+de deux intervalles si on remplace avec un exemple concret reservation A du 7 au 10 juillet et
+reservation B du 10 au 13 juillet le test donne 7 < 13 vrai ET 10 > 10 faux donc pas de
+chevauchement les deux reservations coexistent sans conflit
+
+pour la question du chevauchement entre un depart a 11h et une arrivee a 15h on gere pas les heures
+dans notre bdd les champs checkinDate et checkoutDate sont de type date sans composante horaire donc
+le schema travaille a la granularite du jour et considere naturellement que le jour de checkout est
+libre pour une nouvelle arrivee ca correspond a la realite du metier ou le menage se fait dans la
+fenetre entre les deux horaires cest une simplification assumee qui evite une complexite inutile
+pour notre cas dusage si on voulait gerer les heures il faudrait passer en datetime et ajuster
+toutes les requetes de chevauchement
+
+
+2. GESTION DES ETATS
+---------------------
+
+non une demande avec le statut pending ne bloque pas les dates dans notre systeme cest un choix
+architectural delibere la methode countOverlapping dans ReservationRepository filtre uniquement sur
+status IN confirmed donc les reservations en attente sont completement ignorees dans le calcul
+de disponibilite
+
+ce choix implique deux risques opposes quil faut bien comprendre le premier risque cest loverbooking
+si lhote accepte deux demandes pending qui couvrent les memes dates les deux reservations passent en
+confirmed et on a un conflit dans notre implementation actuelle la methode confirm dans
+ReservationService ne refait pas de verification de dispo avant de confirmer cest une limite connue
+que lon accepte pour simplifier le flux
+
+le deuxieme risque cest linverse si on avait choisi de bloquer les dates des le statut pending un
+voyageur de mauvaise foi pourrait creer des dizaines de demandes pour saturer le calendrier dun
+logement sans aucune intention de payer cest ce quon appelle le blocage abusif ca detruirait
+lexperience hote
+
+notre tradeoff cest donc de privilegier la fluidite du systeme et de faire confiance a lhote pour
+traiter ses demandes rapidement dans un vrai produit en production on ajouterait soit une expiration
+automatique des pending apres 24h soit un re-check de disponibilite au moment de la confirmation
+pour securiser le cas de loverbooking
+
+
+3. CONCURRENCE
+---------------
+
+cest un vrai sujet dans notre implementation actuelle postgres utilise le MVCC multi version
+concurency control ce qui signifie que chaque transaction travaille sur un snapshot coherent de la
+base de donnees au moment ou elle commence si deux utilisateurs lancent exactement en meme temps une
+demande de reservation pour le meme logement sur les memes dates les deux transactions vont lire le
+meme etat de la bdd et voir toutes les deux que cest disponible les deux vont inserer leur
+reservation et on se retrouve avec deux enregistrements confirmed sur les memes dates sans aucune
+erreur de la bdd
+
+pour resoudre ca proprement il y a plusieurs approches la premiere cest le SELECT FOR UPDATE qui
+pose un verrou de lecture sur les lignes concernees la deuxieme transaction est bloquee en attente
+que la premiere se termine une autre approche cest le verrou optimiste ou on ajoute un champ version
+a lentite et on verifie au moment du flush que le numero de version na pas change entre le debut et
+la fin de la transaction si ca a change on rejette
+
+dans notre implementation on a pas implemente ces mecanismes parce que pour lescale dun projet
+academique le risque de collision a la milliseconde est extremement faible et le code de verification
+de dispo dans AvailabilityService avec ses deux COUNT couvre largement les cas normaux dans un vrai
+systeme type airbnb en production le SELECT FOR UPDATE serait indispensable
+
+
+4. PERFORMANCE
+---------------
+
+notre approche pour valider la disponibilite sur nimporte quelle plage de dates repose sur deux
+requetes SQL agregees independantes du nombre de nuits le premier appel cest countBlockedInRange
+qui execute un SELECT COUNT(*) WHERE availableDate BETWEEN :from AND :to avec un filtre sur
+isAvailable = false postgres parcourt lindex sur (property_id, available_date) et retourne un
+entier peu importe que la plage soit de 3 jours ou 365 jours cest toujours une seule requete
+
+le deuxieme appel cest countOverlapping qui execute un SELECT COUNT(*) avec la condition de
+chevauchement checkinDate < :checkout AND checkoutDate > :checkin filtree sur le statut confirmed
+encore une fois une seule requete qui retourne 0 si cest dispo ou un nombre positif si cest occupe
+
+si on avait naivement fait une boucle PHP qui itere sur chaque jour et appelle
+findOneByPropertyAndDate a chaque iteration ca aurait genere N+1 requetes soit 20 appels pour
+20 nuits 90 appels pour 3 mois un an ca ferait 365 requetes juste pour verifier un sejour notre
+methode agregee echappe completement a ce probleme et reste O(1) en nombre de requetes peu importe
+la duree du sejour
+
+pour la recherche de logements disponibles dans PropertyRepository la meme logique sapplique via
+des sous requetes NOT EXISTS qui sont evaluees une seule fois par logement par postgres sans aucune
+iteration cote applicatif
+
+
+5. ASYNCHRONISME
+-----------------
+
+lordre flush puis dispatch nest pas arbitraire cest une contrainte forte de coherence entre la bdd
+et le systeme de messagerie si on dispatchait le message avant le flush voila ce qui pourrait se
+passer on envoie le message ReservationCreatedMessage au transport le worker Messenger le recoit
+et essaie de charger la reservation depuis la bdd par son id mais a ce moment la la reservation
+nexiste peut etre pas encore en bdd ou le flush a echoue entre temps a cause dune contrainte sql
+dune coupure reseau dune erreur de validation doctrine le voyageur recevrait un email de
+confirmation pour une reservation qui nexiste pas dans le systeme cest une incoherence grave qui
+est impossible a corriger apres coup parce que lemail est deja dans la boite du destinataire
+
+en faisant le flush dabord on garantit que la reservation a un id valide est persistee en bdd et
+est recuperable par le worker avant meme que le message soit envoye
+
+pour la strategie de fallback en cas de panne de transport on utilise pas RabbitMQ mais le transport
+Doctrine de Symfony ce qui veut dire que les messages sont stockes directement dans la table
+messenger_messages de notre base postgres si le worker crashe ou si le container messenger-worker
+redmarre les messages ne sont pas perdus ils restent en base avec leur statut en attente et sont
+traites automatiquement au redemarrage du worker cest un avantage enorme par rapport a RabbitMQ
+qui necessite une infra dediee supplementaire et une gestion de la persistance separee le seul
+inconvenient du transport Doctrine cest une legere charge supplementaire sur postgres mais cest
+completement negligeable pour notre volume
+
+
+6. STRUCTURE SQL
+-----------------
+
+on a choisi larchitecture avec une table de jours individuels PropertyAvailability ou chaque ligne
+represente un jour bloque pour un logement donne plutot que de stocker des periodes avec date_start
+et date_end ce choix a plusieurs justifications techniques
+
+la premiere raison cest la simplicite des requetes de verification avec des periodes il faudrait
+tester si la plage demandee intersecte une ou plusieurs periodes stockees ce qui necessite une
+condition SQL du type NOT (checkout <= date_start OR checkin >= date_end) qui est moins intuitive
+a lire et plus risquee a se tromper avec des jours individuels cest juste un COUNT WHERE
+availableDate BETWEEN :from AND :to immediatement comprehensible
+
+la deuxieme raison cest la flexibilite par jour le schema PropertyAvailability a des colonnes
+minimumStay et priceOverride qui permettent de definir des regles differentes pour chaque jour
+specifique par exemple augmenter le tarif le 31 decembre ou imposer un sejour minimum de 3 nuits
+en aout ce genre de surcharge granulaire est extremement complique a modeliser proprement avec des
+periodes il faudrait gerer les periodes qui se chevauchent les priorites entre periodes etc
+
+la troisieme raison cest la coherence avec le parseur iCal dans la commande app:ical:sync quand
+on importe un calendrier externe on itere sur chaque jour de chaque VEVENT et on insere ou met a
+jour une ligne PropertyAvailability par jour cest naturel et sans ambiguite
+
+le seul inconvenient reel cest le volume de donnees si un hote bloque deux ans de calendrier ca
+fait 730 lignes par logement mais postgres avec un index composite sur (property_id, available_date)
+gere ca sans aucun probleme les requetes restent en dessous de quelques millisecondes meme avec
+des millions de lignes

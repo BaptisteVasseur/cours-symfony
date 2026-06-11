@@ -120,6 +120,68 @@ class PropertyRepository extends ServiceEntityRepository
     /**
      * @return list<Property>
      */
+    public function findAvailable(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        ?int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE LOWER(:dest) OR LOWER(a.addressLine1) LIKE LOWER(:dest)')
+                ->setParameter('dest', '%' . $destination . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            // Exclure les logements avec une réservation confirmed qui chevauche la plage
+            $qb->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        'SELECT 1 FROM App\Entity\Reservation sub_r
+                         WHERE sub_r.property = p
+                         AND sub_r.status = \'confirmed\'
+                         AND sub_r.checkinDate < :checkout
+                         AND sub_r.checkoutDate > :checkin'
+                    )
+                )
+            )
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+
+            // Exclure les logements avec un jour bloqué manuellement dans la plage
+            $qb->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        'SELECT 1 FROM App\Entity\PropertyAvailability sub_pa
+                         WHERE sub_pa.property = p
+                         AND sub_pa.isAvailable = false
+                         AND sub_pa.availableDate >= :checkin
+                         AND sub_pa.availableDate < :checkout'
+                    )
+                )
+            );
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
     public function findByHost(User $host): array
     {
         return $this->createQueryBuilder('p')

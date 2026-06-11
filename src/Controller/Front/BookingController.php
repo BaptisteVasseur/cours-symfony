@@ -5,14 +5,18 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Property;
-use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
+use App\Message\ReservationCreatedMessage;
 use App\Repository\PropertyRepository;
+use App\Service\AvailabilityService;
+use App\Service\ReservationService;
+use App\Entity\Reservation;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\PropertyVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -27,6 +31,9 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
+        AvailabilityService $availabilityService,
+        ReservationService $reservationService,
+        MessageBusInterface $bus,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -62,8 +69,8 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            if ($guestsCount > $property->getMaxGuests()) {
-                $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
+            if (!$availabilityService->isAvailable($property, $checkin, $checkout, $guestsCount)) {
+                $this->addFlash('error', 'Ce logement n\'est pas disponible pour les dates ou le nombre de voyageurs sélectionnés.');
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
@@ -92,9 +99,17 @@ final class BookingController extends AbstractController
             $reservation->setCurrency('EUR');
 
             $entityManager->persist($reservation);
+
+            $reservationService->addStatusHistory($reservation, null, $reservation->getStatus(), $user);
+
             $entityManager->flush();
 
-            $this->addFlash('success', 'Votre réservation a été enregistrée.');
+            $bus->dispatch(new ReservationCreatedMessage((string) $reservation->getId()));
+
+            $this->addFlash('success', $property->isInstantBooking()
+                ? 'Votre réservation est confirmée !'
+                : 'Votre demande a été envoyée à l\'hôte. Vous serez notifié dès qu\'il l\'aura traitée.'
+            );
 
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }

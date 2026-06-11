@@ -3,21 +3,111 @@
 {% block title %}Mes propriétés{% endblock %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Mes propriétés</h1>
-        <p class="text-gray-500 mb-8">Annonces dont vous êtes l'hôte</p>
+<main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+    <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Mes propriétés</h1>
+    <p class="text-gray-500 mb-8">Annonces dont vous êtes l'hôte</p>
 
-        {% if properties|length > 0 %}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {% for property in properties %}
-                    {% include 'components/card.html.twig' with { property: property } %}
-                {% endfor %}
+    {% for type, messages in app.flashes %}
+        {% for msg in messages %}
+            <div class="mb-4 px-4 py-3 rounded-lg {{ type == 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800' }}">{{ msg }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    {% if properties|length > 0 %}
+        <div class="space-y-6">
+        {% for property in properties %}
+            <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <div class="flex flex-col sm:flex-row">
+                    {# Photo de couverture #}
+                    {% set cover = property.coverMedia %}
+                    <div class="sm:w-48 h-40 sm:h-auto shrink-0 bg-gray-100">
+                        <img
+                            src="{{ cover ? cover.fileUrl : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80' }}"
+                            alt="{{ property.title }}"
+                            class="w-full h-full object-cover"
+                        >
+                    </div>
+
+                    <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                            <div class="flex items-start justify-between gap-2 flex-wrap">
+                                <div>
+                                    <h2 class="font-semibold text-gray-900">{{ property.title }}</h2>
+                                    {% if property.address %}
+                                        <p class="text-sm text-gray-500 mt-0.5">{{ property.address.city }}, {{ property.address.country }}</p>
+                                    {% endif %}
+                                </div>
+                                {# Badge statut #}
+                                {% set statusColors = { 'published': 'bg-green-100 text-green-800', 'pending': 'bg-yellow-100 text-yellow-800', 'draft': 'bg-gray-100 text-gray-600' } %}
+                                {% set statusLabels = { 'published': 'Publié', 'pending': 'En attente', 'draft': 'Brouillon' } %}
+                                <span class="text-xs font-semibold px-2 py-1 rounded-full {{ statusColors[property.status]|default('bg-gray-100 text-gray-600') }}">
+                                    {{ statusLabels[property.status]|default(property.status) }}
+                                </span>
+                            </div>
+
+                            <p class="text-sm text-gray-600 mt-2">
+                                {{ property.maxGuests }} voyageur{{ property.maxGuests > 1 ? 's' }}
+                                · {{ property.bedrooms }} chambre{{ property.bedrooms > 1 ? 's' }}
+                                · <strong>{{ property.pricePerNight|number_format(0, ',', ' ') }} €</strong> / nuit
+                            </p>
+
+                            {% if property.averageRating %}
+                                <p class="text-sm text-gray-500 mt-1">
+                                    <i class="fa-solid fa-star text-xs"></i>
+                                    {{ property.averageRating|number_format(2, ',') }}
+                                    · {{ property.reviews|length }} avis
+                                </p>
+                            {% endif %}
+                        </div>
+
+                        {# Actions #}
+                        <div class="mt-4 flex flex-wrap gap-3">
+                            <a href="{{ path('app_logement_detail', { id: property.id }) }}"
+                               class="text-sm font-semibold text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50">
+                                <i class="fa-solid fa-eye mr-1"></i> Voir
+                            </a>
+                            <a href="{{ path('app_calendar_show', { id: property.id }) }}"
+                               class="text-sm font-semibold text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50">
+                                <i class="fa-solid fa-calendar mr-1"></i> Calendrier
+                            </a>
+                            <a href="{{ path('app_reservation_pending') }}"
+                               class="text-sm font-semibold text-gray-700 border border-gray-300 px-3 py-1.5 rounded-lg hover:bg-gray-50">
+                                <i class="fa-solid fa-clock mr-1"></i> Demandes
+                            </a>
+                        </div>
+
+                        {# iCal export #}
+                        <div class="mt-4 pt-4 border-t border-gray-100">
+                            <p class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Synchronisation iCal</p>
+                            {% if property.calendarToken %}
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <code class="text-xs bg-gray-100 px-2 py-1 rounded text-gray-700 break-all">
+                                        /api/properties/{{ property.id }}/calendar.ics?token={{ property.calendarToken }}
+                                    </code>
+                                    <form method="post" action="{{ path('app_account_property_regen_token', { id: property.id }) }}" class="inline">
+                                        <button type="submit" class="text-xs text-gray-500 underline hover:text-gray-800">
+                                            Régénérer
+                                        </button>
+                                    </form>
+                                </div>
+                            {% else %}
+                                <form method="post" action="{{ path('app_account_property_regen_token', { id: property.id }) }}">
+                                    <button type="submit" class="text-sm font-semibold text-[#FF385C] hover:underline">
+                                        <i class="fa-solid fa-link mr-1"></i> Générer un lien iCal
+                                    </button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
             </div>
-        {% else %}
-            <div class="text-center py-16 border border-dashed border-gray-200 rounded-xl">
-                <i class="fa-solid fa-house text-4xl text-gray-300 mb-4"></i>
-                <p class="text-gray-500">Vous n'avez pas encore d'annonce publiée.</p>
-            </div>
-        {% endif %}
-    </main>
+        {% endfor %}
+        </div>
+    {% else %}
+        <div class="text-center py-16 border border-dashed border-gray-200 rounded-xl">
+            <i class="fa-solid fa-house text-4xl text-gray-300 mb-4"></i>
+            <p class="text-gray-500">Vous n'avez pas encore d'annonce publiée.</p>
+        </div>
+    {% endif %}
+</main>
 {% endblock %}
