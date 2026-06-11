@@ -44,8 +44,6 @@ class Booking
     private ?int $guestsCount = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
-    #[Assert\NotBlank]
-    #[Assert\Positive]
     private ?string $totalPrice = null;
 
     #[ORM\Column(enumType: BookingStatus::class)]
