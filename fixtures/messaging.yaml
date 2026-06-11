@@ -1,0 +1,27 @@
+App\Entity\Conversation:
+    conversation_{1..30}:
+        reservation: '@reservation_<current()>'
+
+# Deux participants par conversation : un hôte + un voyageur (pools disjoints
+# => la clé composite (conversation_id, user_id) reste unique).
+App\Entity\ConversationParticipant:
+    cp_host_{1..30}:
+        conversation: '@conversation_<current()>'
+        user: '@host_*'
+    cp_guest_{1..30}:
+        conversation: '@conversation_<current()>'
+        user: '@guest_*'
+
+App\Entity\Message:
+    message_guest_{1..60}:
+        conversation: '@conversation_*'
+        sender: '@guest_*'
+        messageType: 'text'
+        content: '<paragraph(1)>'
+        isFlagged: '<boolean(5)>'
+    message_host_{1..30}:
+        conversation: '@conversation_*'
+        sender: '@host_*'
+        messageType: 'text'
+        content: '<paragraph(1)>'
+        isFlagged: false

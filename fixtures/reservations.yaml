@@ -1,0 +1,48 @@
+App\Entity\Reservation:
+    reservation_{1..60}:
+        property: '@property_*'
+        guest: '@guest_*'
+        # Intervalles disjoints => checkin toujours antérieur au checkout.
+        checkinDate: '<dateImmutable("+1 days", "+15 days")>'
+        checkoutDate: '<dateImmutable("+16 days", "+30 days")>'
+        guestsCount: '<numberBetween(1, 6)>'
+        status: '<randomElement(["pending", "confirmed", "confirmed", "completed", "cancelled"])>'
+        totalPrice: '<amount(150, 3000)>'
+        cleaningFee: '<amount(20, 80)>'
+        serviceFee: '<amount(15, 100)>'
+        securityDeposit: '<amount(100, 500)>'
+        currency: 'EUR'
+    # Réservations du voyageur de démo (compte fixe voyageur@airbnb-clone.fr),
+    # sur les annonces de l'hôte de démo.
+    reservation_demo_{1..2}:
+        property: '@property_demo_<current()>'
+        guest: '@demo_guest'
+        checkinDate: '<dateImmutable("+5 days", "+10 days")>'
+        checkoutDate: '<dateImmutable("+12 days", "+20 days")>'
+        guestsCount: 2
+        status: '<randomElement(["confirmed", "completed"])>'
+        totalPrice: '<amount(300, 900)>'
+        cleaningFee: '<amount(20, 60)>'
+        serviceFee: '<amount(15, 60)>'
+        securityDeposit: '<amount(100, 300)>'
+        currency: 'EUR'
+
+App\Entity\ReservationStatusHistory:
+    status_history_{1..60}:
+        reservation: '@reservation_<current()>'
+        oldStatus: 'pending'
+        newStatus: '<randomElement(["confirmed", "completed", "cancelled"])>'
+        changedBy: '@host_*'
+
+# Facture liée 1:1 à chaque réservation (numéro unique via <current()>).
+App\Entity\Invoice:
+    invoice_{1..60}:
+        reservation: '@reservation_<current()>'
+        invoiceNumber: 'INV-2026-<current()>'
+        pdfUrl: 'https://storage.airbnb-clone.fr/invoices/INV-2026-<current()>.pdf'
+        totalAmount: '<amount(150, 3000)>'
+    invoice_demo_{1..2}:
+        reservation: '@reservation_demo_<current()>'
+        invoiceNumber: 'INV-DEMO-<current()>'
+        pdfUrl: 'https://storage.airbnb-clone.fr/invoices/INV-DEMO-<current()>.pdf'
+        totalAmount: '<amount(300, 900)>'

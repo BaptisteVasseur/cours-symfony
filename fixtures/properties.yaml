@@ -1,0 +1,114 @@
+App\Entity\Property:
+    property_{1..12}:
+        host: '@host_*'
+        cancellationPolicy: '@cancellation_policy_*'
+        title: '<randomElement(["Charmant", "Magnifique", "Cosy", "Spacieux", "Lumineux"])> <randomElement(["appartement", "loft", "studio", "duplex", "chalet"])> à <city()>'
+        description: '<paragraph(3)>'
+        propertyType: '<randomElement(["villa", "loft", "apartment", "house", "chalet"])>'
+        status: '<randomElement(["published", "published", "published", "pending", "draft"])>'
+        maxGuests: '<numberBetween(1, 10)>'
+        bedrooms: '<numberBetween(0, 5)>'
+        beds: '<numberBetween(1, 6)>'
+        bathrooms: '<numberBetween(1, 4)>'
+        pricePerNight: '<amount(50, 400)>'
+        cleaningFee: '<amount(20, 80)>'
+        securityDeposit: '<amount(100, 500)>'
+        instantBooking: '<boolean(50)>'
+    # Annonces de l'hôte de démo (compte fixe hote@airbnb-clone.fr).
+    property_demo_{1..2}:
+        host: '@demo_host'
+        cancellationPolicy: '@cancellation_policy_*'
+        title: 'Logement démo n°<current()> à Paris'
+        description: '<paragraph(3)>'
+        propertyType: '<randomElement(["apartment", "loft"])>'
+        status: 'published'
+        maxGuests: '<numberBetween(2, 6)>'
+        bedrooms: '<numberBetween(1, 3)>'
+        beds: '<numberBetween(1, 4)>'
+        bathrooms: '<numberBetween(1, 2)>'
+        pricePerNight: '<amount(80, 250)>'
+        cleaningFee: '<amount(20, 60)>'
+        securityDeposit: '<amount(100, 300)>'
+        instantBooking: true
+
+App\Entity\PropertyAddress:
+    address_{1..12}:
+        property: '@property_<current()>'
+        country: 'France'
+        city: '<city()>'
+        postalCode: '<postcode()>'
+        addressLine1: '<streetAddress()>'
+        addressLine2: 'Résidence <lastName()>'
+    address_demo_{1..2}:
+        property: '@property_demo_<current()>'
+        country: 'France'
+        city: 'Paris'
+        postalCode: '7500<current()>'
+        addressLine1: '<streetAddress()>'
+
+App\Entity\PropertyRule:
+    rule_{1..12}:
+        property: '@property_<current()>'
+        petsAllowed: '<boolean(40)>'
+        smokingAllowed: '<boolean(20)>'
+        partiesAllowed: '<boolean(15)>'
+        additionalRules: '<sentence(8)>'
+    rule_demo_{1..2}:
+        property: '@property_demo_<current()>'
+        petsAllowed: true
+        smokingAllowed: false
+        partiesAllowed: false
+        additionalRules: 'Arrivée autonome possible. Merci de respecter le voisinage.'
+
+App\Entity\PropertyMedia:
+    # Une photo de couverture par annonce.
+    media_cover_{1..12}:
+        property: '@property_<current()>'
+        mediaType: 'image'
+        fileUrl: 'https://picsum.photos/seed/cover<current()>/1200/800'
+        sortOrder: 0
+        isCover: true
+    # Galerie : plusieurs photos secondaires réparties sur les annonces.
+    media_gallery_{1..48}:
+        property: '@property_*'
+        mediaType: 'image'
+        fileUrl: 'https://picsum.photos/seed/gallery<current()>/800/600'
+        sortOrder: '<numberBetween(1, 6)>'
+        isCover: false
+    media_demo_{1..2}:
+        property: '@property_demo_<current()>'
+        mediaType: 'image'
+        fileUrl: 'https://picsum.photos/seed/demo<current()>/1200/800'
+        sortOrder: 0
+        isCover: true
+
+App\Entity\PropertyAvailability:
+    availability_{1..120}:
+        property: '@property_*'
+        availableDate: '<dateImmutable("now", "+120 days")>'
+        isAvailable: '<boolean(80)>'
+        priceOverride: '<amount(60, 500)>'
+        minimumStay: '<numberBetween(1, 7)>'
+
+# Table pivot Property×Amenity : un lot par équipement pour garantir
+# l'unicité de la clé composite (property_id, amenity_id).
+App\Entity\PropertyAmenity:
+    pa_wifi_{1..12}:
+        property: '@property_<current()>'
+        amenity: '@amenity_wifi'
+    pa_kitchen_{1..12}:
+        property: '@property_<current()>'
+        amenity: '@amenity_kitchen'
+    pa_parking_{1..12}:
+        property: '@property_<current()>'
+        amenity: '@amenity_parking'
+    pa_tv_{1..12}:
+        property: '@property_<current()>'
+        amenity: '@amenity_tv'
+    # Équipements des annonces démo (paires composites uniques).
+    pa_demo_wifi_{1..2}:
+        property: '@property_demo_<current()>'
+        amenity: '@amenity_wifi'
+    pa_demo_kitchen_{1..2}:
+        property: '@property_demo_<current()>'
+        amenity: '@amenity_kitchen'

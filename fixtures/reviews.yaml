@@ -1,0 +1,13 @@
+App\Entity\Review:
+    review_{1..40}:
+        reservation: '@reservation_*'
+        reviewer: '@guest_*'
+        reviewedUser: '@host_*'
+        property: '@property_*'
+        rating: '<numberBetween(3, 5)>'
+        comment: '<paragraph(2)>'
+
+App\Entity\ReviewMedia:
+    review_media_{1..20}:
+        review: '@review_<current()>'
+        fileUrl: 'https://picsum.photos/seed/review<current()>/600/400'

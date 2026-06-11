@@ -1,0 +1,8 @@
+App\Entity\Notification:
+    notification_{1..80}:
+        user: '@guest_*'
+        type: '<randomElement(["reservation_confirmed", "new_message", "payment_received", "review_received", "booking_request"])>'
+        title: '<sentence(4)>'
+        content: '<sentence(12)>'
+        channel: '<randomElement(["email", "push"])>'
+        isRead: '<boolean(50)>'

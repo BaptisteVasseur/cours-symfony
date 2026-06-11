@@ -1,6 +1,7 @@
+# Pièces d'identité rattachées aux voyageurs (1 par voyageur via <current()>).
 App\Entity\UserDocument:
-  mon_doc_{1..20}:
-    fileUrl: 'https://monsite.fr/images/piece_identite/<current()>.pdf'
-    type: 'piece_identite'
-    verificationStatus: 'pending'
-    user: '@mon_user_<current()>'
+    document_{1..40}:
+        user: '@guest_<current()>'
+        type: '<randomElement(["piece_identite", "passeport", "permis_conduire"])>'
+        fileUrl: 'https://storage.airbnb-clone.fr/documents/<uuid()>.pdf'
+        verificationStatus: '<randomElement(["pending", "verified", "rejected"])>'

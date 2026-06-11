@@ -1,0 +1,36 @@
+App\Entity\Payment:
+    payment_{1..60}:
+        reservation: '@reservation_<current()>'
+        payer: '@guest_*'
+        provider: 'stripe'
+        providerPaymentIntent: 'pi_<bothify("??##??##??##??##")>'
+        amount: '<amount(150, 3000)>'
+        currency: 'EUR'
+        status: '<randomElement(["succeeded", "succeeded", "succeeded", "pending", "refunded"])>'
+        paidAt: '<dateImmutable("-30 days", "now")>'
+
+App\Entity\PaymentMethod:
+    payment_method_{1..30}:
+        user: '@guest_*'
+        provider: 'stripe'
+        providerPaymentMethodId: 'pm_<bothify("??##??##??##??##")>'
+        brand: '<randomElement(["visa", "mastercard", "amex"])>'
+        last4: '<numerify("####")>'
+        expirationMonth: '<numberBetween(1, 12)>'
+        expirationYear: '<numberBetween(2026, 2031)>'
+
+App\Entity\Refund:
+    refund_{1..10}:
+        payment: '@payment_<current()>'
+        amount: '<amount(50, 600)>'
+        reason: '<sentence(6)>'
+        status: 'succeeded'
+
+App\Entity\Payout:
+    payout_{1..40}:
+        host: '@host_*'
+        reservation: '@reservation_*'
+        amount: '<amount(100, 2500)>'
+        currency: 'EUR'
+        status: '<randomElement(["pending", "paid", "paid"])>'
+        paidAt: '<dateImmutable("-20 days", "now")>'
