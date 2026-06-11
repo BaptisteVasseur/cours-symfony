@@ -11,6 +11,7 @@ use App\Enum\PaiementStatut;
 use App\Enum\ReservationStatut;
 use App\Repository\ReservationRepository;
 use App\Service\DemandeReservationValidator;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -66,7 +67,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/mes-reservations/{id}/paiement/confirmer', name: 'app_reservation_payment_confirm', requirements: ['id' => '\d+'], methods: ['POST'])]
-    public function confirmPayment(Reservation $reservation, Request $request, EntityManagerInterface $entityManager): RedirectResponse
+    public function confirmPayment(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, NotificationService $notificationService): RedirectResponse
     {
         $this->verifierAccesVoyageur($reservation);
 
@@ -106,6 +107,13 @@ class ReservationController extends AbstractController
         }
 
         $entityManager->persist($paiement);
+        $notificationService->creer(
+            $reservation->hote,
+            'reservation_payee',
+            'Reservation confirmee',
+            sprintf('%s a confirme et paye sa reservation pour %s.', $reservation->voyageur->prenom, $reservation->logement->titre),
+            $this->generateUrl('app_host_reservation_show', ['id' => $reservation->id]),
+        );
         $entityManager->flush();
 
         $this->addFlash('success', 'Paiement confirme. Votre reservation est confirmee.');
@@ -119,6 +127,7 @@ class ReservationController extends AbstractController
         Request $request,
         DemandeReservationValidator $validator,
         EntityManagerInterface $entityManager,
+        NotificationService $notificationService,
     ): RedirectResponse {
         $user = $this->getUser();
         \assert($user instanceof User);
@@ -163,6 +172,15 @@ class ReservationController extends AbstractController
         $this->calculerMontants($reservation);
 
         $entityManager->persist($reservation);
+        $entityManager->flush();
+
+        $notificationService->creer(
+            $reservation->hote,
+            'reservation_demande',
+            'Nouvelle demande de reservation',
+            sprintf('%s souhaite reserver %s du %s au %s.', $user->prenom, $logement->titre, $dateArrivee->format('d/m/Y'), $dateDepart->format('d/m/Y')),
+            $this->generateUrl('app_host_reservation_show', ['id' => $reservation->id]),
+        );
         $entityManager->flush();
 
         $this->addFlash('success', 'Demande de reservation envoyee a l hote.');

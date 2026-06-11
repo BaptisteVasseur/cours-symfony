@@ -20,6 +20,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\File\UploadedFile;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -152,7 +153,7 @@ class HostLogementController extends AbstractController
         if ($request->isMethod('GET')) {
             return $this->render('host/logement/publication.html.twig', [
                 'logement' => $logement,
-                'politiques' => $entityManager->getRepository(PolitiqueAnnulation::class)->findBy(['actif' => true], ['nom' => 'ASC']),
+                'politiques' => $this->getOuCreerPolitiquesDisponibles($entityManager),
                 'motifs_invalides' => $publicationValidator->getMotifsInvalides($logement),
             ]);
         }
@@ -163,22 +164,29 @@ class HostLogementController extends AbstractController
             return $this->redirectToRoute('app_host_logement_publication', ['id' => $logement->id]);
         }
 
-        $photoUrl = trim((string) $request->request->get('photo_url', ''));
-        if ($photoUrl !== '' && $logement->photos->isEmpty()) {
-            if (!filter_var($photoUrl, FILTER_VALIDATE_URL)) {
-                $this->addFlash('error', 'L URL de la photo est invalide.');
+        $donneesEnregistrees = false;
 
-                return $this->redirectToRoute('app_host_logement_publication', ['id' => $logement->id]);
+        $photoFichier = $request->files->get('photo_fichier');
+        if ($photoFichier instanceof UploadedFile) {
+            if (!$logement->photos->isEmpty()) {
+                $this->addFlash('error', 'Une photo principale est deja renseignee pour cette annonce.');
+            } else {
+                $photoUrl = $this->enregistrerPhotoLogement($photoFichier);
+
+                if ($photoUrl === null) {
+                    return $this->redirectToRoute('app_host_logement_publication', ['id' => $logement->id]);
+                }
+
+                $photo = new PhotoLogement();
+                $photo->logement = $logement;
+                $photo->url = $photoUrl;
+                $photo->titre = $logement->titre;
+                $photo->photoPrincipale = true;
+                $photo->statutModeration = ModerationStatut::EN_ATTENTE;
+                $logement->photos->add($photo);
+                $entityManager->persist($photo);
+                $donneesEnregistrees = true;
             }
-
-            $photo = new PhotoLogement();
-            $photo->logement = $logement;
-            $photo->url = $photoUrl;
-            $photo->titre = $logement->titre;
-            $photo->photoPrincipale = true;
-            $photo->statutModeration = ModerationStatut::EN_ATTENTE;
-            $logement->photos->add($photo);
-            $entityManager->persist($photo);
         }
 
         $politiqueId = (int) $request->request->get('politique_annulation_id', 0);
@@ -186,6 +194,9 @@ class HostLogementController extends AbstractController
             $politique = $entityManager->getRepository(PolitiqueAnnulation::class)->find($politiqueId);
             if ($politique instanceof PolitiqueAnnulation && $politique->actif) {
                 $logement->politiqueAnnulation = $politique;
+                $donneesEnregistrees = true;
+            } else {
+                $this->addFlash('error', 'La politique d annulation selectionnee est invalide.');
             }
         }
 
@@ -193,24 +204,38 @@ class HostLogementController extends AbstractController
             $dateDebut = $this->creerDate((string) $request->request->get('disponibilite_debut', ''));
             $dateFin = $this->creerDate((string) $request->request->get('disponibilite_fin', ''));
 
-            if ($dateDebut !== null && $dateFin !== null && $dateDebut <= $dateFin) {
-                $date = $dateDebut;
-                while ($date <= $dateFin) {
-                    $disponibilite = new Disponibilite();
-                    $disponibilite->logement = $logement;
-                    $disponibilite->date = $date;
-                    $disponibilite->statut = DisponibiliteStatut::DISPONIBLE;
-                    $logement->disponibilites->add($disponibilite);
-                    $entityManager->persist($disponibilite);
-                    $date = $date->modify('+1 day');
+            if ($dateDebut !== null && $dateFin !== null) {
+                if ($dateDebut > $dateFin) {
+                    $this->addFlash('error', 'La date de fin doit etre posterieure ou egale a la date de debut.');
+                } else {
+                    $date = $dateDebut;
+                    while ($date <= $dateFin) {
+                        $disponibilite = new Disponibilite();
+                        $disponibilite->logement = $logement;
+                        $disponibilite->date = $date;
+                        $disponibilite->statut = DisponibiliteStatut::DISPONIBLE;
+                        $logement->disponibilites->add($disponibilite);
+                        $entityManager->persist($disponibilite);
+                        $date = $date->modify('+1 day');
+                    }
+                    $donneesEnregistrees = true;
                 }
             }
+        }
+
+        if ($donneesEnregistrees) {
+            $logement->dateMiseAJour = new \DateTimeImmutable();
+            $entityManager->flush();
         }
 
         $motifsInvalides = $publicationValidator->getMotifsInvalides($logement);
         if ($motifsInvalides !== []) {
             foreach ($motifsInvalides as $motif) {
                 $this->addFlash('error', $motif);
+            }
+
+            if ($donneesEnregistrees) {
+                $this->addFlash('success', 'Les elements renseignes ont ete enregistres. Completez les points restants avant soumission.');
             }
 
             return $this->redirectToRoute('app_host_logement_publication', ['id' => $logement->id]);
@@ -223,6 +248,75 @@ class HostLogementController extends AbstractController
         $this->addFlash('success', 'Annonce soumise a moderation. Elle sera visible apres validation administrateur.');
 
         return $this->redirectToRoute('app_host_logement_show', ['id' => $logement->id]);
+    }
+
+
+    /**
+     * @return list<PolitiqueAnnulation>
+     */
+    private function getOuCreerPolitiquesDisponibles(EntityManagerInterface $entityManager): array
+    {
+        $repository = $entityManager->getRepository(PolitiqueAnnulation::class);
+        $politiques = $repository->findBy(['actif' => true], ['nom' => 'ASC']);
+
+        if ($politiques !== []) {
+            return $politiques;
+        }
+
+        $flexible = new PolitiqueAnnulation();
+        $flexible->nom = 'Flexible';
+        $flexible->description = 'Remboursement complet jusqu a 24h avant l arrivee.';
+        $flexible->delaiRemboursementTotal = 1;
+        $flexible->delaiRemboursementPartiel = 0;
+        $flexible->pourcentageRemboursementPartiel = '100.00';
+        $flexible->fraisServiceRemboursables = true;
+
+        $moderee = new PolitiqueAnnulation();
+        $moderee->nom = 'Moderee';
+        $moderee->description = 'Remboursement partiel jusqu a 5 jours avant l arrivee.';
+        $moderee->delaiRemboursementTotal = 5;
+        $moderee->delaiRemboursementPartiel = 2;
+        $moderee->pourcentageRemboursementPartiel = '50.00';
+        $moderee->fraisServiceRemboursables = true;
+
+        $entityManager->persist($flexible);
+        $entityManager->persist($moderee);
+        $entityManager->flush();
+
+        return [$flexible, $moderee];
+    }
+
+    private function enregistrerPhotoLogement(UploadedFile $fichier): ?string
+    {
+        if (!$fichier->isValid()) {
+            $this->addFlash('error', 'Le fichier envoye est invalide.');
+
+            return null;
+        }
+
+        if (!str_starts_with((string) $fichier->getMimeType(), 'image/')) {
+            $this->addFlash('error', 'Le fichier doit etre une image.');
+
+            return null;
+        }
+
+        if ($fichier->getSize() !== false && $fichier->getSize() > 5 * 1024 * 1024) {
+            $this->addFlash('error', 'La photo ne doit pas depasser 5 Mo.');
+
+            return null;
+        }
+
+        $extension = $fichier->guessExtension() ?: 'jpg';
+        $nomFichier = bin2hex(random_bytes(16)).'.'.$extension;
+        $dossier = $this->getParameter('kernel.project_dir').'/public/uploads/logements';
+
+        if (!is_dir($dossier)) {
+            mkdir($dossier, 0775, true);
+        }
+
+        $fichier->move($dossier, $nomFichier);
+
+        return '/uploads/logements/'.$nomFichier;
     }
 
     private function verifierAccesHote(Logement $logement): void

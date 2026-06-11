@@ -47,6 +47,7 @@ security:
     access_control:
         - { path: ^/mon-compte, roles: ROLE_USER }
         - { path: ^/mes-reservations, roles: ROLE_USER }
+        - { path: ^/notifications, roles: ROLE_USER }
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/hote, roles: ROLE_HOTE }
 #        - { path: ^/(login|register), roles: PUBLIC_ACCESS }

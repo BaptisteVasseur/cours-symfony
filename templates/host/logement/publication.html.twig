@@ -13,13 +13,14 @@
         </div>
 
         <div class="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
-            <form method="post" action="{{ path('app_host_logement_publication', { id: logement.id }) }}" class="space-y-6">
+            <form method="post" action="{{ path('app_host_logement_publication', { id: logement.id }) }}" enctype="multipart/form-data" class="space-y-6">
                 {% if logement.photos is empty %}
                     <section class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
                         <h2 class="text-lg font-semibold text-gray-950">Photo principale</h2>
-                        <label class="mt-5 block">
-                            <span class="block text-sm font-medium text-gray-700">URL de la photo</span>
-                            <input name="photo_url" type="url" placeholder="https://..." class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                        <label class="relative mt-5 flex cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 bg-gray-50 px-6 py-10 text-center hover:border-rose-300 hover:bg-rose-50">
+                            <span class="text-sm font-semibold text-gray-900">Selectionner ou glisser une image</span>
+                            <span class="mt-1 text-xs text-gray-500">JPG, PNG, WebP ou GIF - 5 Mo maximum</span>
+                            <input name="photo_fichier" type="file" accept="image/*" class="absolute inset-0 cursor-pointer opacity-0">
                         </label>
                     </section>
                 {% endif %}

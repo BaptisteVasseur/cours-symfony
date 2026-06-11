@@ -3,10 +3,11 @@
 namespace App\Entity;
 
 use App\Enum\NotificationStatut;
+use App\Repository\NotificationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: NotificationRepository::class)]
 class Notification
 {
     #[ORM\Id]
