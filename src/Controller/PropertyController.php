@@ -50,6 +50,7 @@ class PropertyController extends AbstractController
     }
 
     #[Route('/{id}', name: 'app_property_show')]
+    #[IsGranted('ROLE_USER')]
     public function show(Property $property): Response
     {
         $bookingForm = $this->createForm(BookingType::class);

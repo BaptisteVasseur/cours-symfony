@@ -6,6 +6,7 @@ use App\Entity\Booking;
 use App\Entity\Conversation;
 use App\Entity\Message;
 use App\Entity\Property;
+use App\Entity\PropertyAvailability;
 use App\Entity\PropertyImage;
 use App\Entity\Review;
 use App\Entity\User;
@@ -28,6 +29,7 @@ class AppFixtures extends Fixture
         $bookings = $this->createBookings($manager, $users, $properties);
         $this->createReviews($manager, $bookings);
         $this->createConversations($manager, $bookings);
+        $this->createAvailabilities($manager, $properties);
 
         $manager->flush();
     }
@@ -159,6 +161,12 @@ class AppFixtures extends Fixture
                 $manager->persist($img);
             }
 
+            // First two properties have instant booking; others require host approval
+            $property->setInstantBooking(count($properties) < 2);
+
+            // Generate a calendar token for all properties
+            $property->generateCalendarToken();
+
             $manager->persist($property);
             $properties[] = $property;
         }
@@ -248,6 +256,25 @@ class AppFixtures extends Fixture
             $manager->persist($review);
             $i++;
         }
+    }
+
+    private function createAvailabilities(ObjectManager $manager, array $properties): void
+    {
+        // Block a demo period on the first property (travaux example)
+        $period = new PropertyAvailability();
+        $period->setProperty($properties[0])
+            ->setStartDate(new \DateTimeImmutable('+60 days'))
+            ->setEndDate(new \DateTimeImmutable('+70 days'))
+            ->setReason('Travaux de rénovation');
+        $manager->persist($period);
+
+        // Block a personal use period on the third property
+        $period2 = new PropertyAvailability();
+        $period2->setProperty($properties[2])
+            ->setStartDate(new \DateTimeImmutable('+90 days'))
+            ->setEndDate(new \DateTimeImmutable('+97 days'))
+            ->setReason('Usage personnel');
+        $manager->persist($period2);
     }
 
     private function createConversations(ObjectManager $manager, array $bookings): void

@@ -1,0 +1,60 @@
+{% extends 'admin/_layout.html.twig' %}
+
+{% block title %}Modifier {{ user.firstName }} {{ user.lastName }} — Admin{% endblock %}
+
+{% block admin_content %}
+<div class="max-w-lg space-y-6">
+    <div class="flex items-center gap-3">
+        <a href="{{ path('admin_users') }}" class="text-gray-400 hover:text-gray-600 transition">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-900">Modifier l'utilisateur</h1>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-2xl p-6">
+        {{ form_start(form, {attr: {class: 'space-y-5'}}) }}
+
+        <div class="grid grid-cols-2 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ form_label(form.firstName) }}</label>
+                {{ form_widget(form.firstName) }}
+                {{ form_errors(form.firstName) }}
+            </div>
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">{{ form_label(form.lastName) }}</label>
+                {{ form_widget(form.lastName) }}
+                {{ form_errors(form.lastName) }}
+            </div>
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ form_label(form.email) }}</label>
+            {{ form_widget(form.email) }}
+            {{ form_errors(form.email) }}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ form_label(form.phone) }}</label>
+            {{ form_widget(form.phone) }}
+            {{ form_errors(form.phone) }}
+        </div>
+
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">{{ form_label(form.role) }}</label>
+            {{ form_widget(form.role) }}
+            {{ form_errors(form.role) }}
+        </div>
+
+        <div class="flex gap-3 pt-2">
+            <button type="submit" class="bg-rose-500 text-white px-6 py-2 rounded-xl hover:bg-rose-600 transition font-medium">
+                Enregistrer
+            </button>
+            <a href="{{ path('admin_users') }}" class="px-6 py-2 rounded-xl border border-gray-300 text-gray-700 hover:bg-gray-50 transition">
+                Annuler
+            </a>
+        </div>
+
+        {{ form_end(form) }}
+    </div>
+</div>
+{% endblock %}

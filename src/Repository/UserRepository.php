@@ -28,4 +28,14 @@ class UserRepository extends ServiceEntityRepository implements PasswordUpgrader
         $this->getEntityManager()->persist($user);
         $this->getEntityManager()->flush();
     }
+
+    public function findAllWithStats(): array
+    {
+        return $this->createQueryBuilder('u')
+            ->leftJoin('u.bookings', 'b')->addSelect('b')
+            ->leftJoin('u.properties', 'p')->addSelect('p')
+            ->orderBy('u.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

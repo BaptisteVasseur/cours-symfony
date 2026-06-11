@@ -12,6 +12,7 @@ use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
@@ -25,18 +26,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?Uuid $id = null;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 100)]
     private ?string $firstName = null;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 100)]
     private ?string $lastName = null;
 
     #[ORM\Column(length: 180, unique: true)]
+    #[Assert\NotBlank]
+    #[Assert\Email]
     private ?string $email = null;
 
     #[ORM\Column(type: 'text')]
     private ?string $passwordHash = null;
 
     #[ORM\Column(length: 20, nullable: true)]
+    #[Assert\Regex(pattern: '/^\+?[0-9\s\-]{7,20}$/', message: 'Numéro de téléphone invalide.')]
     private ?string $phone = null;
 
     #[ORM\Column(enumType: UserRole::class)]

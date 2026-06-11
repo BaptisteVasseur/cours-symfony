@@ -1,0 +1,94 @@
+{% extends 'admin/_layout.html.twig' %}
+
+{% block title %}Réservations — Admin{% endblock %}
+
+{% block admin_content %}
+<div class="space-y-6">
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">Réservations</h1>
+        <span class="text-sm text-gray-500">{{ bookings|length }} résultat(s)</span>
+    </div>
+
+    {# Filtres statut #}
+    <div class="flex flex-wrap gap-2">
+        <a href="{{ path('admin_bookings') }}"
+           class="px-4 py-1.5 rounded-full text-sm font-medium transition
+                  {{ currentStatus is null ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+            Tous
+        </a>
+        {% for s in statusList %}
+            <a href="{{ path('admin_bookings', {status: s.value}) }}"
+               class="px-4 py-1.5 rounded-full text-sm font-medium transition
+                      {{ currentStatus == s.value
+                         ? (s.value == 'CONFIRMED' ? 'bg-green-600 text-white'
+                            : (s.value == 'PENDING' ? 'bg-yellow-500 text-white'
+                            : (s.value == 'CANCELLED' ? 'bg-red-500 text-white' : 'bg-gray-600 text-white')))
+                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200' }}">
+                {{ s.value|lower|capitalize }}
+            </a>
+        {% endfor %}
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        {% if bookings is empty %}
+            <p class="px-6 py-12 text-center text-gray-400">Aucune réservation</p>
+        {% else %}
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 border-b border-gray-100">
+                    <tr>
+                        <th class="px-6 py-3 text-left font-medium text-gray-500">Logement</th>
+                        <th class="px-6 py-3 text-left font-medium text-gray-500">Voyageur</th>
+                        <th class="px-6 py-3 text-left font-medium text-gray-500">Dates</th>
+                        <th class="px-6 py-3 text-left font-medium text-gray-500">Nuits</th>
+                        <th class="px-6 py-3 text-left font-medium text-gray-500">Montant</th>
+                        <th class="px-6 py-3 text-left font-medium text-gray-500">Statut</th>
+                        <th class="px-6 py-3 text-left font-medium text-gray-500">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for booking in bookings %}
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-6 py-4">
+                                <p class="font-medium text-gray-900 max-w-[160px] truncate">{{ booking.property.title }}</p>
+                                <p class="text-xs text-gray-400">{{ booking.property.city }}</p>
+                            </td>
+                            <td class="px-6 py-4">
+                                <p class="text-gray-900">{{ booking.traveler.firstName }} {{ booking.traveler.lastName }}</p>
+                                <p class="text-xs text-gray-400">{{ booking.traveler.email }}</p>
+                            </td>
+                            <td class="px-6 py-4 text-gray-600 whitespace-nowrap">
+                                {{ booking.checkIn|date('d/m/Y') }}<br>
+                                <span class="text-xs text-gray-400">→ {{ booking.checkOut|date('d/m/Y') }}</span>
+                            </td>
+                            <td class="px-6 py-4 text-gray-600">{{ booking.nights }}</td>
+                            <td class="px-6 py-4 font-semibold text-gray-900 whitespace-nowrap">{{ booking.totalPrice }} €</td>
+                            <td class="px-6 py-4">
+                                <form method="POST" action="{{ path('admin_booking_status', {id: booking.id}) }}{% if currentStatus %}?status={{ currentStatus }}{% endif %}">
+                                    <select name="status" onchange="this.form.submit()"
+                                            class="text-xs border border-gray-200 rounded-lg px-2 py-1.5 bg-white text-gray-700 cursor-pointer">
+                                        {% for s in statusList %}
+                                            <option value="{{ s.value }}" {{ booking.status == s ? 'selected' : '' }}>
+                                                {{ s.value|lower|capitalize }}
+                                            </option>
+                                        {% endfor %}
+                                    </select>
+                                </form>
+                            </td>
+                            <td class="px-6 py-4">
+                                <form method="POST" action="{{ path('admin_booking_delete', {id: booking.id}) }}"
+                                      onsubmit="return confirm('Supprimer cette réservation ?')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_booking_' ~ booking.id) }}">
+                                    <button type="submit"
+                                            class="text-xs px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 transition font-medium">
+                                        Supprimer
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}
