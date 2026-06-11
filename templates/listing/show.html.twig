@@ -21,6 +21,15 @@
         Retour à la liste
     </a>
     <div class="flex items-center gap-2">
+        {% if app.user and app.user == listing.host %}
+        <a href="{{ path('host_calendar', {'id': listing.id}) }}"
+           class="flex items-center gap-2 border border-airbnb text-airbnb text-sm font-medium px-4 py-2 rounded-lg hover:bg-red-50 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            Calendrier
+        </a>
+        {% endif %}
         <a href="{{ path('app_listing_edit', {'id': listing.id}) }}"
            class="flex items-center gap-2 border border-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">

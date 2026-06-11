@@ -89,7 +89,11 @@
                                     <a href="{{ path('app_admin_dashboard') }}" class="block px-4 py-2.5 text-sm font-semibold text-[#FF385C] hover:bg-gray-50">Dashboard admin</a>
                                 {% endif %}
                                 <a href="#" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">Mon profil</a>
-                                <a href="#" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">Mes réservations</a>
+                                <a href="{{ path('booking_my') }}" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">Mes réservations</a>
+                                {% if is_granted('ROLE_HOST') %}
+                                <a href="{{ path('host_listings') }}" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">Mes logements</a>
+                                <a href="{{ path('host_bookings') }}" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">Mes réservations (hôte)</a>
+                                {% endif %}
                             </div>
                             <div class="border-t border-gray-200 py-1">
                                 <a href="#" class="block px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50">Aide</a>

@@ -39,9 +39,19 @@
 
 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
 
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 rounded-lg px-4 py-3 text-sm font-medium
+                {% if label == 'success' %}bg-green-50 text-green-700 border border-green-200
+                {% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
     {# ── Breadcrumb ── #}
     <nav class="flex items-center gap-1.5 text-sm text-gray-500 mb-4">
-        <a href="{{ path('app_listing_index') }}" class="hover:underline">Logements</a>
+        <a href="{{ path('app_home') }}" class="hover:underline">Accueil</a>
         <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
             <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
         </svg>
@@ -69,6 +79,15 @@
         </div>
 
         <div class="flex items-center gap-3 text-sm">
+            {% if app.user and app.user == listing.host %}
+            <a href="{{ path('host_calendar', {id: listing.id}) }}"
+               class="flex items-center gap-1.5 border border-airbnb text-airbnb font-medium px-3 py-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                </svg>
+                Gérer le calendrier
+            </a>
+            {% endif %}
             <button class="flex items-center gap-1.5 text-gray-700 hover:text-gray-900 hover:underline">
                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
@@ -365,49 +384,67 @@
                         {% endif %}
                     </div>
 
-                    {# Dates + voyageurs #}
-                    <div class="border border-gray-300 rounded-xl overflow-hidden text-sm">
-                        <div class="grid grid-cols-2 divide-x divide-gray-300">
-                            <div class="p-3 cursor-pointer hover:bg-gray-50">
-                                <p class="text-xs font-semibold text-gray-800 uppercase tracking-wide">Arrivée</p>
-                                <p class="text-gray-400 mt-0.5">Ajouter une date</p>
+                    {% if app.user and app.user != listing.host %}
+                    {# ── Formulaire de réservation ── #}
+                    <form method="post" action="{{ path('booking_new', {id: listing.id}) }}"
+                          x-data="bookingWidget({{ listing.pricePerNight }})"
+                          class="space-y-3">
+                        <input type="hidden" name="_csrf_token" value="{{ csrf_token('booking_new_' ~ listing.id) }}">
+
+                        <div class="border border-gray-300 rounded-xl overflow-hidden text-sm">
+                            <div class="grid grid-cols-2 divide-x divide-gray-300">
+                                <div class="p-3">
+                                    <label for="booking_checkin" class="block text-xs font-semibold text-gray-800 uppercase tracking-wide mb-0.5">Arrivée</label>
+                                    <input type="date" id="booking_checkin" name="checkin" required
+                                           min="{{ 'now'|date('Y-m-d') }}"
+                                           x-model="checkin" @change="calcTotal()"
+                                           class="w-full text-gray-700 text-sm focus:outline-none bg-transparent">
+                                </div>
+                                <div class="p-3">
+                                    <label for="booking_checkout" class="block text-xs font-semibold text-gray-800 uppercase tracking-wide mb-0.5">Départ</label>
+                                    <input type="date" id="booking_checkout" name="checkout" required
+                                           x-model="checkout" @change="calcTotal()"
+                                           class="w-full text-gray-700 text-sm focus:outline-none bg-transparent">
+                                </div>
                             </div>
-                            <div class="p-3 cursor-pointer hover:bg-gray-50">
-                                <p class="text-xs font-semibold text-gray-800 uppercase tracking-wide">Départ</p>
-                                <p class="text-gray-400 mt-0.5">Ajouter une date</p>
+                            <div class="border-t border-gray-300 p-3">
+                                <label for="booking_guests" class="block text-xs font-semibold text-gray-800 uppercase tracking-wide mb-0.5">Voyageurs</label>
+                                <input type="number" id="booking_guests" name="guestsCount"
+                                       min="1" max="{{ listing.maxGuests }}" value="1"
+                                       x-model="guests"
+                                       class="w-full text-gray-700 text-sm focus:outline-none bg-transparent">
                             </div>
                         </div>
-                        <div class="border-t border-gray-300 p-3 cursor-pointer hover:bg-gray-50">
-                            <p class="text-xs font-semibold text-gray-800 uppercase tracking-wide">Voyageurs</p>
-                            <p class="text-gray-400 mt-0.5">1 voyageur</p>
-                        </div>
-                    </div>
 
-                    <button class="w-full bg-[#FF385C] hover:bg-[#E0324F] text-white font-semibold py-3 rounded-xl transition-colors text-sm">
-                        Réserver
-                    </button>
+                        <button type="submit"
+                                class="w-full bg-[#FF385C] hover:bg-[#E0324F] text-white font-semibold py-3 rounded-xl transition-colors text-sm">
+                            {% if listing.instantBooking %}Réserver{% else %}Envoyer une demande{% endif %}
+                        </button>
 
-                    <p class="text-center text-xs text-gray-500">Aucun montant ne sera débité pour l'instant</p>
+                        <p class="text-center text-xs text-gray-500">Aucun montant ne sera débité pour l'instant</p>
 
-                    {# Détail du calcul #}
-                    <div class="space-y-2 text-sm text-gray-700 pt-2">
-                        <div class="flex justify-between">
-                            <span class="underline">{{ listing.pricePerNight|number_format(0, ',', '\u{00A0}') }} € × 1 nuit</span>
-                            <span>{{ listing.pricePerNight|number_format(0, ',', '\u{00A0}') }} €</span>
+                        {# Détail dynamique du calcul #}
+                        <div class="space-y-2 text-sm text-gray-700 pt-2" x-show="nights > 0">
+                            <div class="flex justify-between">
+                                <span class="underline" x-text="`${pricePerNight} € × ${nights} nuit${nights > 1 ? 's' : ''}`"></span>
+                                <span x-text="`${total} €`"></span>
+                            </div>
+                            <div class="flex justify-between font-semibold text-gray-900 border-t border-gray-200 pt-3 mt-1">
+                                <span>Total</span>
+                                <span x-text="`${total} €`"></span>
+                            </div>
                         </div>
-                        <div class="flex justify-between">
-                            <span class="underline">Frais de ménage</span>
-                            <span>–</span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="underline">Frais de service</span>
-                            <span>–</span>
-                        </div>
-                        <div class="flex justify-between font-semibold text-gray-900 border-t border-gray-200 pt-3 mt-1">
-                            <span>Total</span>
-                            <span>{{ listing.pricePerNight|number_format(0, ',', '\u{00A0}') }} €</span>
-                        </div>
-                    </div>
+
+                    </form>
+
+                    {% elseif not app.user %}
+                    <a href="{{ path('app_login') }}"
+                       class="block w-full text-center bg-[#FF385C] hover:bg-[#E0324F] text-white font-semibold py-3 rounded-xl transition-colors text-sm">
+                        Connectez-vous pour réserver
+                    </a>
+                    {% else %}
+                    <p class="text-center text-sm text-gray-400 py-2">Vous êtes l'hôte de ce logement.</p>
+                    {% endif %}
 
                 </div>
 
@@ -419,4 +456,27 @@
     </div>{# /grid principale #}
 
 </div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+function bookingWidget(pricePerNight) {
+    return {
+        pricePerNight: pricePerNight,
+        checkin: '',
+        checkout: '',
+        guests: 1,
+        nights: 0,
+        total: 0,
+        calcTotal() {
+            if (this.checkin && this.checkout) {
+                const d1 = new Date(this.checkin);
+                const d2 = new Date(this.checkout);
+                this.nights = Math.max(0, Math.round((d2 - d1) / 86400000));
+                this.total  = this.nights * this.pricePerNight;
+            }
+        }
+    };
+}
+</script>
 {% endblock %}
