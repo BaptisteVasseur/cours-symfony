@@ -10,6 +10,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyRepository::class)]
 #[ORM\Table(name: 'properties')]
@@ -26,34 +27,57 @@ class Property
     private ?User $host = null;
 
     #[ORM\Column(length: 255)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 5, max: 255)]
     private ?string $title = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 20)]
     private ?string $description = null;
 
     #[ORM\Column(type: Types::TEXT)]
+    #[Assert\NotBlank]
     private ?string $address = null;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 100)]
     private ?string $city = null;
 
     #[ORM\Column(length: 100)]
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 100)]
     private ?string $country = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
+    #[Assert\Range(min: -90, max: 90)]
     private ?string $latitude = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
+    #[Assert\Range(min: -180, max: 180)]
     private ?string $longitude = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Assert\NotBlank]
+    #[Assert\Positive]
+    #[Assert\LessThan(value: 100000, message: 'Le prix par nuit ne peut pas dépasser 100 000 €.')]
     private ?string $pricePerNight = null;
 
     #[ORM\Column]
+    #[Assert\NotNull]
+    #[Assert\Positive]
+    #[Assert\LessThanOrEqual(value: 50, message: 'Le logement ne peut accueillir plus de 50 voyageurs.')]
     private ?int $maxGuests = null;
 
     #[ORM\Column(enumType: PropertyStatus::class)]
     private PropertyStatus $status = PropertyStatus::DRAFT;
+
+    #[ORM\Column(type: 'boolean')]
+    private bool $instantBooking = false;
+
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $calendarToken = null;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
@@ -67,11 +91,15 @@ class Property
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'property')]
     private Collection $reviews;
 
+    #[ORM\OneToMany(targetEntity: PropertyAvailability::class, mappedBy: 'property', cascade: ['persist', 'remove'])]
+    private Collection $availabilities;
+
     public function __construct()
     {
         $this->images = new ArrayCollection();
         $this->bookings = new ArrayCollection();
         $this->reviews = new ArrayCollection();
+        $this->availabilities = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -243,6 +271,55 @@ class Property
     public function getReviews(): Collection
     {
         return $this->reviews;
+    }
+
+    public function isInstantBooking(): bool
+    {
+        return $this->instantBooking;
+    }
+
+    public function setInstantBooking(bool $instantBooking): static
+    {
+        $this->instantBooking = $instantBooking;
+        return $this;
+    }
+
+    public function getCalendarToken(): ?string
+    {
+        return $this->calendarToken;
+    }
+
+    public function generateCalendarToken(): static
+    {
+        $this->calendarToken = bin2hex(random_bytes(32));
+        return $this;
+    }
+
+    public function revokeCalendarToken(): static
+    {
+        $this->calendarToken = null;
+        return $this;
+    }
+
+    /** @return Collection<int, PropertyAvailability> */
+    public function getAvailabilities(): Collection
+    {
+        return $this->availabilities;
+    }
+
+    public function addAvailability(PropertyAvailability $availability): static
+    {
+        if (!$this->availabilities->contains($availability)) {
+            $this->availabilities->add($availability);
+            $availability->setProperty($this);
+        }
+        return $this;
+    }
+
+    public function removeAvailability(PropertyAvailability $availability): static
+    {
+        $this->availabilities->removeElement($availability);
+        return $this;
     }
 
     public function getAverageRating(): ?float

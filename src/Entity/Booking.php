@@ -8,6 +8,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Bridge\Doctrine\Types\UuidType;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: BookingRepository::class)]
 #[ORM\Table(name: 'bookings')]
@@ -28,19 +29,30 @@ class Booking
     private ?User $traveler = null;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
+    #[Assert\NotNull]
+    #[Assert\GreaterThanOrEqual('today', message: "La date d'arrivée doit être aujourd'hui ou dans le futur.")]
     private ?\DateTimeImmutable $checkIn = null;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
+    #[Assert\NotNull]
+    #[Assert\GreaterThan(propertyPath: 'checkIn', message: 'La date de départ doit être après la date d\'arrivée.')]
     private ?\DateTimeImmutable $checkOut = null;
 
     #[ORM\Column]
+    #[Assert\NotNull]
+    #[Assert\Positive]
     private ?int $guestsCount = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Assert\NotBlank]
+    #[Assert\Positive]
     private ?string $totalPrice = null;
 
     #[ORM\Column(enumType: BookingStatus::class)]
     private BookingStatus $status = BookingStatus::PENDING;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $cancellationReason = null;
 
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
@@ -132,6 +144,17 @@ class Booking
     public function setStatus(BookingStatus $status): static
     {
         $this->status = $status;
+        return $this;
+    }
+
+    public function getCancellationReason(): ?string
+    {
+        return $this->cancellationReason;
+    }
+
+    public function setCancellationReason(?string $reason): static
+    {
+        $this->cancellationReason = $reason;
         return $this;
     }
 

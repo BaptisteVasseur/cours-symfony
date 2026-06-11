@@ -1,0 +1,191 @@
+CONCEPTION TECHNIQUE — MOTEUR DE RÉSERVATION & CALENDRIER iCal
+==============================================================
+Auteur : Mahamadou GORY
+Projet : Clone Airbnb — Symfony 7
+Date   : Juin 2026
+
+
+1. MODÉLISATION TEMPORELLE
+--------------------------
+
+Les dates checkIn et checkOut sont manipulées comme des bornes d'intervalle
+semi-ouvert [checkIn, checkOut[.
+
+Exemple concret : départ à 11h, arrivée à 15h le même jour.
+Dans notre modèle, si un voyageur part le 14 juillet (checkOut = 2026-07-14),
+le logement est disponible à partir du 14 juillet pour un nouveau voyageur dont
+le checkIn = 2026-07-14.
+
+Critère de chevauchement : deux réservations se superposent si et seulement si :
+    bookingA.checkIn < bookingB.checkOut AND bookingA.checkOut > bookingB.checkIn
+
+Ce test en une seule condition SQL remplace toute logique jour-par-jour. Le jour
+de checkout est donc réservable par un autre voyageur. Ce choix est cohérent avec
+le modèle d'Airbnb (checkout 11h, checkin 15h → même journée gérée par l'hôte).
+
+
+2. GESTION DES ÉTATS DE RÉSERVATION
+-------------------------------------
+
+Choix : les réservations au statut PENDING NE bloquent PAS les dates.
+
+Justification :
+- Favorise la disponibilité : un logement reste proposé à d'autres voyageurs
+  tant qu'un hôte n'a pas confirmé une demande.
+- Évite le "blocage abusif" : un voyageur ne peut pas "geler" un logement
+  indéfiniment en laissant une demande sans suite.
+- Conforme au modèle Airbnb "sur demande" : l'hôte a 24h pour répondre.
+
+Risque accepté et mitigation :
+- Risque d'overbooking : si deux voyageurs font une demande PENDING pour les
+  mêmes dates et que l'hôte confirme la première, la deuxième DOIT être
+  automatiquement annulée.
+- Mitigation : lors de la confirmation par l'hôte (PENDING → CONFIRMED),
+  le BookingService re-vérifie la disponibilité (hasConfirmedConflict). Si les
+  dates sont déjà prises, la confirmation est refusée avec un message d'erreur
+  explicite à l'hôte.
+- G.1 Bonus : expiration automatique des PENDING après 24h via une commande
+  cron/worker, limitant la durée du risque.
+
+Seules les réservations CONFIRMED verrouillent les dates dans le calendrier.
+
+
+3. GESTION DE LA CONCURRENCE (RACE CONDITION)
+---------------------------------------------
+
+Scénario : deux utilisateurs soumettent un paiement à la milliseconde près
+pour le même logement et les mêmes dates.
+
+Approche implémentée (pragmatique, suffisant pour l'échelle du projet) :
+Le BookingService enveloppe la vérification + création dans une transaction
+Doctrine explicite :
+    $em->beginTransaction()
+    → vérification disponibilité (SELECT ... FOR UPDATE via lock pessimiste)
+    → création booking si dispo
+    $em->commit()
+
+En cas d'échec, rollback. Le verrou pessimiste sur la ligne property garantit
+qu'un seul thread peut créer une réservation confirmée à la fois pour ce logement.
+
+En production à grande échelle : contrainte UNIQUE en base sur (property_id,
+date_range) ou utilisation d'un système de file (Redis SETNX) pour le slot.
+Pour ce projet, la transaction Doctrine avec verrouillage est suffisante.
+
+
+4. PERFORMANCE — VALIDATION DE DISPONIBILITÉ SUR N NUITS
+----------------------------------------------------------
+
+Approche retenue : UNE seule requête SQL avec condition de chevauchement.
+
+Requête type :
+    SELECT COUNT(*) FROM bookings b
+    WHERE b.property_id = :id
+    AND b.status = 'CONFIRMED'
+    AND b.check_in < :checkout
+    AND b.check_out > :checkin
+
+Complexité : O(log n) avec un index sur (property_id, check_in, check_out).
+Pas de boucle PHP jour-par-jour. Pas de N requêtes pour N nuits.
+
+Index recommandé (migration) :
+    CREATE INDEX idx_booking_availability ON bookings (property_id, status, check_in, check_out);
+
+Pour la page de recherche (/search), on utilise une subquery NOT EXISTS en DQL
+afin d'exclure les logements non disponibles en une seule requête.
+
+
+5. ASYNCHRONISME — ENVOI D'EMAILS
+----------------------------------
+
+L'envoi d'email intervient APRÈS le flush() de l'ORM. Raison :
+
+- Si l'email est envoyé avant le flush() et que le flush() échoue (contrainte
+  BDD, erreur réseau...), le voyageur reçoit une confirmation email pour une
+  réservation qui n'existe pas → incohérence critique.
+
+- En envoyant APRÈS le flush(), la réservation est garantie persistée en base
+  avant toute notification.
+
+- Via Symfony Messenger, le message (contenant juste l'UUID de la réservation)
+  est persisté dans la table messenger_messages (transport doctrine). Même si le
+  worker est arrêté temporairement, les messages sont rejoués automatiquement au
+  redémarrage.
+
+- Stratégie de retry : max 3 tentatives avec backoff x2 (configuré dans
+  messenger.yaml). Les messages définitivement échoués vont dans la file "failed"
+  pour inspection manuelle (php bin/console messenger:failed:show).
+
+Fallback si le worker est indisponible : les messages restent en BDD et sont
+traités au prochain démarrage du worker. Aucune perte de notification.
+
+
+6. STRUCTURE SQL — CALENDRIER DE DISPONIBILITÉS
+------------------------------------------------
+
+Choix : table de PÉRIODES (property_availabilities) avec colonnes
+date_start et date_end, plutôt qu'une table de jours individuels.
+
+Justification :
+
+Table de périodes (CHOIX RETENU) :
++ Nombre de lignes = nombre de périodes bloquées (généralement < 20/an/logement)
++ Requête de chevauchement simple et performante : start_date < :out AND end_date > :in
++ Modification d'une période = UPDATE d'une seule ligne
++ Pas d'explosion combinatoire (un blocage de 3 mois ≠ 90 lignes)
+
+Table de jours individuels (PropertyAvailability par jour) :
+- Génère des milliers de lignes (365 jours × N logements)
+- Requêtes IN sur des listes de dates → moins performant
+- Gestion des plages → logique plus complexe côté PHP
++ Plus facile à raisonner jour par jour en Twig (calendrier)
+
+Compromis pour l'affichage du calendrier : le HostController génère en PHP
+la liste des jours du mois et itère sur les périodes pour colorier chaque case.
+Nombre d'opérations = jours_du_mois × (nb_réservations + nb_périodes_bloquées).
+Pour un logement ordinaire (< 20 réservations/an), c'est négligeable.
+
+
+7. ARCHITECTURE — DÉCOUPAGE EN SERVICES
+----------------------------------------
+
+BookingService   → logique métier : créer, confirmer, annuler une réservation
+                   Orchestre la vérification, la persistance, et le dispatch Messenger.
+
+AvailabilityService → vérification pure de disponibilité (sans effets de bord)
+                      Combine : statut logement + conflits confirmés + périodes bloquées + capacité.
+
+ICalService      → génération du contenu .ics (RFC 5545)
+                   Appelé par ICalController pour le flux de synchronisation.
+
+Avantages :
+- Les contrôleurs restent minces (orchestration uniquement).
+- Les services sont testables unitairement.
+- La logique métier est réutilisable (ex: admin peut aussi confirmer via BookingService).
+
+
+8. ENDPOINT iCAL — SÉCURISATION
+---------------------------------
+
+URL : /api/properties/{id}/calendar.ics?token={calendarToken}
+
+Le calendarToken est un token de 64 caractères hex (32 bytes via random_bytes).
+Il est unique par logement, stocké en base, et révocable par l'hôte.
+
+L'endpoint est PUBLIC au sens Symfony Security (pas besoin d'être connecté),
+mais le contrôleur valide manuellement le token. Sans token valide → 403.
+Cela permet l'intégration avec Google Calendar / Outlook sans session Symfony.
+
+Données exposées : uniquement les séjours CONFIRMED (pas PENDING ni données
+personnelles sensibles au-delà du nécessaire).
+
+
+9. RÉSUMÉ DES CHOIX TECHNIQUES
+--------------------------------
+
+Entité PropertyAvailability : périodes bloquées par l'hôte (table de périodes)
+Entité Property.instantBooking : boolean — réservation instantanée ou sur demande
+Entité Property.calendarToken : token iCal unique par logement
+Entité Booking.cancellationReason : motif d'annulation (nullable, rempli à l'annulation)
+Services : AvailabilityService, BookingService, ICalService
+Messages Messenger : BookingRequestedMessage, BookingConfirmedMessage, BookingCancelledMessage
+Transport : doctrine (DB locale) — compatible avec le setup Docker du projet
