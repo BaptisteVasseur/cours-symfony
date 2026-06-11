@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Service;
 
+use App\Entity\Notification;
 use App\Entity\Property;
 use App\Entity\Reservation;
+use App\Entity\User;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mailer\MailerInterface;
@@ -25,6 +27,7 @@ class BookingService
         $this->entityManager->flush();
 
         $this->sendNotification($reservation, 'confirmée');
+        $this->createInAppNotification($reservation->getGuest(), 'Réservation confirmée', 'Votre séjour pour ' . $reservation->getProperty()->getTitle() . ' a été accepté !');
     }
 
     public function reject(Reservation $reservation, string $reason): void
@@ -34,6 +37,7 @@ class BookingService
         $this->entityManager->flush();
 
         $this->sendNotification($reservation, 'refusée', $reason);
+        $this->createInAppNotification($reservation->getGuest(), 'Réservation refusée', 'Désolé, votre demande pour ' . $reservation->getProperty()->getTitle() . ' a été refusée.');
     }
 
     public function cancel(Reservation $reservation, string $reason): void
@@ -80,5 +84,21 @@ class BookingService
             ]);
 
         $this->mailer->send($email);
+    }
+
+    private function createInAppNotification(?User $user, string $title, string $content): void
+    {
+        if (!$user) return;
+
+        $notification = new Notification();
+        $notification->setUser($user);
+        $notification->setTitle($title);
+        $notification->setContent($content);
+        $notification->setType('reservation');
+        $notification->setChannel('in-app');
+        $notification->setIsRead(false);
+
+        $this->entityManager->persist($notification);
+        $this->entityManager->flush();
     }
 }

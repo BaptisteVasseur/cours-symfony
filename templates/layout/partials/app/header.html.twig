@@ -24,6 +24,17 @@
         {% endif %}
 
         {% if app.user %}
+            <div class="relative mr-2">
+                <a href="#" class="p-2 text-gray-600 hover:bg-gray-50 rounded-full block">
+                    <i class="fa-regular fa-bell text-xl"></i>
+                    {% set unreadCount = app.user.notifications|filter(n => not n.isRead)|length %}
+                    {% if unreadCount > 0 %}
+                        <span class="absolute top-1 right-1 w-4 h-4 bg-brand text-white text-[10px] flex items-center justify-center rounded-full border-2 border-white font-bold">
+                            {{ unreadCount }}
+                        </span>
+                    {% endif %}
+                </a>
+            </div>
             {% include 'layout/partials/app/header_profile_menu.html.twig' %}
         {% else %}
             <a href="{{ path('app_login') }}" class="text-sm font-semibold py-2 px-4 border border-gray-200 rounded-full hover:shadow-md transition whitespace-nowrap">

@@ -14,9 +14,10 @@ Ce projet est une implémentation avancée d'un système de réservation pour un
 *   **Export iCal** : Flux `.ics` sécurisé par un jeton unique pour chaque logement. Permet de synchroniser ses réservations vers Google Calendar, Airbnb, etc.
 *   **Import iCal** : Commande console pour synchroniser des calendriers externes et bloquer les dates automatiquement.
 
-### 3. Notifications & Performance
-*   **Emails riches** : Utilisation de templates HTML/Twig premium pour les confirmations et refus.
-*   **Asynchronisme** : Intégration de Symfony Messenger pour l'envoi des emails en tâche de fond (async).
+### 4. Fonctionnalités Bonus (Partie G)
+*   **G.1 Expiration** : Commande `app:bookings:expire` pour nettoyer les demandes oubliées.
+*   **G.6 Pricing Dynamique** : Mise à jour du prix en temps réel en JS sans rechargement.
+*   **G.8 Alertes In-App** : Système de cloche avec décompte des messages non lus.
 
 ## Points d'entrée (Endpoints)
 

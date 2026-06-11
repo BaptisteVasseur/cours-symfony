@@ -20,6 +20,7 @@
 - **Asynchronisme** : Configuration de Symfony Messenger (`messenger.yaml`) pour l'envoi des emails en arrière-plan.
 - **Notifications Emails** : Envoi au voyageur lors de la confirmation ou du refus d'une réservation via `BookingService`.
 
-## 6. Interface Utilisateur
-- **Vue Hôte** : Création d'un tableau de bord de modération (`templates/front/host/reservation_index.html.twig`).
-- **Correction des Assets** : Résolution de l'erreur Stimulus via `importmap:install`.
+## 7. Fonctionnalités Bonus (Partie G)
+- **G.1 Expiration des demandes** : Commande console `app:bookings:expire` pour l'annulation automatique après 24h.
+- **G.6 Tarification dynamique** : Calculateur JavaScript en temps réel sur la page de réservation pour un affichage réactif du coût total.
+- **G.8 Notifications In-App** : Système d'alertes en base de données avec indicateur visuel (cloche) dans le header.
