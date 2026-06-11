@@ -122,4 +122,66 @@ final class BookingServiceTest extends KernelTestCase
         $entityManager->remove($reservation3);
         $entityManager->flush();
     }
+
+    public function testInstantBookingConfirmationUsesSystemActor(): void
+    {
+        self::bootKernel();
+        $container = static::getContainer();
+
+        $entityManager = $container->get(EntityManagerInterface::class);
+        $bookingService = $container->get(BookingService::class);
+        $userRepository = $container->get(UserRepository::class);
+        $propertyRepository = $container->get(PropertyRepository::class);
+
+        $guest = $userRepository->findOneBy(['email' => 'jeanmarc.dupont@email.com']);
+        $this->assertNotNull($guest);
+
+        $property = $propertyRepository->findOneBy([]);
+        $this->assertNotNull($property);
+
+        $host = $property->getHost();
+        $this->assertNotNull($host);
+        if ($host->getId() === $guest->getId()) {
+            $guest = $userRepository->findOneBy(['email' => 'test@example.com']);
+            $this->assertNotNull($guest);
+        }
+
+        // Set the property to instant booking temporarily
+        $originalInstantBooking = $property->isInstantBooking();
+        $property->setInstantBooking(true);
+        $entityManager->flush();
+
+        try {
+            // Create a reservation - it should be automatically confirmed with system actor
+            $reservation = $bookingService->create(
+                $property,
+                $guest,
+                new \DateTimeImmutable('+50 days'),
+                new \DateTimeImmutable('+53 days'),
+                2
+            );
+
+            $this->assertEquals(BookingStatus::CONFIRMED, $reservation->getBookingStatus());
+
+            // Check history
+            $historyRepo = $entityManager->getRepository(\App\Entity\ReservationStatusHistory::class);
+            $histories = $historyRepo->findBy(['reservation' => $reservation], ['createdAt' => 'ASC']);
+            $this->assertCount(2, $histories); // PENDING and CONFIRMED
+
+            $pendingHistory = $histories[0];
+            $this->assertEquals(BookingStatus::PENDING, $pendingHistory->getToStatus());
+            $this->assertEquals('guest', $pendingHistory->getActor());
+
+            $confirmedHistory = $histories[1];
+            $this->assertEquals(BookingStatus::CONFIRMED, $confirmedHistory->getToStatus());
+            $this->assertEquals('system', $confirmedHistory->getActor());
+        } finally {
+            // Restore property state and clean up reservation
+            if (isset($reservation)) {
+                $entityManager->remove($reservation);
+            }
+            $property->setInstantBooking($originalInstantBooking);
+            $entityManager->flush();
+        }
+    }
 }

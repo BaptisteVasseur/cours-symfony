@@ -66,7 +66,7 @@ final class BookingService
             $this->entityManager->flush();
 
             if ($property->isInstantBooking()) {
-                $this->confirmInsideTransaction($reservation, $guest);
+                $this->confirmInsideTransaction($reservation, null);
             }
 
             return $reservation;
