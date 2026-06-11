@@ -57,13 +57,20 @@ class HomeController extends AbstractController
     {
         $checkin = $this->parseDate($request->query->get('checkin'));
         $checkout = $this->parseDate($request->query->get('checkout'));
+        $guests = $request->query->getInt('guests');
+        $destination = $request->query->get('destination');
+
+        $datesInvalid = $checkin !== null && $checkout !== null && $checkin >= $checkout;
 
         return $this->render('front/search/index.html.twig', [
-            'properties' => $propertyRepository->findForListing('published'),
+            'properties' => $datesInvalid
+                ? []
+                : $propertyRepository->search($destination, $checkin, $checkout, $guests > 0 ? $guests : null),
             'checkin' => $checkin,
             'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'guests' => $guests,
+            'destination' => $destination,
+            'datesInvalid' => $datesInvalid,
         ]);
     }
 

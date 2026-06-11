@@ -84,6 +84,7 @@ final class BookingService
         \DateTimeImmutable $checkin,
         \DateTimeImmutable $checkout,
         int $guestsCount,
+        ?Reservation $exclude = null,
     ): ?string {
         if ($property->getStatus() !== 'published') {
             return 'Ce logement n\'est pas publié.';
@@ -93,7 +94,7 @@ final class BookingService
             return sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests());
         }
 
-        if ($this->hostCalendar->findBlockingReservations($property, $checkin, $checkout) !== []) {
+        if ($this->hostCalendar->findBlockingReservations($property, $checkin, $checkout, $exclude) !== []) {
             return 'Une autre réservation occupe déjà ces dates.';
         }
 

@@ -189,16 +189,22 @@ final class HostCalendar
      *
      * @return list<Reservation>
      */
-    public function findBlockingReservations(Property $property, \DateTimeImmutable $start, \DateTimeImmutable $end): array
-    {
+    public function findBlockingReservations(
+        Property $property,
+        \DateTimeImmutable $start,
+        \DateTimeImmutable $end,
+        ?Reservation $exclude = null,
+    ): array {
         $startDate = $start->setTime(0, 0);
         $endDate = $end->setTime(0, 0);
+        $excludeId = $exclude?->getId();
 
         $overlapping = $this->reservationRepository->findOverlappingForProperty($property, $startDate, $endDate);
 
         return array_values(array_filter(
             $overlapping,
             fn (Reservation $r): bool => $this->isBlocking($r)
+                && ($excludeId === null || $r->getId()?->equals($excludeId) !== true)
                 && $r->getCheckoutDate() > $startDate
                 && $r->getCheckinDate() < $endDate,
         ));

@@ -11,6 +11,7 @@ use App\Form\BookingType;
 use App\Repository\PropertyRepository;
 use App\Security\Voter\PropertyVoter;
 use App\Service\BookingService;
+use App\Service\ReservationWorkflow;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -31,6 +32,7 @@ final class BookingController extends AbstractController
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
         BookingService $bookingService,
+        ReservationWorkflow $reservationWorkflow,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -99,6 +101,12 @@ final class BookingController extends AbstractController
 
             $entityManager->persist($reservation);
             $entityManager->flush();
+
+            // Notification asynchrone à l'hôte, après le flush (la donnée est
+            // persistée, l'envoi ne bloque pas la requête).
+            if ($reservation->getStatus() === 'pending') {
+                $reservationWorkflow->notifyRequested($reservation);
+            }
 
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }

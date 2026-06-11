@@ -1,0 +1,52 @@
+{% set property = reservation.property %}
+{% set guest = reservation.guest %}
+{% set guestProfile = guest ? guest.profile : null %}
+{% set guestName = guestProfile and (guestProfile.firstName or guestProfile.lastName)
+    ? (guestProfile.firstName ~ ' ' ~ guestProfile.lastName)|trim
+    : (guest ? guest.email : 'Voyageur') %}
+{% set nights = reservation.checkinDate.diff(reservation.checkoutDate).days %}
+
+<div style="font-family: Arial, sans-serif; color: #222; max-width: 560px;">
+    <h2 style="color: #FF385C;">
+        {% if event == 'requested' %}Nouvelle demande de réservation
+        {% elseif event == 'confirmed' %}Réservation confirmée
+        {% elseif event == 'refused' %}Demande refusée
+        {% elseif event == 'cancelled' %}Réservation annulée
+        {% endif %}
+    </h2>
+
+    <p>Bonjour{{ recipientIsHost ? ' (hôte)' : '' }},</p>
+
+    {% if event == 'requested' %}
+        <p>{{ guestName }} souhaite réserver votre logement <strong>{{ property.title }}</strong>. Merci de traiter cette demande depuis votre espace hôte.</p>
+    {% elseif event == 'confirmed' %}
+        <p>La réservation pour <strong>{{ property.title }}</strong> est confirmée. Les dates sont désormais verrouillées dans le calendrier.</p>
+    {% elseif event == 'refused' %}
+        <p>Votre demande pour <strong>{{ property.title }}</strong> n'a pas pu être acceptée.</p>
+    {% elseif event == 'cancelled' %}
+        <p>La réservation pour <strong>{{ property.title }}</strong> a été annulée. Les dates ont été libérées dans le calendrier.</p>
+    {% endif %}
+
+    <table style="border-collapse: collapse; margin: 16px 0; width: 100%;">
+        <tr><td style="padding: 6px 0; color: #717171;">Logement</td><td style="padding: 6px 0; text-align: right;"><strong>{{ property.title }}</strong></td></tr>
+        <tr><td style="padding: 6px 0; color: #717171;">Voyageur</td><td style="padding: 6px 0; text-align: right;">{{ guestName }}{% if guest %} — {{ guest.email }}{% endif %}</td></tr>
+        <tr><td style="padding: 6px 0; color: #717171;">Arrivée</td><td style="padding: 6px 0; text-align: right;">{{ reservation.checkinDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding: 6px 0; color: #717171;">Départ</td><td style="padding: 6px 0; text-align: right;">{{ reservation.checkoutDate|date('d/m/Y') }} ({{ nights }} nuit{{ nights > 1 ? 's' }})</td></tr>
+        <tr><td style="padding: 6px 0; color: #717171;">Voyageurs</td><td style="padding: 6px 0; text-align: right;">{{ reservation.guestsCount }}</td></tr>
+        <tr><td style="padding: 6px 0; color: #717171;">Montant total</td><td style="padding: 6px 0; text-align: right;"><strong>{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</strong></td></tr>
+    </table>
+
+    {% if event in ['refused', 'cancelled'] and reservation.cancellationReason %}
+        <p style="background: #fef2f2; padding: 12px; border-radius: 8px;">
+            <strong>Motif :</strong> {{ reservation.cancellationReason }}
+        </p>
+    {% endif %}
+
+    {% if event == 'requested' %}
+        <p style="margin-top: 24px;">
+            <a href="#" style="background: #FF385C; color: #fff; padding: 12px 20px; border-radius: 8px; text-decoration: none;">Traiter la demande</a>
+        </p>
+    {% endif %}
+
+    <p style="color: #999; font-size: 12px; margin-top: 24px;">Clone Airbnb — cet e-mail vous est envoyé automatiquement.</p>
+</div>

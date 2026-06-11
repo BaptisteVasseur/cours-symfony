@@ -89,12 +89,50 @@
                         {% endif %}
                     </dl>
                     <p class="text-xl font-bold border-t border-gray-100 pt-3">Total : {{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
-                    {% if reservation.status == 'pending' and app.user is same as(reservation.guest) %}
-                        <button type="button"
-                                class="mt-4 w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">
-                            <i class="fa-regular fa-credit-card mr-1.5"></i>Procéder au paiement
-                        </button>
-                        <p class="text-xs text-gray-400 text-center mt-2">Paiement sécurisé — bientôt disponible.</p>
+
+                    {% set isGuest = app.user is same as(reservation.guest) %}
+
+                    {# ----- Paiement voyageur : valide la réservation (B.1) ----- #}
+                    {% if reservation.status == 'pending' and isGuest %}
+                        <form method="post" action="{{ path('app_reservation_pay', { id: reservation.id }) }}" class="mt-4">
+                            <input type="hidden" name="_token" value="{{ csrf_token('pay-' ~ reservation.id) }}">
+                            <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">
+                                <i class="fa-regular fa-credit-card mr-1.5"></i>Procéder au paiement
+                            </button>
+                        </form>
+                        <p class="text-xs text-gray-400 text-center mt-2">Le paiement confirme immédiatement votre réservation.</p>
+                    {% endif %}
+
+                    {# ----- Modération hôte d'une demande en attente (B.2) ----- #}
+                    {% if reservation.status == 'pending' and isHost is defined and isHost %}
+                        <form method="post" action="{{ path('app_reservation_accept', { id: reservation.id }) }}" class="mt-4">
+                            <input type="hidden" name="_token" value="{{ csrf_token('accept-' ~ reservation.id) }}">
+                            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold py-3 rounded-xl">
+                                <i class="fa-solid fa-check mr-1.5"></i>Accepter la demande
+                            </button>
+                        </form>
+                        <form method="post" action="{{ path('app_reservation_refuse', { id: reservation.id }) }}" class="mt-2">
+                            <input type="hidden" name="_token" value="{{ csrf_token('refuse-' ~ reservation.id) }}">
+                            <input type="text" name="reason" required placeholder="Motif du refus..."
+                                   class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm mb-2">
+                            <button type="submit" class="w-full border border-red-300 text-red-700 hover:bg-red-50 font-semibold py-2.5 rounded-xl">
+                                <i class="fa-solid fa-xmark mr-1.5"></i>Refuser
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {# ----- Annulation d'une réservation confirmée (B.3) ----- #}
+                    {% if reservation.status == 'confirmed' and (isGuest or (isHost is defined and isHost)) %}
+                        <form method="post" action="{{ path('app_reservation_cancel', { id: reservation.id }) }}" class="mt-4 border-t border-gray-100 pt-4"
+                              onsubmit="return confirm('Annuler cette réservation ? Les dates seront libérées.');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('cancel-' ~ reservation.id) }}">
+                            <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Motif de l'annulation</label>
+                            <input type="text" name="reason" required placeholder="Motif..."
+                                   class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm mb-2">
+                            <button type="submit" class="w-full border border-red-300 text-red-700 hover:bg-red-50 font-semibold py-2.5 rounded-xl">
+                                <i class="fa-solid fa-ban mr-1.5"></i>Annuler la réservation
+                            </button>
+                        </form>
                     {% endif %}
                 </div>
             </aside>
