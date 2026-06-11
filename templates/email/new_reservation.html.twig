@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Nouvelle demande de réservation</title></head>
+<body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+
+{% set property = reservation.property %}
+{% set guest    = reservation.guest %}
+{% set profile  = guest ? guest.profile : null %}
+{% set nights   = reservation.checkinDate|date('U') is not same as reservation.checkoutDate|date('U')
+    ? ((reservation.checkoutDate|date('U') - reservation.checkinDate|date('U')) / 86400)|round
+    : 0 %}
+
+<div style="background: #f97316; color: white; padding: 24px; border-radius: 12px 12px 0 0;">
+    <h1 style="margin: 0; font-size: 22px;">Nouvelle demande de réservation</h1>
+    <p style="margin: 8px 0 0; opacity: .9;">{{ property ? property.title : '' }}</p>
+</div>
+
+<div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 12px 12px;">
+    <p>Bonjour,</p>
+    <p>Vous avez reçu une nouvelle demande de réservation pour votre logement <strong>{{ property ? property.title : '' }}</strong>.</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr style="background: #f9fafb;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Arrivée</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Départ</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr style="background: #f9fafb;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Durée</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">{{ nights }} nuit{{ nights > 1 ? 's' }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Voyageurs</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">{{ reservation.guestsCount }}</td>
+        </tr>
+        <tr style="background: #f9fafb;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Voyageur</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">
+                {{ profile ? profile.firstName ~ ' ' ~ profile.lastName : guest.email }}
+                ({{ guest ? guest.email : '' }})
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold;">Montant total</td>
+            <td style="padding: 10px 14px; font-size: 18px; font-weight: bold; color: #f97316;">
+                {{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}
+            </td>
+        </tr>
+    </table>
+
+    <div style="text-align: center; margin: 28px 0;">
+        <a href="http://localhost:8000{{ path('app_host_reservations') }}"
+           style="background: #f97316; color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; display: inline-block;">
+            Accepter ou refuser la demande
+        </a>
+    </div>
+
+    <p style="color: #6b7280; font-size: 13px;">Ce message a été envoyé automatiquement depuis Clone Airbnb.</p>
+</div>
+</body>
+</html>

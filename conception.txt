@@ -1,0 +1,70 @@
+CONCEPTION TECHNIQUE — Moteur de Réservation & Calendrier iCal
+Projet : Clone Airbnb — Symfony
+================================================================
+
+1. MODÉLISATION TEMPORELLE
+---------------------------
+Le jour de check-out est disponible pour un nouveau voyageur.
+On stocke une date d'arrivée (incluse) et une date de départ (exclue).
+Exemple : séjour du 10 au 15 juillet → le 15 est libre pour quelqu'un d'autre.
+
+Pour détecter un chevauchement, une seule condition suffit :
+  réservation existante : arrivée < départ demandé ET départ > arrivée demandée
+
+Cela fonctionne aussi pour le cas départ 11h / arrivée 15h, car on travaille
+à la journée comme unité de base, sans gérer les heures.
+
+2. EST-CE QU'UNE DEMANDE PENDING BLOQUE LES DATES ?
+-----------------------------------------------------
+Choix : Non, les dates restent libres tant que la réservation n'est pas confirmée.
+
+Pourquoi : si on bloque dès la demande, un utilisateur peut envoyer 10 demandes
+pour paralyser un logement sans jamais payer. C'est trop risqué.
+
+Contrepartie : quand l'hôte accepte une demande, on vérifie à nouveau si les dates
+sont encore libres. Si entre-temps quelqu'un d'autre a réservé, la demande est annulée
+automatiquement. C'est le compromis choisi.
+
+3. QUE SE PASSE-T-IL SI DEUX PERSONNES RÉSERVENT EN MÊME TEMPS ?
+------------------------------------------------------------------
+Risque réel : deux utilisateurs cliquent sur "Confirmer" à la même seconde.
+
+Solution simple : on utilise une contrainte UNIQUE en base de données sur la
+combinaison (logement + dates). La première réservation passe, la deuxième
+déclenche une erreur qu'on attrape proprement pour afficher un message à l'utilisateur.
+
+Solution plus robuste (si nécessaire) : ouvrir une transaction et verrouiller les
+lignes concernées le temps de l'insertion (SELECT FOR UPDATE), puis libérer le verrou.
+
+4. COMMENT VÉRIFIER LA DISPO SUR 20 NUITS SANS FAIRE 20 REQUÊTES ?
+--------------------------------------------------------------------
+On ne vérifie pas nuit par nuit. Une seule requête SQL suffit :
+on compte les réservations confirmées qui se chevauchent avec la période demandée.
+Si le résultat est 0 (et aucun blocage manuel), le logement est disponible.
+
+On ajoute un index en base sur les colonnes utilisées (logement, dates, statut)
+pour que cette requête reste rapide même avec beaucoup de données.
+
+5. POURQUOI ENVOYER LES EMAILS EN ASYNCHRONE ET APRÈS LA SAUVEGARDE ?
+-----------------------------------------------------------------------
+On envoie l'email APRÈS que la réservation est bien sauvegardée en base,
+pour éviter d'envoyer un email de confirmation pour une réservation qui
+n'existe pas encore (si la sauvegarde échoue après).
+
+L'envoi est délégué à Symfony Messenger (file d'attente) pour ne pas ralentir
+la page. Si le serveur de messages (RabbitMQ) tombe en panne, on bascule
+automatiquement sur un stockage en base de données en attendant qu'il revienne.
+
+6. TABLE DE JOURS OU TABLE DE PÉRIODES POUR LE CALENDRIER ?
+-------------------------------------------------------------
+Choix : table de périodes (date_début / date_fin).
+
+Pourquoi pas les jours individuels : ça crée des centaines de lignes par logement
+par an, pour un résultat identique. C'est plus lourd à écrire et à lire.
+
+Avec les périodes, une ligne = un blocage ou une réservation. Les requêtes
+de chevauchement restent simples et efficaces.
+
+Structure :
+  property_block : id, property_id, date_start, date_end, motif (travaux, usage perso, sync iCal)
+

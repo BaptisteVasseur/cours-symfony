@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Réservation confirmée</title></head>
+<body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+
+{% set property    = reservation.property %}
+{% set guest       = reservation.guest %}
+{% set host        = property ? property.host : null %}
+{% set guestProfile = guest ? guest.profile : null %}
+{% set hostProfile  = host ? host.profile : null %}
+{% set nights = ((reservation.checkoutDate|date('U') - reservation.checkinDate|date('U')) / 86400)|round %}
+
+<div style="background: #16a34a; color: white; padding: 24px; border-radius: 12px 12px 0 0;">
+    <h1 style="margin: 0; font-size: 22px;">✓ Réservation confirmée</h1>
+    <p style="margin: 8px 0 0; opacity: .9;">{{ property ? property.title : '' }}</p>
+</div>
+
+<div style="border: 1px solid #e5e7eb; border-top: none; padding: 24px; border-radius: 0 0 12px 12px;">
+    <p>Bonjour,</p>
+    <p>La réservation pour le logement <strong>{{ property ? property.title : '' }}</strong> est confirmée.</p>
+
+    <h3 style="margin-top: 24px; color: #111;">Détails du séjour</h3>
+    <table style="width: 100%; border-collapse: collapse; margin: 12px 0 20px;">
+        <tr style="background: #f9fafb;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Arrivée</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Départ</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr style="background: #f9fafb;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Durée</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">{{ nights }} nuit{{ nights > 1 ? 's' }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Voyageurs</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">{{ reservation.guestsCount }}</td>
+        </tr>
+    </table>
+
+    <h3 style="color: #111;">Coordonnées</h3>
+    <table style="width: 100%; border-collapse: collapse; margin: 12px 0 20px;">
+        <tr style="background: #f9fafb;">
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Voyageur</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">
+                {{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : guest.email }}
+                — {{ guest ? guest.email : '' }}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 10px 14px; font-weight: bold; border-bottom: 1px solid #e5e7eb;">Hôte</td>
+            <td style="padding: 10px 14px; border-bottom: 1px solid #e5e7eb;">
+                {{ hostProfile ? hostProfile.firstName ~ ' ' ~ hostProfile.lastName : (host ? host.email : '') }}
+                — {{ host ? host.email : '' }}
+            </td>
+        </tr>
+        {% if property and property.address %}
+        <tr style="background: #f9fafb;">
+            <td style="padding: 10px 14px; font-weight: bold;">Adresse</td>
+            <td style="padding: 10px 14px;">
+                {{ property.address.addressLine1 }}, {{ property.address.city }}
+            </td>
+        </tr>
+        {% endif %}
+    </table>
+
+    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 8px; padding: 16px; text-align: center; margin: 20px 0;">
+        <p style="margin: 0; font-size: 13px; color: #16a34a;">Montant total</p>
+        <p style="margin: 4px 0 0; font-size: 28px; font-weight: bold; color: #16a34a;">
+            {{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}
+        </p>
+    </div>
+
+    <p style="color: #6b7280; font-size: 13px;">Ce message a été envoyé automatiquement depuis Clone Airbnb.</p>
+</div>
+</body>
+</html>
