@@ -132,4 +132,59 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<Property>
+     */
+    public function findForSearch(?string $destination, ?int $guests, ?\DateTimeImmutable $checkin, ?\DateTimeImmutable $checkout): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('a.city LIKE :dest OR a.street LIKE :dest OR a.country LIKE :dest OR p.title LIKE :dest')
+                ->setParameter('dest', '%' . $destination . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            $qb->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        'SELECT r2 FROM App\Entity\Reservation r2
+                         WHERE r2.property = p
+                         AND r2.status IN (:blockedStatuses)
+                         AND r2.checkinDate < :checkout
+                         AND r2.checkoutDate > :checkin'
+                    )
+                )
+            )
+            ->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        'SELECT pa2 FROM App\Entity\PropertyAvailability pa2
+                         WHERE pa2.property = p
+                         AND pa2.availableDate >= :checkin
+                         AND pa2.availableDate < :checkout
+                         AND pa2.isAvailable = false'
+                    )
+                )
+            )
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout)
+            ->setParameter('blockedStatuses', ['confirmed', 'pending']);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }
