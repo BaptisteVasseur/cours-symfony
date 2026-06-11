@@ -1,0 +1,68 @@
+{% set property = reservation.property %}
+{% set cover = property ? property.coverMedia : null %}
+{% set guest = reservation.guest %}
+{% set guestProfile = guest ? guest.profile : null %}
+{% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=200&q=80' %}
+
+{% set statusLabels = {
+    'confirmed': 'Confirmée',
+    'completed': 'Terminée',
+    'pending': 'En attente',
+    'cancelled': 'Annulée',
+} %}
+{% set statusClasses = {
+    'confirmed': 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+    'completed': 'bg-blue-50 text-blue-800 border border-blue-200',
+    'pending': 'bg-amber-50 text-amber-800 border border-amber-200',
+    'cancelled': 'bg-red-50 text-red-800 border border-red-200',
+} %}
+{% set statusIcons = {
+    'confirmed': 'fa-check',
+    'completed': 'fa-flag-checkered',
+    'pending': 'fa-clock',
+    'cancelled': 'fa-xmark',
+} %}
+
+<tr class="hover:bg-gray-50/70 transition">
+    <td class="px-6 py-4">
+        <div class="flex items-center space-x-3">
+            <div class="w-12 h-12 rounded-lg overflow-hidden shrink-0 bg-gray-100">
+                <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property ? property.title : 'Logement' }}" class="w-full h-full object-cover">
+            </div>
+            <div class="min-w-0">
+                <p class="font-semibold text-gray-900 truncate max-w-[200px]">{{ property ? property.title : 'Logement supprimé' }}</p>
+                {% if property and property.address %}
+                    <span class="text-xs text-gray-400">{{ property.address.city }}</span>
+                {% endif %}
+            </div>
+        </div>
+    </td>
+    <td class="px-6 py-4">
+        {% if guestProfile and (guestProfile.firstName or guestProfile.lastName) %}
+            <p class="font-medium text-gray-900">{{ guestProfile.firstName }} {{ guestProfile.lastName }}</p>
+        {% endif %}
+        <span class="text-xs text-gray-400">{{ guest ? guest.email : '—' }}</span>
+    </td>
+    <td class="px-6 py-4 text-gray-600">
+        <p>{{ reservation.checkinDate|date('d/m/Y') }}</p>
+        <p class="text-xs text-gray-400">→ {{ reservation.checkoutDate|date('d/m/Y') }}</p>
+        <p class="text-xs text-gray-400 mt-0.5">{{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' : '' }}</p>
+    </td>
+    <td class="px-6 py-4">
+        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ statusClasses[reservation.status]|default('bg-gray-100 text-gray-700 border border-gray-200') }}">
+            <i class="fa-solid {{ statusIcons[reservation.status]|default('fa-circle') }} text-[8px] mr-1.5"></i>
+            {{ statusLabels[reservation.status]|default(reservation.status) }}
+        </span>
+    </td>
+    <td class="px-6 py-4 font-semibold text-gray-900">
+        {{ reservation.totalPrice|number_format(0, ',', ' ') }} {{ reservation.currency|default('EUR') }}
+    </td>
+    <td class="px-6 py-4 text-right space-x-2 whitespace-nowrap">
+        <a href="{{ path('app_admin_reservation_show', { id: reservation.id }) }}" class="text-xs text-gray-600 hover:text-gray-900 font-semibold px-2.5 py-1.5 rounded-lg border border-gray-200 hover:bg-gray-50 transition inline-block">
+            Voir
+        </a>
+        <a href="{{ path('app_admin_reservation_edit', { id: reservation.id }) }}" class="text-xs bg-gray-900 text-white font-semibold px-2.5 py-1.5 rounded-lg hover:bg-gray-700 transition inline-block">
+            Modifier
+        </a>
+    </td>
+</tr>

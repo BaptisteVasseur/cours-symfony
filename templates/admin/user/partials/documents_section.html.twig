@@ -1,0 +1,53 @@
+{% set docStatusLabels = {
+    'pending': 'En attente',
+    'verified': 'Validé',
+    'rejected': 'Refusé',
+} %}
+{% set docStatusClasses = {
+    'pending': 'bg-amber-50 text-amber-800 border border-amber-200',
+    'verified': 'bg-emerald-50 text-emerald-800 border border-emerald-200',
+    'rejected': 'bg-rose-50 text-rose-800 border border-rose-200',
+} %}
+{% set docTypeLabels = {
+    'identity_card': 'Pièce d\'identité',
+    'passport': 'Passeport',
+    'driver_license': 'Permis de conduire',
+} %}
+
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <h3 class="font-bold text-gray-900 mb-4">Documents d'identité</h3>
+    {% if user.documents|length > 0 %}
+        <div class="space-y-4">
+            {% for document in user.documents %}
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 p-4 rounded-lg border border-gray-100 bg-gray-50/50">
+                    <div>
+                        <p class="font-semibold text-gray-900 text-sm">{{ docTypeLabels[document.type]|default(document.type) }}</p>
+                        <a href="{{ document.fileUrl }}" target="_blank" class="text-xs text-brand hover:underline mt-1 inline-block">Voir le document</a>
+                        <p class="text-xs text-gray-400 mt-1">Déposé le {{ document.createdAt|date('d/m/Y') }}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ docStatusClasses[document.verificationStatus]|default('bg-gray-100 text-gray-700') }}">
+                            {{ docStatusLabels[document.verificationStatus]|default(document.verificationStatus) }}
+                        </span>
+                        {% if document.verificationStatus == 'pending' %}
+                            <form method="post" action="{{ path('app_user_document_verify', { id: document.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('document' ~ document.id) }}">
+                                <button type="submit" class="text-xs bg-emerald-600 text-white font-semibold px-2.5 py-1.5 rounded-lg hover:bg-emerald-700 transition">
+                                    Valider
+                                </button>
+                            </form>
+                            <form method="post" action="{{ path('app_user_document_reject', { id: document.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('document' ~ document.id) }}">
+                                <button type="submit" class="text-xs bg-rose-50 text-brand font-semibold px-2.5 py-1.5 rounded-lg hover:bg-rose-100 transition">
+                                    Refuser
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-sm text-gray-400">Aucun document déposé.</p>
+    {% endif %}
+</div>

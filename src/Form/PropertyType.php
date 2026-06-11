@@ -1,14 +1,21 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Form;
 
 use App\Entity\CancellationPolicy;
 use App\Entity\Property;
-use App\Entity\PropertyAddress;
-use App\Entity\PropertyRule;
 use App\Entity\User;
 use Symfony\Bridge\Doctrine\Form\Type\EntityType;
 use Symfony\Component\Form\AbstractType;
+use Symfony\Component\Form\Extension\Core\Type\CheckboxType;
+use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
+use Symfony\Component\Form\Extension\Core\Type\IntegerType;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
+use Symfony\Component\Form\Extension\Core\Type\TextareaType;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
+use Symfony\Component\Form\Extension\Core\Type\TimeType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -17,45 +24,80 @@ class PropertyType extends AbstractType
     public function buildForm(FormBuilderInterface $builder, array $options): void
     {
         $builder
-            ->add('title')
-            ->add('description')
-            ->add('propertyType')
-            ->add('status')
-            ->add('maxGuests')
-            ->add('bedrooms')
-            ->add('beds')
-            ->add('bathrooms')
-            ->add('pricePerNight')
-            ->add('cleaningFee')
-            ->add('securityDeposit')
-            ->add('checkinTime', null, [
-                'widget' => 'single_text',
+            ->add('title', TextType::class, [
+                'label' => 'Titre',
             ])
-            ->add('checkoutTime', null, [
-                'widget' => 'single_text',
-            ])
-            ->add('instantBooking')
-            ->add('createdAt', null, [
-                'widget' => 'single_text',
-            ])
-            ->add('updatedAt', null, [
-                'widget' => 'single_text',
+            ->add('description', TextareaType::class, [
+                'label' => 'Description',
+                'required' => false,
             ])
             ->add('host', EntityType::class, [
                 'class' => User::class,
-                'choice_label' => 'id',
+                'choice_label' => 'email',
+                'label' => 'Hôte',
             ])
             ->add('cancellationPolicy', EntityType::class, [
                 'class' => CancellationPolicy::class,
-                'choice_label' => 'id',
+                'choice_label' => 'label',
+                'label' => 'Politique d\'annulation',
             ])
-            ->add('address', EntityType::class, [
-                'class' => PropertyAddress::class,
-                'choice_label' => 'id',
+            ->add('propertyType', ChoiceType::class, [
+                'label' => 'Type de logement',
+                'choices' => [
+                    'Villa' => 'villa',
+                    'Loft' => 'loft',
+                    'Appartement' => 'apartment',
+                    'Maison' => 'house',
+                    'Chalet' => 'chalet',
+                ],
             ])
-            ->add('rules', EntityType::class, [
-                'class' => PropertyRule::class,
-                'choice_label' => 'id',
+            ->add('status', ChoiceType::class, [
+                'label' => 'Statut',
+                'choices' => [
+                    'Brouillon' => 'draft',
+                    'En attente' => 'pending',
+                    'Publiée' => 'published',
+                ],
+            ])
+            ->add('maxGuests', IntegerType::class, [
+                'label' => 'Voyageurs max.',
+            ])
+            ->add('bedrooms', IntegerType::class, [
+                'label' => 'Chambres',
+            ])
+            ->add('beds', IntegerType::class, [
+                'label' => 'Lits',
+            ])
+            ->add('bathrooms', IntegerType::class, [
+                'label' => 'Salles de bain',
+            ])
+            ->add('pricePerNight', NumberType::class, [
+                'label' => 'Prix / nuit (€)',
+                'scale' => 2,
+            ])
+            ->add('cleaningFee', NumberType::class, [
+                'label' => 'Frais de ménage (€)',
+                'required' => false,
+                'scale' => 2,
+            ])
+            ->add('securityDeposit', NumberType::class, [
+                'label' => 'Caution (€)',
+                'required' => false,
+                'scale' => 2,
+            ])
+            ->add('checkinTime', TimeType::class, [
+                'label' => 'Heure d\'arrivée',
+                'widget' => 'single_text',
+                'required' => false,
+            ])
+            ->add('checkoutTime', TimeType::class, [
+                'label' => 'Heure de départ',
+                'widget' => 'single_text',
+                'required' => false,
+            ])
+            ->add('instantBooking', CheckboxType::class, [
+                'label' => 'Réservation instantanée',
+                'required' => false,
             ])
         ;
     }

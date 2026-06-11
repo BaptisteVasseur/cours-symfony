@@ -1,0 +1,43 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Mes messages{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-3xl mx-auto w-full">
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Mes messages</h1>
+        <p class="text-gray-500 mb-8">Conversations liées à vos réservations</p>
+
+        {% if conversations|length > 0 %}
+            <div class="space-y-3">
+                {% for conversation in conversations %}
+                    {% set reservation = conversation.reservation %}
+                    {% set property = reservation ? reservation.property : null %}
+                    {% set lastMessage = conversation.messages|last %}
+                    <a href="{{ path('app_messages_show', { id: conversation.id }) }}" class="block p-4 border border-gray-200 rounded-xl hover:shadow-md transition bg-white">
+                        <div class="flex items-start justify-between gap-3">
+                            <div class="min-w-0">
+                                <p class="font-semibold text-gray-900 truncate">
+                                    {{ property ? property.title : 'Conversation' }}
+                                </p>
+                                {% if reservation %}
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                                    </p>
+                                {% endif %}
+                                {% if lastMessage and lastMessage.content %}
+                                    <p class="text-sm text-gray-600 mt-2 truncate">{{ lastMessage.content }}</p>
+                                {% endif %}
+                            </div>
+                            <span class="text-xs text-gray-400 shrink-0">{{ conversation.createdAt|date('d/m/Y') }}</span>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-16 border border-dashed border-gray-200 rounded-xl">
+                <i class="fa-solid fa-envelope text-4xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500">Aucun message pour le moment.</p>
+            </div>
+        {% endif %}
+    </main>
+{% endblock %}

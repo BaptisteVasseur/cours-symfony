@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace App\Entity;
 
+use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -12,12 +19,21 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
-use Symfony\Component\Serializer\Annotation\Groups;
-use ApiPlatform\Metadata\ApiResource;
+use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Serializer\Attribute\Ignore;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource(
-    normalizationContext: ['groups' => ['user:read']],
-    denormalizationContext: ['groups' => ['user:write']]
+    operations: [
+        new GetCollection(security: "is_granted('ROLE_ADMIN')"),
+        new Get(security: "is_granted('ROLE_ADMIN') or object == user"),
+        new Post(security: "is_granted('ROLE_ADMIN')"),
+        new Put(security: "is_granted('ROLE_ADMIN')"),
+        new Patch(security: "is_granted('ROLE_ADMIN')"),
+        new Delete(security: "is_granted('ROLE_SUPER_ADMIN')"),
+    ],
+    normalizationContext: ['groups' => ['mon-groupe']],
+    denormalizationContext: ['groups' => ['mon-groupe-2']],
 )]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
@@ -25,19 +41,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     use UuidEntityTrait;
 
+    #[Groups(['mon-groupe'])]
+    #[Assert\NotBlank(message: 'L\'adresse email est obligatoire.')]
+    #[Assert\Email(message: 'L\'adresse email n\'est pas valide.')]
+    #[Assert\Length(max: 255, maxMessage: 'L\'adresse email ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 255, unique: true)]
-    #[Groups(['user:read', 'user:write'])]
     private ?string $email = null;
 
+    #[Assert\NotBlank(message: 'Le mot de passe est obligatoire.', groups: ['create'])]
     #[ORM\Column(length: 255)]
-    #[Groups(['user:write'])]
     private ?string $passwordHash = null;
 
+    #[Groups(['mon-groupe'])]
+    #[Assert\Length(max: 50, maxMessage: 'Le numéro de téléphone ne peut pas dépasser {{ limit }} caractères.')]
+    #[Assert\Regex(pattern: '/^\+?[0-9\s\-().]{6,20}$/', message: 'Le numéro de téléphone n\'est pas valide.')]
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $phone = null;
 
+    #[Assert\NotBlank(message: 'Le statut du compte est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['active', 'pending', 'suspended'],
+        message: 'Le statut sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
-    private ?string $status = null;
+    private ?string $status = 'pending';
 
     #[ORM\Column]
     private bool $isEmailVerified = false;
@@ -45,9 +72,19 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private bool $is2faEnabled = false;
 
+    #[Assert\Choice(
+        choices: ['fr', 'en', 'es'],
+        message: 'La langue sélectionnée n\'est pas valide.',
+    )]
+    #[Assert\Length(max: 10, maxMessage: 'La langue ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $preferredLanguage = null;
 
+    #[Assert\Choice(
+        choices: ['EUR', 'USD', 'GBP'],
+        message: 'La devise sélectionnée n\'est pas valide.',
+    )]
+    #[Assert\Length(max: 10, maxMessage: 'La devise ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $preferredCurrency = null;
 
@@ -57,12 +94,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[Groups(['mon-groupe'])]
+    #[Assert\Valid]
     #[ORM\OneToOne(mappedBy: 'user', targetEntity: UserProfile::class, cascade: ['persist', 'remove'])]
     private ?UserProfile $profile = null;
 
-    /** @var Collection<int, UserRole> */
-    #[ORM\OneToMany(targetEntity: UserRole::class, mappedBy: 'user', orphanRemoval: true)]
-    private Collection $userRoles;
+    /** @var list<string> */
+    #[ORM\Column(type: Types::JSON)]
+    private array $roles = [];
 
     /** @var Collection<int, OauthAccount> */
     #[ORM\OneToMany(targetEntity: OauthAccount::class, mappedBy: 'user', orphanRemoval: true)]
@@ -94,7 +133,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function __construct()
     {
-        $this->userRoles = new ArrayCollection();
         $this->oauthAccounts = new ArrayCollection();
         $this->documents = new ArrayCollection();
         $this->properties = new ArrayCollection();
@@ -112,12 +150,48 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     public function getRoles(): array
     {
-        $roles = ['ROLE_USER'];
-        foreach ($this->userRoles as $userRole) {
-            $roles[] = $userRole->getRole()->getCode();
+        return array_values(array_unique([...$this->roles, 'ROLE_USER']));
+    }
+
+    /** @return list<string> */
+    public function getAssignedRoles(): array
+    {
+        return $this->roles;
+    }
+
+    /** @param list<string> $roles */
+    public function setAssignedRoles(array $roles): static
+    {
+        $this->roles = array_values(array_unique(array_filter(
+            $roles,
+            static fn (string $role): bool => $role !== 'ROLE_USER',
+        )));
+
+        return $this;
+    }
+
+    public function addAssignedRole(string $role): static
+    {
+        if ($role !== 'ROLE_USER' && !in_array($role, $this->roles, true)) {
+            $this->roles[] = $role;
         }
 
-        return array_unique($roles);
+        return $this;
+    }
+
+    public function removeAssignedRole(string $role): static
+    {
+        $this->roles = array_values(array_filter(
+            $this->roles,
+            static fn (string $assignedRole): bool => $assignedRole !== $role,
+        ));
+
+        return $this;
+    }
+
+    public function hasAssignedRole(string $role): bool
+    {
+        return in_array($role, $this->roles, true);
     }
 
     public function eraseCredentials(): void
@@ -136,11 +210,13 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    #[Ignore]
     public function getPassword(): ?string
     {
         return $this->passwordHash;
     }
 
+    #[Ignore]
     public function getPasswordHash(): ?string
     {
         return $this->passwordHash;
@@ -260,29 +336,6 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             $profile->setUser($this);
         }
         $this->profile = $profile;
-
-        return $this;
-    }
-
-    /** @return Collection<int, UserRole> */
-    public function getUserRoles(): Collection
-    {
-        return $this->userRoles;
-    }
-
-    public function addUserRole(UserRole $userRole): static
-    {
-        if (!$this->userRoles->contains($userRole)) {
-            $this->userRoles->add($userRole);
-            $userRole->setUser($this);
-        }
-
-        return $this;
-    }
-
-    public function removeUserRole(UserRole $userRole): static
-    {
-        $this->userRoles->removeElement($userRole);
 
         return $this;
     }

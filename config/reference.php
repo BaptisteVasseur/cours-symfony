@@ -622,7 +622,7 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         }>,
  *     },
  *     rate_limiter?: bool|array{ // Rate limiter configuration
- *         enabled?: bool|Param, // Default: false
+ *         enabled?: bool|Param, // Default: true
  *         limiters?: array<string, array{ // Default: []
  *             lock_factory?: scalar|null|Param, // The service ID of the lock factory used by this limiter (or null to disable locking). // Default: "auto"
  *             cache_pool?: scalar|null|Param, // The cache pool to use for storing the current limiter state. // Default: "cache.rate_limiter"
@@ -1738,6 +1738,26 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         ...<mixed>
  *     },
  * }
+ * @psalm-type NelmioAliceConfig = array{
+ *     locale?: scalar|null|Param, // Default locale for the Faker Generator // Default: "en_US"
+ *     seed?: scalar|null|Param, // Value used make sure Faker generates data consistently across runs, set to null to disable. // Default: 1
+ *     functions_blacklist?: list<scalar|null|Param>,
+ *     loading_limit?: int|Param, // Alice may do some recursion to resolve certain values. This parameter defines a limit which will stop the resolution once reached. // Default: 5
+ *     max_unique_values_retry?: int|Param, // Maximum number of time Alice can try to generate a unique value before stopping and failing. // Default: 150
+ * }
+ * @psalm-type FidryAliceDataFixturesConfig = array{
+ *     default_purge_mode?: scalar|null|Param, // Default: "delete"
+ *     db_drivers?: array{ // The list of enabled drivers.
+ *         doctrine_orm?: bool|null|Param, // Default: null
+ *         doctrine_mongodb_odm?: bool|null|Param, // Default: null
+ *         doctrine_phpcr_odm?: bool|null|Param, // Default: null
+ *         eloquent_orm?: bool|null|Param, // Default: null
+ *     },
+ * }
+ * @psalm-type HautelookAliceConfig = array{
+ *     fixtures_path?: list<scalar|null|Param>,
+ *     root_dirs?: list<scalar|null|Param>,
+ * }
  * @psalm-type ConfigType = array{
  *     imports?: ImportsConfig,
  *     parameters?: ParametersConfig,
@@ -1771,6 +1791,9 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         maker?: MakerConfig,
  *         nelmio_cors?: NelmioCorsConfig,
  *         api_platform?: ApiPlatformConfig,
+ *         nelmio_alice?: NelmioAliceConfig,
+ *         fidry_alice_data_fixtures?: FidryAliceDataFixturesConfig,
+ *         hautelook_alice?: HautelookAliceConfig,
  *     },
  *     "when@prod"?: array{
  *         imports?: ImportsConfig,
@@ -1804,6 +1827,9 @@ use Symfony\Component\Config\Loader\ParamConfigurator as Param;
  *         monolog?: MonologConfig,
  *         nelmio_cors?: NelmioCorsConfig,
  *         api_platform?: ApiPlatformConfig,
+ *         nelmio_alice?: NelmioAliceConfig,
+ *         fidry_alice_data_fixtures?: FidryAliceDataFixturesConfig,
+ *         hautelook_alice?: HautelookAliceConfig,
  *     },
  *     ...<string, ExtensionType|array{ // extra keys must follow the when@%env% pattern or match an extension alias
  *         imports?: ImportsConfig,

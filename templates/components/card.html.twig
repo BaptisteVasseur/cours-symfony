@@ -1,0 +1,36 @@
+{% set cover = property.coverMedia %}
+{% set averageRating = property.averageRating %}
+{% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
+
+<a href="{{ path('app_logement_detail', { id: property.id }) }}" class="group block">
+    <div class="relative aspect-square w-full overflow-hidden rounded-xl mb-3">
+        <img
+            class="h-full w-full object-cover group-hover:scale-105 transition duration-300"
+            src="{{ cover ? cover.fileUrl : placeholderImage }}"
+            alt="{{ property.title }}"
+        >
+        <button type="button" class="absolute top-3 right-3 text-white text-xl drop-shadow-md hover:scale-110 transition" aria-label="Ajouter aux favoris" onclick="event.preventDefault()">
+            <i class="fa-regular fa-heart"></i>
+        </button>
+    </div>
+    <div class="flex justify-between items-start gap-2">
+        <h3 class="font-bold text-sm text-gray-900 line-clamp-1">{{ property.title }}</h3>
+        {% if averageRating %}
+            <div class="flex items-center space-x-1 text-sm shrink-0">
+                <i class="fa-solid fa-star text-xs"></i>
+                <span>{{ averageRating|number_format(2, ',') }}</span>
+            </div>
+        {% endif %}
+    </div>
+    {% if property.address %}
+        <p class="text-gray-500 text-sm">{{ property.address.city }}{% if property.address.country %}, {{ property.address.country }}{% endif %}</p>
+    {% endif %}
+    {% if checkin is defined and checkout is defined and checkin and checkout %}
+        <p class="text-gray-500 text-sm mb-1">
+            {{ checkin|date('d') }}–{{ checkout|date('d/m') }}
+        </p>
+    {% endif %}
+    <p class="text-sm font-semibold">
+        <span class="font-bold">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span> nuit
+    </p>
+</a>
