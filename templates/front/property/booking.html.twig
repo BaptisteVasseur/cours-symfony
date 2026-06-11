@@ -10,11 +10,6 @@
         <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
             <i class="fa-solid fa-arrow-left"></i> Retour au logement
         </a>
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
-            {% endfor %}
-        {% endfor %}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
                 <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>

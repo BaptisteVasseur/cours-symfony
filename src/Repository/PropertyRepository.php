@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Property;
 use App\Entity\User;
+use App\Enum\ReservationStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -40,6 +41,60 @@ class PropertyRepository extends ServiceEntityRepository
         if ($status !== null && $status !== '') {
             $qb->andWhere('p.status = :status')
                 ->setParameter('status', $status);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * Search published properties by destination, capacity and availability over a date range.
+     * Availability is enforced with two NOT EXISTS subqueries (no confirmed overlap, no host-blocked
+     * day) so the whole search is a single set-based query.
+     *
+     * @return list<Property>
+     */
+    public function search(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        ?int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && trim($destination) !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.addressLine1) LIKE :destination OR LOWER(a.country) LIKE :destination')
+                ->setParameter('destination', '%' . mb_strtolower(trim($destination)) . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null && $checkin < $checkout) {
+            $qb
+                ->andWhere($qb->expr()->not($qb->expr()->exists(
+                    'SELECT 1 FROM App\Entity\Reservation res'
+                    . ' WHERE res.property = p AND res.status = :confirmed'
+                    . ' AND res.checkinDate < :checkout AND res.checkoutDate > :checkin'
+                )))
+                ->andWhere($qb->expr()->not($qb->expr()->exists(
+                    'SELECT 1 FROM App\Entity\PropertyAvailability av'
+                    . ' WHERE av.property = p AND av.isAvailable = false'
+                    . ' AND av.availableDate >= :checkin AND av.availableDate < :checkout'
+                )))
+                ->setParameter('confirmed', ReservationStatus::Confirmed->value)
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout);
         }
 
         return $qb->getQuery()->getResult();

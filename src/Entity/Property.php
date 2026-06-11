@@ -167,6 +167,9 @@ class Property
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'property')]
     private Collection $reviews;
 
+    #[ORM\Column(length: 64, nullable: true, unique: true)]
+    private ?string $exportToken = null;
+
     public function __construct()
     {
         $this->propertyAmenities = new ArrayCollection();
@@ -588,5 +591,17 @@ class Property
         }
 
         return round($total / $this->reviews->count(), 2);
+    }
+
+    public function getExportToken(): ?string
+    {
+        return $this->exportToken;
+    }
+
+    public function setExportToken(?string $exportToken): static
+    {
+        $this->exportToken = $exportToken;
+
+        return $this;
     }
 }

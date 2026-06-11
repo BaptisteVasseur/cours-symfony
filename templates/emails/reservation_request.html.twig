@@ -1,0 +1,13 @@
+{% extends 'emails/base.html.twig' %}
+
+{% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
+
+{% block body %}
+    <h1 style="font-size:20px;margin:0 0 12px;">Nouvelle demande de réservation</h1>
+    <p>Un voyageur souhaite réserver votre logement. Cette demande est en attente de votre validation.</p>
+    {{ include('emails/_details.html.twig') }}
+    <p style="color:#666;">Voyageur : {{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : reservation.guest.email }}</p>
+    <p style="margin-top:20px;">
+        <a href="{{ url('app_host_moderation') }}" style="display:inline-block;background:#ff385c;color:#ffffff;text-decoration:none;padding:12px 20px;border-radius:8px;font-weight:bold;">Gérer la demande</a>
+    </p>
+{% endblock %}

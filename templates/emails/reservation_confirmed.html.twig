@@ -1,0 +1,12 @@
+{% extends 'emails/base.html.twig' %}
+
+{% set property = reservation.property %}
+
+{% block body %}
+    <h1 style="font-size:20px;margin:0 0 12px;">Votre réservation est confirmée 🎉</h1>
+    <p>La réservation pour <strong>{{ property.title }}</strong> est confirmée. Voici le récapitulatif :</p>
+    {{ include('emails/_details.html.twig') }}
+    {% if property.address %}
+        <p style="color:#666;">Adresse : {{ property.address.addressLine1 }}, {{ property.address.postalCode }} {{ property.address.city }} ({{ property.address.country }})</p>
+    {% endif %}
+{% endblock %}
