@@ -8,6 +8,7 @@ use App\Entity\Property;
 use App\Entity\User;
 use App\Form\BookingType;
 use App\Message\ReservationConfirmedMessage;
+use App\Message\ReservationPendingMessage;
 use App\Repository\PropertyRepository;
 use App\Repository\ReservationRepository;
 use App\Service\ReservationService;
@@ -90,7 +91,11 @@ final class BookingController extends AbstractController
                 return $render();
             }
 
-            $bus->dispatch(new ReservationConfirmedMessage((string) $reservation->getId()));
+            if ($reservation->getStatus() === 'pending') {
+                $bus->dispatch(new ReservationPendingMessage((string) $reservation->getId()));
+            } else {
+                $bus->dispatch(new ReservationConfirmedMessage((string) $reservation->getId()));
+            }
 
             $this->addFlash('success', 'Votre réservation a été enregistrée.');
 

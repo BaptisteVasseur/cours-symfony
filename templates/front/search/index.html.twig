@@ -2,14 +2,73 @@
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Résultats de recherche</h1>
-        {% if destination %}<p class="text-gray-500 mb-8">Destination : {{ destination }}</p>{% endif %}
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
-            {% for property in properties %}
-                {% include 'components/card.html.twig' with { property: property } %}
+
+        {# Title + count #}
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-1">
+            {% if destination %}
+                Logements à <span class="text-brand">{{ destination }}</span>
             {% else %}
-                <p class="col-span-full text-gray-500">Aucun logement trouvé.</p>
-            {% endfor %}
-        </div>
+                Résultats de recherche
+            {% endif %}
+        </h1>
+        <p class="text-gray-500 mb-4 text-sm">
+            {{ properties|length }} logement{{ properties|length != 1 ? 's' : '' }} trouvé{{ properties|length != 1 ? 's' : '' }}
+            {% if destination %} pour « {{ destination }} »{% endif %}
+        </p>
+
+        {# Active filters badges #}
+        {% if checkin or checkout or guests %}
+            <div class="flex flex-wrap gap-2 mb-6">
+                {% if checkin and checkout %}
+                    <span class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full">
+                        <i class="fa-regular fa-calendar text-brand"></i>
+                        {{ checkin|date('d/m/Y') }} – {{ checkout|date('d/m/Y') }}
+                    </span>
+                {% elseif checkin %}
+                    <span class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full">
+                        <i class="fa-regular fa-calendar text-brand"></i>
+                        Arrivée le {{ checkin|date('d/m/Y') }}
+                    </span>
+                {% elseif checkout %}
+                    <span class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full">
+                        <i class="fa-regular fa-calendar text-brand"></i>
+                        Départ le {{ checkout|date('d/m/Y') }}
+                    </span>
+                {% endif %}
+                {% if guests %}
+                    <span class="inline-flex items-center gap-1.5 bg-gray-100 text-gray-700 text-xs font-medium px-3 py-1.5 rounded-full">
+                        <i class="fa-solid fa-user text-brand"></i>
+                        {{ guests }} voyageur{{ guests > 1 ? 's' : '' }}
+                    </span>
+                {% endif %}
+                <a href="{{ path('app_search') }}" class="inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 px-2 py-1.5 transition">
+                    <i class="fa-solid fa-xmark"></i> Effacer les filtres
+                </a>
+            </div>
+        {% endif %}
+
+        {# Results grid #}
+        {% if properties is not empty %}
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
+                {% for property in properties %}
+                    {% include 'components/card.html.twig' with { property: property, checkin: checkin, checkout: checkout } %}
+                {% endfor %}
+            </div>
+        {% else %}
+            {# Empty state #}
+            <div class="flex flex-col items-center justify-center py-24 text-center">
+                <div class="text-5xl mb-4 text-gray-200">
+                    <i class="fa-solid fa-house-circle-xmark"></i>
+                </div>
+                <h2 class="text-xl font-semibold text-gray-700 mb-2">Aucun logement trouvé</h2>
+                <p class="text-gray-400 text-sm max-w-sm">
+                    Essayez de modifier vos critères de recherche : destination, dates ou nombre de voyageurs.
+                </p>
+                <a href="{{ path('app_search') }}" class="mt-6 inline-flex items-center gap-2 text-sm font-medium text-brand border border-brand rounded-full px-5 py-2 hover:bg-brand hover:text-white transition">
+                    <i class="fa-solid fa-arrow-left"></i> Voir tous les logements
+                </a>
+            </div>
+        {% endif %}
+
     </main>
 {% endblock %}

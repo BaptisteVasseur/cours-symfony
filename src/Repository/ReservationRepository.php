@@ -154,6 +154,43 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Returns all confirmed or completed reservations for the given property,
+     * eager-loading guest and guest profile.
+     *
+     * @return list<Reservation>
+     */
+    public function findConfirmedForProperty(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->join('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Returns pending reservations created more than 24 hours ago.
+     *
+     * @return list<Reservation>
+     */
+    public function findExpiredPending(): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.createdAt < :threshold')
+            ->setParameter('status', 'pending')
+            ->setParameter('threshold', new \DateTimeImmutable('-24 hours'))
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Checks if a confirmed reservation overlaps with the given dates using a
      * semi-open interval [checkin, checkout): a new checkin on the same day as
      * an existing checkout is NOT a conflict.

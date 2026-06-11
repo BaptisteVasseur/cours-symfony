@@ -46,12 +46,34 @@ final class ReservationConfirmedMessageHandler
                 $reservation->getCheckoutDate()?->format('d/m/Y'),
             );
 
-        $email = (new Email())
+        $guestEmail = (new Email())
             ->from('noreply@staybook.com')
             ->to($guest->getEmail())
             ->subject($subject)
             ->html($body);
 
-        $this->mailer->send($email);
+        $this->mailer->send($guestEmail);
+
+        if ($reservation->getStatus() === 'confirmed') {
+            $host = $reservation->getProperty()?->getHost();
+            if ($host !== null && $host->getEmail() !== null) {
+                $propertyTitle = $reservation->getProperty()?->getTitle() ?? 'Logement';
+                $hostBody = sprintf(
+                    '<p>Bonjour,</p>'
+                    . '<p>La réservation pour <strong>%s</strong> du <strong>%s</strong> au <strong>%s</strong> est maintenant confirmée.</p>',
+                    htmlspecialchars($propertyTitle),
+                    $reservation->getCheckinDate()?->format('d/m/Y'),
+                    $reservation->getCheckoutDate()?->format('d/m/Y'),
+                );
+
+                $hostEmail = (new Email())
+                    ->from('noreply@staybook.com')
+                    ->to($host->getEmail())
+                    ->subject(sprintf('Réservation confirmée pour %s', $propertyTitle))
+                    ->html($hostBody);
+
+                $this->mailer->send($hostEmail);
+            }
+        }
     }
 }

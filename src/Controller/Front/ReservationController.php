@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Reservation;
+use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Message\ReservationCancelledMessage;
 use App\Repository\ReservationRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\ReservationVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -44,5 +49,57 @@ final class ReservationController extends AbstractController
         return $this->render('front/reservation/show.html.twig', [
             'reservation' => $reservation,
         ]);
+    }
+
+    #[Route('/{id}/annuler', name: 'app_reservation_cancel', methods: ['POST'])]
+    public function cancel(
+        Reservation $reservation,
+        Request $request,
+        EntityManagerInterface $em,
+        MessageBusInterface $bus,
+    ): Response {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        if ($reservation->getGuest() !== $user) {
+            $this->addFlash('error', 'Vous n\'êtes pas autorisé à annuler cette réservation.');
+
+            return $this->redirectToRoute('app_reservation_index');
+        }
+
+        if (!in_array($reservation->getStatus(), ['pending', 'confirmed'], true)) {
+            $this->addFlash('error', 'Cette réservation ne peut pas être annulée.');
+
+            return $this->redirectToRoute('app_reservation_index');
+        }
+
+        $reason = $request->request->get('reason');
+        if (empty($reason)) {
+            $this->addFlash('error', 'Le motif d\'annulation est requis.');
+
+            return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
+        }
+
+        $oldStatus = $reservation->getStatus();
+
+        $history = new ReservationStatusHistory();
+        $history->setReservation($reservation);
+        $history->setOldStatus($oldStatus);
+        $history->setNewStatus('cancelled');
+        $history->setChangedBy($user);
+
+        $reservation->setStatus('cancelled');
+        $reservation->setCancellationReason($reason);
+
+        $em->persist($history);
+        $em->flush();
+
+        $bus->dispatch(new ReservationCancelledMessage((string) $reservation->getId()));
+
+        $this->addFlash('success', 'Votre réservation a été annulée.');
+
+        return $this->redirectToRoute('app_reservation_index');
     }
 }

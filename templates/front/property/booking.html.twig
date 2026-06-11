@@ -20,7 +20,9 @@
                 <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm"
                      data-controller="booking-dates"
-                     data-booking-dates-booked-ranges-value="{{ bookedRanges|json_encode }}">
+                     data-booking-dates-booked-ranges-value="{{ bookedRanges|json_encode }}"
+                     data-booking-dates-price-per-night-value="{{ property.pricePerNight }}"
+                     data-booking-dates-cleaning-fee-value="{{ property.cleaningFee ?? 0 }}">
                     {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             {{ form_row(form.checkinDate, {
@@ -51,6 +53,7 @@
                     <div class="p-5">
                         <h2 class="font-semibold">{{ property.title }}</h2>
                         <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+                        <div data-booking-dates-target="summary"></div>
                         {% if property.checkinTime or property.checkoutTime %}
                             <div class="mt-3 text-sm text-gray-500 space-y-1">
                                 {% if property.checkoutTime %}

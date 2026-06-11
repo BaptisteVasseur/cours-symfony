@@ -20,6 +20,26 @@ class PropertyAvailabilityRepository extends ServiceEntityRepository
     }
 
     /**
+     * @return list<PropertyAvailability>
+     */
+    public function findForPropertyMonth(Property $property, int $year, int $month): array
+    {
+        $from = new \DateTimeImmutable("$year-$month-01");
+        $to   = $from->modify('last day of this month');
+
+        return $this->createQueryBuilder('pa')
+            ->andWhere('pa.property = :property')
+            ->andWhere('pa.availableDate >= :from')
+            ->andWhere('pa.availableDate <= :to')
+            ->setParameter('property', $property)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('pa.availableDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Returns true if any day in [checkin, checkout) is manually blocked by the host.
      * Uses a single COUNT query instead of iterating day by day.
      */
