@@ -137,6 +137,9 @@ class Property
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalToken = null;
+
     #[ORM\OneToOne(mappedBy: 'property', targetEntity: PropertyAddress::class, cascade: ['persist', 'remove'])]
     private ?PropertyAddress $address = null;
 
@@ -588,5 +591,24 @@ class Property
         }
 
         return round($total / $this->reviews->count(), 2);
+    }
+
+    public function getIcalToken(): ?string
+    {
+        return $this->icalToken;
+    }
+
+    public function setIcalToken(?string $icalToken): static
+    {
+        $this->icalToken = $icalToken;
+
+        return $this;
+    }
+
+    public function generateIcalToken(): string
+    {
+        $this->icalToken = bin2hex(random_bytes(32));
+
+        return $this->icalToken;
     }
 }

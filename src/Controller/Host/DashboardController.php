@@ -36,6 +36,21 @@ final class DashboardController extends AbstractController
         ]);
     }
 
+    #[Route('/calendar', name: 'app_host_calendar', methods: ['GET'])]
+    public function calendar(): Response
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        $properties = $user->getProperties();
+
+        return $this->render('host/ical.html.twig', [
+            'properties' => $properties,
+        ]);
+    }
+
     #[Route('/reservation/{id}/accept', name: 'app_host_reservation_accept', methods: ['POST'])]
     public function accept(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, \Symfony\Component\Mailer\MailerInterface $mailer, \Twig\Environment $twig): Response
     {
