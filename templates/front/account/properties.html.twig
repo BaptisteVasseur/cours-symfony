@@ -30,6 +30,10 @@
                         {% include 'components/card.html.twig' with { property: property } %}
                         {% if is_granted('ROLE_HOST') %}
                             <div class="absolute top-3 right-3 flex gap-2 opacity-0 group-hover:opacity-100 transition">
+                                <a href="{{ path('app_host_property_calendar', { id: property.id }) }}"
+                                   class="bg-white text-gray-700 hover:text-brand text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm border border-gray-200 transition">
+                                    <i class="fa-regular fa-calendar mr-1"></i> Calendrier
+                                </a>
                                 <a href="{{ path('app_host_property_edit', { id: property.id }) }}"
                                    class="bg-white text-gray-700 hover:text-brand text-xs font-semibold px-3 py-1.5 rounded-lg shadow-sm border border-gray-200 transition">
                                     <i class="fa-solid fa-pen mr-1"></i> Modifier

@@ -167,6 +167,14 @@ class Property
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'property')]
     private Collection $reviews;
 
+    /** @var Collection<int, Blockout> */
+    #[ORM\OneToMany(targetEntity: Blockout::class, mappedBy: 'property', orphanRemoval: true)]
+    private Collection $blockouts;
+
+    #[Assert\GreaterThanOrEqual(value: 1, message: 'La durée minimum de séjour doit être d\'au moins 1 nuit.')]
+    #[ORM\Column(nullable: true)]
+    private ?int $minNights = null;
+
     public function __construct()
     {
         $this->propertyAmenities = new ArrayCollection();
@@ -175,6 +183,7 @@ class Property
         $this->iCalSyncs = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
+        $this->blockouts = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -588,5 +597,40 @@ class Property
         }
 
         return round($total / $this->reviews->count(), 2);
+    }
+
+    /** @return Collection<int, Blockout> */
+    public function getBlockouts(): Collection
+    {
+        return $this->blockouts;
+    }
+
+    public function addBlockout(Blockout $blockout): static
+    {
+        if (!$this->blockouts->contains($blockout)) {
+            $this->blockouts->add($blockout);
+            $blockout->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBlockout(Blockout $blockout): static
+    {
+        $this->blockouts->removeElement($blockout);
+
+        return $this;
+    }
+
+    public function getMinNights(): ?int
+    {
+        return $this->minNights;
+    }
+
+    public function setMinNights(?int $minNights): static
+    {
+        $this->minNights = $minNights;
+
+        return $this;
     }
 }

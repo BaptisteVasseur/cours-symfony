@@ -1,0 +1,289 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Calendrier — {{ property.title }}{% endblock %}
+
+{% block content %}
+{% set monthNames = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'] %}
+{% set dayNames = ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'] %}
+
+{# --- compute calendar grid --- #}
+{% set daysInMonth = lastDay.format('d')|number_format %}
+{# ISO weekday of the 1st day: Mon=1 … Sun=7 — offset for empty leading cells #}
+{% set startDow = firstDay.format('N') %}
+
+<main class="flex-grow px-4 md:px-10 py-8 max-w-7xl mx-auto w-full">
+
+    {# Breadcrumb #}
+    <nav class="text-sm text-gray-400 mb-4 flex items-center gap-2">
+        <a href="{{ path('app_account_properties') }}" class="hover:text-brand transition">Mes annonces</a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <a href="{{ path('app_host_property_edit', {id: property.id}) }}" class="hover:text-brand transition truncate max-w-xs">{{ property.title }}</a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <span class="text-gray-600 font-medium">Calendrier</span>
+    </nav>
+
+    <div class="flex flex-col lg:flex-row gap-8">
+
+        {# ===== LEFT : Calendar ===== #}
+        <div class="flex-1 min-w-0">
+
+            {# Month header + navigation #}
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-2xl font-semibold text-gray-900">
+                    <i class="fa-regular fa-calendar mr-2 text-brand"></i>
+                    {{ monthNames[month - 1] }} {{ year }}
+                </h1>
+                <div class="flex gap-2">
+                    <a href="{{ path('app_host_property_calendar', {id: property.id, year: prevMonth.format('Y'), month: prevMonth.format('n')}) }}"
+                       class="flex items-center gap-1 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition shadow-sm">
+                        <i class="fa-solid fa-chevron-left text-xs"></i> Préc.
+                    </a>
+                    <a href="{{ path('app_host_property_calendar', {id: property.id, year: today.format('Y'), month: today.format('n')}) }}"
+                       class="px-4 py-2 bg-brand text-white rounded-lg text-sm font-medium hover:bg-brandHover transition shadow-sm">
+                        Aujourd'hui
+                    </a>
+                    <a href="{{ path('app_host_property_calendar', {id: property.id, year: nextMonth.format('Y'), month: nextMonth.format('n')}) }}"
+                       class="flex items-center gap-1 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition shadow-sm">
+                        Suiv. <i class="fa-solid fa-chevron-right text-xs"></i>
+                    </a>
+                </div>
+            </div>
+
+            {# Flash messages #}
+            {% for label, messages in app.flashes %}
+                {% for message in messages %}
+                    <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium
+                        {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+
+            {# Legend #}
+            <div class="flex flex-wrap gap-4 mb-4 text-xs font-medium">
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-emerald-400 inline-block"></span> Confirmée</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-amber-400 inline-block"></span> En attente</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-slate-400 inline-block"></span> Indisponible</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-full bg-white border border-gray-200 inline-block"></span> Disponible</span>
+            </div>
+
+            {# Calendar grid #}
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                {# Day-of-week headers #}
+                <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-100">
+                    {% for dayName in dayNames %}
+                        <div class="text-center text-xs font-semibold text-gray-500 py-3 uppercase tracking-wide">
+                            {{ dayName }}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                {# Day cells #}
+                <div class="grid grid-cols-7">
+                    {# Empty leading cells #}
+                    {% for i in 1..(startDow - 1) %}
+                        <div class="min-h-[72px] border-b border-r border-gray-100 bg-gray-50/40"></div>
+                    {% endfor %}
+
+                    {# Actual days #}
+                    {% for day in 1..daysInMonth %}
+                        {% set dateStr = '%04d-%02d-%02d'|format(year, month, day) %}
+                        {% set dayData = calendarMap[dateStr] ?? {} %}
+                        {% set hasConfirmed = false %}
+                        {% set hasPending   = false %}
+                        {% set hasBlockout  = false %}
+
+                        {% if dayData.reservations is defined %}
+                            {% for r in dayData.reservations %}
+                                {% if r.status == 'confirmed' %}{% set hasConfirmed = true %}{% endif %}
+                                {% if r.status == 'pending'   %}{% set hasPending   = true %}{% endif %}
+                            {% endfor %}
+                        {% endif %}
+                        {% if dayData.blockouts is defined and dayData.blockouts|length > 0 %}
+                            {% set hasBlockout = true %}
+                        {% endif %}
+
+                        {% set isToday   = dateStr == today.format('Y-m-d') %}
+                        {% set isPast    = dateStr < today.format('Y-m-d') %}
+                        {% set colEnd    = (startDow - 1 + day) % 7 %}
+
+                        <div class="min-h-[72px] border-b border-r border-gray-100 p-1.5 relative
+                            {{ isToday ? 'ring-2 ring-inset ring-brand' : '' }}
+                            {{ isPast  ? 'bg-gray-50/60' : 'bg-white' }}
+                            {{ hasConfirmed ? 'bg-emerald-50' : (hasPending ? 'bg-amber-50' : (hasBlockout ? 'bg-slate-100' : '')) }}">
+
+                            <span class="block text-right text-xs font-semibold mb-1
+                                {{ isToday ? 'text-brand' : (isPast ? 'text-gray-400' : 'text-gray-700') }}">
+                                {{ day }}
+                            </span>
+
+                            {# Status dots #}
+                            {% if hasConfirmed %}
+                                <span class="block w-full h-1.5 rounded-full bg-emerald-400 mb-0.5" title="Réservation confirmée"></span>
+                            {% endif %}
+                            {% if hasPending %}
+                                <span class="block w-full h-1.5 rounded-full bg-amber-400 mb-0.5" title="Réservation en attente"></span>
+                            {% endif %}
+                            {% if hasBlockout %}
+                                <span class="block w-full h-1.5 rounded-full bg-slate-400 mb-0.5" title="Période indisponible"></span>
+                            {% endif %}
+
+                            {# Guest initials (confirmed only) #}
+                            {% if dayData.reservations is defined %}
+                                {% for r in dayData.reservations %}
+                                    {% if r.status == 'confirmed' and r.checkinDate.format('Y-m-d') == dateStr %}
+                                        <span class="text-[9px] font-medium text-emerald-700 leading-tight block truncate">
+                                            {{ r.guest.profile ? (r.guest.profile.firstName|slice(0,1) ~ r.guest.profile.lastName|slice(0,1)) : '?' }}
+                                        </span>
+                                    {% endif %}
+                                {% endfor %}
+                            {% endif %}
+                        </div>
+
+                        {# Fill last row trailing cells #}
+                        {% if day == daysInMonth %}
+                            {% set remaining = (7 - (startDow - 1 + day) % 7) % 7 %}
+                            {% for i in 1..remaining %}
+                                <div class="min-h-[72px] border-b border-r border-gray-100 bg-gray-50/40"></div>
+                            {% endfor %}
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            {# Reservations list for this month #}
+            {% if reservations|length > 0 %}
+                <div class="mt-8">
+                    <h2 class="text-base font-semibold text-gray-800 mb-3">
+                        <i class="fa-solid fa-list-check mr-1 text-brand"></i>
+                        Réservations du mois
+                    </h2>
+                    <div class="space-y-2">
+                        {% for r in reservations %}
+                            <div class="flex items-center justify-between bg-white border border-gray-100 rounded-xl px-4 py-3 shadow-sm text-sm">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-2.5 h-2.5 rounded-full {{ r.status == 'confirmed' ? 'bg-emerald-400' : 'bg-amber-400' }}"></span>
+                                    <div>
+                                        <p class="font-medium text-gray-800">
+                                            {{ r.guest.profile ? (r.guest.profile.firstName ~ ' ' ~ r.guest.profile.lastName) : r.guest.email }}
+                                        </p>
+                                        <p class="text-gray-400 text-xs">
+                                            {{ r.checkinDate|date('d/m/Y') }} → {{ r.checkoutDate|date('d/m/Y') }}
+                                            · {{ r.guestsCount }} voyageur{{ r.guestsCount > 1 ? 's' }}
+                                        </p>
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="px-2 py-0.5 rounded-full text-xs font-semibold
+                                        {{ r.status == 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700' }}">
+                                        {{ r.status == 'confirmed' ? 'Confirmée' : 'En attente' }}
+                                    </span>
+                                    <span class="font-semibold text-gray-800">{{ r.totalPrice }} €</span>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+
+        {# ===== RIGHT : Sidebar ===== #}
+        <div class="w-full lg:w-80 flex-shrink-0 space-y-6">
+
+            {# Quick links #}
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+                <h2 class="text-sm font-semibold text-gray-700 mb-3">Actions rapides</h2>
+                <div class="space-y-2">
+                    <a href="{{ path('app_host_property_edit', {id: property.id}) }}"
+                       class="flex items-center gap-2 text-sm text-gray-600 hover:text-brand transition py-1">
+                        <i class="fa-solid fa-pen w-4"></i> Modifier l'annonce
+                    </a>
+                    <a href="{{ path('app_host_property_availability_settings', {id: property.id}) }}"
+                       class="flex items-center gap-2 text-sm text-gray-600 hover:text-brand transition py-1">
+                        <i class="fa-solid fa-sliders w-4"></i> Réglages de disponibilité
+                    </a>
+                </div>
+            </div>
+
+            {# Property info #}
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-4">
+                <h2 class="text-sm font-semibold text-gray-700 mb-2">Infos logement</h2>
+                <p class="text-sm text-gray-800 font-medium truncate">{{ property.title }}</p>
+                <p class="text-xs text-gray-400 mt-0.5">
+                    <i class="fa-solid fa-coins mr-1"></i> {{ property.pricePerNight }} €/nuit
+                    {% if property.minNights %}
+                        · min {{ property.minNights }} nuit{{ property.minNights > 1 ? 's' }}
+                    {% endif %}
+                </p>
+            </div>
+
+            {# Add blockout form #}
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5">
+                <h2 class="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                    <i class="fa-solid fa-ban text-slate-500"></i>
+                    Déclarer une indisponibilité
+                </h2>
+                {{ form_start(form, {attr: {class: 'space-y-3'}}) }}
+                    <input type="hidden" name="year"  value="{{ year }}">
+                    <input type="hidden" name="month" value="{{ month }}">
+                    <div>
+                        {{ form_label(form.startDate, null, {label_attr: {class: 'block text-xs font-medium text-gray-600 mb-1'}}) }}
+                        {{ form_widget(form.startDate) }}
+                        {{ form_errors(form.startDate) }}
+                    </div>
+                    <div>
+                        {{ form_label(form.endDate, null, {label_attr: {class: 'block text-xs font-medium text-gray-600 mb-1'}}) }}
+                        {{ form_widget(form.endDate) }}
+                        {{ form_errors(form.endDate) }}
+                    </div>
+                    <div>
+                        {{ form_label(form.reason, null, {label_attr: {class: 'block text-xs font-medium text-gray-600 mb-1'}}) }}
+                        {{ form_widget(form.reason) }}
+                        {{ form_errors(form.reason) }}
+                    </div>
+                    <button type="submit"
+                            class="w-full bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold py-2.5 rounded-xl transition mt-1">
+                        <i class="fa-solid fa-plus mr-1"></i> Bloquer les dates
+                    </button>
+                {{ form_end(form) }}
+            </div>
+
+            {# Existing blockouts list #}
+            {% if blockouts|length > 0 %}
+                <div class="bg-white border border-gray-100 rounded-2xl shadow-sm p-5">
+                    <h2 class="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-xmark text-slate-500"></i>
+                        Périodes bloquées
+                    </h2>
+                    <ul class="space-y-2">
+                        {% for b in blockouts %}
+                            <li class="flex items-start justify-between gap-2 py-2 border-b border-gray-50 last:border-0">
+                                <div>
+                                    <p class="text-xs font-medium text-gray-700">
+                                        {{ b.startDate|date('d/m/Y') }}
+                                        {% if b.startDate.format('Y-m-d') != b.endDate.format('Y-m-d') %}
+                                            → {{ b.endDate|date('d/m/Y') }}
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-xs text-gray-400 mt-0.5">{{ b.reasonLabel }}</p>
+                                </div>
+                                <form method="post"
+                                      action="{{ path('app_host_blockout_delete', {blockoutId: b.id}) }}"
+                                      onsubmit="return confirm('Supprimer cette période ?')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_blockout_' ~ b.id) }}">
+                                    <input type="hidden" name="year"   value="{{ year }}">
+                                    <input type="hidden" name="month"  value="{{ month }}">
+                                    <button type="submit" class="text-gray-400 hover:text-red-500 transition" title="Supprimer">
+                                        <i class="fa-solid fa-trash text-xs"></i>
+                                    </button>
+                                </form>
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+        </div>{# end sidebar #}
+    </div>
+</main>
+{% endblock %}

@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Reservation;
 use App\Entity\User;
+use App\Entity\Property;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -89,6 +90,29 @@ class ReservationRepository extends ServiceEntityRepository
             ->andWhere('r.guest = :guest')
             ->setParameter('guest', $guest)
             ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     *
+     * @return list<Reservation>
+     */
+    public function findForPropertyInRange(Property $property, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkinDate <= :to')
+            ->andWhere('r.checkoutDate >= :from')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['pending', 'confirmed'])
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('r.checkinDate', 'ASC')
             ->getQuery()
             ->getResult();
     }
