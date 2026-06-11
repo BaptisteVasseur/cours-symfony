@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Property;
-use App\Entity\Reservation;
 use App\Entity\User;
+use App\Exception\UnavailableDatesException;
 use App\Form\BookingType;
 use App\Repository\PropertyRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Service\ReservationService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -26,7 +26,7 @@ final class BookingController extends AbstractController
         Request $request,
         Property $property,
         PropertyRepository $propertyRepository,
-        EntityManagerInterface $entityManager,
+        ReservationService $reservationService,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -71,28 +71,16 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            $nights = (int) $checkin->diff($checkout)->days;
-            $nightlyRate = (float) $property->getPricePerNight();
-            $subtotal = $nightlyRate * $nights;
-            $cleaningFee = (float) ($property->getCleaningFee() ?? 0);
-            $serviceFee = round($subtotal * 0.12, 2);
-            $totalPrice = round($subtotal + $cleaningFee + $serviceFee, 2);
+            try {
+                $reservation = $reservationService->create($property, $user, $checkin, $checkout, $guestsCount);
+            } catch (UnavailableDatesException) {
+                $this->addFlash('error', 'Ces dates ne sont plus disponibles pour ce logement.');
 
-            $reservation = new Reservation();
-            $reservation->setProperty($property);
-            $reservation->setGuest($user);
-            $reservation->setCheckinDate($checkin);
-            $reservation->setCheckoutDate($checkout);
-            $reservation->setGuestsCount($guestsCount);
-            $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
-            $reservation->setTotalPrice((string) $totalPrice);
-            $reservation->setCleaningFee($cleaningFee > 0 ? (string) $cleaningFee : null);
-            $reservation->setServiceFee((string) $serviceFee);
-            $reservation->setSecurityDeposit($property->getSecurityDeposit());
-            $reservation->setCurrency('EUR');
-
-            $entityManager->persist($reservation);
-            $entityManager->flush();
+                return $this->render('front/property/booking.html.twig', [
+                    'property' => $property,
+                    'form' => $form,
+                ]);
+            }
 
             $this->addFlash('success', 'Votre réservation a été enregistrée.');
 
