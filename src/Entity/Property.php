@@ -19,6 +19,7 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 #[ApiResource(
     operations: [
@@ -130,6 +131,13 @@ class Property
 
     #[ORM\Column]
     private bool $instantBooking = false;
+
+    #[ORM\Column]
+    private bool $allowSameDayBooking = false;
+
+    #[Assert\GreaterThanOrEqual(value: 1, message: 'La durée minimum de séjour doit être d\'au moins {{ compared_value }} nuit.')]
+    #[ORM\Column(nullable: true)]
+    private ?int $minimumStay = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
@@ -368,6 +376,59 @@ class Property
         $this->instantBooking = $instantBooking;
 
         return $this;
+    }
+
+    public function isAllowSameDayBooking(): bool
+    {
+        return $this->allowSameDayBooking;
+    }
+
+    public function setAllowSameDayBooking(bool $allowSameDayBooking): static
+    {
+        $this->allowSameDayBooking = $allowSameDayBooking;
+
+        return $this;
+    }
+
+    public function getMinimumStay(): ?int
+    {
+        return $this->minimumStay;
+    }
+
+    public function setMinimumStay(?int $minimumStay): static
+    {
+        $this->minimumStay = $minimumStay;
+
+        return $this;
+    }
+
+    /**
+     * Règle conception.txt : autoriser une arrivée le jour d'un départ exige un écart
+     * d'au moins 3 heures entre l'heure de départ et l'heure d'arrivée (turnover).
+     */
+    #[Assert\Callback]
+    public function validateSameDayBooking(ExecutionContextInterface $context): void
+    {
+        if (!$this->allowSameDayBooking) {
+            return;
+        }
+
+        if ($this->checkinTime === null || $this->checkoutTime === null) {
+            $context->buildViolation('Définissez l\'heure de départ et l\'heure d\'arrivée pour autoriser les arrivées le jour d\'un départ.')
+                ->atPath('allowSameDayBooking')
+                ->addViolation();
+
+            return;
+        }
+
+        $checkoutMinutes = (int) $this->checkoutTime->format('H') * 60 + (int) $this->checkoutTime->format('i');
+        $checkinMinutes = (int) $this->checkinTime->format('H') * 60 + (int) $this->checkinTime->format('i');
+
+        if ($checkinMinutes - $checkoutMinutes < 180) {
+            $context->buildViolation('L\'heure d\'arrivée doit être au moins 3 heures après l\'heure de départ pour autoriser les réservations le même jour.')
+                ->atPath('allowSameDayBooking')
+                ->addViolation();
+        }
     }
 
     public function getCreatedAt(): ?\DateTimeImmutable

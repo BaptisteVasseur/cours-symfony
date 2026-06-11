@@ -1,0 +1,45 @@
+Conception
+
+Cycle de vie de la réservation : 4 statuts dispo dans champ status ou équivalent (déjà en bdd)
+
+Table property : instantBooking (défaut à false) permet de gérer si la réservation est automatiquement confirmée sans intervention de l’hote (true) ou non (false)
+
+————Modélisation temporelle————
+
+L’hôte peut choisir pour son logement, l’heure maximale de départ le jour du checkout et l’heure minimale d’arrivée le jour du checkin
+=> Déja présent dans la table properties, aucun changement à faire
+
+Il peut avec cela choisir si il autorise les arrivées le même jour qu’un départ (bouton à cocher sous le choix des heures)
+=> ajouter dans la table properties un champ boolean (allowSameDayBooking) pour autoriser ou non.
+
+Attention : pour pouvoir cocher cette option (booking même jour) il faut que l’heure max de checkout et l’heure min de checkin soient séparées de 3 heures minimum (permet un turnover en toute tranquillité)
+
+=> Si le booking du même jour est activé, cela ne posera pas de problème en bdd de voir un départ et une arrivée le même jour
+
+Pour le blocage d’un logement sur plusieurs jours, on a déjà un système dans PropertyAvailability, mais il faut le refactor pour le passer en intervalles start end (actuellement une ligne par jour de blocage) et rajouter un champ blockNote pour éventuellement préciser la raison du blocage
+
+————Gestion des états————
+
+Une réservation est en état Pending si elle n’a pas encore été acceptée par l’hôte ( si instantBooking est à false), elle passe ensuite à Confirmed ou Cancelled après acceptation ou annulation
+
+Le mieux est qu’une réservation en Pending ne bloque pas les dates. Le risque sinon serait un blocage abusif, c’est à dire un user qui bloque plein de logements sans aucune intention de les réserver.
+
+Même si ça peut provoquer de l’overbooking (plusieurs réservations pending sur la même date), l’hôte peut accepter ou refuser les réservations qu’il souhaite comme cela l’arrange dans l’interface de gestion hôte.
+
+
+————Concurrence————
+
+Pour éviter que 2 utilisateurs ne tentent de réserver les mêmes dates quasiment au même moment, il faut vérifier la disponibilité dans une transaction bdd juste avant la validation de la réservation
+
+Le processus effectue donc le début de la transaction, puis l’absence de réservation confirmed conflictuelle, la création de la réservation, un flush doctrine puis le commit de la transaction.
+
+Si une autre réservation est validée entre temps, une erreur est envoyée à l’user
+
+————Performance————
+
+On ne valide pas un logement sur 20 nuits consécutives, mais surtout entre 2 dates précises. C’est à dire que même pour une réservation de 3 semaines on aurait qu’une seule ligne en bdd
+
+————Structure SQL————
+
+Le meilleur choix pour moi serait de gérer les réservations et les blocages avec des intervalles start end, cela permet d’éviter d’avoir une ligne pour chaque jour dans la base de données. 
+Le problème qui peut se poser est avec les chevauchements mais il est déjà géré par la réservation

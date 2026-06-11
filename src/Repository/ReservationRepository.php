@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -17,6 +18,53 @@ class ReservationRepository extends ServiceEntityRepository
     public function __construct(ManagerRegistry $registry)
     {
         parent::__construct($registry, Reservation::class);
+    }
+
+    /**
+     * Réservation confirmée du logement en conflit avec l'intervalle [checkin, checkout)
+     * (nuits [checkin, checkout)). Utilisé par l'algorithme de disponibilité (A.2).
+     */
+    public function findConfirmedConflict(Property $property, \DateTimeImmutable $checkin, \DateTimeImmutable $checkout): ?Reservation
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :confirmed')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('confirmed', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
+    /**
+     * Réservations non annulées du logement qui chevauchent la fenêtre [$from, $to].
+     *
+     * Les réservations occupent les nuits [checkinDate, checkoutDate) : une réservation
+     * touche la fenêtre dès que checkinDate <= $to et checkoutDate > $from.
+     *
+     * @return list<Reservation>
+     */
+    public function findOverlappingForProperty(Property $property, \DateTimeImmutable $from, \DateTimeImmutable $to): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status != :cancelled')
+            ->andWhere('r.checkinDate <= :to')
+            ->andWhere('r.checkoutDate > :from')
+            ->setParameter('property', $property)
+            ->setParameter('cancelled', 'cancelled')
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     /**

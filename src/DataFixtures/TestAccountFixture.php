@@ -360,14 +360,13 @@ class TestAccountFixture extends Fixture implements DependentFixtureInterface
             $manager->persist($media);
         }
 
-        for ($day = 0; $day < 21; $day++) {
-            $availability = new PropertyAvailability();
-            $availability->setProperty($property);
-            $availability->setAvailableDate(new \DateTimeImmutable(sprintf('+%d days', $day)));
-            $availability->setIsAvailable(true);
-            $availability->setMinimumStay(1);
-            $manager->persist($availability);
-        }
+        $block = new PropertyAvailability();
+        $block->setProperty($property);
+        $block->setStartDate(new \DateTimeImmutable('+10 days'));
+        $block->setEndDate(new \DateTimeImmutable('+12 days'));
+        $block->setIsAvailable(false);
+        $block->setBlockNote('Usage personnel');
+        $manager->persist($block);
 
         return $property;
     }
