@@ -5,68 +5,54 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Entity\Trait\UuidEntityTrait;
-use App\Repository\UserProfileRepository;
+use App\Repository\OwnerProfileRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
-use Symfony\Component\Serializer\Attribute\Groups;
-use Symfony\Component\Validator\Constraints as Assert;
 
-#[ORM\Entity(repositoryClass: UserProfileRepository::class)]
-#[ORM\Table(name: 'user_profiles')]
-class UserProfile
+#[ORM\Entity(repositoryClass: OwnerProfileRepository::class)]
+#[ORM\Table(name: 'owner_profiles')]
+class OwnerProfile
 {
     use UuidEntityTrait;
 
-    #[ORM\OneToOne(inversedBy: 'profile', targetEntity: User::class)]
+    #[ORM\ManyToOne(inversedBy: 'profiles')]
     #[ORM\JoinColumn(nullable: false)]
-    private ?User $user = null;
+    private ?Owner $owner = null;
 
-    #[Assert\Length(max: 100, maxMessage: 'Le prénom ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $firstName = null;
 
-    #[Assert\Length(max: 100, maxMessage: 'Le nom ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $lastName = null;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $birthDate = null;
 
-    #[Assert\Url(requireTld: false, message: 'L\'URL de l\'avatar n\'est pas valide.')]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $avatarUrl = null;
 
-    #[Assert\Length(max: 1000, maxMessage: 'La bio ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $bio = null;
 
-    #[Assert\Choice(
-        choices: ['unverified', 'pending', 'verified', 'rejected'],
-        message: 'Le statut d\'identité sélectionné n\'est pas valide.',
-    )]
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $identityStatus = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
-    #[ORM\ManyToOne(inversedBy: 'profiles')]
-    #[ORM\JoinColumn(nullable: true)]
-    private ?Owner $owner = null;
-
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
     }
 
-    public function getUser(): ?User
+    public function getOwner(): ?Owner
     {
-        return $this->user;
+        return $this->owner;
     }
 
-    public function setUser(?User $user): static
+    public function setOwner(?Owner $owner): static
     {
-        $this->user = $user;
+        $this->owner = $owner;
 
         return $this;
     }
@@ -82,8 +68,6 @@ class UserProfile
 
         return $this;
     }
-
-
 
     public function getLastName(): ?string
     {

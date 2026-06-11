@@ -46,6 +46,10 @@ class Property
 
     #[Assert\NotNull(message: 'La politique d\'annulation est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'properties')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Owner $owner = null;
+
+    #[ORM\ManyToOne(inversedBy: 'properties')]
     #[ORM\JoinColumn(nullable: false)]
     private ?CancellationPolicy $cancellationPolicy = null;
 
@@ -186,6 +190,18 @@ class Property
     public function setHost(?User $host): static
     {
         $this->host = $host;
+
+        return $this;
+    }
+
+    public function getOwner(): ?Owner
+    {
+        return $this->owner;
+    }
+
+    public function setOwner(?Owner $owner): static
+    {
+        $this->owner = $owner;
 
         return $this;
     }
