@@ -9,6 +9,7 @@ use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
 use App\Repository\PropertyRepository;
+use App\Service\AvailabilityService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,6 +28,7 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
+        AvailabilityService $availabilityService,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -62,8 +64,8 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            if ($guestsCount > $property->getMaxGuests()) {
-                $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
+            if (!$availabilityService->isAvailable($property, $checkin, $checkout, $guestsCount)) {
+                $this->addFlash('error', 'Ce logement n\'est pas disponible pour les dates sélectionnées.');
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,

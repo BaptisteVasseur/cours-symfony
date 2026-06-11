@@ -97,6 +97,26 @@ class ReservationRepository extends ServiceEntityRepository
     /**
      * @return list<Reservation>
      */
+    /**
+     * @return list<Reservation>
+     */
+    public function findPendingByHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'g', 'gp', 'a')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->leftJoin('p.address', 'a')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findConfirmedForMonth(Property $property, int $year, int $month): array
     {
         $start = new \DateTimeImmutable(sprintf('%04d-%02d-01', $year, $month));
