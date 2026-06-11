@@ -8,6 +8,7 @@ use App\Enum\ReservationStatut;
 use App\Repository\ReservationRepository;
 use App\Service\DisponibiliteService;
 use App\Service\NotificationService;
+use App\Service\ReservationEmailNotifier;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -42,7 +43,7 @@ class HostReservationController extends AbstractController
     }
 
     #[Route('/{id}/accepter', name: 'app_host_reservation_accept', requirements: ['id' => '\\d+'], methods: ['POST'])]
-    public function accept(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, NotificationService $notificationService, DisponibiliteService $disponibilites): RedirectResponse
+    public function accept(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, NotificationService $notificationService, DisponibiliteService $disponibilites, ReservationEmailNotifier $emailNotifier): RedirectResponse
     {
         $this->verifierAccesHote($reservation);
 
@@ -76,6 +77,7 @@ class HostReservationController extends AbstractController
             $this->generateUrl('app_reservation_show', ['id' => $reservation->id]),
         );
         $entityManager->flush();
+        $emailNotifier->reservationAcceptee($reservation);
 
         $this->addFlash('success', 'Demande acceptee. Le voyageur doit maintenant payer pour confirmer la reservation.');
 
@@ -83,7 +85,7 @@ class HostReservationController extends AbstractController
     }
 
     #[Route('/{id}/refuser', name: 'app_host_reservation_refuse', requirements: ['id' => '\\d+'], methods: ['POST'])]
-    public function refuse(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, NotificationService $notificationService): RedirectResponse
+    public function refuse(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, NotificationService $notificationService, ReservationEmailNotifier $emailNotifier): RedirectResponse
     {
         $this->verifierAccesHote($reservation);
 
@@ -118,6 +120,7 @@ class HostReservationController extends AbstractController
             $this->generateUrl('app_reservation_show', ['id' => $reservation->id]),
         );
         $entityManager->flush();
+        $emailNotifier->reservationRefusee($reservation);
 
         $this->addFlash('success', 'Demande refusee.');
 
@@ -131,6 +134,7 @@ class HostReservationController extends AbstractController
         EntityManagerInterface $entityManager,
         NotificationService $notificationService,
         DisponibiliteService $disponibilites,
+        ReservationEmailNotifier $emailNotifier,
     ): RedirectResponse {
         $this->verifierAccesHote($reservation);
 
@@ -170,6 +174,7 @@ class HostReservationController extends AbstractController
         );
 
         $entityManager->flush();
+        $emailNotifier->annulationHote($reservation);
         $this->addFlash('success', 'Reservation annulee.');
 
         return $this->redirectToRoute('app_host_reservation_show', ['id' => $reservation->id]);

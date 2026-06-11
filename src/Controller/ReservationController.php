@@ -12,6 +12,7 @@ use App\Repository\ReservationRepository;
 use App\Service\DemandeReservationValidator;
 use App\Service\DisponibiliteService;
 use App\Service\NotificationService;
+use App\Service\ReservationEmailNotifier;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -67,7 +68,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/mes-reservations/{id}/paiement/confirmer', name: 'app_reservation_payment_confirm', requirements: ['id' => '\d+'], methods: ['POST'])]
-    public function confirmPayment(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, NotificationService $notificationService, DisponibiliteService $disponibilites): RedirectResponse
+    public function confirmPayment(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, NotificationService $notificationService, DisponibiliteService $disponibilites, ReservationEmailNotifier $emailNotifier): RedirectResponse
     {
         $this->verifierAccesVoyageur($reservation);
 
@@ -116,6 +117,7 @@ class ReservationController extends AbstractController
             $this->generateUrl('app_host_reservation_show', ['id' => $reservation->id]),
         );
         $entityManager->flush();
+        $emailNotifier->reservationPayee($reservation);
 
         $this->addFlash('success', 'Paiement confirme. Votre reservation est confirmee.');
 
@@ -130,6 +132,7 @@ class ReservationController extends AbstractController
         EntityManagerInterface $entityManager,
         NotificationService $notificationService,
         DisponibiliteService $disponibilites,
+        ReservationEmailNotifier $emailNotifier,
     ): RedirectResponse {
         $user = $this->getUser();
         \assert($user instanceof User);
@@ -207,6 +210,12 @@ class ReservationController extends AbstractController
 
         $entityManager->flush();
 
+        if ($logement->instantBooking) {
+            $emailNotifier->reservationInstantanee($reservation);
+        } else {
+            $emailNotifier->nouvelleDemande($reservation);
+        }
+
         return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->id]);
     }
 
@@ -217,6 +226,7 @@ class ReservationController extends AbstractController
         EntityManagerInterface $entityManager,
         NotificationService $notificationService,
         DisponibiliteService $disponibilites,
+        ReservationEmailNotifier $emailNotifier,
     ): RedirectResponse {
         $this->verifierAccesVoyageur($reservation);
 
@@ -256,6 +266,7 @@ class ReservationController extends AbstractController
         );
 
         $entityManager->flush();
+        $emailNotifier->annulationVoyageur($reservation);
         $this->addFlash('success', 'Reservation annulee.');
 
         return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->id]);
