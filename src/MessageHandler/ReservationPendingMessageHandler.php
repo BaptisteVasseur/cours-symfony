@@ -6,6 +6,8 @@ namespace App\MessageHandler;
 
 use App\Message\ReservationPendingMessage;
 use App\Repository\ReservationRepository;
+use App\Service\NotificationService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Mime\Email;
@@ -16,6 +18,8 @@ final class ReservationPendingMessageHandler
     public function __construct(
         private readonly MailerInterface $mailer,
         private readonly ReservationRepository $reservationRepository,
+        private readonly NotificationService $notificationService,
+        private readonly EntityManagerInterface $em,
     ) {}
 
     public function __invoke(ReservationPendingMessage $message): void
@@ -69,5 +73,14 @@ final class ReservationPendingMessageHandler
             ->html($body);
 
         $this->mailer->send($email);
+
+        $this->notificationService->notify($host, sprintf('Nouvelle demande de réservation pour %s', $propertyTitle), '/compte/demandes');
+
+        $guest = $reservation->getGuest();
+        if ($guest !== null) {
+            $this->notificationService->notify($guest, sprintf('Votre demande pour %s a été envoyée, en attente de confirmation.', $propertyTitle), '/reservations/' . $reservation->getId());
+        }
+
+        $this->em->flush();
     }
 }

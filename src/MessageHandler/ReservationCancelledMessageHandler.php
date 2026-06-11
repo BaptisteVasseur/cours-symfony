@@ -6,6 +6,8 @@ namespace App\MessageHandler;
 
 use App\Message\ReservationCancelledMessage;
 use App\Repository\ReservationRepository;
+use App\Service\NotificationService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Mime\Email;
@@ -16,6 +18,8 @@ final class ReservationCancelledMessageHandler
     public function __construct(
         private readonly MailerInterface $mailer,
         private readonly ReservationRepository $reservationRepository,
+        private readonly NotificationService $notificationService,
+        private readonly EntityManagerInterface $em,
     ) {}
 
     public function __invoke(ReservationCancelledMessage $message): void
@@ -51,6 +55,7 @@ final class ReservationCancelledMessageHandler
                 ->html($guestBody);
 
             $this->mailer->send($guestEmail);
+            $this->notificationService->notify($guest, sprintf('Votre réservation pour %s a été annulée.', $propertyTitle));
         }
 
         $host = $property?->getHost();
@@ -72,6 +77,9 @@ final class ReservationCancelledMessageHandler
                 ->html($hostBody);
 
             $this->mailer->send($hostEmail);
+            $this->notificationService->notify($host, sprintf('Une réservation pour %s a été annulée.', $propertyTitle), '/compte/demandes');
         }
+
+        $this->em->flush();
     }
 }

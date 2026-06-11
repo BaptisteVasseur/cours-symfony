@@ -6,6 +6,8 @@ namespace App\MessageHandler;
 
 use App\Message\ReservationConfirmedMessage;
 use App\Repository\ReservationRepository;
+use App\Service\NotificationService;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Mime\Email;
@@ -16,6 +18,8 @@ final class ReservationConfirmedMessageHandler
     public function __construct(
         private readonly MailerInterface $mailer,
         private readonly ReservationRepository $reservationRepository,
+        private readonly NotificationService $notificationService,
+        private readonly EntityManagerInterface $em,
     ) {}
 
     public function __invoke(ReservationConfirmedMessage $message): void
@@ -53,6 +57,7 @@ final class ReservationConfirmedMessageHandler
             ->html($body);
 
         $this->mailer->send($guestEmail);
+        $this->notificationService->notify($guest, $subject, '/reservations/' . $reservation->getId());
 
         if ($reservation->getStatus() === 'confirmed') {
             $host = $reservation->getProperty()?->getHost();
@@ -73,7 +78,10 @@ final class ReservationConfirmedMessageHandler
                     ->html($hostBody);
 
                 $this->mailer->send($hostEmail);
+                $this->notificationService->notify($host, sprintf('Réservation confirmée pour %s', $propertyTitle), '/compte/demandes');
             }
         }
+
+        $this->em->flush();
     }
 }
