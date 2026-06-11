@@ -44,6 +44,19 @@ class PropertyAvailability
     #[ORM\Column(nullable: true)]
     private ?int $minimumStay = null;
 
+    /**
+     * Flux iCal d'origine si ce blocage a été importé (null = blocage manuel de l'hôte).
+     */
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
+    private ?PropertyICalSync $icalSync = null;
+
+    /**
+     * UID de l'évènement iCal distant, pour le rapprochement lors des synchronisations.
+     */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $externalUid = null;
+
     public function getProperty(): ?Property
     {
         return $this->property;
@@ -124,6 +137,30 @@ class PropertyAvailability
     public function setMinimumStay(?int $minimumStay): static
     {
         $this->minimumStay = $minimumStay;
+
+        return $this;
+    }
+
+    public function getIcalSync(): ?PropertyICalSync
+    {
+        return $this->icalSync;
+    }
+
+    public function setIcalSync(?PropertyICalSync $icalSync): static
+    {
+        $this->icalSync = $icalSync;
+
+        return $this;
+    }
+
+    public function getExternalUid(): ?string
+    {
+        return $this->externalUid;
+    }
+
+    public function setExternalUid(?string $externalUid): static
+    {
+        $this->externalUid = $externalUid;
 
         return $this;
     }

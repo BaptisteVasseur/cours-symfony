@@ -139,6 +139,9 @@ class Property
     #[ORM\Column(nullable: true)]
     private ?int $minimumStay = null;
 
+    #[ORM\Column(length: 64, nullable: true, unique: true)]
+    private ?string $icalToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -398,6 +401,18 @@ class Property
     public function setMinimumStay(?int $minimumStay): static
     {
         $this->minimumStay = $minimumStay;
+
+        return $this;
+    }
+
+    public function getIcalToken(): ?string
+    {
+        return $this->icalToken;
+    }
+
+    public function setIcalToken(?string $icalToken): static
+    {
+        $this->icalToken = $icalToken;
 
         return $this;
     }

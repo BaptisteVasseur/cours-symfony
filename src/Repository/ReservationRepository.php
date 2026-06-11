@@ -140,6 +140,26 @@ class ReservationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * Séjours confirmés d'un logement, pour l'export iCal (Partie E).
+     *
+     * @return list<Reservation>
+     */
+    public function findConfirmedForProperty(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :confirmed')
+            ->setParameter('property', $property)
+            ->setParameter('confirmed', 'confirmed')
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     private function hostQueryBuilder(User $host): \Doctrine\ORM\QueryBuilder
     {
         return $this->createQueryBuilder('r')
