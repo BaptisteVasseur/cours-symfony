@@ -5,6 +5,16 @@
 
     {% include 'layout/partials/app/header.html.twig' %}
 
+    {% block flashes %}
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="max-w-5xl mx-auto w-full px-6 md:px-12 mt-4">
+                    <div class="px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    {% endblock %}
+
     {% block content %}{% endblock %}
 
     {% include 'layout/partials/app/footer.html.twig' %}

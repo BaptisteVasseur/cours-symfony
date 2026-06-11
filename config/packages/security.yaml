@@ -16,6 +16,9 @@ security:
             lazy: true
             provider: users_in_database
             user_checker: App\Security\UserChecker
+            # Refus d'accès d'un utilisateur connecté sans les droits : redirection
+            # vers l'accueil + flash (au lieu d'une page 403).
+            access_denied_handler: App\Security\AccessDeniedHandler
             form_login:
                 login_path: app_login
                 check_path: app_login
@@ -39,6 +42,9 @@ security:
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
         - { path: ^/api/contexts, roles: PUBLIC_ACCESS }
         - { path: ^/api/validation_errors, roles: PUBLIC_ACCESS }
+        # Flux iCal d'export : authentifié par jeton dans l'URL (pas de session).
+        # Doit précéder la règle ^/api qui exige ROLE_USER.
+        - { path: '^/api/properties/[^/]+/calendar\.ics$', roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }
         - { path: ^/(login|register|aide)$, roles: PUBLIC_ACCESS }
         - { path: ^/$, roles: PUBLIC_ACCESS }
