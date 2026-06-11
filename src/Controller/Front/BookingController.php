@@ -7,12 +7,20 @@ namespace App\Controller\Front;
 use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
+use App\Exception\BookingConflictException;
 use App\Form\BookingType;
+use App\Message\ReservationConfirmedNotification;
+use App\Message\ReservationRequestedNotification;
 use App\Repository\PropertyRepository;
+use App\Service\Availability\AvailabilityChecker;
+use App\Service\Reservation\PricingCalculator;
+use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormError;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\PropertyVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -27,6 +35,9 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
+        AvailabilityChecker $availabilityChecker,
+        PricingCalculator $pricingCalculator,
+        MessageBusInterface $messageBus,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -53,8 +64,9 @@ final class BookingController extends AbstractController
             $checkout = $data['checkoutDate'];
             $guestsCount = (int) $data['guestsCount'];
 
-            if ($checkin >= $checkout) {
-                $this->addFlash('error', 'La date de départ doit être postérieure à la date d\'arrivée.');
+            $result = $availabilityChecker->check($property, $checkin, $checkout, $guestsCount);
+            if (!$result->available) {
+                $form->addError(new FormError($result->firstReason() ?? 'Ces dates ne sont pas disponibles.'));
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
@@ -62,8 +74,38 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            if ($guestsCount > $property->getMaxGuests()) {
-                $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
+            try {
+                $reservation = $entityManager->wrapInTransaction(
+                    function (EntityManagerInterface $em) use ($property, $checkin, $checkout, $guestsCount, $user, $availabilityChecker, $pricingCalculator): Reservation {
+                        $em->lock($property, LockMode::PESSIMISTIC_WRITE);
+
+                        $locked = $availabilityChecker->check($property, $checkin, $checkout, $guestsCount);
+                        if (!$locked->available) {
+                            throw new BookingConflictException($locked->firstReason() ?? 'Ces dates ne sont plus disponibles.');
+                        }
+
+                        $price = $pricingCalculator->calculate($property, $checkin, $checkout);
+
+                        $reservation = new Reservation();
+                        $reservation->setProperty($property);
+                        $reservation->setGuest($user);
+                        $reservation->setCheckinDate($checkin);
+                        $reservation->setCheckoutDate($checkout);
+                        $reservation->setGuestsCount($guestsCount);
+                        $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
+                        $reservation->setTotalPrice((string) $price->total);
+                        $reservation->setCleaningFee($price->cleaningFee > 0 ? (string) $price->cleaningFee : null);
+                        $reservation->setServiceFee((string) $price->serviceFee);
+                        $reservation->setSecurityDeposit($property->getSecurityDeposit());
+                        $reservation->setCurrency($price->currency);
+
+                        $em->persist($reservation);
+
+                        return $reservation;
+                    }
+                );
+            } catch (BookingConflictException $e) {
+                $form->addError(new FormError($e->getMessage()));
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
@@ -71,30 +113,18 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            $nights = (int) $checkin->diff($checkout)->days;
-            $nightlyRate = (float) $property->getPricePerNight();
-            $subtotal = $nightlyRate * $nights;
-            $cleaningFee = (float) ($property->getCleaningFee() ?? 0);
-            $serviceFee = round($subtotal * 0.12, 2);
-            $totalPrice = round($subtotal + $cleaningFee + $serviceFee, 2);
+            $messageBus->dispatch(
+                $reservation->getStatus() === 'confirmed'
+                    ? new ReservationConfirmedNotification((string) $reservation->getId())
+                    : new ReservationRequestedNotification((string) $reservation->getId()),
+            );
 
-            $reservation = new Reservation();
-            $reservation->setProperty($property);
-            $reservation->setGuest($user);
-            $reservation->setCheckinDate($checkin);
-            $reservation->setCheckoutDate($checkout);
-            $reservation->setGuestsCount($guestsCount);
-            $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
-            $reservation->setTotalPrice((string) $totalPrice);
-            $reservation->setCleaningFee($cleaningFee > 0 ? (string) $cleaningFee : null);
-            $reservation->setServiceFee((string) $serviceFee);
-            $reservation->setSecurityDeposit($property->getSecurityDeposit());
-            $reservation->setCurrency('EUR');
-
-            $entityManager->persist($reservation);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'Votre réservation a été enregistrée.');
+            $this->addFlash(
+                'success',
+                $reservation->getStatus() === 'confirmed'
+                    ? 'Votre réservation est confirmée.'
+                    : 'Votre demande a été envoyée à l\'hôte pour validation.',
+            );
 
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }

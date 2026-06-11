@@ -15,14 +15,25 @@
                 <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
             {% endfor %}
         {% endfor %}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8"
+             data-controller="pricing"
+             data-pricing-price-value="{{ property.pricePerNight }}"
+             data-pricing-cleaning-value="{{ property.cleaningFee ?? 0 }}"
+             data-pricing-service-rate-value="0.12">
             <div class="lg:col-span-2">
                 <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                     {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
+                        {% if form.vars.errors|length > 0 %}
+                            <div class="px-4 py-3 rounded-xl text-sm bg-red-50 text-red-800 space-y-1">
+                                {% for error in form.vars.errors %}
+                                    <div><i class="fa-solid fa-circle-exclamation mr-1"></i>{{ error.message }}</div>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', 'data-pricing-target': 'checkin', 'data-action': 'change->pricing#update' } }) }}
+                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', 'data-pricing-target': 'checkout', 'data-action': 'change->pricing#update' } }) }}
                         </div>
                         {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
                         <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
@@ -35,6 +46,28 @@
                     <div class="p-5">
                         <h2 class="font-semibold">{{ property.title }}</h2>
                         <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+
+                        <div data-pricing-target="summary" class="hidden mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
+                            <div class="flex justify-between text-gray-600">
+                                <span>{{ property.pricePerNight|number_format(0, ',', ' ') }} € × <span data-pricing-target="nights">0</span> nuit(s)</span>
+                                <span data-pricing-target="subtotal">—</span>
+                            </div>
+                            {% if property.cleaningFee %}
+                                <div class="flex justify-between text-gray-600">
+                                    <span>Frais de ménage</span>
+                                    <span>{{ property.cleaningFee|number_format(2, ',', ' ') }} €</span>
+                                </div>
+                            {% endif %}
+                            <div class="flex justify-between text-gray-600">
+                                <span>Frais de service</span>
+                                <span data-pricing-target="service">—</span>
+                            </div>
+                            <div class="flex justify-between font-bold text-gray-900 pt-2 border-t border-gray-100">
+                                <span>Total estimé</span>
+                                <span data-pricing-target="total">—</span>
+                            </div>
+                            <p class="text-[11px] text-gray-400">Estimation — le montant définitif est calculé à la validation.</p>
+                        </div>
                     </div>
                 </div>
             </aside>
