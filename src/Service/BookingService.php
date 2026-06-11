@@ -6,7 +6,7 @@ namespace App\Service;
 
 use App\Entity\Property;
 use App\Entity\Reservation;
-use App\Entity\ReservationStatusHistory;
+use App\Entity\BookingStatusHistory;
 use App\Entity\User;
 use App\Enum\BookingStatus;
 use App\Exception\BookingConflictException;
@@ -228,8 +228,8 @@ final class BookingService
 
     private function appendHistory(Reservation $reservation, ?BookingStatus $oldStatus, BookingStatus $newStatus, ?User $actor): void
     {
-        $history = new ReservationStatusHistory();
-        $history->setReservation($reservation);
+        $history = new BookingStatusHistory();
+        $history->setBooking($reservation);
         $history->setFromStatus($oldStatus);
         $history->setToStatus($newStatus);
 

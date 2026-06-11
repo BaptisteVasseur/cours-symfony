@@ -22,7 +22,7 @@ use App\Entity\PropertyAvailability;
 use App\Entity\PropertyMedia;
 use App\Entity\PropertyRule;
 use App\Entity\Reservation;
-use App\Entity\ReservationStatusHistory;
+use App\Entity\BookingStatusHistory;
 use App\Entity\User;
 use App\Entity\UserProfile;
 use App\Enum\BookingStatus;
@@ -400,16 +400,16 @@ class TestAccountFixture extends Fixture implements DependentFixtureInterface
         $reservation->setCurrency('EUR');
         $manager->persist($reservation);
 
-        $history = new ReservationStatusHistory();
-        $history->setReservation($reservation);
+        $history = new BookingStatusHistory();
+        $history->setBooking($reservation);
         $history->setFromStatus(null);
         $history->setToStatus(BookingStatus::PENDING);
         $history->setActor('guest');
         $manager->persist($history);
 
         if ($status !== 'pending') {
-            $confirmed = new ReservationStatusHistory();
-            $confirmed->setReservation($reservation);
+            $confirmed = new BookingStatusHistory();
+            $confirmed->setBooking($reservation);
             $confirmed->setFromStatus(BookingStatus::PENDING);
             $confirmed->setToStatus(BookingStatus::from($status));
             

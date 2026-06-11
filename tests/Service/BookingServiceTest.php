@@ -164,8 +164,8 @@ final class BookingServiceTest extends KernelTestCase
             $this->assertEquals(BookingStatus::CONFIRMED, $reservation->getBookingStatus());
 
             // Check history
-            $historyRepo = $entityManager->getRepository(\App\Entity\ReservationStatusHistory::class);
-            $histories = $historyRepo->findBy(['reservation' => $reservation], ['createdAt' => 'ASC']);
+            $historyRepo = $entityManager->getRepository(\App\Entity\BookingStatusHistory::class);
+            $histories = $historyRepo->findBy(['booking' => $reservation], ['createdAt' => 'ASC']);
             $this->assertCount(2, $histories); // PENDING and CONFIRMED
 
             $pendingHistory = $histories[0];

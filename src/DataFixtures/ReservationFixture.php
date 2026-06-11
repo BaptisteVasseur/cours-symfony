@@ -7,7 +7,7 @@ namespace App\DataFixtures;
 use App\Entity\Invoice;
 use App\Entity\Property;
 use App\Entity\Reservation;
-use App\Entity\ReservationStatusHistory;
+use App\Entity\BookingStatusHistory;
 use App\Entity\User;
 use App\Enum\BookingStatus;
 use Doctrine\Bundle\FixturesBundle\Fixture;
@@ -94,16 +94,16 @@ class ReservationFixture extends Fixture implements DependentFixtureInterface
             $reservation->setCancellationReason($cancellationReason);
             $manager->persist($reservation);
 
-            $history = new ReservationStatusHistory();
-            $history->setReservation($reservation);
+            $history = new BookingStatusHistory();
+            $history->setBooking($reservation);
             $history->setFromStatus(null);
             $history->setToStatus(BookingStatus::PENDING);
             $history->setActor('guest');
             $manager->persist($history);
 
             if ($status !== 'pending') {
-                $historyConfirmed = new ReservationStatusHistory();
-                $historyConfirmed->setReservation($reservation);
+                $historyConfirmed = new BookingStatusHistory();
+                $historyConfirmed->setBooking($reservation);
                 $historyConfirmed->setFromStatus(BookingStatus::PENDING);
                 $historyConfirmed->setToStatus(BookingStatus::from($status));
                 $historyConfirmed->setActor($status === 'cancelled' ? 'guest' : 'host');

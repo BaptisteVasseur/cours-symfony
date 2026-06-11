@@ -133,8 +133,8 @@ class Booking
     #[ORM\OneToOne(mappedBy: 'reservation', targetEntity: Invoice::class, cascade: ['persist', 'remove'])]
     private ?Invoice $invoice = null;
 
-    /** @var Collection<int, ReservationStatusHistory> */
-    #[ORM\OneToMany(targetEntity: ReservationStatusHistory::class, mappedBy: 'reservation', orphanRemoval: true)]
+    /** @var Collection<int, BookingStatusHistory> */
+    #[ORM\OneToMany(targetEntity: BookingStatusHistory::class, mappedBy: 'booking', orphanRemoval: true)]
     #[ORM\OrderBy(['createdAt' => 'ASC'])]
     private Collection $statusHistory;
 
@@ -353,23 +353,23 @@ class Booking
         return $this;
     }
 
-    /** @return Collection<int, ReservationStatusHistory> */
+    /** @return Collection<int, BookingStatusHistory> */
     public function getStatusHistory(): Collection
     {
         return $this->statusHistory;
     }
 
-    public function addStatusHistory(ReservationStatusHistory $statusHistory): static
+    public function addStatusHistory(BookingStatusHistory $statusHistory): static
     {
         if (!$this->statusHistory->contains($statusHistory)) {
             $this->statusHistory->add($statusHistory);
-            $statusHistory->setReservation($this);
+            $statusHistory->setBooking($this);
         }
 
         return $this;
     }
 
-    public function removeStatusHistory(ReservationStatusHistory $statusHistory): static
+    public function removeStatusHistory(BookingStatusHistory $statusHistory): static
     {
         $this->statusHistory->removeElement($statusHistory);
 

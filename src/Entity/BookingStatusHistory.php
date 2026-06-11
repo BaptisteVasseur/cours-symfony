@@ -6,19 +6,19 @@ namespace App\Entity;
 
 use App\Entity\Trait\UuidEntityTrait;
 use App\Enum\BookingStatus;
-use App\Repository\ReservationStatusHistoryRepository;
+use App\Repository\BookingStatusHistoryRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
-#[ORM\Entity(repositoryClass: ReservationStatusHistoryRepository::class)]
-#[ORM\Table(name: 'reservation_status_history')]
-class ReservationStatusHistory
+#[ORM\Entity(repositoryClass: BookingStatusHistoryRepository::class)]
+#[ORM\Table(name: 'booking_status_history')]
+class BookingStatusHistory
 {
     use UuidEntityTrait;
 
     #[ORM\ManyToOne(inversedBy: 'statusHistory')]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
-    private ?Reservation $reservation = null;
+    private ?Booking $booking = null;
 
     #[ORM\Column(enumType: BookingStatus::class, nullable: true)]
     private ?BookingStatus $fromStatus = null;
@@ -40,14 +40,14 @@ class ReservationStatusHistory
         $this->createdAt = new \DateTimeImmutable();
     }
 
-    public function getReservation(): ?Reservation
+    public function getBooking(): ?Booking
     {
-        return $this->reservation;
+        return $this->booking;
     }
 
-    public function setReservation(?Reservation $reservation): static
+    public function setBooking(?Booking $booking): static
     {
-        $this->reservation = $reservation;
+        $this->booking = $booking;
 
         return $this;
     }

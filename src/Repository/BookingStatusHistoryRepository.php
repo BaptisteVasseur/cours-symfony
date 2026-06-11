@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\ReservationStatusHistory;
+use App\Entity\BookingStatusHistory;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<ReservationStatusHistory>
+ * @extends ServiceEntityRepository<BookingStatusHistory>
  */
-class ReservationStatusHistoryRepository extends ServiceEntityRepository
+class BookingStatusHistoryRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, ReservationStatusHistory::class);
+        parent::__construct($registry, BookingStatusHistory::class);
     }
 }

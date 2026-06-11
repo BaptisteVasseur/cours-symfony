@@ -6,7 +6,7 @@ namespace App\DataFixtures;
 
 use App\Entity\Property;
 use App\Entity\Reservation;
-use App\Entity\ReservationStatusHistory;
+use App\Entity\BookingStatusHistory;
 use App\Entity\Review;
 use App\Enum\BookingStatus;
 use App\Entity\ReviewMedia;
@@ -147,8 +147,8 @@ class ReviewFixture extends Fixture implements DependentFixtureInterface
                 $reservation->setCurrency('EUR');
                 $manager->persist($reservation);
 
-                $history = new ReservationStatusHistory();
-                $history->setReservation($reservation);
+                $history = new BookingStatusHistory();
+                $history->setBooking($reservation);
                 $history->setFromStatus(null);
                 $history->setToStatus(BookingStatus::COMPLETED);
                 $history->setActor('system');
