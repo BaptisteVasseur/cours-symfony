@@ -56,13 +56,117 @@
                         <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
                     </dl>
                 </section>
+
+                {# Host / Traveler Profile Card #}
+                {% set isHost = property and property.host and property.host.id == app.user.id %}
+                <section class="border border-gray-200 rounded-xl p-6 bg-white">
+                    {% if isHost %}
+                        <h2 class="text-lg font-semibold mb-4">Informations sur le voyageur</h2>
+                        {% if guestProfile %}
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-700 text-sm overflow-hidden shrink-0">
+                                    {% if guestProfile.avatarUrl %}
+                                        <img src="{{ guestProfile.avatarUrl }}" alt="" class="w-full h-full object-cover">
+                                    {% else %}
+                                        {{ reservation.guest.profile.firstName|default(reservation.guest.email)|first|upper }}
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-900">{{ guestProfile.firstName }} {{ guestProfile.lastName }}</h3>
+                                    <p class="text-sm text-gray-500">{{ reservation.guest.email }}</p>
+                                    {% if reservation.guest.phone %}
+                                        <p class="text-xs text-gray-400 mt-0.5"><i class="fa-solid fa-phone"></i> {{ reservation.guest.phone }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="text-sm text-gray-500">{{ reservation.guest.email }}</p>
+                        {% endif %}
+                    {% else %}
+                        <h2 class="text-lg font-semibold mb-4">Votre hôte</h2>
+                        {% if hostProfile %}
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-700 text-sm overflow-hidden shrink-0">
+                                    {% if hostProfile.avatarUrl %}
+                                        <img src="{{ hostProfile.avatarUrl }}" alt="" class="w-full h-full object-cover">
+                                    {% else %}
+                                        {{ property.host.profile.firstName|default(property.host.email)|first|upper }}
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-900">{{ hostProfile.firstName }} {{ hostProfile.lastName }}</h3>
+                                    <p class="text-sm text-gray-500">{{ property.host.email }}</p>
+                                    {% if property.host.phone %}
+                                        <p class="text-xs text-gray-400 mt-0.5"><i class="fa-solid fa-phone"></i> {{ property.host.phone }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="text-sm text-gray-500">{{ property.host.email }}</p>
+                        {% endif %}
+                    {% endif %}
+                </section>
             </div>
-            <aside>
-                <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
-                    <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
-                    <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+
+            <aside class="space-y-6">
+                {% set isHost = property and property.host and property.host.id == app.user.id %}
+                <div class="border border-gray-200 rounded-xl p-6 sticky top-28 bg-white shadow-sm">
+                    <h2 class="text-base font-semibold mb-4 text-gray-500">Récapitulatif</h2>
+                    <p class="text-3xl font-bold text-gray-900 mb-6">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+
+                    <div class="space-y-3 pt-2">
+                        <a href="{{ path('app_reservation_contact', { id: reservation.id }) }}" class="flex items-center justify-center gap-2 w-full py-2.5 px-4 border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition">
+                            <i class="fa-solid fa-comment"></i> Contacter {% if isHost %}le voyageur{% else %}l'hôte{% endif %}
+                        </a>
+
+                        {% if isHost %}
+                            {% if reservation.status == 'pending' %}
+                                <form action="{{ path('app_host_reservation_accept', { id: reservation.id }) }}" method="POST" class="block w-full">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('accept' ~ reservation.id) }}">
+                                    <button type="submit" class="w-full py-2.5 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl text-xs transition shadow-sm">
+                                        Accepter la demande
+                                    </button>
+                                </form>
+
+                                <button type="button" onclick="toggleForm('decline-form-show')" class="w-full py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-xs transition border border-red-100">
+                                    Refuser la demande
+                                </button>
+
+                                <div id="decline-form-show" class="hidden p-4 bg-gray-50 border border-gray-200 rounded-xl mt-4">
+                                    <form action="{{ path('app_host_reservation_decline', { id: reservation.id }) }}" method="POST">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('decline' ~ reservation.id) }}">
+                                        <label for="decline_reason_show" class="block text-xs font-semibold text-gray-700 mb-2">Motif du refus :</label>
+                                        <textarea id="decline_reason_show" name="cancellation_reason" rows="2" required placeholder="Pourquoi refusez-vous cette demande ?" class="w-full text-xs p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-brand focus:border-brand bg-white mb-3"></textarea>
+                                        <button type="submit" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-lg transition shadow-sm">Confirmer le refus</button>
+                                    </form>
+                                </div>
+                            {% elseif reservation.status == 'confirmed' %}
+                                <button type="button" onclick="toggleForm('cancel-form-show')" class="w-full py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-xs transition border border-red-100">
+                                    Annuler la réservation
+                                </button>
+
+                                <div id="cancel-form-show" class="hidden p-4 bg-gray-50 border border-gray-200 rounded-xl mt-4">
+                                    <form action="{{ path('app_host_reservation_cancel', { id: reservation.id }) }}" method="POST">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ reservation.id) }}">
+                                        <label for="cancel_reason_show" class="block text-xs font-semibold text-gray-700 mb-2">Motif d'annulation :</label>
+                                        <textarea id="cancel_reason_show" name="cancellation_reason" rows="2" required placeholder="Veuillez renseigner un motif d'annulation..." class="w-full text-xs p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-brand focus:border-brand bg-white mb-3"></textarea>
+                                        <button type="submit" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-lg transition shadow-sm">Confirmer l'annulation</button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        {% endif %}
+                    </div>
                 </div>
             </aside>
         </div>
     </main>
+
+    <script>
+        function toggleForm(id) {
+            const formDiv = document.getElementById(id);
+            if (formDiv) {
+                formDiv.classList.toggle('hidden');
+            }
+        }
+    </script>
 {% endblock %}
