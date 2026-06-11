@@ -64,6 +64,32 @@ final class MailService
         $this->mailer->send($email);
     }
 
+    public function sendVerificationEmail(User $user): void
+    {
+        $token = $user->getEmailVerificationToken();
+        if ($token === null) {
+            return;
+        }
+
+        $verificationUrl = $this->urlGenerator->generate(
+            'app_email_verify',
+            ['token' => $token],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
+
+        $email = (new TemplatedEmail())
+            ->from(new Address('noreply@airbnb-clone.local', 'Airbnb Clone'))
+            ->to(new Address($user->getEmail(), $user->getProfile()?->getFirstName() ?? ''))
+            ->subject('Vérifiez votre adresse email')
+            ->htmlTemplate('emails/email_verification.html.twig')
+            ->context([
+                'user' => $user,
+                'verificationUrl' => $verificationUrl,
+            ]);
+
+        $this->mailer->send($email);
+    }
+
     public function sendBookingConfirmationEmail(Reservation $reservation): void
     {
         $guest = $reservation->getGuest();

@@ -53,6 +53,7 @@ class RegisterController extends AbstractController
             $user->setPasswordHash($passwordHasher->hashPassword($user, $plainPassword));
             $user->setStatus('active');
             $user->setIsEmailVerified(false);
+            $user->setEmailVerificationToken(bin2hex(random_bytes(32)));
             $user->setPreferredLanguage('fr');
             $user->setPreferredCurrency('EUR');
 
@@ -68,7 +69,7 @@ class RegisterController extends AbstractController
             $entityManager->persist($profile);
             $entityManager->flush();
 
-            $mailService->sendRegistrationEmail($user);
+            $mailService->sendVerificationEmail($user);
 
             $notificationService->notify(
                 $user,

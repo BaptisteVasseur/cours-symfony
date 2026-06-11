@@ -11,6 +11,18 @@
         <p class="text-gray-500 mb-2">{{ user.email }}</p>
         <p class="text-gray-500 mb-8">Gérez vos préférences et votre sécurité</p>
 
+        {% if not app.user.isEmailVerified() %}
+            <div class="mb-6 flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-5 py-4 shadow-sm">
+                <i class="fa-solid fa-triangle-exclamation text-amber-500 mt-0.5 text-base shrink-0"></i>
+                <div class="flex-1 text-sm text-amber-900">
+                    <p class="font-semibold mb-1">Adresse email non vérifiée</p>
+                    <p class="mb-2">Veuillez vérifier votre adresse email pour sécuriser votre compte.</p>
+                    <form action="{{ path('app_email_resend_verification') }}" method="POST" class="inline">
+                        <button type="submit" class="text-amber-700 font-semibold underline hover:text-amber-900 transition">Renvoyer l'email de vérification</button>
+                    </form>
+                </div>
+            </div>
+        {% endif %}
 
         <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
             {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
