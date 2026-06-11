@@ -45,6 +45,8 @@ final class HostPropertyController extends AbstractController
         return $this->render('front/host_property/new.html.twig', [
             'property' => $property,
             'form' => $form,
-        ]);
+        ], new Response(
+            status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
+        ));
     }
 }

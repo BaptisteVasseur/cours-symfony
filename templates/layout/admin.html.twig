@@ -11,6 +11,18 @@
         {% endembed %}
 
         <main class="flex-grow p-6 overflow-y-auto">
+            {% for label, messages in app.flashes %}
+                {% for message in messages %}
+                    <div class="mb-4 px-5 py-4 rounded-2xl text-sm border flex items-start shadow-sm transition duration-200 ease-in-out {{ label == 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-900' : 'bg-rose-50 border-rose-100 text-rose-900' }}">
+                        {% if label == 'success' %}
+                            <i class="fa-solid fa-circle-check text-emerald-500 mt-0.5 mr-3 text-base shrink-0"></i>
+                        {% else %}
+                            <i class="fa-solid fa-circle-exclamation text-rose-500 mt-0.5 mr-3 text-base shrink-0"></i>
+                        {% endif %}
+                        <div>{{ message }}</div>
+                    </div>
+                {% endfor %}
+            {% endfor %}
             {% block content %}{% endblock %}
         </main>
     </div>

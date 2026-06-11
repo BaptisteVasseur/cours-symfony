@@ -67,7 +67,9 @@ final class UserController extends AbstractController
         return $this->render('admin/user/new.html.twig', [
             'user' => $user,
             'form' => $form,
-        ]);
+        ], new Response(
+            status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
+        ));
     }
 
     #[Route('/user/{id}', name: 'app_user_show', methods: ['GET'])]
@@ -106,7 +108,9 @@ final class UserController extends AbstractController
         return $this->render('admin/user/edit.html.twig', [
             'user' => $user,
             'form' => $form,
-        ]);
+        ], new Response(
+            status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
+        ));
     }
 
     #[Route('/user/{id}', name: 'app_user_delete', methods: ['POST'])]

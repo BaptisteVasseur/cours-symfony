@@ -46,7 +46,9 @@ final class AccountController extends AbstractController
         return $this->render('front/account/profile.html.twig', [
             'user' => $user,
             'form' => $form,
-        ]);
+        ], new Response(
+            status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
+        ));
     }
 
     #[Route('/parametres', name: 'app_account_settings', methods: ['GET', 'POST'])]
@@ -71,7 +73,9 @@ final class AccountController extends AbstractController
         return $this->render('front/account/settings.html.twig', [
             'user' => $user,
             'form' => $form,
-        ]);
+        ], new Response(
+            status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
+        ));
     }
 
     #[Route('/proprietes', name: 'app_account_properties', methods: ['GET'])]

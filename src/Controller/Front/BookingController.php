@@ -62,7 +62,7 @@ final class BookingController extends AbstractController
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
                     'form' => $form,
-                ]);
+                ], new Response(status: Response::HTTP_UNPROCESSABLE_ENTITY));
             }
 
             $message = $reservation->getStatus() === 'confirmed'
@@ -76,6 +76,8 @@ final class BookingController extends AbstractController
         return $this->render('front/property/booking.html.twig', [
             'property' => $property,
             'form' => $form,
-        ]);
+        ], new Response(
+            status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
+        ));
     }
 }

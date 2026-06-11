@@ -45,7 +45,7 @@ class RegisterController extends AbstractController
 
                 return $this->render('front/auth/register.html.twig', [
                     'form' => $form,
-                ]);
+                ], new Response(status: Response::HTTP_UNPROCESSABLE_ENTITY));
             }
 
             $user = new User();
@@ -84,6 +84,8 @@ class RegisterController extends AbstractController
 
         return $this->render('front/auth/register.html.twig', [
             'form' => $form,
-        ]);
+        ], new Response(
+            status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
+        ));
     }
 }

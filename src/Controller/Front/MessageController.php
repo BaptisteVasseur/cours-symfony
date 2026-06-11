@@ -97,6 +97,8 @@ final class MessageController extends AbstractController
         return $this->render('front/message/show.html.twig', [
             'conversation' => $conversation,
             'form' => $form,
-        ]);
+        ], new Response(
+            status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
+        ));
     }
 }
