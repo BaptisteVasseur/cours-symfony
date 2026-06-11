@@ -44,7 +44,9 @@ security:
         - { path: ^/$, roles: PUBLIC_ACCESS }
         - { path: ^/search, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
-        - { path: ^/property, roles: ROLE_ADMIN }
+        - { path: ^/property/new, roles: ROLE_ADMIN }
+        - { path: ^/property/.+/edit, roles: ROLE_ADMIN }
+        - { path: ^/property/.+$, roles: PUBLIC_ACCESS }
         - { path: ^/user, roles: ROLE_ADMIN }
         - { path: ^/logement, roles: ROLE_USER }
         - { path: ^/reservations, roles: ROLE_USER }
