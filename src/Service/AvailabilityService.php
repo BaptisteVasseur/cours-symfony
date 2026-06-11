@@ -17,6 +17,7 @@ final class AvailabilityService
         private readonly ReservationRepository $reservationRepository,
         private readonly AvailabilityBlockRepository $availabilityBlockRepository,
         private readonly EntityManagerInterface $entityManager,
+        private readonly RealtimePublisher $realtimePublisher,
     ) {
     }
 
@@ -68,14 +69,23 @@ final class AvailabilityService
 
         $this->entityManager->persist($block);
         $this->entityManager->flush();
+        $this->realtimePublisher->publishPropertyAvailabilityChanged($property, [
+            'source' => 'host_block',
+            'startDate' => $start->format('Y-m-d'),
+            'endDate' => $end->format('Y-m-d'),
+        ]);
 
         return $block;
     }
 
     public function removeBlock(AvailabilityBlock $block): void
     {
+        $property = $block->getProperty();
         $this->entityManager->remove($block);
         $this->entityManager->flush();
+        $this->realtimePublisher->publishPropertyAvailabilityChanged($property, [
+            'source' => 'host_block_deleted',
+        ]);
     }
 
     /**

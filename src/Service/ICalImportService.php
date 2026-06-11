@@ -19,6 +19,7 @@ final class ICalImportService
         private readonly AvailabilityBlockRepository $availabilityBlockRepository,
         private readonly ReservationRepository $reservationRepository,
         private readonly LoggerInterface $logger,
+        private readonly RealtimePublisher $realtimePublisher,
     ) {
     }
 
@@ -84,6 +85,13 @@ final class ICalImportService
         }
 
         $this->entityManager->flush();
+
+        if ($stats['created'] > 0 || $stats['updated'] > 0 || $stats['deleted'] > 0) {
+            $this->realtimePublisher->publishPropertyAvailabilityChanged($property, [
+                'source' => 'ical_import',
+                'stats' => $stats,
+            ]);
+        }
 
         return $stats;
     }

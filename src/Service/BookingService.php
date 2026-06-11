@@ -25,6 +25,7 @@ final class BookingService
         private readonly AvailabilityService $availabilityService,
         private readonly BookingPriceCalculator $priceCalculator,
         private readonly MessageBusInterface $messageBus,
+        private readonly RealtimePublisher $realtimePublisher,
     ) {
     }
 
@@ -70,8 +71,11 @@ final class BookingService
 
         if ($reservation->getStatus() === 'confirmed') {
             $this->messageBus->dispatch(new BookingConfirmedMessage($this->reservationId($reservation)));
+            $this->realtimePublisher->publishReservationChanged($reservation, 'reservation.confirmed');
+            $this->realtimePublisher->publishAvailabilityChanged($reservation);
         } else {
             $this->messageBus->dispatch(new BookingCreatedMessage($this->reservationId($reservation)));
+            $this->realtimePublisher->publishReservationChanged($reservation, 'reservation.created');
         }
 
         return $reservation;
@@ -82,6 +86,8 @@ final class BookingService
         $reservation = $this->entityManager->wrapInTransaction(fn (): Reservation => $this->confirmInsideTransaction($reservation, $actor));
 
         $this->messageBus->dispatch(new BookingConfirmedMessage($this->reservationId($reservation)));
+        $this->realtimePublisher->publishReservationChanged($reservation, 'reservation.confirmed');
+        $this->realtimePublisher->publishAvailabilityChanged($reservation);
 
         return $reservation;
     }
@@ -103,6 +109,7 @@ final class BookingService
         });
 
         $this->messageBus->dispatch(new BookingRefusedMessage($this->reservationId($reservation)));
+        $this->realtimePublisher->publishReservationChanged($reservation, 'reservation.refused');
 
         return $reservation;
     }
@@ -111,9 +118,14 @@ final class BookingService
     {
         $this->assertReasonIsProvided($reason, 'Un motif d\'annulation est obligatoire.');
 
+        $wasConfirmed = $reservation->getStatus() === 'confirmed';
         $reservation = $this->cancelWithStatusMessage($reservation, $actor, $reason, 'Transition invalide');
 
         $this->messageBus->dispatch(new BookingCancelledMessage($this->reservationId($reservation)));
+        $this->realtimePublisher->publishReservationChanged($reservation, 'reservation.cancelled');
+        if ($wasConfirmed) {
+            $this->realtimePublisher->publishAvailabilityChanged($reservation);
+        }
 
         return $reservation;
     }
@@ -125,7 +137,7 @@ final class BookingService
 
     public function markCompleted(Reservation $reservation): Reservation
     {
-        return $this->entityManager->wrapInTransaction(function () use ($reservation): Reservation {
+        $reservation = $this->entityManager->wrapInTransaction(function () use ($reservation): Reservation {
             if ($reservation->getStatus() !== 'confirmed') {
                 throw new \LogicException('Transition invalide');
             }
@@ -140,6 +152,10 @@ final class BookingService
 
             return $reservation;
         });
+
+        $this->realtimePublisher->publishReservationChanged($reservation, 'reservation.completed');
+
+        return $reservation;
     }
 
     private function confirmInsideTransaction(Reservation $reservation, ?User $actor): Reservation
