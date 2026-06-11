@@ -1,0 +1,24 @@
+{% extends 'layouts/admin.html.twig' %}
+{% form_theme form 'admin/_form_theme.html.twig' %}
+
+{% block title %}{{ heading }} — Admin{% endblock %}
+
+{% block admin_content %}
+    <div class="max-w-2xl">
+        <h1 class="text-xl font-semibold mb-6">{{ heading }}</h1>
+
+        <div class="bg-white border border-gray-200 rounded-xl p-6">
+            {{ form_start(form) }}
+                {{ form_widget(form) }}
+                <div class="flex gap-3 mt-6">
+                    <button type="submit" class="px-5 py-2.5 bg-rausch hover:bg-rausch-dark text-white font-semibold rounded-lg transition">
+                        Enregistrer
+                    </button>
+                    <a href="{{ path('admin_property_index') }}" class="px-5 py-2.5 border border-gray-300 hover:bg-gray-50 font-semibold rounded-lg transition">
+                        Annuler
+                    </a>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </div>
+{% endblock %}

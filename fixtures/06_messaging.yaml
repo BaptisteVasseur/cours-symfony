@@ -1,0 +1,17 @@
+App\Entity\Conversation:
+  conversation_{1..20}:
+    reservation: '@reservation_*'
+
+App\Entity\ConversationParticipant:
+  participant_{1..20}:
+    conversation: '@conversation_<current()>'
+    user: '@user_*'
+
+App\Entity\Message:
+  message_{1..60}:
+    conversation: '@conversation_*'
+    sender: '@user_*'
+    messageType: '<randomElement(["text", "text", "text", "system", "attachment"])>'
+    content: '<sentence()>'
+    attachmentUrl: '<url()>'
+    isFlagged: '<boolean(10)>'

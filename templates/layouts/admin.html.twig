@@ -1,0 +1,51 @@
+{% extends 'layouts/base.html.twig' %}
+
+{% block title %}Administration — Airstay{% endblock %}
+
+{# pas de header top ni footer : layout sidebar #}
+{% block header %}{% endblock %}
+{% block footer %}{% endblock %}
+
+{% block body %}
+    {% include 'components/_sidebar_admin.html.twig' %}
+
+    <div class="ml-64 min-h-screen bg-gray-50">
+        {# Topbar #}
+        <div class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-8 sticky top-0 z-40">
+            <h1 class="text-lg font-semibold">Dashboard</h1>
+            <button class="relative p-2 rounded-full hover:bg-gray-100 transition">
+                <svg viewBox="0 0 24 24" class="w-5 h-5 fill-none stroke-current stroke-[1.5]"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                <span class="absolute top-1 right-1 w-2 h-2 bg-rausch rounded-full"></span>
+            </button>
+        </div>
+
+        {# Content #}
+        <div class="p-8">
+            {% for type, messages in app.flashes %}
+                {% for message in messages %}
+                    <div class="mb-4 p-3 rounded-lg text-sm {{ type == 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700' }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+
+            {% block admin_content %}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    {% set stats = [
+                        { label: 'Utilisateurs', value: '1 248' },
+                        { label: 'Logements', value: '356' },
+                        { label: 'Réservations', value: '892' },
+                        { label: 'Revenus', value: '48 920 €' },
+                    ] %}
+                    {% for s in stats %}
+                        {% include 'components/_stat_card.html.twig' with { label: s.label, value: s.value } %}
+                    {% endfor %}
+                </div>
+                <div class="bg-white border border-gray-200 rounded-xl p-6">
+                    <h2 class="font-semibold mb-2">Bienvenue sur la page admin</h2>
+                    <p class="text-gray-600 text-sm">Gère utilisateurs, logements et réservations depuis le menu.</p>
+                </div>
+            {% endblock %}
+        </div>
+    </div>
+{% endblock %}

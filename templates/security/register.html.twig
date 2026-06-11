@@ -1,0 +1,43 @@
+{% extends 'layouts/base.html.twig' %}
+
+{% block title %}Inscription — Airstay{% endblock %}
+
+{% block header %}
+    {% include 'components/_header_user.html.twig' %}
+{% endblock %}
+
+{% block body %}
+    <section class="max-w-md mx-auto px-6 py-12">
+        <h1 class="text-2xl font-bold mb-6 text-center">Créer un compte</h1>
+
+        {{ form_start(registrationForm, { attr: { class: 'space-y-4' } }) }}
+            <div>
+                {{ form_label(registrationForm.email, null, { label_attr: { class: 'block text-sm font-medium mb-1' } }) }}
+                {{ form_widget(registrationForm.email, { attr: { class: 'w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rausch' } }) }}
+                {{ form_errors(registrationForm.email) }}
+            </div>
+
+            <div>
+                {{ form_label(registrationForm.plainPassword.first, null, { label_attr: { class: 'block text-sm font-medium mb-1' } }) }}
+                {{ form_widget(registrationForm.plainPassword.first, { attr: { class: 'w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rausch' } }) }}
+                {{ form_errors(registrationForm.plainPassword.first) }}
+            </div>
+
+            <div>
+                {{ form_label(registrationForm.plainPassword.second, null, { label_attr: { class: 'block text-sm font-medium mb-1' } }) }}
+                {{ form_widget(registrationForm.plainPassword.second, { attr: { class: 'w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rausch' } }) }}
+                {{ form_errors(registrationForm.plainPassword.second) }}
+            </div>
+
+            <button type="submit"
+                    class="w-full py-3 bg-rausch hover:bg-rausch-dark text-white font-semibold rounded-lg transition">
+                S'inscrire
+            </button>
+        {{ form_end(registrationForm) }}
+
+        <p class="text-center text-sm text-gray-600 mt-6">
+            Déjà un compte ?
+            <a href="{{ path('app_login') }}" class="text-rausch font-medium hover:underline">Connexion</a>
+        </p>
+    </section>
+{% endblock %}

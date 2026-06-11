@@ -1,0 +1,28 @@
+App\Entity\Reservation:
+  reservation_{1..40}:
+    property: '@property_*'
+    guest: '@user_*'
+    checkinDate: '<immutableDateBetween("-3 months", "+1 month")>'
+    checkoutDate: '<immutableDateBetween("+1 month", "+4 months")>'
+    guestsCount: '<numberBetween(1, 8)>'
+    status: '<randomElement(["confirmed", "confirmed", "pending", "completed", "cancelled"])>'
+    totalPrice: '<numberBetween(150, 4000)>'
+    cleaningFee: '<numberBetween(10, 80)>'
+    serviceFee: '<numberBetween(15, 200)>'
+    securityDeposit: '<numberBetween(100, 500)>'
+    currency: 'EUR'
+    cancellationReason: '<sentence()>'
+
+App\Entity\ReservationStatusHistory:
+  status_history_{1..40}:
+    reservation: '@reservation_<current()>'
+    oldStatus: '<randomElement(["pending", "confirmed"])>'
+    newStatus: '<randomElement(["confirmed", "completed", "cancelled"])>'
+    changedBy: '@user_*'
+
+App\Entity\Invoice:
+  invoice_{1..40}:
+    reservation: '@reservation_<current()>'
+    invoiceNumber: 'INV-2026-<current()>'
+    pdfUrl: '<url()>'
+    totalAmount: '<numberBetween(150, 4000)>'

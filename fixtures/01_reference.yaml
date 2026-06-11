@@ -1,0 +1,58 @@
+App\Entity\Role:
+  role_guest:
+    code: 'ROLE_GUEST'
+    label: 'Voyageur'
+  role_host:
+    code: 'ROLE_HOST'
+    label: 'Hôte'
+  role_admin:
+    code: 'ROLE_ADMIN'
+    label: 'Administrateur'
+
+App\Entity\CancellationPolicy:
+  policy_flexible:
+    code: 'FLEXIBLE'
+    label: 'Flexible'
+    description: 'Remboursement total jusqu''à 24h avant l''arrivée.'
+  policy_moderate:
+    code: 'MODERATE'
+    label: 'Modérée'
+    description: 'Remboursement total jusqu''à 5 jours avant l''arrivée.'
+  policy_strict:
+    code: 'STRICT'
+    label: 'Stricte'
+    description: 'Remboursement de 50% jusqu''à 7 jours avant l''arrivée.'
+
+App\Entity\Amenity:
+  amenity_wifi:
+    code: 'WIFI'
+    label: 'Wifi'
+    category: 'essentiels'
+  amenity_kitchen:
+    code: 'KITCHEN'
+    label: 'Cuisine'
+    category: 'essentiels'
+  amenity_parking:
+    code: 'PARKING'
+    label: 'Parking gratuit'
+    category: 'exterieur'
+  amenity_pool:
+    code: 'POOL'
+    label: 'Piscine'
+    category: 'exterieur'
+  amenity_ac:
+    code: 'AC'
+    label: 'Climatisation'
+    category: 'confort'
+  amenity_washer:
+    code: 'WASHER'
+    label: 'Lave-linge'
+    category: 'confort'
+  amenity_tv:
+    code: 'TV'
+    label: 'Télévision'
+    category: 'divertissement'
+  amenity_heating:
+    code: 'HEATING'
+    label: 'Chauffage'
+    category: 'confort'

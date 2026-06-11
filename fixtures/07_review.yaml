@@ -1,0 +1,20 @@
+App\Entity\Review:
+  review_{1..25}:
+    reservation: '@reservation_*'
+    reviewer: '@user_*'
+    reviewedUser: '@user_*'
+    property: '@property_*'
+    rating: '<numberBetween(1, 5)>'
+    comment: '<paragraph()>'
+
+App\Entity\ReviewMedia:
+  reviewmedia_{1..15}:
+    review: '@review_*'
+    fileUrl: '<imageUrl(800, 600)>'
+
+App\Entity\ReviewReport:
+  reviewreport_{1..8}:
+    review: '@review_*'
+    reportedBy: '@user_*'
+    reason: '<sentence()>'
+    status: '<randomElement(["pending", "reviewed", "dismissed"])>'

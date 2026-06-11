@@ -1,0 +1,35 @@
+{# props:
+   reservation — entité Reservation
+#}
+{% set statusStyles = {
+    'confirmed': 'bg-green-100 text-green-800',
+    'pending':   'bg-yellow-100 text-yellow-800',
+    'cancelled': 'bg-red-100 text-red-800',
+    'completed': 'bg-gray-100 text-gray-700',
+} %}
+<article class="flex items-center gap-4 border border-gray-200 rounded-xl p-4 hover:shadow-md transition">
+    <div class="flex-1 min-w-0">
+        <a href="{{ path('app_property_show', { id: reservation.property.id }) }}"
+           class="font-semibold truncate hover:underline">
+            {{ reservation.property.title }}
+        </a>
+        {% if reservation.property.address %}
+            <p class="text-sm text-gray-500">
+                {{ reservation.property.address.city }}, {{ reservation.property.address.country }}
+            </p>
+        {% endif %}
+        <p class="text-sm text-gray-600 mt-1">
+            {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+            · {{ reservation.guestsCount }} voyageur(s)
+        </p>
+    </div>
+
+    <div class="text-right shrink-0">
+        <span class="inline-block px-2.5 py-1 rounded-full text-xs font-medium {{ statusStyles[reservation.status]|default('bg-gray-100 text-gray-700') }}">
+            {{ reservation.status }}
+        </span>
+        <p class="font-semibold mt-2">{{ reservation.totalPrice }} {{ reservation.currency }}</p>
+        <a href="{{ path('app_reservation_confirmation', { id: reservation.id }) }}"
+           class="text-sm text-rausch hover:underline">Détails</a>
+    </div>
+</article>

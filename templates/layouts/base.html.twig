@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}Mon super site{% endblock %}</title>
+
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            rausch: '#FF385C',
+                            'rausch-dark': '#E31C5F',
+                        },
+                        fontFamily: {
+                            sans: ['Inter', 'system-ui', 'sans-serif'],
+                        },
+                    },
+                },
+            };
+        </script>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+        {% block stylesheet %}{% endblock %}
+
+        {{ importmap('app') }}
+    </head>
+    <body class="min-h-screen flex flex-col bg-white text-gray-900 font-sans antialiased">
+        {% block header %}{% endblock %}
+
+        <main class="flex-1">
+            {% block body %}{% endblock %}
+        </main>
+
+        {% block footer %}
+            {% include 'components/_footer.html.twig' %}
+        {% endblock %}
+
+        {% block javascript %}{% endblock %}
+    </body>
+</html>

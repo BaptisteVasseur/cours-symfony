@@ -1,0 +1,26 @@
+App\Entity\Payment:
+  payment_{1..40}:
+    reservation: '@reservation_<current()>'
+    payer: '@user_*'
+    provider: 'stripe'
+    providerPaymentIntent: 'pi_<sha1()>'
+    amount: '<numberBetween(150, 4000)>'
+    currency: 'EUR'
+    status: '<randomElement(["succeeded", "succeeded", "pending", "failed", "refunded"])>'
+    paidAt: '<immutableDateTimeBetween("-3 months", "now")>'
+
+App\Entity\Refund:
+  refund_{1..10}:
+    payment: '@payment_*'
+    amount: '<numberBetween(20, 1000)>'
+    reason: '<sentence()>'
+    status: '<randomElement(["pending", "completed", "rejected"])>'
+
+App\Entity\Payout:
+  payout_{1..30}:
+    host: '@user_*'
+    reservation: '@reservation_*'
+    amount: '<numberBetween(100, 3500)>'
+    currency: 'EUR'
+    status: '<randomElement(["paid", "pending", "processing"])>'
+    paidAt: '<immutableDateTimeBetween("-3 months", "now")>'

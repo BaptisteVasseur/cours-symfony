@@ -1,0 +1,87 @@
+{% extends 'layouts/base.html.twig' %}
+
+{% block title %}Réservation confirmée — Airstay{% endblock %}
+
+{% block header %}
+    {% include 'components/_header_user.html.twig' %}
+{% endblock %}
+
+{% block body %}
+    <section class="max-w-2xl mx-auto px-6 py-12">
+
+        {# Bandeau confirmation #}
+        <div class="text-center mb-10">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
+                <svg viewBox="0 0 24 24" class="w-8 h-8 fill-none stroke-green-600 stroke-[2.5]">
+                    <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
+                </svg>
+            </div>
+            <h1 class="text-3xl font-bold mb-2">Réservation confirmée</h1>
+            <p class="text-gray-600">Référence : {{ reservation.id }}</p>
+        </div>
+
+        {# Récap logement #}
+        <div class="border border-gray-200 rounded-2xl p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-1">{{ reservation.property.title }}</h2>
+            {% if reservation.property.address %}
+                <p class="text-gray-500 mb-4">
+                    {{ reservation.property.address.city }}, {{ reservation.property.address.country }}
+                </p>
+            {% endif %}
+
+            <dl class="grid grid-cols-2 gap-y-3 text-sm">
+                <dt class="text-gray-500">Arrivée</dt>
+                <dd class="text-right font-medium">{{ reservation.checkinDate|date('d/m/Y') }}</dd>
+
+                <dt class="text-gray-500">Départ</dt>
+                <dd class="text-right font-medium">{{ reservation.checkoutDate|date('d/m/Y') }}</dd>
+
+                <dt class="text-gray-500">Voyageurs</dt>
+                <dd class="text-right font-medium">{{ reservation.guestsCount }}</dd>
+
+                <dt class="text-gray-500">Statut</dt>
+                <dd class="text-right font-medium capitalize">{{ reservation.status }}</dd>
+            </dl>
+        </div>
+
+        {# Détail prix #}
+        <div class="border border-gray-200 rounded-2xl p-6 mb-8">
+            <h2 class="text-lg font-semibold mb-4">Détail du prix</h2>
+            <dl class="space-y-2 text-sm">
+                {% if reservation.cleaningFee %}
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Frais de ménage</dt>
+                        <dd>{{ reservation.cleaningFee }} {{ reservation.currency }}</dd>
+                    </div>
+                {% endif %}
+                {% if reservation.serviceFee %}
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Frais de service</dt>
+                        <dd>{{ reservation.serviceFee }} {{ reservation.currency }}</dd>
+                    </div>
+                {% endif %}
+                {% if reservation.securityDeposit %}
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Caution</dt>
+                        <dd>{{ reservation.securityDeposit }} {{ reservation.currency }}</dd>
+                    </div>
+                {% endif %}
+                <div class="flex justify-between border-t border-gray-200 pt-3 font-semibold text-base">
+                    <dt>Total</dt>
+                    <dd>{{ reservation.totalPrice }} {{ reservation.currency }}</dd>
+                </div>
+            </dl>
+        </div>
+
+        <div class="flex gap-3">
+            <a href="{{ path('app_reservation_history') }}"
+               class="flex-1 text-center py-3 bg-rausch hover:bg-rausch-dark text-white font-semibold rounded-lg transition">
+                Mes réservations
+            </a>
+            <a href="{{ path('app_home') }}"
+               class="flex-1 text-center py-3 border border-gray-300 hover:bg-gray-50 font-semibold rounded-lg transition">
+                Accueil
+            </a>
+        </div>
+    </section>
+{% endblock %}

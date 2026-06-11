@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ReservationRepository::class)]
 #[ORM\Table(name: 'reservations')]
@@ -19,37 +20,53 @@ class Reservation
 
     #[ORM\ManyToOne(inversedBy: 'reservations')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull(message: 'Le logement est obligatoire.')]
     private ?Property $property = null;
 
     #[ORM\ManyToOne(inversedBy: 'reservations')]
     #[ORM\JoinColumn(nullable: false)]
+    #[Assert\NotNull(message: 'Le voyageur est obligatoire.')]
     private ?User $guest = null;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
+    #[Assert\NotNull(message: 'La date d\'arrivée est obligatoire.')]
     private ?\DateTimeImmutable $checkinDate = null;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
+    #[Assert\NotNull(message: 'La date de départ est obligatoire.')]
+    #[Assert\GreaterThan(propertyPath: 'checkinDate', message: 'La date de départ doit être après la date d\'arrivée.')]
     private ?\DateTimeImmutable $checkoutDate = null;
 
     #[ORM\Column]
+    #[Assert\NotNull]
+    #[Assert\Positive(message: 'Le nombre de voyageurs doit être positif.')]
     private ?int $guestsCount = null;
 
     #[ORM\Column(length: 50)]
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['pending', 'confirmed', 'cancelled', 'completed'], message: 'Statut invalide.')]
     private ?string $status = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
+    #[Assert\NotBlank(message: 'Le prix total est obligatoire.')]
+    #[Assert\Positive(message: 'Le prix total doit être positif.')]
     private ?string $totalPrice = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
+    #[Assert\PositiveOrZero]
     private ?string $cleaningFee = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
+    #[Assert\PositiveOrZero]
     private ?string $serviceFee = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
+    #[Assert\PositiveOrZero]
     private ?string $securityDeposit = null;
 
     #[ORM\Column(length: 10)]
+    #[Assert\NotBlank]
+    #[Assert\Length(exactly: 3, exactMessage: 'La devise doit être un code à 3 lettres (ex: EUR).')]
     private ?string $currency = null;
 
     #[ORM\Column(type: Types::TEXT, nullable: true)]

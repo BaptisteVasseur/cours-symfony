@@ -20,12 +20,15 @@ security:
         main:
             lazy: true
             provider: users_in_database
+            user_checker: App\Security\UserChecker
             form_login:
                 login_path: app_login
                 check_path: app_login
                 enable_csrf: true
             logout:
                 path: app_logout
+                # where to redirect after logout
+                # target: app_any_route
                 # where to redirect after logout
                 # target: app_any_route
 
@@ -36,22 +39,21 @@ security:
             # switch_user: true
 
     role_hierarchy:
-        # ROLE_FACTURATION, ROLE_SERVICE_CLIENT, ROLE_PREPARATEUR_COMMANDE
-        # ROLE_PRESTATAIRE, ROLE_CLIENT, ROLE_BANNI, ROLE_VIP, ROLE_ADMIN
-        # ROLE_SUPER_ADMIN
-
-        ROLE_PRESTATAIRE: ROLE_USER
-        ROLE_CLIENT: ROLE_USER
-        ROLE_BANNI: ROLE_USER
-        ROLE_VIP: ROLE_USER
-        ROLE_ADMIN: [ROLE_PRESTATAIRE, ROLE_SERVICE_CLIENT, ROLE_PREPARATEUR_COMMANDE, ROLE_CLIENT, ROLE_BANNI, ROLE_VIP]
+        # Rôles applicatifs (codes en base : ROLE_GUEST = voyageur, ROLE_HOST = hôte)
+        ROLE_GUEST: ROLE_USER
+        ROLE_HOST: ROLE_USER
+        ROLE_ADMIN: [ROLE_GUEST, ROLE_HOST]
         ROLE_SUPER_ADMIN: ROLE_ADMIN
 
     # Note: Only the *first* matching rule is applied
     access_control:
-#         - { path: ^/admin, roles: ROLE_ADMIN }
-#        - { path: ^/(login|register), roles: PUBLIC_ACCESS }
-#        - { path: ^/, roles: ROLE_USER }
+        # pages publiques (la 1re règle qui matche gagne)
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/register, roles: PUBLIC_ACCESS }
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/reservations, roles: ROLE_GUEST }
+        - { path: ^/reservation, roles: ROLE_GUEST }
+        - { path: ^/user, roles: ROLE_USER }
 
 when@test:
     security:

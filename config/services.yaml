@@ -19,5 +19,11 @@ services:
     App\:
         resource: '../src/'
 
+    # Faker providers custom (fixtures Alice)
+    App\DataFixtures\ImmutableDateProvider:
+        tags: [{ name: nelmio_alice.faker.provider }]
+    App\DataFixtures\PropertyImageProvider:
+        tags: [{ name: nelmio_alice.faker.provider }]
+
     # add more service definitions when explicit configuration is needed
     # please note that last definitions always *replace* previous ones

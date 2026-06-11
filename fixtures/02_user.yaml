@@ -1,0 +1,59 @@
+App\Entity\User:
+  user_{1..30}:
+    email: '<safeEmail()>'
+    passwordHash: '<sha256()>'
+    phone: '<phoneNumber()>'
+    status: '<randomElement(["active", "active", "active", "pending", "suspended"])>'
+    isEmailVerified: '<boolean(80)>'
+    is2faEnabled: '<boolean(20)>'
+    preferredLanguage: '<randomElement(["fr", "en", "es"])>'
+    preferredCurrency: '<randomElement(["EUR", "USD", "GBP"])>'
+
+App\Entity\UserProfile:
+  profile_{1..30}:
+    user: '@user_<current()>'
+    firstName: '<firstName()>'
+    lastName: '<lastName()>'
+    birthDate: '<immutableDateBetween("-60 years", "-18 years")>'
+    avatarUrl: '<imageUrl(200, 200)>'
+    bio: '<sentence()>'
+    identityStatus: '<randomElement(["verified", "pending", "none"])>'
+
+App\Entity\UserRole:
+  roleassign_{1..30}:
+    user: '@user_<current()>'
+    role: '@role_<randomElement(["guest", "host", "admin", "guest", "host"])>'
+
+App\Entity\UserDocument:
+  document_{1..15}:
+    user: '@user_*'
+    type: '<randomElement(["piece_identite", "passeport", "permis_conduire"])>'
+    fileUrl: '<imageUrl(600, 400)>'
+    verificationStatus: '<randomElement(["pending", "approved", "rejected"])>'
+
+App\Entity\OauthAccount:
+  oauth_{1..10}:
+    user: '@user_*'
+    provider: '<randomElement(["google", "facebook", "apple"])>'
+    providerUserId: '<uuid()>'
+    accessToken: '<sha256()>'
+    refreshToken: '<sha256()>'
+
+App\Entity\PaymentMethod:
+  paymethod_{1..20}:
+    user: '@user_*'
+    provider: 'stripe'
+    providerPaymentMethodId: 'pm_<sha1()>'
+    brand: '<randomElement(["visa", "mastercard", "amex"])>'
+    last4: '<numerify("####")>'
+    expirationMonth: '<numberBetween(1, 12)>'
+    expirationYear: '<numberBetween(2026, 2032)>'
+
+App\Entity\Notification:
+  notification_{1..50}:
+    user: '@user_*'
+    type: '<randomElement(["reservation", "message", "payment", "review", "system"])>'
+    title: '<sentence(4)>'
+    content: '<sentence()>'
+    channel: '<randomElement(["email", "push", "sms", "in_app"])>'
+    isRead: '<boolean(50)>'

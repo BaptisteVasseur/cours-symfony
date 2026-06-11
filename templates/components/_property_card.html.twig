@@ -1,0 +1,20 @@
+{# props:
+   image   — url de l'image (optionnel, placeholder sinon)
+   title   — titre du logement
+   city    — localisation
+   price   — prix / nuit
+   url     — lien vers le détail (optionnel)
+#}
+<a href="{{ url|default('#') }}" class="group block">
+    <div class="aspect-square rounded-xl overflow-hidden bg-gray-100 mb-3">
+        {% if image %}
+            <img src="{{ image }}" alt="{{ title }}" loading="lazy"
+                 class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+        {% else %}
+            <div class="w-full h-full bg-gradient-to-br from-rausch/20 to-gray-200"></div>
+        {% endif %}
+    </div>
+    <h2 class="font-semibold truncate">{{ title }}</h2>
+    <p class="text-gray-500 text-sm">{{ city }}</p>
+    <p class="text-sm"><span class="font-semibold">{{ price }} €</span> / nuit</p>
+</a>

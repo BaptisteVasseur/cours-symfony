@@ -1,0 +1,49 @@
+{% extends 'layouts/admin.html.twig' %}
+
+{% block title %}Logements — Admin{% endblock %}
+
+{% block admin_content %}
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-xl font-semibold">Logements ({{ properties|length }})</h1>
+        <a href="{{ path('admin_property_new') }}" class="px-4 py-2 bg-rausch hover:bg-rausch-dark text-white font-semibold rounded-lg transition">
+            + Nouveau
+        </a>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-gray-600 text-left">
+                <tr>
+                    <th class="px-4 py-3 font-medium">Titre</th>
+                    <th class="px-4 py-3 font-medium">Type</th>
+                    <th class="px-4 py-3 font-medium">Hôte</th>
+                    <th class="px-4 py-3 font-medium">Prix/nuit</th>
+                    <th class="px-4 py-3 font-medium">Statut</th>
+                    <th class="px-4 py-3 font-medium text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for property in properties %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium">{{ property.title }}</td>
+                        <td class="px-4 py-3 capitalize">{{ property.propertyType }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ property.host ? property.host.email : '—' }}</td>
+                        <td class="px-4 py-3">{{ property.pricePerNight }} €</td>
+                        <td class="px-4 py-3">{{ property.status }}</td>
+                        <td class="px-4 py-3">
+                            <div class="flex items-center justify-end gap-2">
+                                <a href="{{ path('admin_property_edit', { id: property.id }) }}" class="px-3 py-1.5 text-rausch hover:underline">Modifier</a>
+                                <form method="post" action="{{ path('admin_property_delete', { id: property.id }) }}" onsubmit="return confirm('Supprimer ce logement ?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ property.id) }}">
+                                    <button class="px-3 py-1.5 text-red-600 hover:underline">Supprimer</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="6" class="px-4 py-6 text-center text-gray-500">Aucun logement.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

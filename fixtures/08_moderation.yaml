@@ -1,0 +1,22 @@
+App\Entity\Dispute:
+  dispute_{1..6}:
+    reservation: '@reservation_*'
+    openedBy: '@user_*'
+    status: '<randomElement(["open", "investigating", "resolved", "closed"])>'
+    resolution: '<paragraph()>'
+
+App\Entity\Report:
+  report_{1..8}:
+    reporter: '@user_*'
+    targetType: '<randomElement(["property", "user", "review", "message"])>'
+    target: '<(\Symfony\Component\Uid\Uuid::v4())>'
+    reason: '<sentence()>'
+    status: '<randomElement(["pending", "reviewed", "actioned", "dismissed"])>'
+
+App\Entity\AuditLog:
+  audit_{1..40}:
+    user: '@user_*'
+    action: '<randomElement(["create", "update", "delete", "login", "logout"])>'
+    entityType: '<randomElement(["Property", "Reservation", "User", "Payment", "Review"])>'
+    entity: '<(\Symfony\Component\Uid\Uuid::v4())>'
+    ipAddress: '<ipv4()>'

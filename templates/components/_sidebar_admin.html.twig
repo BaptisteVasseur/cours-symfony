@@ -1,0 +1,37 @@
+<aside class="fixed inset-y-0 left-0 w-64 bg-gray-900 text-gray-300 flex flex-col z-50">
+    {# Logo #}
+    <div class="h-16 flex items-center gap-2 px-6 border-b border-white/10">
+        {% include 'components/_logo.html.twig' with { svgClass: 'w-7 h-7 fill-rausch', textClass: 'text-lg font-bold text-white' } %}
+        <span class="ml-auto px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-rausch text-white rounded">Admin</span>
+    </div>
+
+    {# Nav #}
+    <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-1 text-sm font-medium">
+        {% set route = app.request.attributes.get('_route') %}
+        {% set nav = [
+            { label: 'Dashboard',     url: path('app_admin'),               icon: 'M3 12l9-9 9 9M5 10v10h14V10', match: 'app_admin' },
+            { label: 'Utilisateurs',  url: path('admin_user_index'),        icon: 'M17 20v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 10a4 4 0 100-8 4 4 0 000 8M23 20v-2a4 4 0 00-3-3.87', match: 'admin_user_' },
+            { label: 'Logements',     url: path('admin_property_index'),    icon: 'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2zM9 22V12h6v10', match: 'admin_property_' },
+            { label: 'Réservations',  url: path('admin_reservation_index'), icon: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2', match: 'admin_reservation_' },
+        ] %}
+        {% for item in nav %}
+            {% set active = route starts with item.match %}
+            <a href="{{ item.url }}" class="flex items-center gap-3 px-3 py-2.5 rounded-lg transition {{ active ? 'bg-rausch text-white' : 'text-gray-300 hover:bg-white/10 hover:text-white' }}">
+                <svg viewBox="0 0 24 24" class="w-5 h-5 fill-none stroke-current stroke-[1.5]"><path d="{{ item.icon }}" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+                {{ item.label }}
+            </a>
+        {% endfor %}
+    </nav>
+
+    {# User #}
+    <div class="border-t border-white/10 p-4 flex items-center gap-3">
+        <span class="w-9 h-9 rounded-full bg-rausch flex items-center justify-center text-white text-sm font-semibold shrink-0">A</span>
+        <div class="min-w-0 flex-1">
+            <p class="text-white text-sm font-medium truncate">Admin</p>
+            <p class="text-xs text-gray-400 truncate">{{ app.user ? app.user.email : '' }}</p>
+        </div>
+        <a href="{{ path('app_logout') }}" class="p-2 rounded-lg hover:bg-white/10 transition" title="Déconnexion">
+            <svg viewBox="0 0 24 24" class="w-5 h-5 fill-none stroke-current stroke-[1.5]"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        </a>
+    </div>
+</aside>

@@ -1,0 +1,96 @@
+{% extends 'layouts/base.html.twig' %}
+
+{% block title %}{{ property.title }} — Airstay{% endblock %}
+
+{% block header %}
+    {% include 'components/_header_user.html.twig' %}
+{% endblock %}
+
+{% block body %}
+    <section class="max-w-5xl mx-auto px-6 py-8">
+
+        {# Titre + lieu #}
+        <h1 class="text-3xl font-bold mb-1">{{ property.title }}</h1>
+        {% if property.address %}
+            <p class="text-gray-600 mb-6">
+                {{ property.address.city }}, {{ property.address.country }}
+            </p>
+        {% endif %}
+
+        {# Galerie média #}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 rounded-2xl overflow-hidden mb-8">
+            {% for media in property.media %}
+                {% if media.mediaType != 'video' %}
+                    <img src="{{ media.fileUrl }}" alt="{{ property.title }}"
+                         class="w-full h-64 object-cover {{ loop.first ? 'md:row-span-2 md:h-full' : '' }}">
+                {% endif %}
+            {% else %}
+                <div class="w-full h-64 bg-gradient-to-br from-rausch/20 to-gray-200 rounded-2xl"></div>
+            {% endfor %}
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10">
+
+            {# Colonne principale #}
+            <div class="lg:col-span-2">
+                {# Caractéristiques #}
+                <div class="flex flex-wrap gap-x-6 gap-y-2 text-gray-700 border-b border-gray-200 pb-6 mb-6">
+                    <span>{{ property.maxGuests }} voyageurs</span>
+                    <span>{{ property.bedrooms }} chambres</span>
+                    <span>{{ property.beds }} lits</span>
+                    <span>{{ property.bathrooms }} salles de bain</span>
+                    <span class="capitalize">{{ property.propertyType }}</span>
+                </div>
+
+                {# Hôte #}
+                {% if property.host %}
+                    <p class="text-gray-600 mb-6">
+                        Proposé par <span class="font-semibold text-gray-900">{{ property.host.email }}</span>
+                    </p>
+                {% endif %}
+
+                {# Description #}
+                {% if property.description %}
+                    <h2 class="text-xl font-semibold mb-2">À propos de ce logement</h2>
+                    <p class="text-gray-700 whitespace-pre-line mb-8">{{ property.description }}</p>
+                {% endif %}
+
+                {# Équipements #}
+                {% if property.propertyAmenities|length > 0 %}
+                    <h2 class="text-xl font-semibold mb-3">Équipements</h2>
+                    <ul class="grid grid-cols-2 gap-2 text-gray-700">
+                        {% for pa in property.propertyAmenities %}
+                            <li class="flex items-center gap-2">
+                                <span class="text-rausch">•</span> {{ pa.amenity.label }}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                {% endif %}
+            </div>
+
+            {# Carte prix / réservation #}
+            <aside class="lg:col-span-1">
+                <div class="border border-gray-200 rounded-2xl shadow-lg p-6 sticky top-24">
+                    <p class="mb-4">
+                        <span class="text-2xl font-bold">{{ property.pricePerNight }} €</span>
+                        <span class="text-gray-500">/ nuit</span>
+                    </p>
+                    {% if property.cleaningFee %}
+                        <p class="text-sm text-gray-600 mb-1">Frais de ménage : {{ property.cleaningFee }} €</p>
+                    {% endif %}
+                    {% if property.securityDeposit %}
+                        <p class="text-sm text-gray-600 mb-4">Caution : {{ property.securityDeposit }} €</p>
+                    {% endif %}
+                    <button class="w-full py-3 bg-rausch hover:bg-rausch-dark text-white font-semibold rounded-lg transition">
+                        Réserver
+                    </button>
+                    {% if property.instantBooking %}
+                        <p class="text-center text-sm text-gray-500 mt-3">Réservation instantanée disponible</p>
+                    {% endif %}
+                </div>
+            </aside>
+        </div>
+
+        <a href="{{ path('app_home') }}" class="inline-block mt-10 text-rausch hover:underline">← Retour aux annonces</a>
+    </section>
+{% endblock %}

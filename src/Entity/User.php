@@ -10,26 +10,36 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[ORM\Table(name: 'users')]
+#[UniqueEntity(fields: ['email'], message: 'Cet e-mail est déjà utilisé.')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     use UuidEntityTrait;
 
     #[ORM\Column(length: 255, unique: true)]
+    #[Assert\NotBlank(message: 'L\'e-mail est obligatoire.')]
+    #[Assert\Email(message: 'L\'e-mail "{{ value }}" n\'est pas valide.')]
+    #[Assert\Length(max: 255)]
     private ?string $email = null;
 
     #[ORM\Column(length: 255)]
     private ?string $passwordHash = null;
 
     #[ORM\Column(length: 50, nullable: true)]
+    #[Assert\Length(max: 50)]
+    #[Assert\Regex(pattern: '/^[0-9 +().-]*$/', message: 'Numéro de téléphone invalide.')]
     private ?string $phone = null;
 
     #[ORM\Column(length: 50)]
-    private ?string $status = null;
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['pending', 'active', 'suspended'], message: 'Statut invalide.')]
+    private ?string $status = 'pending';
 
     #[ORM\Column]
     private bool $isEmailVerified = false;
@@ -102,8 +112,21 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return (string) $this->email;
     }
 
+    /** Statuts considérés comme bannis : aucun accès. */
+    public const BANNED_STATUSES = ['banned', 'suspended'];
+
+    public function isBanned(): bool
+    {
+        return \in_array($this->status, self::BANNED_STATUSES, true);
+    }
+
     public function getRoles(): array
     {
+        // Utilisateur banni : on retire tout rôle -> aucun accès aux pages protégées.
+        if ($this->isBanned()) {
+            return ['ROLE_BANNED'];
+        }
+
         $roles = ['ROLE_USER'];
         foreach ($this->userRoles as $userRole) {
             $roles[] = $userRole->getRole()->getCode();

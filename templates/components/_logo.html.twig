@@ -1,0 +1,11 @@
+{# props:
+   svgClass   — classes du <svg> (couleur/taille)        default 'w-8 h-8 fill-rausch'
+   wordmark   — afficher le texte "airstay"              default true
+   textClass  — classes du texte                         default 'text-xl font-bold tracking-tight'
+#}
+<svg viewBox="0 0 32 32" class="{{ svgClass|default('w-8 h-8 fill-rausch') }}" aria-hidden="true">
+    <path d="M16 1c2.008 0 3.463.963 4.751 3.269l.533 1.025c1.954 3.83 6.114 12.54 7.1 14.836l.145.353c.667 1.591.91 2.472.96 3.396l.01.415.001.228c0 4.062-2.877 6.812-6.99 6.812-2.043 0-4.062-.957-5.71-2.756l-.32-.36-.319.36C14.357 30.043 12.338 31 10.295 31c-4.04 0-6.886-2.65-6.985-6.567l-.005-.475.004-.466c.04-.997.273-1.918.984-3.594l.155-.377C5.41 17.345 9.56 8.567 11.464 4.762l.533-1.025C13.28 1.963 14.692 1 16 1z"></path>
+</svg>
+{% if wordmark|default(true) %}
+    <span class="{{ textClass|default('text-xl font-bold tracking-tight') }}">airstay</span>
+{% endif %}

@@ -1,0 +1,43 @@
+<header class="sticky top-0 z-50 bg-white border-b border-gray-200">
+    <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
+
+        {# Logo #}
+        <a href="{{ path('app_home') }}" class="flex items-center gap-2 text-rausch shrink-0">
+            {% include 'components/_logo.html.twig' with { svgClass: 'w-8 h-8 fill-current', textClass: 'text-xl font-bold tracking-tight hidden sm:inline' } %}
+        </a>
+
+        {# Search bar #}
+        <div class="hidden md:flex items-center divide-x divide-gray-200 border border-gray-200 rounded-full py-2 pl-6 pr-2 shadow-sm hover:shadow-md transition cursor-pointer">
+            <span class="px-2 text-sm font-medium">N'importe où</span>
+            <span class="px-2 text-sm font-medium">N'importe quand</span>
+            <span class="px-2 text-sm text-gray-500">Voyageurs</span>
+            <span class="bg-rausch text-white p-2 rounded-full ml-2">
+                <svg viewBox="0 0 32 32" class="w-4 h-4 fill-none stroke-current stroke-[4]"><path d="M13 24a11 11 0 100-22 11 11 0 000 22zm8-3l9 9" stroke-linecap="round"></path></svg>
+            </span>
+        </div>
+
+        {# Right side #}
+        <div class="flex items-center gap-2 shrink-0">
+            <a href="#" class="hidden lg:inline px-4 py-2 text-sm font-semibold rounded-full hover:bg-gray-100 transition">
+                Mettre mon logement
+            </a>
+
+            {% if app.user %}
+                <a href="{{ path('app_reservation_history') }}" class="hidden sm:inline px-3 py-2 text-sm font-medium rounded-full hover:bg-gray-100 transition">
+                    Mes réservations
+                </a>
+                <span class="hidden md:inline text-sm text-gray-600">{{ app.user.userIdentifier }}</span>
+                <a href="{{ path('app_logout') }}" class="px-4 py-2 text-sm font-semibold rounded-full border border-gray-200 hover:shadow-md transition">
+                    Déconnexion
+                </a>
+            {% else %}
+                <a href="{{ path('app_login') }}" class="px-4 py-2 text-sm font-semibold rounded-full hover:bg-gray-100 transition">
+                    Connexion
+                </a>
+                <a href="{{ path('app_register') }}" class="px-4 py-2 text-sm font-semibold rounded-full bg-rausch text-white hover:bg-rausch-dark transition">
+                    Inscription
+                </a>
+            {% endif %}
+        </div>
+    </div>
+</header>

@@ -1,0 +1,71 @@
+App\Entity\Property:
+  property_{1..20}:
+    host: '@user_*'
+    cancellationPolicy: '@policy_*'
+    title: '<sentence(3)>'
+    description: '<paragraph()>'
+    propertyType: '<randomElement(["appartement", "maison", "villa", "studio", "loft", "chalet"])>'
+    status: '<randomElement(["published", "published", "published", "draft", "suspended"])>'
+    maxGuests: '<numberBetween(1, 12)>'
+    bedrooms: '<numberBetween(0, 5)>'
+    beds: '<numberBetween(1, 8)>'
+    bathrooms: '<numberBetween(1, 4)>'
+    pricePerNight: '<numberBetween(45, 600)>'
+    cleaningFee: '<numberBetween(10, 80)>'
+    securityDeposit: '<numberBetween(100, 500)>'
+    checkinTime: '<immutableTime(14, 18)>'
+    checkoutTime: '<immutableTime(9, 12)>'
+    instantBooking: '<boolean(40)>'
+
+App\Entity\PropertyAddress:
+  address_{1..20}:
+    property: '@property_<current()>'
+    country: '<country()>'
+    city: '<city()>'
+    postalCode: '<postcode()>'
+    addressLine1: '<streetAddress()>'
+    addressLine2: '<secondaryAddress()>'
+    latitude: '<latitude()>'
+    longitude: '<longitude()>'
+
+App\Entity\PropertyRule:
+  rule_{1..20}:
+    property: '@property_<current()>'
+    petsAllowed: '<boolean(50)>'
+    smokingAllowed: '<boolean(20)>'
+    partiesAllowed: '<boolean(10)>'
+    additionalRules: '<sentence()>'
+
+App\Entity\PropertyMedia:
+  cover_{1..20}:
+    property: '@property_<current()>'
+    mediaType: 'image'
+    fileUrl: '<propertyImage(current())>'
+    sortOrder: 0
+    isCover: true
+  media_{1..60}:
+    property: '@property_*'
+    mediaType: 'image'
+    fileUrl: '<propertyImage()>'
+    sortOrder: '<numberBetween(0, 10)>'
+    isCover: '<boolean(20)>'
+
+App\Entity\PropertyAmenity:
+  propamenity_{1..20}:
+    property: '@property_<current()>'
+    amenity: '@amenity_*'
+
+App\Entity\PropertyAvailability:
+  availability_{1..40}:
+    property: '@property_*'
+    availableDate: '<immutableDateBetween("now", "+6 months")>'
+    isAvailable: '<boolean(80)>'
+    priceOverride: '<numberBetween(50, 700)>'
+    minimumStay: '<numberBetween(1, 7)>'
+
+App\Entity\PropertyICalSync:
+  ical_{1..5}:
+    property: '@property_*'
+    providerName: '<randomElement(["Booking.com", "Vrbo", "Expedia"])>'
+    iCalUrl: '<url()>'
+    lastSyncAt: '<immutableDateTimeBetween("-1 month", "now")>'

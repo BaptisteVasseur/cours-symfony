@@ -1,0 +1,47 @@
+{# Thème de formulaire Tailwind pour l'admin #}
+{% use 'form_div_layout.html.twig' %}
+
+{% block form_row %}
+    <div class="mb-4">
+        {{ form_label(form) }}
+        {{ form_widget(form) }}
+        {{ form_errors(form) }}
+    </div>
+{% endblock %}
+
+{% block form_label %}
+    {%- if label is not same as(false) -%}
+        {% set label_attr = label_attr|merge({class: (label_attr.class|default('') ~ ' block text-sm font-medium mb-1 text-gray-700')|trim}) %}
+        {{- parent() -}}
+    {%- endif -%}
+{% endblock %}
+
+{%- block form_widget_simple -%}
+    {% set attr = attr|merge({class: (attr.class|default('') ~ ' w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rausch')|trim}) %}
+    {{- parent() -}}
+{%- endblock -%}
+
+{%- block textarea_widget -%}
+    {% set attr = attr|merge({class: (attr.class|default('') ~ ' w-full px-3 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-rausch')|trim, rows: 4}) %}
+    {{- parent() -}}
+{%- endblock -%}
+
+{%- block choice_widget_collapsed -%}
+    {% set attr = attr|merge({class: (attr.class|default('') ~ ' w-full px-3 py-2.5 border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-rausch')|trim}) %}
+    {{- parent() -}}
+{%- endblock -%}
+
+{%- block checkbox_widget -%}
+    {% set attr = attr|merge({class: (attr.class|default('') ~ ' w-4 h-4 text-rausch border-gray-300 rounded')|trim}) %}
+    {{- parent() -}}
+{%- endblock -%}
+
+{%- block form_errors -%}
+    {%- if errors|length > 0 -%}
+        <ul class="mt-1 text-sm text-red-600 list-disc list-inside">
+            {%- for error in errors -%}
+                <li>{{ error.message }}</li>
+            {%- endfor -%}
+        </ul>
+    {%- endif -%}
+{%- endblock -%}
