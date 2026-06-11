@@ -63,7 +63,6 @@ services:
     command: >
       sh -c "php bin/console messenger:consume async -vv --time-limit=3600"
 
-
 #  nginx:
 #    image: nginx:alpine
 #    ports:
@@ -110,7 +109,6 @@ services:
   #     interval: 10s
   #     timeout: 5s
   #     retries: 5
-
 
 volumes:
   database_data:

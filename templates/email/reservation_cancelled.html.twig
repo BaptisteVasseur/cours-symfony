@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Réservation annulée</title></head>
+<body style="font-family: sans-serif; color: #1f2937; background: #f9fafb; padding: 24px;">
+<div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; padding: 32px; border: 1px solid #e5e7eb;">
+    {% set property = reservation.property %}
+    {% set nights = reservation.checkinDate and reservation.checkoutDate ? reservation.checkinDate.diff(reservation.checkoutDate).days : 0 %}
+
+    <h1 style="font-size: 20px; font-weight: 700; color: #dc2626; margin-bottom: 8px;">Réservation annulée</h1>
+    <p style="color: #6b7280; margin-bottom: 24px;">La réservation suivante a été annulée.</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+        <tr><td style="padding: 8px 0; color: #6b7280; width: 40%;">Logement</td>
+            <td style="padding: 8px 0; font-weight: 600;">{{ property ? property.title : '—' }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Arrivée</td>
+            <td style="padding: 8px 0;">{{ reservation.checkinDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Départ</td>
+            <td style="padding: 8px 0;">{{ reservation.checkoutDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Durée</td>
+            <td style="padding: 8px 0;">{{ nights }} nuit{{ nights > 1 ? 's' : '' }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Montant</td>
+            <td style="padding: 8px 0;">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</td></tr>
+    </table>
+
+    {% if reservation.cancellationReason %}
+    <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px;">
+        <p style="font-size: 13px; font-weight: 600; color: #991b1b; margin-bottom: 4px;">Motif de l'annulation</p>
+        <p style="font-size: 13px; color: #7f1d1d;">{{ reservation.cancellationReason }}</p>
+    </div>
+    {% endif %}
+</div>
+</body>
+</html>

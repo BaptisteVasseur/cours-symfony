@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><title>Nouvelle demande de réservation</title></head>
+<body style="font-family: sans-serif; color: #1f2937; background: #f9fafb; padding: 24px;">
+<div style="max-width: 600px; margin: 0 auto; background: white; border-radius: 12px; padding: 32px; border: 1px solid #e5e7eb;">
+    {% set property = reservation.property %}
+    {% set guest = reservation.guest %}
+    {% set guestProfile = guest ? guest.profile : null %}
+    {% set nights = reservation.checkinDate and reservation.checkoutDate ? reservation.checkinDate.diff(reservation.checkoutDate).days : 0 %}
+
+    <h1 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;">Nouvelle demande de réservation</h1>
+    <p style="color: #6b7280; margin-bottom: 24px;">Un voyageur souhaite séjourner dans votre logement.</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 24px;">
+        <tr><td style="padding: 8px 0; color: #6b7280; width: 40%;">Logement</td>
+            <td style="padding: 8px 0; font-weight: 600;">{{ property ? property.title : '—' }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Voyageur</td>
+            <td style="padding: 8px 0; font-weight: 600;">
+                {{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : guest ? guest.email : '—' }}
+            </td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Email voyageur</td>
+            <td style="padding: 8px 0;">{{ guest ? guest.email : '—' }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Arrivée</td>
+            <td style="padding: 8px 0; font-weight: 600;">{{ reservation.checkinDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Départ</td>
+            <td style="padding: 8px 0; font-weight: 600;">{{ reservation.checkoutDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Durée</td>
+            <td style="padding: 8px 0;">{{ nights }} nuit{{ nights > 1 ? 's' : '' }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Voyageurs</td>
+            <td style="padding: 8px 0;">{{ reservation.guestsCount }}</td></tr>
+        <tr><td style="padding: 8px 0; color: #6b7280;">Montant total</td>
+            <td style="padding: 8px 0; font-weight: 700; font-size: 16px;">
+                {{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}
+            </td></tr>
+    </table>
+
+    <p style="font-size: 13px; color: #9ca3af;">Connectez-vous à votre espace hôte pour accepter ou refuser cette demande.</p>
+</div>
+</body>
+</html>
