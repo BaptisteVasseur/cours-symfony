@@ -7,6 +7,7 @@ namespace App\Controller\Front;
 use App\Entity\Notification;
 use App\Entity\User;
 use App\Repository\NotificationRepository;
+use App\Service\RealtimePublisher;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -40,6 +41,8 @@ final class NotificationController extends AbstractController
     public function read(
         Notification $notification,
         EntityManagerInterface $entityManager,
+        NotificationRepository $notificationRepository,
+        RealtimePublisher $realtimePublisher,
         Request $request,
     ): Response {
         $user = $this->getUser();
@@ -50,6 +53,9 @@ final class NotificationController extends AbstractController
         if (!$notification->isRead()) {
             $notification->setIsRead(true);
             $entityManager->flush();
+            $realtimePublisher->publishToUser($user, 'notifications.read', [
+                'unreadCount' => $notificationRepository->count(['user' => $user, 'isRead' => false]),
+            ]);
         }
 
         $linkUrl = $notification->getLinkUrl();
@@ -69,6 +75,7 @@ final class NotificationController extends AbstractController
     public function markAllRead(
         NotificationRepository $notificationRepository,
         EntityManagerInterface $entityManager,
+        RealtimePublisher $realtimePublisher,
         Request $request,
     ): Response {
         $user = $this->getUser();
@@ -86,6 +93,9 @@ final class NotificationController extends AbstractController
         }
 
         $entityManager->flush();
+        $realtimePublisher->publishToUser($user, 'notifications.read', [
+            'unreadCount' => 0,
+        ]);
 
         $this->addFlash('success', 'Toutes les notifications ont été marquées comme lues.');
 
