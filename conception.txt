@@ -1,0 +1,330 @@
+Conception technique - Moteur de reservation, disponibilites et iCal
+
+1. Objectif du module
+
+Le module a pour objectif de permettre a un voyageur de reserver un logement publie, tout en garantissant que les dates demandees sont reellement disponibles.
+Il doit aussi permettre a l'hote de bloquer manuellement certaines dates, d'accepter ou refuser les demandes de reservation non instantanees, et d'exposer un calendrier iCal securise pour synchroniser les sejours confirmes avec des outils externes comme Google Calendar ou Outlook.
+
+
+2. Cycle de vie d'une reservation
+
+Une reservation peut avoir quatre statuts principaux :
+
+- pending : la demande a ete creee, mais l'hote doit encore l'accepter
+- confirmed : la reservation est validee et bloque les dates du logement
+- cancelled : la reservation a ete annulee ou refusee
+- completed : le sejour a eu lieu et est termine
+
+Le statut initial depend du champ Property::instantBooking.
+Si le logement accepte la reservation instantanee, la reservation passe directement en confirmed apres verification des disponibilites.
+Sinon, elle est creee en pending et l'hote doit l'accepter ou la refuser depuis son espace. Annule automatiquement si + de 1 semaine sans réponse
+
+BONUS :
+Chaque changement de statut important est historise dans ReservationStatusHistory, avec l'ancien statut, le nouveau statut, l'utilisateur qui a effectue l'action et la date du changement.
+Cette timeline permet de tracer les decisions de l'hote, du voyageur ou du systeme.
+
+3. Modelisation temporelle
+
+Les reservations sont modelisees avec une date d'arrivee checkinDate et une date de depart checkoutDate.
+Le checkoutDate est exclusif : une reservation du 10 juillet au 15 juillet occupe les nuits du 10, 11, 12, 13 et 14 juillet, mais le 15 juillet peut etre reserve par un autre voyageur.
+
+Donc le premier voyageur quitte le logement le matin, par exemple a 11h, et le suivant peut arriver plus tard dans la journee, par exemple a 15h.
+Les heures de check-in et check-out existent deja sur Property, mais elles ne changent pas la regle de chevauchement : deux reservations sont incompatibles uniquement si leurs plages de nuits se croisent.
+
+La condition de chevauchement retenue est :
+
+reservation.checkinDate < requestedCheckout
+AND reservation.checkoutDate > requestedCheckin
+
+Ainsi une reservation qui se termine le 15 juillet ne bloque pas une nouvelle reservation qui commence le 15 juillet.
+
+4. Gestion des disponibilites
+
+Une plage de dates est disponible si toutes les conditions suivantes sont respectees :
+
+- le logement a le statut published ;
+- le nombre de voyageurs demande ne depasse pas Property::maxGuests ;
+- aucun jour de la plage n'est bloque manuellement par l'hote dans PropertyAvailability ;
+- aucune reservation confirmed ne chevauche la plage demandee.
+
+Les reservations pending ne bloquent pas les dates. 
+Pour eviter les abus, qu'un utilisateur ne puisse pas bloquer un logement en envoyant plusieurs demandes sans paiement ni validation.
+Le risque est que deux voyageurs demandent les memes dates sur un logement sans reservation instantanee.
+Ce risque est accepte au stade pending : l'hote choisira la demande a accepter, et l'acceptation devra refaire une verification de disponibilite juste avant de passer la reservation en confirmed.
+Si pas de reponse de l'hote dans les 7 jours les 2 demandes sont refusees.
+
+Pour les logements en reservation instantanee, la verification de disponibilite est effectuee juste avant la creation de la reservation confirmed.
+Pour les logements sur demande, elle est effectuee a la creation de la demande puis de nouveau au moment de l'acceptation par l'hote.
+
+5. Structure SQL du calendrier
+
+Le projet contient deja une table PropertyAvailability avec une ligne par logement et par date.
+Je conserve cette architecture pour representer les exceptions du calendrier : blocage manuel, prix specifique ou duree minimale de sejour.
+Pas obligé de stocker chaque jour disponible par defaut, un jour absent de PropertyAvailability est considere disponible, sauf s'il est couvert par une reservation confirmed.
+
+Les reservations restent stockees sous forme de periodes dans Reservation, car c'est plus efficace pour tester les chevauchements avec une requete SQL unique.
+Le calendrier hote combine donc deux sources : les indisponibilites manuelles journalieres et les reservations confirmees par periodes.
+
+6. Performance des controles de disponibilite
+
+La disponibilite ne doit pas etre verifiee avec une requete SQL par jour.
+Pour une reservation de 20 nuits, le systeme utilisera des requetes globales :
+
+- une requete compte les jours bloques dans PropertyAvailability entre checkinDate inclus et checkoutDate exclus ;
+- une requete detecte l'existence d'une reservation confirmed qui chevauche la periode ;
+- la capacite et le statut du logement sont verifies directement sur l'entite Property.
+
+Pour la recherche /search, le repository PropertyRepository filtrera les logements publies par destination, capacite et absence de chevauchement. Les jointures vers l'adresse permettront de chercher sur la ville ou l'adresse. Les reservations confirmed et les jours bloques seront exclus par des sous-requetes ou des jointures adaptees.
+
+7. Concurrence et prevention du surbooking
+
+Le cas critique est celui de deux utilisateurs qui tentent de confirmer exactement les memes dates au meme moment.
+La verification applicative ne suffit pas toujours, car deux requetes concurrentes peuvent lire le meme etat disponible avant d'ecrire.
+
+La strategie retenue est de centraliser la creation et la confirmation dans un ReservationService transactionnel. Au moment de creer une reservation confirmed ou d'accepter une reservation pending, le service refait toujours la verification de disponibilite dans la meme transaction que l'ecriture. En cas de conflit detecte, la reservation n'est pas confirmee et un message d'erreur est affiche.
+
+Dans une version plus robuste, on pourrait ajouter un verrou pessimiste sur la ligne Property pendant la confirmation, ou utiliser une contrainte PostgreSQL de type exclusion sur les plages de dates des reservations confirmed. Pour ce TP, la transaction avec reverification au moment de la confirmation constitue le minimum attendu et limite fortement le risque de surbooking.
+
+8. Parcours voyageur
+
+Le voyageur selectionne une destination, des dates et un nombre de voyageurs depuis la recherche ou la fiche logement.
+Lorsqu'il soumet le formulaire de reservation, le controleur delegue au ReservationService :
+
+- validation des dates 
+- verification de la capacite 
+- verification de disponibilite 
+- calcul du prix total 
+- choix du statut initial selon instantBooking 
+- creation de la Reservation 
+- enregistrement en base 
+- declenchement des notifications apres flush
+
+Le voyageur est ensuite redirige vers le detail de sa reservation avec un message flash indiquant si la reservation est confirmee ou en attente de validation par l'hote.
+
+9. Espace hote
+
+L'hote dispose d'une page listant ses logements et d'une page calendrier pour chaque logement.
+Il peut y declarer des periodes indisponibles, par exemple pour travaux ou usage personnel.
+Ces blocages sont stockes dans PropertyAvailability avec isAvailable = false.
+
+Pour les logements sans reservation instantanee, l'hote dispose aussi d'une liste des reservations pending.
+Il peut accepter ou refuser chaque demande. L'acceptation relance la verification de disponibilite avant de passer en confirmed.
+Le refus passe la reservation en cancelled et exige un motif.
+
+10. Annulation
+
+Une annulation peut etre declenchee par le voyageur ou par l'hote.
+Une reservation cancelled ne bloque plus les dates, car seules les reservations confirmed sont prises en compte dans les disponibilite.
+
+11. Notifications et asynchronisme
+
+Les emails transactionnels seront envoyes via Symfony Mailer et Messenger.
+Les principaux declencheurs sont :
+
+- nouvelle demande pending : email a l'hote 
+- reservation confirmee : email au voyageur et a l'hote 
+- refus ou annulation : email aux parties concernees avec le motif 
+- rappel de check-in EN BONUS
+
+Les messages doivent etre dispatches apres le flush de Doctrine.
+Cela evite d'envoyer un email pour une reservation qui n'aurait finalement pas ete enregistree en base.
+Cela permet aussi au handler Messenger de relire une reservation existante avec un identifiant fiable.
+
+Le transport retenu pour le TP est doctrine://default, deja configure dans Docker.
+Si RabbitMQ ou le worker tombe en panne, les messages restent stockes dans la base et peuvent etre rejoues lorsque le worker redemarre.
+Les emails serontsont verifies avec Mailpit sur http://localhost:8025.
+
+12. Export iCal securise
+
+Chaque logement exposera un endpoint :
+
+/api/properties/{id}/calendar.ics?token={secret}
+
+Le token sera unique par logement et stocke en base, par exemple dans Property::calendarToken.
+Sans token valide, l'endpoint retournera une erreur 403 et aucune donnee de reservation ne sera exposee.
+
+Le flux iCal contiendra uniquement les reservations confirmed.
+Chaque reservation deviendra un evenement VEVENT avec un UID stable, un titre, une date de debut, une date de fin et une description.
+Les dates suivront la meme logique que les reservations : DTSTART correspond au checkinDate et DTEND au checkoutDate exclusif.
+
+L'hote pourra revoquer le token en en generant un nouveau, ce qui invalidera immediatement les anciennes URL partagees.
+
+13. Import iCal bonus
+
+Le bonus d'import iCal s'appuiera sur PropertyICalSync, qui existe deja dans le projet.
+Une commande Symfony app:ical:sync recuperera les URLs configurees par les hotes avec le composant HTTP Client, lira les evenements du fichier .ics, puis creera ou mettra a jour des blocages dans PropertyAvailability.
+
+En cas de conflit entre un evenement iCal distant et une reservation confirmed locale, la reservation locale reste prioritaire : le systeme ne l'annule pas automatiquement. Le conflit devra etre ignore ou signale a l'hote. Si un evenement distant disparait du flux, les blocages correspondants pourront etre retires uniquement s'ils provenaient de cette synchronisation, afin de ne pas supprimer un blocage manuel cree par l'hote.
+
+14. Decoupage technique prevu
+
+Les controleurs resteront fins et delegueront la logique a des services :
+
+- AvailabilityService : verification des disponibilites ;
+- ReservationService : creation, calcul de prix et workflow de reservation ;
+- ReservationStatusService : acceptation, refus, annulation et historique ;
+- ReservationNotificationService : preparation et dispatch des emails ;
+- ICalCalendarGenerator : generation du contenu .ics.
+
+Les repositories resteront responsables uniquement des requetes Doctrine : recherche de logements disponibles, detection de chevauchements de reservations et comptage des jours bloques.
+
+Contexte technique — Réponses au livrable de conception
+Moteur de reservation, disponibilites et iCal — Clone Airbnb (Symfony 8)
+
+Les reponses ci-dessous decrivent les choix retenus dans notre projet et s'appuient
+sur le code implemente : BookingService, ReservationWorkflowService, AvailabilityService,
+PropertyAvailability, Reservation, IcalExportService, etc.
+
+
+1. Modelisation temporelle
+
+Le jour de check-out est-il reservable par un nouveau voyageur ?
+
+Oui. Le champ checkoutDate est exclusif : une reservation du 10 au 15 juillet occupe les nuits du 10, 11, 12, 13 et 14, mais pas la nuit du 15.
+Un autre voyageur peut donc reserver avec une date d'arrivee le 15 juillet.
+
+Cette regle est codee dans ReservationRepository::existsConfirmedOverlap() :
+
+    reservation.checkinDate < requestedCheckout
+    AND reservation.checkoutDate > requestedCheckin
+
+Une reservation qui se termine le 15 (checkoutDate = 15) ne chevauche donc pas une nouvelle reservation qui commence le 15 (checkinDate = 15).
+
+Comment gerer la superposition d'un depart a 11h et d'une arrivee a 15h ?
+
+Les champs checkinTime et checkoutTime sur l'entite Property informent le voyageur (fiche logement, emails), mais ils ne sont pas utilises dans les requetes de disponibilite. 
+On travaille au niveau de la nuit, pas de l'heure.
+
+Concretement, le jour du changement de locataire est considere comme libre cote reservation : le premier voyageur occupe la nuit precedente, le suivant la nuit suivante.
+Le creneau 11h-15h est gere implicitement : on suppose que le menage et la remise des cles se font dans cette plage, sans bloquer la date en base.
+
+C'est un choix pragmatique pour le TP : gerer des timestamps complets compliquerait les requetes SQL et la validation, alors que le fonctionnement type Airbnb 
+repose surtout sur les dates de nuit. Les heures restent utiles pour la communication metier sans impacter le moteur de chevauchement.
+
+
+2. Gection des etats — Une demande Pending bloque-t-elle les dates ?
+
+Non, seules les reservations au statut confirmed bloquent le calendrier.
+Les demandes pending sont bien enregistrees, mais existsConfirmedOverlap() ne selectionne que status = 'confirmed'.
+Les pending n'apparaissent pas dans le calendrier comme des nuits indisponibles pour un autre voyageur.
+
+Analyse des risques :
+
+- Blocage abusif (si pending bloquait) : un utilisateur pourrait envoyer
+  plusieurs demandes sans engagement reel et empecher d'autres voyageurs de
+  reserver, voire de bloquer l'hote. On evite ce comportement en ne comptant
+  que les confirmed.
+
+- Overbooking (pending ne bloque pas) : sur un logement "sur demande"
+  (instantBooking = false), deux voyageurs peuvent demander les memes dates.
+  Les deux demandes coexistent en pending. L'hote n'en accepte qu'une.
+
+Mitigations prevues dans le projet :
+
+- A l'acceptation, ReservationWorkflowService::confirm() relance une verification complete via AvailabilityService.
+Si les dates ne sont plus libres, la confirmation echoue avec un message d'erreur.
+- Les pending expirent apres 7 jours (expiresAt + commande app:reservation:expire-pending).
+
+En resume, on accepte un risque limite au stade pending pour favoriser l'experience voyageur, et on securise au moment ou la reservation devient confirmed.
+
+
+3. Concurrence — Deux utilisateurs reservent les memes dates au meme instant
+
+Scenario typique : deux voyageurs soumettent en meme temps une reservation instantanee (statut confirmed immediat) sur les memes dates.
+
+Deroulement :
+
+1. Deux requetes HTTP arrivent quasi simultanement.
+2. Chacune passe par BookingService::createReservation().
+3. Chacune appelle AvailabilityService::getUnavailabilityReason(), puis persiste si la reponse est "disponible".
+
+Sans protection supplementaire, les deux requetes peuvent lire "disponible" avant que la premiere n'ait ecrit en base (probleme classique read-modify-write).
+
+Notre strategie :
+
+- Centraliser creation et confirmation dans BookingService et
+  ReservationWorkflowService pour toujours reverifier la disponibilite
+  juste avant l'ecriture.
+- Regrouper verification + persist + flush dans une transaction Doctrine
+  (EntityManager::wrapInTransaction) afin que la seconde requete voie la
+  reservation deja confirmee par la premiere.
+
+Limites assumees pour le TP :
+
+- Pas de verrou pessimiste (SELECT FOR UPDATE sur Property).
+- Pas de contrainte PostgreSQL EXCLUDE sur les plages de dates confirmed.
+
+En demonstration le risque reste faible, mais en production il faudrait ajouter une contrainte d'exclusion ou un verrou.
+C'est le compromis "minimum viable" decrit dans notre conception.txt.
+
+
+4. Performance — Valider 20 nuits sans saturer la base
+
+On evite volontairement une requete SQL par nuit. Pour une plage checkin → checkout,
+AvailabilityService execute deux requetes globales :
+
+a) PropertyAvailabilityRepository::countBlockedDaysInRange()
+   Compte les jours avec isAvailable = false entre checkin (inclus) et checkout
+   (exclus). Si le resultat > 0, la periode est indisponible.
+
+b) ReservationRepository::existsConfirmedOverlap()
+   Detecte en une requete s'il existe une reservation confirmed qui chevauche
+   la plage (meme formule de chevauchement que ci-dessus).
+
+Les verifications published et maxGuests se font sur l'entite Property deja chargee, sans requete supplementaire.
+
+Pour /search, PropertyRepository::searchAvailable() exclut les logements indisponibles via des sous-requetes NOT EXISTS (jours bloques + reservations confirmed), sans charger chaque calendrier en PHP.
+
+Resultat : nombre de requetes SQL constant, que la reservation dure 3 ou 20 nuits.
+
+
+5. Asynchronisme — Emails apres flush() et panne du transport
+
+Pourquoi envoyer les emails apres flush() ?
+
+Dans BookingService, l'ordre est :
+
+1. persist de la Reservation + historique initial (ReservationStatusHistory)
+2. flush() Doctrine
+3. dispatch des messages SendReservationNotification vers Symfony Messenger
+
+Raisons :
+
+- Si le flush echoue (contrainte SQL, erreur metier), aucun email part pour
+  une reservation qui n'existe pas en base.
+- Le handler SendReservationNotificationHandler relit la reservation par son
+  UUID. Sans flush prealable, l'identifiant peut etre absent ou la ligne
+  invisible pour le worker.
+- Decouplage : la reponse HTTP est rapide pour l'utilisateur ; l'envoi SMTP
+  est traite en arriere-plan par le worker.
+
+Strategie si RabbitMQ ou le worker tombe en panne :
+
+Dans notre projet Docker, le transport async est doctrine://default : les messages sont stockes dans la table messenger_messages en PostgreSQL, pas dans RabbitMQ.
+Si le worker est arrete, les messages s'accumulent sans etre perdus.
+Au redemarrage du service messenger-worker, ils sont reconsommes.
+
+La configuration prevoit aussi retry_strategy (3 tentatives) et un failure_transport vers une queue "failed" pour ne pas perdre definitivement un message en echec. En developpement, les emails sont verifies via Mailpit
+(http://localhost:8025).
+
+
+6. Structure SQL du calendrier — Jours vs periodes
+
+Choix retenu : architecture hybride.
+
+PropertyAvailability (1 ligne = 1 jour par logement) :
+- Stocke les exceptions : blocage manuel, blocage iCal importe, tarif specifique (priceOverride), duree minimale (minimumStay).
+- Un jour absent de cette table est disponible par defaut.
+- Pratique pour bloquer un jour precis, appliquer un prix special ou importer des evenements iCal journaliers.
+
+Reservation (checkinDate / checkoutDate en periode) :
+- Represente les sejours voyageurs.
+- Permet de tester un chevauchement sur toute la plage en une seule requete SQL.
+
+Pourquoi ne pas tout mettre en periodes (date_start / date_end) ?
+
+Les blocages ponctuels (travaux, menage, sync iCal) sont plus naturels en jours isoles.
+Les reservations sont plus naturelles en periodes. Melanger les deux dans une seule table de periodes obligerait a creer de "fausses reservations" pour des blocages, ce qui brouille le metier et complique les emails, l'export iCal et le workflow pending/confirmed.
+
+Le calendrier hote dans l'interface combine visuellement les deux sources :
+PropertyAvailability (bloque / tarif special) + reservations confirmed (reserve).

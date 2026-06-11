@@ -1,0 +1,157 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Calendrier — {{ property.title }}{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
+            <div>
+                <a href="{{ path('app_account_properties') }}" class="text-sm text-gray-500 hover:text-brand mb-2 inline-block">
+                    <i class="fa-solid fa-arrow-left mr-1"></i> Mes propriétés
+                </a>
+                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Calendrier</h1>
+                <p class="text-gray-500">{{ property.title }}</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{{ path('app_property_calendar', { id: property.id, year: previousMonth|date('Y'), month: previousMonth|date('n') }) }}"
+                   class="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </a>
+                <span class="font-medium text-gray-800 min-w-[160px] text-center capitalize">{{ monthLabel }}</span>
+                <a href="{{ path('app_property_calendar', { id: property.id, year: nextMonth|date('Y'), month: nextMonth|date('n') }) }}"
+                   class="px-3 py-2 border border-gray-200 rounded-lg hover:bg-gray-50">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </a>
+            </div>
+        </div>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <section class="lg:col-span-2 bg-white border border-gray-200 rounded-xl p-6">
+                <div class="grid grid-cols-7 gap-2 mb-4 text-center text-xs font-semibold text-gray-500 uppercase">
+                    <div>Lun</div><div>Mar</div><div>Mer</div><div>Jeu</div><div>Ven</div><div>Sam</div><div>Dim</div>
+                </div>
+
+                {% for week in calendarWeeks %}
+                    <div class="grid grid-cols-7 gap-2 mb-2">
+                        {% for day in week %}
+                            {% if day.date %}
+                                <div class="min-h-[72px] rounded-lg border p-2 text-sm
+                                    {% if day.status == 'blocked' %}bg-red-50 border-red-200 text-red-800
+                                    {% elseif day.status == 'reserved' %}bg-blue-50 border-blue-200 text-blue-800
+                                    {% elseif day.status == 'special' %}bg-amber-50 border-amber-200 text-amber-900
+                                    {% else %}bg-green-50 border-green-100 text-gray-700{% endif %}">
+                                    <div class="font-semibold">{{ day.date|date('j') }}</div>
+                                    {% if day.status == 'blocked' %}
+                                        <div class="text-xs mt-1 truncate">{{ day.label ?: 'Bloqué' }}</div>
+                                    {% elseif day.status == 'reserved' %}
+                                        <div class="text-xs mt-1 truncate">{{ day.label ?: 'Réservé' }}</div>
+                                    {% elseif day.status == 'special' %}
+                                        <div class="text-xs mt-1 truncate">{{ day.label }}</div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="min-h-[72px]"></div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+
+                <div class="flex flex-wrap gap-4 mt-6 text-sm text-gray-600">
+                    <span class="inline-flex items-center gap-2"><span class="w-3 h-3 rounded bg-green-100 border border-green-200"></span> Disponible</span>
+                    <span class="inline-flex items-center gap-2"><span class="w-3 h-3 rounded bg-amber-50 border border-amber-200"></span> Tarif / durée min.</span>
+                    <span class="inline-flex items-center gap-2"><span class="w-3 h-3 rounded bg-blue-50 border border-blue-200"></span> Réservation confirmée</span>
+                    <span class="inline-flex items-center gap-2"><span class="w-3 h-3 rounded bg-red-50 border border-red-200"></span> Bloqué</span>
+                </div>
+            </section>
+
+            <aside class="space-y-6">
+                <section class="bg-white border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Bloquer des dates</h2>
+                    {{ form_start(blockForm, { attr: { class: 'space-y-4' } }) }}
+                        {{ form_row(blockForm.startDate) }}
+                        {{ form_row(blockForm.endDate) }}
+                        {{ form_row(blockForm.reason) }}
+                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-medium py-2.5 rounded-lg transition">
+                            Bloquer la période
+                        </button>
+                    {{ form_end(blockForm) }}
+                </section>
+
+                <section class="bg-white border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Tarif et durée minimale</h2>
+                    <p class="text-sm text-gray-500 mb-4">Optionnel — surcharge par nuit ou durée minimale de séjour.</p>
+                    {{ form_start(configureForm, { attr: { class: 'space-y-4' } }) }}
+                        {{ form_row(configureForm.startDate) }}
+                        {{ form_row(configureForm.endDate) }}
+                        {{ form_row(configureForm.priceOverride) }}
+                        {{ form_row(configureForm.minimumStay) }}
+                        <button type="submit" class="w-full border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium py-2.5 rounded-lg transition">
+                            Appliquer
+                        </button>
+                    {{ form_end(configureForm) }}
+                </section>
+
+                <section class="bg-white border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Export iCal</h2>
+                    <p class="text-sm text-gray-600 mb-3">Synchronisez vos réservations confirmées avec Google Calendar ou Outlook.</p>
+                    {% set icalUrl = url('app_ical_export', { id: property.id, token: property.calendarToken }) %}
+                    <input type="text" readonly value="{{ icalUrl }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-600 mb-2" id="ical-export-url">
+                    <div class="flex flex-wrap gap-2">
+                        <a href="{{ icalUrl }}" class="text-sm font-semibold text-brand hover:underline">Télécharger .ics</a>
+                        <form method="post" class="inline">
+                            <input type="hidden" name="_token" value="{{ csrf_token('property_calendar_revoke_token') }}">
+                            <input type="hidden" name="_action" value="revoke_token">
+                            <button type="submit" class="text-sm font-semibold text-red-600 hover:underline" onclick="return confirm('Régénérer le token ? Les anciennes URL ne fonctionneront plus.')">
+                                Révoquer le lien
+                            </button>
+                        </form>
+                    </div>
+                </section>
+
+                <section class="bg-white border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Import iCal</h2>
+                    <p class="text-sm text-gray-600 mb-4">Collez l'URL d'un calendrier externe pour bloquer automatiquement les dates occupées.</p>
+                    {% if iCalSync.lastSyncAt %}
+                        <p class="text-xs text-gray-500 mb-3">Dernière sync : {{ iCalSync.lastSyncAt|date('d/m/Y à H:i') }}</p>
+                    {% endif %}
+                    {{ form_start(iCalForm, { attr: { class: 'space-y-4' } }) }}
+                        {{ form_row(iCalForm.providerName) }}
+                        {{ form_row(iCalForm.iCalUrl) }}
+                        <div class="flex flex-col gap-2">
+                            <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-medium py-2.5 rounded-lg transition">
+                                Enregistrer l'URL
+                            </button>
+                            <button type="submit" name="_action" value="ical_sync_now" class="w-full border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium py-2.5 rounded-lg transition">
+                                Enregistrer et synchroniser
+                            </button>
+                        </div>
+                    {{ form_end(iCalForm) }}
+                </section>
+
+                <section class="bg-white border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Débloquer des dates</h2>
+                    <form method="post" class="space-y-4">
+                        <input type="hidden" name="_token" value="{{ csrf_token('property_availability_unblock') }}">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date de début</label>
+                            <input type="date" name="unblock_start" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Date de fin (exclusive)</label>
+                            <input type="date" name="unblock_end" required class="w-full border border-gray-300 rounded-lg px-3 py-2">
+                        </div>
+                        <button type="submit" class="w-full border border-gray-300 hover:bg-gray-50 text-gray-800 font-medium py-2.5 rounded-lg transition">
+                            Débloquer la période
+                        </button>
+                    </form>
+                </section>
+            </aside>
+        </div>
+    </main>
+{% endblock %}

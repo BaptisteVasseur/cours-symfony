@@ -135,7 +135,12 @@
                             <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
                         </div>
                     </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                    <a href="{{ path('app_booking_checkout', {
+                        id: property.id,
+                        checkin: searchCheckin ? searchCheckin|date('Y-m-d') : null,
+                        checkout: searchCheckout ? searchCheckout|date('Y-m-d') : null,
+                        guests: searchGuests > 0 ? searchGuests : null,
+                    }|filter(v => v is not null)) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
                         Réserver
                     </a>
                     {% if property.instantBooking %}

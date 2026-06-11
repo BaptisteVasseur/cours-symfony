@@ -17,4 +17,9 @@ class PropertyICalSyncRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, PropertyICalSync::class);
     }
+
+    public function findOneByProperty(\App\Entity\Property $property): ?PropertyICalSync
+    {
+        return $this->findOneBy(['property' => $property]);
+    }
 }

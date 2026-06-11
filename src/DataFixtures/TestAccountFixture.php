@@ -96,6 +96,7 @@ class TestAccountFixture extends Fixture implements DependentFixtureInterface
             $amenityRefs,
             $manager,
         );
+        $secondListing->setInstantBooking(false);
         $this->addReference(FixtureReferences::PROPERTY_TEST_SECOND, $secondListing);
 
         $pendingListing = $this->createProperty(
@@ -395,6 +396,11 @@ class TestAccountFixture extends Fixture implements DependentFixtureInterface
         $reservation->setServiceFee('30.00');
         $reservation->setSecurityDeposit('150.00');
         $reservation->setCurrency('EUR');
+
+        if ($status === 'pending') {
+            $reservation->setExpiresAt(new \DateTimeImmutable('+7 days'));
+        }
+
         $manager->persist($reservation);
 
         $history = new ReservationStatusHistory();

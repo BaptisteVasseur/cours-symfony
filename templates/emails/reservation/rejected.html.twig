@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="fr">
+<body style="font-family: sans-serif; color: #222;">
+    <h1>Demande refusée</h1>
+    <p>Votre demande pour <strong>{{ property.title }}</strong> a été refusée par l'hôte.</p>
+    {% if reservation.cancellationReason %}
+        <p><strong>Motif :</strong> {{ reservation.cancellationReason }}</p>
+    {% endif %}
+    <p><a href="{{ reservationUrl }}">Voir le détail</a></p>
+</body>
+</html>
