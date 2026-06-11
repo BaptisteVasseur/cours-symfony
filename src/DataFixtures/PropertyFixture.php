@@ -10,6 +10,7 @@ use App\Entity\Property;
 use App\Entity\PropertyAddress;
 use App\Entity\PropertyAmenity;
 use App\Entity\AvailabilitySchedule;
+use App\Entity\AvailabilityException;
 use App\Entity\PropertyICalSync;
 use App\Entity\PropertyMedia;
 use App\Entity\PropertyRule;
@@ -225,16 +226,68 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         $gallery->setIsCover(false);
         $manager->persist($gallery);
 
-        $schedule = new AvailabilitySchedule();
-        $schedule->setProperty($property);
-        $schedule->setStartDate(new \DateTimeImmutable('today'));
-        $schedule->setEndDate(new \DateTimeImmutable('+30 days'));
-        $schedule->setDaysOfWeek([1, 2, 3, 4, 5, 6, 7]);
-        $schedule->setCheckInTime(new \DateTimeImmutable('15:00'));
-        $schedule->setCheckOutTime(new \DateTimeImmutable('11:00'));
-        $schedule->setMinimumStay(1);
-        $schedule->setMaximumStay(30);
-        $manager->persist($schedule);
+        // Définir des plages de disponibilité multiples, non chevauchantes
+        $intervals = [
+            ['today', '+9 days'],
+            ['+11 days', '+20 days'],
+            ['+23 days', '+35 days'],
+            ['+38 days', '+60 days']
+        ];
+
+        foreach ($intervals as $index => [$startStr, $endStr]) {
+            $startDate = new \DateTimeImmutable($startStr);
+            $endDate = new \DateTimeImmutable($endStr);
+
+            $schedule = new AvailabilitySchedule();
+            $schedule->setProperty($property);
+            $schedule->setStartDate($startDate);
+            $schedule->setEndDate($endDate);
+
+            // Aléatoire des jours d'ouverture de la plage
+            $daysOption = random_int(1, 3);
+            $days = match ($daysOption) {
+                1 => [1, 2, 3, 4, 5, 6, 7], // Toute la semaine
+                2 => [5, 6, 7],             // Weekend seulement
+                3 => [1, 2, 3, 4, 5],       // Semaine seulement
+            };
+            $schedule->setDaysOfWeek($days);
+
+            // Heures d'arrivée/départ aléatoires
+            $checkInHour = ['14:00', '15:00', '16:00'][random_int(0, 2)];
+            $checkOutHour = ['10:00', '11:00', '12:00'][random_int(0, 2)];
+            $schedule->setCheckInTime(new \DateTimeImmutable($checkInHour));
+            $schedule->setCheckOutTime(new \DateTimeImmutable($checkOutHour));
+
+            // Durées de séjour aléatoires
+            $minStay = random_int(1, 3);
+            $maxStay = random_int(7, 30);
+            $schedule->setMinimumStay($minStay);
+            $schedule->setMaximumStay($maxStay);
+
+            $manager->persist($schedule);
+
+            // Créer une exception aléatoire au milieu de chaque plage
+            $daysDiff = $startDate->diff($endDate)->days;
+            if ($daysDiff > 2) {
+                $randomOffset = random_int(1, $daysDiff - 1);
+                $exceptionDate = $startDate->modify(sprintf('+%d days', $randomOffset));
+
+                $exception = new AvailabilityException();
+                $exception->setProperty($property);
+                $exception->setDate($exceptionDate);
+                
+                $sourceOption = random_int(1, 2);
+                if ($sourceOption === 1) {
+                    $exception->setReason('Bloqué manuellement par l\'hôte');
+                    $exception->setSource(AvailabilityException::SOURCE_MANUAL);
+                } else {
+                    $exception->setReason('Réservation externe importée via iCal');
+                    $exception->setSource(AvailabilityException::SOURCE_ICAL_IMPORT);
+                }
+                
+                $manager->persist($exception);
+            }
+        }
 
         if ($withICal) {
             $iCalSync = new PropertyICalSync();
