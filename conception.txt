@@ -38,3 +38,17 @@ Asynchronisme :
 L'envoi d'email doit intervenir après le flush afin de s'assurer que les données ont bien été enregistrées, et éviter un envoi de mail en cas d'erreur.
 Si RabbitMQ tombe en panne, on mettra en place une file d'attente qui sera envoyée une fois le service à nouveau opérationnel.
 Il serait également possible de créer un fallback vers un autre service d'envoi de mails, tout en gardant la file d'attente en dernier recours.
+
+Synchronisation iCal - Import (exercice bonus)
+
+- Commande dédiée : `app:ical:sync`
+
+- Exécution manuelle :
+docker compose exec php php bin/console app:ical:sync
+
+On pourrait intégrer cette fonctionnalité à un cron, qui synchroniserait le tout régulièrement.
+
+- Stratégie :
+- la synchronisation ne déverrouille jamais de dates, elle force seulement les dates importées en indisponible, ce qui évite le surbooking
+- la synchronisation ignore les dates hors fenêtre (J-30 -> J+730) pour limiter le bruit et les imports trop lointains
+- seules les nouvelles dates sont créées ou mises à jour

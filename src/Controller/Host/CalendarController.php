@@ -7,8 +7,11 @@ namespace App\Controller\Host;
 
 use App\Entity\Property;
 use App\Entity\PropertyAvailability;
+use App\Entity\PropertyICalSync;
 use App\Entity\User;
 use App\Repository\PropertyAvailabilityRepository;
+use App\Repository\PropertyICalSyncRepository;
+use App\Service\ICalImportService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +28,8 @@ final class CalendarController extends AbstractController
         Property                       $property,
         Request                        $request,
         PropertyAvailabilityRepository $propertyAvailabilityRepository,
+        PropertyICalSyncRepository     $propertyICalSyncRepository,
+        ICalImportService              $iCalImportService,
         EntityManagerInterface         $entityManager,
     ): Response
     {
@@ -39,6 +44,105 @@ final class CalendarController extends AbstractController
         }
 
         if ($request->isMethod('POST')) {
+            $action = (string) $request->request->get('action', 'block_period');
+
+            if ($action === 'add_sync') {
+                $token = (string) $request->request->get('_token', '');
+                if (!$this->isCsrfTokenValid('add_ical_sync_'.$property->getId(), $token)) {
+                    $this->addFlash('error', 'Jeton CSRF invalide.');
+
+                    return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+                }
+
+                $providerName = trim((string) $request->request->get('providerName', ''));
+                $iCalUrl = trim((string) $request->request->get('iCalUrl', ''));
+
+                if ($providerName === '' || $iCalUrl === '') {
+                    $this->addFlash('error', 'Le fournisseur et l\'URL iCal sont obligatoires.');
+
+                    return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+                }
+
+                if (!filter_var($iCalUrl, FILTER_VALIDATE_URL)) {
+                    $this->addFlash('error', 'L\'URL iCal est invalide.');
+
+                    return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+                }
+
+                $sync = new PropertyICalSync();
+                $sync->setProperty($property);
+                $sync->setProviderName($providerName);
+                $sync->setICalUrl($iCalUrl);
+
+                $entityManager->persist($sync);
+                $entityManager->flush();
+
+                $this->addFlash('success', 'Source iCal ajoutee.');
+
+                return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+            }
+
+            if ($action === 'delete_sync') {
+                $token = (string) $request->request->get('_token', '');
+                if (!$this->isCsrfTokenValid('delete_ical_sync_'.$property->getId(), $token)) {
+                    $this->addFlash('error', 'Jeton CSRF invalide.');
+
+                    return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+                }
+
+                $syncId = (string) $request->request->get('syncId', '');
+                $sync = $syncId !== '' ? $propertyICalSyncRepository->find($syncId) : null;
+
+                if (!$sync instanceof PropertyICalSync || $sync->getProperty()?->getId() !== $property->getId()) {
+                    $this->addFlash('error', 'Source iCal introuvable.');
+
+                    return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+                }
+
+                $entityManager->remove($sync);
+                $entityManager->flush();
+
+                $this->addFlash('success', 'Source iCal supprimee.');
+
+                return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+            }
+
+            if ($action === 'sync_now') {
+                $token = (string) $request->request->get('_token', '');
+                if (!$this->isCsrfTokenValid('sync_ical_'.$property->getId(), $token)) {
+                    $this->addFlash('error', 'Jeton CSRF invalide.');
+
+                    return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+                }
+
+                $syncs = $propertyICalSyncRepository->findByProperty($property);
+                if ($syncs === []) {
+                    $this->addFlash('error', 'Aucune source iCal configuree pour ce logement.');
+
+                    return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+                }
+
+                $processed = 0;
+                $errors = 0;
+
+                foreach ($syncs as $sync) {
+                    try {
+                        $iCalImportService->sync($sync);
+                        $processed++;
+                    } catch (\Throwable $throwable) {
+                        $errors++;
+                    }
+                }
+
+                if ($errors > 0) {
+                    $this->addFlash('error', sprintf('Synchronisation terminee avec %d erreur(s).', $errors));
+                } else {
+                    $this->addFlash('success', sprintf('Synchronisation iCal terminee (%d source(s)).', $processed));
+                }
+
+                return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+            }
+
             $startDateValue = $request->request->get('startDate');
             $endDateValue = $request->request->get('endDate');
 
@@ -87,6 +191,8 @@ final class CalendarController extends AbstractController
             ]);
         }
 
+        $iCalSyncs = $propertyICalSyncRepository->findByProperty($property);
+
         $year = (int)$request->query->get('year', date('Y'));
         $month = (int)$request->query->get('month', date('m'));
 
@@ -124,6 +230,7 @@ final class CalendarController extends AbstractController
 
         return $this->render('host/calendar.html.twig', [
             'property' => $property,
+            'iCalSyncs' => $iCalSyncs,
             'calendarDays' => $calendarDays,
             'availabilities' => $availabilities,
             'currentMonth' => $currentMonth,
