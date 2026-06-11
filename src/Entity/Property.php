@@ -131,6 +131,9 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -167,6 +170,10 @@ class Property
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'property')]
     private Collection $reviews;
 
+    /** @var Collection<int, PropertyUnavailability> */
+    #[ORM\OneToMany(targetEntity: PropertyUnavailability::class, mappedBy: 'property', orphanRemoval: true)]
+    private Collection $unavailabilities;
+
     public function __construct()
     {
         $this->propertyAmenities = new ArrayCollection();
@@ -175,7 +182,9 @@ class Property
         $this->iCalSyncs = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
+        $this->unavailabilities = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
+        $this->icalToken = bin2hex(random_bytes(16));
     }
 
     public function getHost(): ?User
@@ -370,6 +379,18 @@ class Property
         return $this;
     }
 
+    public function getIcalToken(): ?string
+    {
+        return $this->icalToken;
+    }
+
+    public function ensureIcalToken(): void
+    {
+        if ($this->icalToken === null) {
+            $this->icalToken = bin2hex(random_bytes(16));
+        }
+    }
+
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
@@ -558,6 +579,29 @@ class Property
     public function removeReview(Review $review): static
     {
         $this->reviews->removeElement($review);
+
+        return $this;
+    }
+
+    /** @return Collection<int, PropertyUnavailability> */
+    public function getUnavailabilities(): Collection
+    {
+        return $this->unavailabilities;
+    }
+
+    public function addUnavailability(PropertyUnavailability $unavailability): static
+    {
+        if (!$this->unavailabilities->contains($unavailability)) {
+            $this->unavailabilities->add($unavailability);
+            $unavailability->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUnavailability(PropertyUnavailability $unavailability): static
+    {
+        $this->unavailabilities->removeElement($unavailability);
 
         return $this;
     }

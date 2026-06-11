@@ -58,9 +58,25 @@
                 </section>
             </div>
             <aside>
-                <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
+                <div class="border border-gray-200 rounded-xl p-6 sticky top-28 space-y-4">
                     <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
                     <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                    {% if cancelForm %}
+                        <div class="pt-4 border-t border-gray-100">
+                            <h3 class="text-sm font-semibold text-gray-700 mb-2">Annuler la réservation</h3>
+                            {{ form_start(cancelForm, { action: path('app_reservation_cancel', { id: reservation.id }), method: 'POST' }) }}
+                                {{ form_row(cancelForm.cancellationReason, { attr: { rows: 3, class: 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm' } }) }}
+                                <button type="submit" class="mt-2 w-full px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 text-sm">
+                                    Annuler
+                                </button>
+                            {{ form_end(cancelForm) }}
+                        </div>
+                    {% endif %}
+                    {% if reservation.cancellationReason %}
+                        <p class="text-sm text-gray-500 pt-2 border-t border-gray-100">
+                            Motif : {{ reservation.cancellationReason }}
+                        </p>
+                    {% endif %}
                 </div>
             </aside>
         </div>

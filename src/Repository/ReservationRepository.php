@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -88,6 +89,67 @@ class ReservationRepository extends ServiceEntityRepository
             ->leftJoin('g.profile', 'gp')
             ->andWhere('r.guest = :guest')
             ->setParameter('guest', $guest)
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedOverlapping(
+        Property $property,
+        \DateTimeInterface $start,
+        \DateTimeInterface $end,
+        ?Reservation $exclude = null,
+    ): array {
+        $qb = $this->createQueryBuilder('r')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate < :end')
+            ->andWhere('r.checkoutDate > :start')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('start', $start)
+            ->setParameter('end', $end);
+
+        if ($exclude !== null) {
+            $qb->andWhere('r != :exclude')
+                ->setParameter('exclude', $exclude);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedByProperty(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'g', 'gp')
+            ->innerJoin('r.property', 'p')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
             ->orderBy('r.createdAt', 'DESC')
             ->getQuery()
             ->getResult();

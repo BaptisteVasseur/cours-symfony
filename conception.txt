@@ -1,0 +1,74 @@
+CONCEPTION — Plateforme de réservation (type Airbnb)
+====================================================
+
+Q1 — Modélisation temporelle
+-----------------------------
+Le jour de checkout est-il réservable ?
+→ Oui. Départ à 11h, arrivée à 15h : la même date peut servir de fin d'une
+  réservation et de début d'une autre.
+En BDD on stocke :
+  - date_start : inclusif (premier jour d'occupation)
+  - date_end   : exclusif (jour du départ, donc réservable par un autre voyageur)
+Convention identique à iCal. Cela simplifie les calculs de chevauchement :
+deux réservations se chevauchent ssi (start_a < end_b) AND (start_b < end_a).
+
+Q2 — Pending bloque-t-il les dates ?
+-------------------------------------
+Choix : Pending ne bloque PAS les dates.
+Seul le statut « Confirmed » verrouille la période.
+Justification :
+  - Évite le blocage abusif (un utilisateur qui ne finalise jamais son paiement).
+  - On affiche un avertissement côté hôte/voyageur si une réservation pending
+    existe sur les mêmes dates.
+  - Timeout configurable (ex. 15 min) pour expirer automatiquement les pending
+    non finalisées.
+
+Q3 — Concurrence (double réservation)
+--------------------------------------
+Deux paiements simultanés sur les mêmes dates → risque d'overbooking.
+Solution retenue : contrainte UNIQUE en BDD + verrou optimiste Doctrine.
+  1. Contrainte UNIQUE sur (property_id, date_start, date_end) pour les
+     réservations confirmées — empêche tout doublon au niveau PostgreSQL.
+  2. Colonne @Version (ORM\Version) sur l'entité Reservation pour détecter
+     les modifications concurrentes (OptimisticLockException).
+  3. Côté service : vérifier la disponibilité juste avant le flush, dans une
+     transaction. Si conflit → lever une exception métier, rembourser si
+     paiement déjà capturé.
+
+Q4 — Performance sur 20 nuits
+------------------------------
+Ne pas faire 20 requêtes (une par nuit).
+Solution : une seule requête SQL avec condition d'overlap sur la table de
+périodes :
+  SELECT * FROM reservation
+  WHERE property_id = :id
+    AND status = 'confirmed'
+    AND date_start < :requested_end
+    AND date_end > :requested_start
+Si le résultat est vide → les dates sont disponibles.
+Complexité : O(1) requête quelle que soit la durée du séjour.
+Index recommandé : (property_id, status, date_start, date_end).
+
+Q5 — Asynchronisme email
+-------------------------
+Envoyer l'email APRÈS le flush() réussi, jamais avant.
+  - Si la transaction échoue, aucun email n'est envoyé.
+  - Utiliser Symfony Messenger : dispatch du message après flush.
+  - Transport principal : AMQP (RabbitMQ).
+  - Fallback : transport doctrine (messenger_messages en BDD) si RabbitMQ
+    est indisponible → configuration failed_transport dans messenger.yaml.
+  - Le worker consomme les messages de manière asynchrone ; en cas d'échec
+    d'envoi, retry avec backoff exponentiel (3 tentatives max).
+
+Q6 — Architecture calendrier
+-----------------------------
+Choix : table de PÉRIODES (date_start / date_end) et non pas une ligne par jour.
+Avantages :
+  - Stockage minimal : 1 ligne par réservation au lieu de N lignes (N = nuits).
+  - Requêtes simples et rapides (overlap check, voir Q4).
+  - Scalable : pas d'explosion de lignes pour les longs séjours.
+  - Compatible avec les blocked periods (maintenance, fermeture saisonnière)
+    stockés dans la même logique (table PropertyAvailability).
+Inconvénient mineur : afficher un calendrier jour par jour nécessite un
+calcul côté applicatif (generate_series ou itération PHP), mais c'est
+négligeable face aux gains en écriture et en intégrité.

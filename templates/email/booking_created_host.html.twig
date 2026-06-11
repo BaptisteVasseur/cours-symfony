@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Nouvelle demande de réservation</title></head>
+<body>
+    <h1>Nouvelle demande de réservation</h1>
+    <p>Bonjour,</p>
+    <p>Un voyageur a demandé une réservation pour <strong>{{ property.title }}</strong>.</p>
+    <ul>
+        <li>Arrivée : {{ reservation.checkinDate|date('d/m/Y') }}</li>
+        <li>Départ : {{ reservation.checkoutDate|date('d/m/Y') }}</li>
+        <li>Voyageurs : {{ reservation.guestsCount }}</li>
+        <li>Montant : {{ reservation.totalPrice }} {{ reservation.currency }}</li>
+    </ul>
+    <p>Connectez-vous pour accepter ou refuser cette demande.</p>
+</body>
+</html>

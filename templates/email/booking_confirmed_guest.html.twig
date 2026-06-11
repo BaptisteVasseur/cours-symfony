@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><title>Réservation confirmée</title></head>
+<body>
+    <h1>Réservation confirmée</h1>
+    <p>Bonjour,</p>
+    <p>Votre réservation pour <strong>{{ property.title }}</strong> est confirmée.</p>
+    <ul>
+        <li>Arrivée : {{ reservation.checkinDate|date('d/m/Y') }}</li>
+        <li>Départ : {{ reservation.checkoutDate|date('d/m/Y') }}</li>
+        <li>Voyageurs : {{ reservation.guestsCount }}</li>
+        <li>Montant : {{ reservation.totalPrice }} {{ reservation.currency }}</li>
+    </ul>
+</body>
+</html>

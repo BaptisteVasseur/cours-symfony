@@ -8,11 +8,14 @@ use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
+use App\Message\BookingCreatedMessage;
 use App\Repository\PropertyRepository;
+use App\Service\AvailabilityService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\PropertyVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -27,6 +30,8 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
+        AvailabilityService $availabilityService,
+        MessageBusInterface $bus,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -62,8 +67,8 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            if ($guestsCount > $property->getMaxGuests()) {
-                $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
+            if (!$availabilityService->isAvailable($property, $checkin, $checkout, $guestsCount)) {
+                $this->addFlash('error', 'Ces dates ne sont plus disponibles.');
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
@@ -93,6 +98,8 @@ final class BookingController extends AbstractController
 
             $entityManager->persist($reservation);
             $entityManager->flush();
+
+            $bus->dispatch(new BookingCreatedMessage((string) $reservation->getId()));
 
             $this->addFlash('success', 'Votre réservation a été enregistrée.');
 
