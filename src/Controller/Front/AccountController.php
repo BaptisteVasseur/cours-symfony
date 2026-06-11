@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace App\Controller\Front;
 
+use App\Entity\Property;
 use App\Entity\User;
 use App\Entity\UserProfile;
 use App\Form\AccountProfileType;
 use App\Form\AccountSettingsType;
 use App\Repository\PropertyRepository;
+use App\Security\Voter\PropertyVoter;
+use App\Service\ICalService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/compte')]
@@ -85,5 +89,42 @@ final class AccountController extends AbstractController
         return $this->render('front/account/properties.html.twig', [
             'properties' => $propertyRepository->findByHost($user),
         ]);
+    }
+
+    #[Route('/ical/{id}', name: 'app_account_ical', methods: ['GET'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function icalToken(Property $property, ICalService $icalService): Response
+    {
+        $token = $property->getIcalToken();
+        $feedUrl = null;
+
+        if ($token !== null) {
+            $feedUrl = $this->generateUrl(
+                'app_api_ical_export',
+                ['id' => $property->getId(), 'token' => (string) $token],
+                UrlGeneratorInterface::ABSOLUTE_URL,
+            );
+        }
+
+        return $this->render('front/account/ical.html.twig', [
+            'property' => $property,
+            'feedUrl' => $feedUrl,
+        ]);
+    }
+
+    #[Route('/ical/{id}/regenerer', name: 'app_account_ical_regenerate', methods: ['POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function regenerateIcalToken(
+        Property $property,
+        Request $request,
+        ICalService $icalService,
+        EntityManagerInterface $em,
+    ): Response {
+        $icalService->regenerateToken($property);
+        $em->flush();
+
+        $this->addFlash('success', 'Lien iCal régénéré avec succès.');
+
+        return $this->redirectToRoute('app_account_ical', ['id' => $property->getId()]);
     }
 }

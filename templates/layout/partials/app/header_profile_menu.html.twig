@@ -1,8 +1,14 @@
 {% set profile = app.user.profile %}
 {% set displayName = profile and (profile.firstName or profile.lastName) ? (profile.firstName ~ ' ' ~ profile.lastName)|trim : app.user.email %}
 {% set initials = profile and profile.firstName ? profile.firstName|first|upper ~ (profile.lastName ? profile.lastName|first|upper : '') : app.user.email|first|upper %}
+{% set unreadCount = unread_notification_count(app.user) %}
 
 <div class="relative" data-profile-menu>
+    {% if unreadCount > 0 %}
+    <span class="absolute -top-1 -right-1 z-10 flex items-center justify-center w-4 h-4 bg-brand text-white rounded-full text-[10px] font-bold">
+        {{ unreadCount > 9 ? '9+' : unreadCount }}
+    </span>
+    {% endif %}
     <button type="button" data-profile-menu-toggle class="flex items-center space-x-3 border border-gray-200 rounded-full p-2 pl-3 hover:shadow-md transition bg-white" aria-expanded="false" aria-haspopup="true">
         <i class="fa-solid fa-bars text-gray-600 text-sm"></i>
         <div class="w-8 h-8 bg-gray-700 text-white rounded-full flex items-center justify-center font-bold text-xs overflow-hidden shrink-0">
@@ -24,6 +30,11 @@
             <a href="{{ path('app_account_properties') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                 <i class="fa-solid fa-house w-4 text-center text-gray-400"></i>
                 Mes propriétés
+            </a>
+            <a href="{{ path('app_host_reservations') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
+                <i class="fa-solid fa-calendar-check w-4 text-center text-gray-400"></i>
+                Réservations hôte
+                {% set pendingCount = unread_notification_count(app.user) %}
             </a>
             <a href="{{ path('app_messages_index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                 <i class="fa-solid fa-envelope w-4 text-center text-gray-400"></i>

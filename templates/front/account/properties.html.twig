@@ -8,9 +8,21 @@
         <p class="text-gray-500 mb-8">Annonces dont vous êtes l'hôte</p>
 
         {% if properties|length > 0 %}
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div class="space-y-4">
                 {% for property in properties %}
-                    {% include 'components/card.html.twig' with { property: property } %}
+                    <div class="border border-gray-200 rounded-xl overflow-hidden">
+                        {% include 'components/card.html.twig' with { property: property } %}
+                        <div class="px-4 py-3 bg-gray-50 border-t border-gray-200 flex flex-wrap gap-3">
+                            <a href="{{ path('app_availability_calendar', {id: property.id}) }}"
+                               class="inline-flex items-center gap-1.5 text-sm font-semibold text-brand hover:underline">
+                                <i class="fa-solid fa-calendar-days"></i> Gérer le calendrier
+                            </a>
+                            <a href="{{ path('app_account_ical', {id: property.id}) }}"
+                               class="inline-flex items-center gap-1.5 text-sm font-semibold text-gray-600 hover:text-gray-900 hover:underline">
+                                <i class="fa-solid fa-calendar-check"></i> Flux iCal
+                            </a>
+                        </div>
+                    </div>
                 {% endfor %}
             </div>
         {% else %}

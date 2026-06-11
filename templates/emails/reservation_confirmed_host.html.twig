@@ -1,0 +1,23 @@
+{% extends 'emails/base.html.twig' %}
+
+{% set property = reservation.property %}
+{% set guest = reservation.guest %}
+{% set guestProfile = guest ? guest.profile : null %}
+
+{% block title %}Réservation confirmée{% endblock %}
+
+{% block content %}
+    <h2>Réservation confirmée ✅</h2>
+    <p>Votre confirmation a bien été prise en compte. Voici le récapitulatif :</p>
+
+    <div class="summary-box">
+        <dl>
+            <div><dt>Logement</dt><dd>{{ property ? property.title : '—' }}</dd></div><br>
+            <div><dt>Voyageur</dt><dd>{{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : (guest ? guest.email : '—') }}</dd></div><br>
+            <div><dt>Arrivée</dt><dd>{{ reservation.checkinDate|date('d/m/Y') }}</dd></div><br>
+            <div><dt>Départ</dt><dd>{{ reservation.checkoutDate|date('d/m/Y') }}</dd></div><br>
+            <div><dt>Voyageurs</dt><dd>{{ reservation.guestsCount }}</dd></div><br>
+            <div><dt>Total</dt><dd>{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</dd></div>
+        </dl>
+    </div>
+{% endblock %}

@@ -1,0 +1,42 @@
+{% set statusLabels = {
+    'confirmed': 'Confirmée',
+    'completed': 'Terminée',
+    'pending': 'En attente',
+    'cancelled': 'Annulée',
+} %}
+{% set statusIcons = {
+    'confirmed': 'fa-circle-check text-green-500',
+    'completed': 'fa-flag-checkered text-blue-500',
+    'pending': 'fa-clock text-yellow-500',
+    'cancelled': 'fa-circle-xmark text-red-500',
+} %}
+
+{% set history = reservation.statusHistory|sort((a, b) => a.createdAt <=> b.createdAt) %}
+
+{% if history|length > 0 %}
+<section class="border border-gray-200 rounded-xl p-6">
+    <h2 class="text-lg font-semibold mb-4">Historique des statuts</h2>
+    <ol class="relative border-l border-gray-200 ml-3">
+        {% for entry in history %}
+            <li class="mb-6 ml-6 last:mb-0">
+                <span class="absolute -left-3 flex items-center justify-center w-6 h-6 bg-white rounded-full ring-1 ring-gray-200">
+                    <i class="fa-solid {{ statusIcons[entry.newStatus]|default('fa-circle text-gray-400') }} text-xs"></i>
+                </span>
+                <div class="flex flex-wrap items-center gap-2 mb-0.5">
+                    {% if entry.oldStatus %}
+                        <span class="text-xs text-gray-500">{{ statusLabels[entry.oldStatus]|default(entry.oldStatus) }}</span>
+                        <i class="fa-solid fa-arrow-right text-gray-300 text-xs"></i>
+                    {% endif %}
+                    <span class="text-sm font-semibold text-gray-900">{{ statusLabels[entry.newStatus]|default(entry.newStatus) }}</span>
+                </div>
+                <p class="text-xs text-gray-400">
+                    {{ entry.createdAt|date('d/m/Y à H:i') }}
+                    {% if entry.changedBy %}
+                        · par {{ entry.changedBy.profile ? entry.changedBy.profile.firstName ~ ' ' ~ entry.changedBy.profile.lastName : entry.changedBy.email }}
+                    {% endif %}
+                </p>
+            </li>
+        {% endfor %}
+    </ol>
+</section>
+{% endif %}
