@@ -1,0 +1,106 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Calendrier — {{ listing.title }}{% endblock %}
+
+{% block body %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <a href="{{ path('app_listing_index') }}" class="text-sm text-gray-500 hover:text-[#FF385C]">← Mes annonces</a>
+    <h1 class="text-2xl font-bold text-gray-900 mt-2 mb-6">Calendrier — {{ listing.title }}</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        {# Grille mensuelle #}
+        <div class="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-6">
+            <div class="flex items-center justify-between mb-4">
+                <a href="{{ path('app_host_calendar', {id: listing.id, year: calendar.prev.year, month: calendar.prev.month}) }}"
+                   class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">←</a>
+                <h2 class="font-semibold text-gray-900">{{ calendar.label }}</h2>
+                <a href="{{ path('app_host_calendar', {id: listing.id, year: calendar.next.year, month: calendar.next.month}) }}"
+                   class="px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">→</a>
+            </div>
+
+            <div class="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-1">
+                {% for d in ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'] %}<div>{{ d }}</div>{% endfor %}
+            </div>
+
+            <div class="grid grid-cols-7 gap-1">
+                {% for week in calendar.weeks %}
+                    {% for day in week %}
+                        {% set bg = 'bg-white' %}
+                        {% if day.status == 'booked' %}{% set bg = 'bg-green-100 text-green-800' %}
+                        {% elseif day.status == 'blocked' %}{% set bg = 'bg-red-100 text-red-800' %}
+                        {% endif %}
+                        <div class="h-12 rounded-lg border border-gray-100 flex items-center justify-center text-sm
+                                    {{ bg }} {{ not day.inMonth ? 'opacity-30' : '' }} {{ day.isPast ? 'opacity-40' : '' }}">
+                            {{ day.date|date('j') }}
+                        </div>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+
+            <div class="flex gap-4 mt-4 text-xs text-gray-500">
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-green-100 inline-block"></span> Réservé</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-red-100 inline-block"></span> Bloqué</span>
+                <span class="flex items-center gap-1"><span class="w-3 h-3 rounded bg-white border border-gray-200 inline-block"></span> Disponible</span>
+            </div>
+        </div>
+
+        <div class="space-y-6">
+            <div class="bg-white border border-gray-200 rounded-2xl p-5">
+                <h2 class="font-semibold text-gray-900 mb-3">Bloquer une période</h2>
+                <form method="post" action="{{ path('app_host_block_create', {id: listing.id}) }}" class="space-y-3">
+                    <input type="hidden" name="_token" value="{{ csrf_token('block_' ~ listing.id) }}">
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Du</label>
+                        <input type="date" name="startDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Au (exclu)</label>
+                        <input type="date" name="endDate" required class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-600 mb-1">Motif</label>
+                        <input type="text" name="reason" placeholder="Travaux, usage personnel…" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                    </div>
+                    <button class="w-full py-2 bg-gray-900 text-white font-semibold rounded-lg hover:bg-gray-700 transition">Bloquer</button>
+                </form>
+            </div>
+
+            {% if blocks|length > 0 %}
+                <div class="bg-white border border-gray-200 rounded-2xl p-5">
+                    <h2 class="font-semibold text-gray-900 mb-3">Périodes bloquées</h2>
+                    <ul class="space-y-2">
+                        {% for block in blocks %}
+                            <li class="flex items-center justify-between text-sm">
+                                <span>
+                                    {{ block.startDate|date('d/m/Y') }} → {{ block.endDate|date('d/m/Y') }}
+                                    <span class="text-gray-400">{{ block.reason ? '· ' ~ block.reason : '' }}</span>
+                                    {% if block.imported %}<span class="text-xs text-blue-500">(iCal)</span>{% endif %}
+                                </span>
+                                {% if not block.imported %}
+                                    <form method="post" action="{{ path('app_host_block_delete', {id: block.id}) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('block_delete_' ~ block.id) }}">
+                                        <button class="text-gray-400 hover:text-red-600">✕</button>
+                                    </form>
+                                {% endif %}
+                            </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+            {% endif %}
+
+            <div class="bg-white border border-gray-200 rounded-2xl p-5">
+                <h2 class="font-semibold text-gray-900 mb-2">Synchronisation iCal</h2>
+                <p class="text-xs text-gray-500 mb-2">Lien à coller dans Google Calendar / Outlook :</p>
+                {% set ical_url = url('app_api_calendar', {id: listing.id}) ~ '?token=' ~ listing.calendarToken %}
+                <input type="text" readonly value="{{ ical_url }}" onclick="this.select()"
+                       class="w-full px-2 py-1.5 text-xs border border-gray-300 rounded bg-gray-50">
+                <form method="post" action="{{ path('app_host_calendar_token', {id: listing.id}) }}" class="mt-2"
+                      onsubmit="return confirm('Régénérer le jeton révoque l\'ancien lien. Continuer ?');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('token_' ~ listing.id) }}">
+                    <button class="text-xs text-[#FF385C] hover:underline">Régénérer le jeton</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
