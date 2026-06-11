@@ -1,0 +1,26 @@
+{% extends 'emails/base.html.twig' %}
+
+{% set property = reservation.property %}
+
+{% block title %}Votre réservation a été annulée{% endblock %}
+
+{% block content %}
+    <h2>Réservation annulée</h2>
+    <p>Nous vous informons que votre réservation a été annulée.</p>
+
+    <div class="summary-box">
+        <dl>
+            <div><dt>Logement</dt><dd>{{ property ? property.title : '—' }}</dd></div><br>
+            <div><dt>Arrivée</dt><dd>{{ reservation.checkinDate|date('d/m/Y') }}</dd></div><br>
+            <div><dt>Départ</dt><dd>{{ reservation.checkoutDate|date('d/m/Y') }}</dd></div>
+        </dl>
+    </div>
+
+    {% if reason %}
+        <div class="reason-box">
+            <strong>Motif :</strong> {{ reason }}
+        </div>
+    {% endif %}
+
+    <p>Si vous avez des questions, n'hésitez pas à nous contacter.</p>
+{% endblock %}

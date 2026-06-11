@@ -1,0 +1,28 @@
+{% extends 'emails/base.html.twig' %}
+
+{% set property = reservation.property %}
+{% set guest = reservation.guest %}
+{% set guestProfile = guest ? guest.profile : null %}
+
+{% block title %}Une réservation a été annulée{% endblock %}
+
+{% block content %}
+    <h2>Réservation annulée</h2>
+    <p>Le voyageur a annulé sa réservation pour votre logement <strong>{{ property ? property.title : '—' }}</strong>.</p>
+
+    <div class="summary-box">
+        <dl>
+            <div><dt>Voyageur</dt><dd>{{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : (guest ? guest.email : '—') }}</dd></div><br>
+            <div><dt>Arrivée</dt><dd>{{ reservation.checkinDate|date('d/m/Y') }}</dd></div><br>
+            <div><dt>Départ</dt><dd>{{ reservation.checkoutDate|date('d/m/Y') }}</dd></div>
+        </dl>
+    </div>
+
+    {% if reason %}
+        <div class="reason-box">
+            <strong>Motif :</strong> {{ reason }}
+        </div>
+    {% endif %}
+
+    <p>Ces dates sont maintenant à nouveau disponibles dans votre calendrier.</p>
+{% endblock %}

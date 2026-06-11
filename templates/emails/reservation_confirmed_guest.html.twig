@@ -1,0 +1,25 @@
+{% extends 'emails/base.html.twig' %}
+
+{% set property = reservation.property %}
+{% set host = property ? property.host : null %}
+{% set hostProfile = host ? host.profile : null %}
+
+{% block title %}Votre réservation est confirmée{% endblock %}
+
+{% block content %}
+    <h2>Réservation confirmée ✅</h2>
+    <p>Bonne nouvelle ! Votre réservation a été confirmée.</p>
+
+    <div class="summary-box">
+        <dl>
+            <div><dt>Logement</dt><dd>{{ property ? property.title : '—' }}</dd></div><br>
+            <div><dt>Hôte</dt><dd>{{ hostProfile ? hostProfile.firstName ~ ' ' ~ hostProfile.lastName : (host ? host.email : '—') }}</dd></div><br>
+            <div><dt>Arrivée</dt><dd>{{ reservation.checkinDate|date('d/m/Y') }}</dd></div><br>
+            <div><dt>Départ</dt><dd>{{ reservation.checkoutDate|date('d/m/Y') }}</dd></div><br>
+            <div><dt>Voyageurs</dt><dd>{{ reservation.guestsCount }}</dd></div><br>
+            <div><dt>Total</dt><dd>{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</dd></div>
+        </dl>
+    </div>
+
+    <p>Bon séjour ! 🌟</p>
+{% endblock %}
