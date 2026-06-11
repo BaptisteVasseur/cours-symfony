@@ -1,0 +1,127 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Tableau de bord Hôte - Airbnb{% endblock %}
+
+{% block content %}
+<div class="bg-gray-50 min-h-screen py-12">
+    <div class="max-w-6xl mx-auto px-4 md:px-8">
+        <div class="flex justify-between items-end mb-10">
+            <div>
+                <h1 class="text-3xl font-extrabold text-gray-900 tracking-tight">Tableau de bord Hôte</h1>
+                <p class="text-gray-500 mt-2">Gérez vos demandes de réservation et vos revenus.</p>
+            </div>
+            <div class="hidden md:block">
+                <div class="bg-white px-6 py-3 rounded-2xl shadow-sm border border-gray-100">
+                    <span class="text-sm text-gray-500 block uppercase tracking-wider font-bold">Total Revenus</span>
+                    <span class="text-2xl font-black text-brand">
+                        {% set total = 0 %}
+                        {% for r in reservations %}{% if r.status == 'confirmed' %}{% set total = total + r.totalPrice %}{% endif %}{% endfor %}
+                        {{ total|number_format(2) }} €
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 gap-8">
+             {# Section Demandes en attente #}
+            <div class="bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
+                <div class="px-8 py-6 border-b border-gray-50 flex items-center justify-between bg-white">
+                    <h2 class="text-xl font-bold text-gray-800">Demandes de réservation</h2>
+                    <span class="bg-brand/10 text-brand text-xs font-black px-3 py-1 rounded-full uppercase">{{ reservations|length }} total</span>
+                </div>
+
+                <div class="divide-y divide-gray-50">
+                    {% for res in reservations %}
+                        <div class="p-8 hover:bg-gray-50/50 transition-colors group">
+                            <div class="flex flex-col lg:flex-row gap-8 items-center">
+                                {# Image Logement #}
+                                <div class="relative w-full lg:w-48 h-32 rounded-2xl overflow-hidden shadow-md">
+                                    <img src="{{ res.property.coverMedia.fileUrl|default('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?auto=format&fit=crop&w=400&q=80') }}" class="w-full h-full object-cover group-hover:scale-110 transition duration-500" alt="">
+                                    <div class="absolute inset-0 bg-black/10"></div>
+                                </div>
+
+                                {# Infos Séjour #}
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-3 mb-2">
+                                        <h3 class="text-lg font-bold text-gray-900">{{ res.property.title }}</h3>
+                                        {% if res.status == 'pending' %}
+                                            <span class="bg-orange-100 text-orange-600 text-[10px] uppercase font-black px-2 py-0.5 rounded-full">En attente</span>
+                                        {% elseif res.status == 'confirmed' %}
+                                            <span class="bg-green-100 text-green-600 text-[10px] uppercase font-black px-2 py-0.5 rounded-full">Confirmé</span>
+                                        {% else %}
+                                            <span class="bg-gray-100 text-gray-600 text-[10px] uppercase font-black px-2 py-0.5 rounded-full">{{ res.status }}</span>
+                                        {% endif %}
+                                    </div>
+                                    
+                                    <div class="flex flex-wrap gap-4 text-sm text-gray-500">
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-regular fa-calendar text-brand"></i>
+                                            <span>Du <b>{{ res.checkinDate|date('d M Y') }}</b> au <b>{{ res.checkoutDate|date('d M Y') }}</b></span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <i class="fa-solid fa-users"></i>
+                                            <span>{{ res.guestsCount }} voyageurs</span>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-gray-900 font-bold">{{ res.totalPrice }}€</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 flex items-center gap-3">
+                                        <img src="https://i.pravatar.cc/150?u={{ res.guest.email }}" class="w-8 h-8 rounded-full border border-white shadow-sm" alt="">
+                                        <span class="text-sm text-gray-600">Demande de <b>{{ res.guest.profile.firstName }} {{ res.guest.profile.lastName }}</b></span>
+                                    </div>
+                                </div>
+
+                                {# Actions #}
+                                <div class="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+                                    {% if res.status == 'pending' %}
+                                        <form action="{{ path('app_host_reservation_accept', {id: res.id}) }}" method="POST">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('accept' ~ res.id) }}">
+                                            <button class="w-full px-6 py-3 bg-brand text-white font-bold rounded-xl hover:bg-brandHover shadow-lg shadow-brand/20 transition-all active:scale-95">
+                                                Accepter
+                                            </button>
+                                        </form>
+                                        
+                                        <button onclick="toggleRejectForm('form-{{ res.id }}')" class="px-6 py-3 bg-white border border-gray-200 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition active:scale-95">
+                                            Refuser
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            {# Formulaire Refus (Caché) #}
+                            <div id="form-{{ res.id }}" class="hidden mt-6 bg-red-50 p-6 rounded-2xl border border-red-100">
+                                <form action="{{ path('app_host_reservation_reject', {id: res.id}) }}" method="POST">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('reject' ~ res.id) }}">
+                                    <label class="block text-sm font-bold text-red-800 mb-2">Motif du refus</label>
+                                    <textarea name="reason" rows="3" class="w-full rounded-xl border-red-200 focus:ring-red-500 focus:border-red-500 p-4" placeholder="Expliquez brièvement pourquoi..." required></textarea>
+                                    <div class="flex gap-4 mt-4">
+                                        <button class="bg-red-600 text-white px-6 py-2 rounded-lg font-bold">Confirmer le refus</button>
+                                        <button type="button" onclick="toggleRejectForm('form-{{ res.id }}')" class="text-red-700 font-bold hover:underline">Annuler</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="py-20 text-center">
+                            <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6 text-gray-400">
+                                <i class="fa-solid fa-calendar-xmark text-3xl"></i>
+                            </div>
+                            <h3 class="text-xl font-bold text-gray-900">Aucune demande reçue</h3>
+                            <p class="text-gray-500 mt-2">Dès qu'un voyageur s'intéressera à vos logements, il apparaîtra ici.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggleRejectForm(id) {
+        const f = document.getElementById(id);
+        f.classList.toggle('hidden');
+    }
+</script>
+{% endblock %}
