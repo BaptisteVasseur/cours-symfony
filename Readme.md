@@ -2,7 +2,7 @@
 
 Ce projet est une implémentation avancée d'un système de réservation pour une plateforme type Airbnb, réalisée sous Symfony 8.
 
-## 🚀 Fonctionnalités implémentées
+##  Fonctionnalités implémentées
 
 ### 1. Moteur de Réservation (Booking Engine)
 *   **Workflow complet** : Gestion des états de réservation (`pending`, `confirmed`, `cancelled`).
@@ -18,7 +18,7 @@ Ce projet est une implémentation avancée d'un système de réservation pour un
 *   **Emails riches** : Utilisation de templates HTML/Twig premium pour les confirmations et refus.
 *   **Asynchronisme** : Intégration de Symfony Messenger pour l'envoi des emails en tâche de fond (async).
 
-## 📍 Points d'entrée (Endpoints)
+## Points d'entrée (Endpoints)
 
 | Rôle | Route | Description |
 |:---|:---|:---|
@@ -29,7 +29,7 @@ Ce projet est une implémentation avancée d'un système de réservation pour un
 | **Admin** | `/admin` | Interface d'administration globale. |
 | **Technique** | `http://localhost:8025` | Interface Mailpit pour voir les emails envoyés. |
 
-## 👥 Comptes de Test
+## Comptes de Test
 
 Tous les comptes utilisent le mot de passe : `password`
 
@@ -40,7 +40,7 @@ Tous les comptes utilisent le mot de passe : `password`
 | **Voyageur (Guest)** | `sophie.chen@email.com` | Faire une demande de réservation. |
 | **Voyageur (Guest 2)** | `lucas.bernard@email.com` | Tester le blocage (overbooking). |
 
-## ✨ Expérience Utilisateur (UX) & Design
+## Expérience Utilisateur (UX) & Design
 
 Le projet a été enrichi avec une attention particulière portée au design :
 *   **Interface Hôte Premium** : Dashboard conçu avec TailwindCSS (Cards, Glassmorphism, animations au survol).
@@ -49,12 +49,14 @@ Le projet a été enrichi avec une attention particulière portée au design :
 *   **Emails Stylisés** : Les notifications ne sont plus en texte brut mais utilisent un template responsive aux couleurs de la marque.
 *   **Optimisation Turbo** : Intégration des codes HTTP 422 pour une fluidité parfaite du tunnel de réservation sans rechargement de page complet.
 
-## 🛠️ Installation & Lancement
+## Installation & Lancement
 
 1.  **Lancer l'environnement** : `make start`
 2.  **Installer les dépendances** : `make install`
 3.  **Charger les données de test** : `make fixtures`
 4.  **Lancer le worker email** : `make worker`
 
----
-*Projet réalisé dans le cadre de l'évaluation continue ESGI.*
+## 📸 Galerie Aperçu
+
+![Accueil du site](assets/img.png)
+![Tableau de bord Hôte](assets/img_1.png)
