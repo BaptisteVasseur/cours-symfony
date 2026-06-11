@@ -34,8 +34,8 @@ final class ICalController extends AbstractController
         $reservations = $reservationRepository->findActiveForProperty($property);
 
         $now = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Ymd\THis\Z');
-        $prodId = '-//StayNest//Calendar//FR';
-        $calName = $property->getTitle() ?? 'StayNest';
+        $prodId = '-//Airbnb//Calendar//FR';
+        $calName = $property->getTitle() ?? 'Airbnb';
 
         $lines = [
             'BEGIN:VCALENDAR',

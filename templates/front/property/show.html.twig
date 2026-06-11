@@ -6,7 +6,7 @@
 {% set hostProfile = property.host ? property.host.profile : null %}
 {% set reviewCount = totalReviews|default(property.reviews|length) %}
 
-{% block title %}{{ property.title }} — StayNest{% endblock %}
+{% block title %}{{ property.title }} — Airbnb{% endblock %}
 
 {% block content %}
 <main class="flex-grow">
@@ -105,7 +105,7 @@
                 <section class="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-8 border-b border-gray-100">
                     {% if property.instantBooking %}
                         <div class="flex items-start gap-3">
-                            <i class="fa-solid fa-bolt text-amber-400 text-xl mt-0.5 w-6 shrink-0"></i>
+                            <i class="fa-solid fa-bolt text-red-400 text-xl mt-0.5 w-6 shrink-0"></i>
                             <div>
                                 <p class="font-semibold text-sm text-gray-900">Réservation instantanée</p>
                                 <p class="text-xs text-gray-500">Confirmé immédiatement</p>

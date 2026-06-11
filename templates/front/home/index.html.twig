@@ -1,6 +1,6 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}StayNest — Logements de charme en France{% endblock %}
+{% block title %}Airbnb — Locations de vacances, maisons, appartements{% endblock %}
 
 {% block content %}
 
@@ -14,7 +14,7 @@
     >
     {# Layered overlays for editorial depth #}
     <div class="absolute inset-0" style="background: linear-gradient(160deg, rgba(13,17,23,0.72) 0%, rgba(13,17,23,0.35) 50%, rgba(13,17,23,0.65) 100%);"></div>
-    <div class="absolute inset-0" style="background: radial-gradient(ellipse at 20% 50%, rgba(201,146,42,0.08) 0%, transparent 60%);"></div>
+    <div class="absolute inset-0" style="background: radial-gradient(ellipse at 20% 50%, rgba(230,57,70,0.08) 0%, transparent 60%);"></div>
 
     {# Decorative vertical rule #}
     <div class="absolute left-8 md:left-16 top-1/2 -translate-y-1/2 hidden lg:flex flex-col items-center gap-3 opacity-40">
@@ -35,7 +35,7 @@
         <div class="max-w-2xl mb-4">
             <h1 class="font-display text-5xl sm:text-6xl md:text-7xl font-600 text-white leading-[1.05] tracking-tight">
                 Des lieux<br>
-                <span class="italic font-400" style="color: #F0D080;">uniques</span>,<br>
+                <span class="italic font-400" style="color: #FCA5A5;">uniques</span>,<br>
                 des instants<br>inoubliables.
             </h1>
         </div>
@@ -137,7 +137,7 @@
             Partagez votre adresse avec le monde.
         </h3>
         <a href="{{ path('app_register') }}" class="inline-flex items-center gap-2 text-sm font-semibold text-ink rounded-full px-6 py-3 w-fit transition hover:opacity-90"
-           style="background: linear-gradient(135deg, #C9922A, #F0D080);">
+           style="background: linear-gradient(135deg, #E63946, #FCA5A5); color: #FFFFFF;">
             Proposer un logement <i class="fa-solid fa-arrow-right text-xs"></i>
         </a>
     </div>

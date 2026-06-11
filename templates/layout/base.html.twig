@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>{% block title %}StayNest — Logements de charme{% endblock %}</title>
+        <title>{% block title %}Airbnb — Locations de vacances, maisons, appartements{% endblock %}</title>
         <link rel="preconnect" href="https://fonts.googleapis.com">
         <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&display=swap" rel="stylesheet">
@@ -18,24 +18,24 @@
                             display: ['Playfair Display', 'Georgia', 'serif'],
                         },
                         colors: {
-                            brand:      '#C9922A',
-                            brandHover: '#A87520',
-                            brandLight: '#FDF6E9',
+                            brand:      '#E63946',
+                            brandHover: '#C1121F',
+                            brandLight: '#FEE2E2',
                             surface:    '#F5F3EE',
                             ink:        '#0D1117',
                             navy:       '#111827',
-                            gold:       '#C9922A',
-                            goldLight:  '#F0D080',
+                            gold:       '#E63946',
+                            goldLight:  '#FCA5A5',
                         },
                         boxShadow: {
                             'card':      '0 2px 24px rgba(0,0,0,0.10)',
                             'card-hover':'0 12px 48px rgba(0,0,0,0.22)',
                             'popup':     '0 20px 60px rgba(0,0,0,0.28)',
-                            'gold':      '0 0 0 1px rgba(201,146,42,0.4)',
+                            'gold':      '0 0 0 1px rgba(230,57,70,0.4)',
                         },
                         borderRadius: { '2xl': '1rem', '3xl': '1.5rem', '4xl': '2rem' },
                         backgroundImage: {
-                            'gold-gradient': 'linear-gradient(135deg, #C9922A 0%, #F0D080 50%, #C9922A 100%)',
+                            'gold-gradient': 'linear-gradient(135deg, #E63946 0%, #FCA5A5 50%, #E63946 100%)',
                             'dark-gradient': 'linear-gradient(180deg, rgba(13,17,23,0) 0%, rgba(13,17,23,0.85) 100%)',
                         },
                     }
@@ -53,7 +53,7 @@
             /* gold shimmer rule */
             .gold-rule {
                 height: 1px;
-                background: linear-gradient(90deg, transparent, #C9922A 30%, #F0D080 50%, #C9922A 70%, transparent);
+                background: linear-gradient(90deg, transparent, #E63946 30%, #FCA5A5 50%, #E63946 70%, transparent);
             }
 
             /* grain overlay */
@@ -71,14 +71,14 @@
 
             /* smooth input date style */
             input[type="date"]::-webkit-calendar-picker-indicator {
-                filter: invert(0.4) sepia(1) saturate(3) hue-rotate(10deg);
+                filter: invert(0.4) sepia(1) saturate(3) hue-rotate(320deg);
                 cursor: pointer;
             }
 
             /* brand focus ring */
             input:focus, select:focus, textarea:focus {
                 outline: none;
-                box-shadow: 0 0 0 2px rgba(201,146,42,0.35);
+                box-shadow: 0 0 0 2px rgba(230,57,70,0.35);
             }
 
             /* animated underline for logo */
@@ -93,7 +93,7 @@
                 left: 0;
                 width: 100%;
                 height: 1px;
-                background: linear-gradient(90deg, #C9922A, #F0D080, #C9922A);
+                background: linear-gradient(90deg, #E63946, #FCA5A5, #E63946);
                 transform: scaleX(0);
                 transform-origin: left;
                 transition: transform .4s cubic-bezier(.16,1,.3,1);
@@ -105,12 +105,12 @@
             .property-card:hover { transform: translateY(-4px); box-shadow: 0 20px 60px rgba(0,0,0,.18); }
 
             /* category pill active */
-            .cat-pill.active { color: #C9922A; border-color: #C9922A; }
+            .cat-pill.active { color: #E63946; border-color: #E63946; }
 
             /* scrollbar on search results */
             ::-webkit-scrollbar { width: 5px; }
             ::-webkit-scrollbar-track { background: #F5F3EE; }
-            ::-webkit-scrollbar-thumb { background: #C9922A; border-radius: 99px; }
+            ::-webkit-scrollbar-thumb { background: #E63946; border-radius: 99px; }
         </style>
         {% block stylesheets %}{% endblock %}
         {% block javascripts %}
