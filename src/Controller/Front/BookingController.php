@@ -89,7 +89,7 @@ final class BookingController extends AbstractController
             $reservation->setCheckinDate($checkin);
             $reservation->setCheckoutDate($checkout);
             $reservation->setGuestsCount($guestsCount);
-            $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
+            $reservation->setStatus('pending');
             $reservation->setTotalPrice((string) $totalPrice);
             $reservation->setCleaningFee($cleaningFee > 0 ? (string) $cleaningFee : null);
             $reservation->setServiceFee((string) $serviceFee);
@@ -101,7 +101,7 @@ final class BookingController extends AbstractController
 
             $bus->dispatch(new BookingCreatedMessage((string) $reservation->getId()));
 
-            $this->addFlash('success', 'Votre réservation a été enregistrée.');
+            $this->addFlash('success', 'Votre demande de réservation a été envoyée. L\'hôte doit la confirmer.');
 
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }

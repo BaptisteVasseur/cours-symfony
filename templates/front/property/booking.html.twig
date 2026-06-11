@@ -18,14 +18,18 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
                 <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
-                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm"
+                     data-controller="booking-availability"
+                     data-booking-availability-property-id-value="{{ property.id }}">
+                    <div data-booking-availability-target="blockedList" class="hidden mb-5 p-4 bg-red-50 border border-red-100 rounded-xl"></div>
                     {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', 'data-booking-availability-target': 'checkin', 'data-action': 'change->booking-availability#checkDates' } }) }}
+                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', 'data-booking-availability-target': 'checkout', 'data-action': 'change->booking-availability#checkDates' } }) }}
                         </div>
+                        <div data-booking-availability-target="warning" class="hidden px-4 py-3 rounded-xl text-sm bg-amber-50 text-amber-800 border border-amber-200"></div>
                         {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
-                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
+                        <button type="submit" data-booking-availability-target="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
                     {{ form_end(form) }}
                 </div>
             </div>
