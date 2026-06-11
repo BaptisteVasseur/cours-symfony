@@ -1,5 +1,7 @@
 FROM php:8.4-fpm-alpine
 
+RUN sed -i 's|https://|http://|g' /etc/apk/repositories
+
 RUN apk add --no-cache \
     postgresql-dev \
     git \
@@ -21,8 +23,12 @@ RUN docker-php-ext-install \
     intl
 
 RUN apk add --no-cache --virtual .build-deps $PHPIZE_DEPS \
-    && pecl install apcu redis amqp \
+    && curl -fsSL -o /tmp/apcu.tgz  http://pecl.php.net/get/apcu \
+    && curl -fsSL -o /tmp/redis.tgz http://pecl.php.net/get/redis \
+    && curl -fsSL -o /tmp/amqp.tgz  http://pecl.php.net/get/amqp \
+    && pecl install /tmp/apcu.tgz /tmp/redis.tgz /tmp/amqp.tgz \
     && docker-php-ext-enable apcu redis amqp \
+    && rm -f /tmp/*.tgz \
     && apk del .build-deps
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
