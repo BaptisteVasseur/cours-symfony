@@ -468,5 +468,39 @@ indépendance vis-à-vis de la base.
 
 
 ================================================================================
+ 6. RÉFLEXION TECHNIQUE (questions de conception)
+================================================================================
+
+Modélisation temporelle. Oui, le jour de check-out reste réservable : on raisonne en
+nuits, intervalle semi-ouvert [arrivée, départ[, et le chevauchement strict autorise le
+back-to-back. La superposition 11h/15h ne pose rien : les dates sont en type DATE (sans
+heure), le même jour peut donc être départ le matin et arrivée l'après-midi.
+
+Gestion des états. Pending ne bloque pas les dates (seul 'confirmed' le fait). Bloquer
+sur Pending exposerait au blocage abusif (demandes jamais payées) ; ne pas bloquer
+n'entraîne pas d'overbooking car la disponibilité est revérifiée à la confirmation
+(au pire une 2e demande est refusée, jamais un double-booking).
+
+Concurrence. Deux validations simultanées peuvent passer le contrôle applicatif puis
+insérer (« check-then-act » non atomique). La parade fiable est une contrainte
+d'exclusion PostgreSQL (EXCLUDE … daterange && WHERE status='confirmed') qui fait
+échouer la 2e insertion ; à défaut un verrou SELECT … FOR UPDATE.
+
+Performance. On ne boucle jamais nuit par nuit : une plage (20 nuits comme 1) se valide
+en 2 requêtes — un COUNT des jours bloqués et une requête de chevauchement — appuyées
+sur des index (property_id + date / statut).
+
+Asynchronisme. L'email part après le flush() car le message ne porte que l'ID : le
+worker recharge une réservation qui doit être commitée (sinon « introuvable »). Si le
+broker tombe, notre transport Doctrine garde les messages en base (outbox) ; avec
+RabbitMQ, retry_strategy + failure_transport, l'email restant hors du chemin critique.
+
+Structure SQL. Modèle hybride selon la nature de la donnée : table de jours
+(PropertyAvailability) pour les disponibilités/tarifs hôte (granularité indispensable
+pour bloquer une date ou surcharger un prix), et format période (checkin/checkout) pour
+les réservations, un séjour étant par essence un intervalle contigu.
+
+
+================================================================================
  FIN DU DOCUMENT
 ================================================================================
