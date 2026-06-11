@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><style>body{font-family:sans-serif;color:#374151;margin:0;padding:0;} .container{max-width:600px;margin:0 auto;padding:32px 24px;} .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;margin-top:16px;} .badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600;} .badge-red{background:#fee2e2;color:#991b1b;}</style></head>
+<body>
+<div class="container">
+    <h2 style="color:#ef4444;margin-bottom:4px;">❌ Réservation annulée</h2>
+    <p style="color:#6b7280;font-size:15px;">La réservation suivante a été annulée.</p>
+
+    <div class="card">
+        <h3 style="margin-top:0;">{{ booking.property.title }}</h3>
+        <p style="color:#6b7280;">{{ booking.property.city }}, {{ booking.property.country }}</p>
+
+        <table style="width:100%;margin-top:16px;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;color:#9ca3af;font-size:13px;">Voyageur</td><td style="font-weight:600;">{{ booking.traveler.firstName }} {{ booking.traveler.lastName }}</td></tr>
+            <tr><td style="padding:6px 0;color:#9ca3af;font-size:13px;">Arrivée</td><td>{{ booking.checkIn|date('d/m/Y') }}</td></tr>
+            <tr><td style="padding:6px 0;color:#9ca3af;font-size:13px;">Départ</td><td>{{ booking.checkOut|date('d/m/Y') }}</td></tr>
+            <tr><td style="padding:6px 0;color:#9ca3af;font-size:13px;">Montant</td><td>{{ booking.totalPrice }} €</td></tr>
+        </table>
+
+        {% if booking.cancellationReason %}
+            <div style="margin-top:16px;background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px;">
+                <p style="font-size:13px;font-weight:600;color:#92400e;margin:0 0 4px;">Motif d'annulation :</p>
+                <p style="font-size:14px;color:#78350f;margin:0;">{{ booking.cancellationReason }}</p>
+            </div>
+        {% endif %}
+
+        <span class="badge badge-red" style="margin-top:16px;">Annulée</span>
+    </div>
+
+    <p style="margin-top:24px;font-size:13px;color:#9ca3af;">Les dates sont à nouveau disponibles sur la plateforme.</p>
+</div>
+</body>
+</html>

@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"><style>body{font-family:sans-serif;color:#374151;margin:0;padding:0;} .container{max-width:600px;margin:0 auto;padding:32px 24px;} .card{background:#fff;border:1px solid #e5e7eb;border-radius:16px;padding:24px;margin-top:16px;} .badge{display:inline-block;padding:4px 12px;border-radius:999px;font-size:13px;font-weight:600;} .badge-yellow{background:#fef3c7;color:#92400e;} .btn{display:inline-block;background:#ef4444;color:#fff;padding:12px 24px;border-radius:12px;text-decoration:none;font-weight:600;margin-top:16px;}</style></head>
+<body>
+<div class="container">
+    <h2 style="color:#ef4444;margin-bottom:4px;">✉️ Nouvelle demande de réservation</h2>
+    <p style="color:#6b7280;font-size:15px;">Vous avez une nouvelle demande pour l'un de vos logements.</p>
+
+    <div class="card">
+        <h3 style="margin-top:0;">{{ booking.property.title }}</h3>
+        <p style="color:#6b7280;">{{ booking.property.city }}, {{ booking.property.country }}</p>
+
+        <table style="width:100%;margin-top:16px;border-collapse:collapse;">
+            <tr><td style="padding:6px 0;color:#9ca3af;font-size:13px;">Voyageur</td><td style="font-weight:600;">{{ booking.traveler.firstName }} {{ booking.traveler.lastName }}</td></tr>
+            <tr><td style="padding:6px 0;color:#9ca3af;font-size:13px;">Email</td><td>{{ booking.traveler.email }}</td></tr>
+            <tr><td style="padding:6px 0;color:#9ca3af;font-size:13px;">Arrivée</td><td style="font-weight:600;">{{ booking.checkIn|date('d/m/Y') }}</td></tr>
+            <tr><td style="padding:6px 0;color:#9ca3af;font-size:13px;">Départ</td><td style="font-weight:600;">{{ booking.checkOut|date('d/m/Y') }}</td></tr>
+            <tr><td style="padding:6px 0;color:#9ca3af;font-size:13px;">Durée</td><td>{{ booking.nights }} nuit(s)</td></tr>
+            <tr><td style="padding:6px 0;color:#9ca3af;font-size:13px;">Voyageurs</td><td>{{ booking.guestsCount }}</td></tr>
+            <tr><td style="padding:6px 0;color:#9ca3af;font-size:13px;">Montant</td><td style="font-weight:700;font-size:18px;color:#111827;">{{ booking.totalPrice }} €</td></tr>
+        </table>
+
+        <span class="badge badge-yellow">En attente de votre validation</span>
+    </div>
+
+    <p style="margin-top:24px;font-size:14px;color:#6b7280;">Connectez-vous sur votre tableau de bord hôte pour accepter ou refuser cette demande.</p>
+</div>
+</body>
+</html>
