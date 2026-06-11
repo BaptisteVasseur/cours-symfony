@@ -1,0 +1,40 @@
+Modélisation temporelle :
+
+Dans un premier temps, le jour de check-out ne sera pas réservable par un autre voyageur. En effet, il est nécessaire de prévoir un délai de nettoyage et de préparation du logement entre deux réservations. Par conséquent, le jour de check-out d'une réservation ne pourra pas être réservé par un autre voyageur.
+Le souci de superposition des réservations est ainsi évité, garantissant une transition fluide entre les voyageurs et assurant la propreté et la préparation adéquate du logement pour chaque nouvelle réservation.
+À terme, on pourrait imaginer une fonctionnalité permettant aux hôtes de gérer les délais de préparation du logement pour les réservations qui se suivent, et donc de rendre le jour de check-out réservable pour un autre voyageur, à condition que le délai de préparation soit respecté.
+Au niveau de la gestion de la base de données, cela impliquerait de stocker les heures de checkin et checkout, et non uniquement la date calendaire.
+Chaque logement est différent et il semble irrationnel d'imposer un checkin et un checkout un même jour tant que l'hôte ne peut régler le délai nécessaire à la remise en état du logement.
+
+Gestion des états :
+
+Le statut 'Pending' indique qu'une réservation a été effectuée mais n'a pas encore été acceptée par l'hôte.
+La problématique est la suivante : si une seule demande 'Pending' est autorisée, cela implique en cas de refus de la réservation par l'hôte (pour une quelconque raison) une perte potentielle d'autres clients qui auraient vu leur réservation être acceptée.
+Cependant, si on autorise plusieurs demandes 'Pending' à la fois, cela peut provoquer chez l'hôte de nombreuses demandes à traiter en périodes de forte affluence.
+Afin d'établir un juste milieu entre ces deux extrêmes, il parait judicieux de limiter le nombre de demandes 'Pending' pour donner à l'hôte une variété de choix tout en exlucant le spamming. 5 demandes 'Pending' pour des dates se chevauchant semble être un bon compromis à cette problématique.
+
+Concurrence :
+
+Dans notre cas, la situation de concurrence serait possible dans le cas suivant :
+    - il existe déjà 4 réservations 'Pending' pour cette période
+    - 2 utilisateurs réservent exactement au même moment
+
+Il semble judicieux, uniquement pour ce cas précis, d'autoriser 6 réservations 'Pending', tout en gardant en tête que ce scénario risque de n'arriver que de façon très rare, voire jamais.
+
+(évidemment, l'idée d'un Math.random() n'est pas totalement exclue, et résoudrait cette problématique contre un peu d'éthique)
+
+
+Performance :
+
+Même si le calendrier est représenté par une table de jours individuels, la validation d'une plage de 20 nuits ne doit pas être réalisée avec une requête SQL par jour.
+La disponibilité est vérifiée avec une seule requête SQL filtrant sur :
+- le logement concerné ;
+- les dates comprises entre checkin et checkout ;
+- les jours explicitement marqués comme indisponibles.
+Si on a au moins un jour indisponible, la réservation est impossible.
+
+Asynchronisme :
+
+L'envoi d'email doit intervenir après le flush afin de s'assurer que les données ont bien été enregistrées, et éviter un envoi de mail en cas d'erreur.
+Si RabbitMQ tombe en panne, on mettra en place une file d'attente qui sera envoyée une fois le service à nouveau opérationnel.
+Il serait également possible de créer un fallback vers un autre service d'envoi de mails, tout en gardant la file d'attente en dernier recours.
