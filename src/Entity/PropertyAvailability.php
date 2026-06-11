@@ -31,6 +31,9 @@ class PropertyAvailability
     #[ORM\Column(nullable: true)]
     private ?int $minimumStay = null;
 
+    #[ORM\Column(length: 50, options: ['default' => 'manual'])]
+    private string $source = 'manual';
+
     public function getProperty(): ?Property
     {
         return $this->property;
@@ -87,6 +90,18 @@ class PropertyAvailability
     public function setMinimumStay(?int $minimumStay): static
     {
         $this->minimumStay = $minimumStay;
+
+        return $this;
+    }
+
+    public function getSource(): string
+    {
+        return $this->source;
+    }
+
+    public function setSource(string $source): static
+    {
+        $this->source = $source;
 
         return $this;
     }
