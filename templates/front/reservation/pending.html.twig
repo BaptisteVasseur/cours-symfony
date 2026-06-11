@@ -1,0 +1,71 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+    <h1 class="text-2xl font-semibold mb-6">Demandes en attente</h1>
+
+    {% for type, messages in app.flashes %}
+        {% for msg in messages %}
+            <div class="mb-4 px-4 py-3 rounded-lg {{ type == 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800' }}">{{ msg }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    {% if reservations is empty %}
+        <div class="text-center py-16 text-gray-500">
+            <i class="fa-solid fa-inbox text-4xl mb-3 block"></i>
+            <p>Aucune demande en attente.</p>
+        </div>
+    {% else %}
+        <div class="space-y-4">
+        {% for reservation in reservations %}
+            {% set property = reservation.property %}
+            {% set guest = reservation.guest %}
+            {% set nights = (reservation.checkoutDate|date('U') - reservation.checkinDate|date('U')) / 86400 %}
+            <div class="border border-gray-200 rounded-xl p-6">
+                <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                    <div>
+                        <p class="font-semibold text-gray-900">{{ property.title }}</p>
+                        <p class="text-sm text-gray-500 mt-1">
+                            {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                            · {{ nights }} nuit{{ nights > 1 ? 's' }}
+                            · {{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' }}
+                        </p>
+                        <p class="text-sm text-gray-600 mt-1">
+                            Voyageur : <strong>{{ guest.profile.firstName ?? '' }} {{ guest.profile.lastName ?? guest.email }}</strong>
+                        </p>
+                        <p class="text-sm font-bold text-gray-900 mt-1">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</p>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3 sm:items-start">
+                        {# Accepter #}
+                        <form method="post" action="{{ path('app_reservation_accept', { id: reservation.id }) }}">
+                            <button type="submit" class="bg-[#FF385C] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-[#E61E4D] w-full sm:w-auto">
+                                <i class="fa-solid fa-check mr-1"></i> Accepter
+                            </button>
+                        </form>
+
+                        {# Refuser #}
+                        <details class="relative">
+                            <summary class="cursor-pointer bg-gray-100 text-gray-800 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-200 list-none text-center">
+                                <i class="fa-solid fa-xmark mr-1"></i> Refuser
+                            </summary>
+                            <div class="absolute right-0 mt-2 w-72 bg-white border border-gray-200 rounded-xl p-4 shadow-lg z-10">
+                                <form method="post" action="{{ path('app_reservation_refuse', { id: reservation.id }) }}">
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Motif du refus <span class="text-red-500">*</span></label>
+                                    <textarea name="reason" rows="3" required
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3"
+                                        placeholder="Raison du refus..."></textarea>
+                                    <button type="submit" class="w-full bg-red-600 text-white py-2 rounded-lg text-sm font-semibold hover:bg-red-700">
+                                        Confirmer le refus
+                                    </button>
+                                </form>
+                            </div>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+        </div>
+    {% endif %}
+</main>
+{% endblock %}

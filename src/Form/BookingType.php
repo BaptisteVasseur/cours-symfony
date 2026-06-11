@@ -9,6 +9,7 @@ use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
+use Symfony\Component\Validator\Constraints\GreaterThan;
 use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
 use Symfony\Component\Validator\Constraints\NotBlank;
 
@@ -20,13 +21,27 @@ class BookingType extends AbstractType
             ->add('checkinDate', DateType::class, [
                 'label' => 'Arrivée',
                 'widget' => 'single_text',
-                'constraints' => [new NotBlank(message: 'La date d\'arrivée est obligatoire.')],
+                'input' => 'datetime_immutable',
+                'attr' => ['min' => (new \DateTime('today'))->format('Y-m-d')],
+                'constraints' => [
+                    new NotBlank(message: 'La date d\'arrivée est obligatoire.'),
+                    new GreaterThanOrEqual(
+                        value: new \DateTime('today'),
+                        message: 'La date d\'arrivée ne peut pas être dans le passé.',
+                    ),
+                ],
             ])
             ->add('checkoutDate', DateType::class, [
                 'label' => 'Départ',
                 'widget' => 'single_text',
+                'input' => 'datetime_immutable',
+                'attr' => ['min' => (new \DateTime('tomorrow'))->format('Y-m-d')],
                 'constraints' => [
                     new NotBlank(message: 'La date de départ est obligatoire.'),
+                    new GreaterThan(
+                        value: new \DateTime('today'),
+                        message: 'La date de départ doit être dans le futur.',
+                    ),
                 ],
             ])
             ->add('guestsCount', IntegerType::class, [

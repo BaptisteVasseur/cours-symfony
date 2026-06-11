@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="fr">
+<body style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 24px;">
+    <h1 style="color: #FF385C;">Nouvelle demande de réservation</h1>
+
+    <p>Bonjour <strong>{{ reservation.property.host.profile.firstName ?? reservation.property.host.email }}</strong>,</p>
+    <p>Vous avez reçu une nouvelle demande de réservation pour <strong>{{ reservation.property.title }}</strong>.</p>
+
+    <table style="width:100%; border-collapse:collapse; margin: 16px 0;">
+        <tr><td style="padding:8px; background:#f9f9f9;"><strong>Voyageur</strong></td>
+            <td style="padding:8px;">{{ reservation.guest.profile.firstName ?? '' }} {{ reservation.guest.profile.lastName ?? reservation.guest.email }}</td></tr>
+        <tr><td style="padding:8px;"><strong>Arrivée</strong></td>
+            <td style="padding:8px;">{{ reservation.checkinDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding:8px; background:#f9f9f9;"><strong>Départ</strong></td>
+            <td style="padding:8px; background:#f9f9f9;">{{ reservation.checkoutDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding:8px;"><strong>Voyageurs</strong></td>
+            <td style="padding:8px;">{{ reservation.guestsCount }}</td></tr>
+        <tr><td style="padding:8px; background:#f9f9f9;"><strong>Total</strong></td>
+            <td style="padding:8px; background:#f9f9f9;">{{ reservation.totalPrice }} {{ reservation.currency }}</td></tr>
+    </table>
+
+    <p>
+        <a href="{{ url('app_reservation_pending') }}"
+           style="background:#FF385C; color:#fff; padding:12px 24px; border-radius:8px; text-decoration:none; font-weight:bold;">
+            Gérer la demande
+        </a>
+    </p>
+
+    <hr style="margin: 32px 0; border: none; border-top: 1px solid #eee;">
+    <p style="color:#999; font-size:12px;">Airbnb Clone — Ne pas répondre à cet email.</p>
+</body>
+</html>

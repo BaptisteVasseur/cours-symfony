@@ -57,6 +57,7 @@ services:
       DATABASE_URL: postgresql://app:my-super-secret-password@database:5432/app?serverVersion=16&charset=utf8
       MESSENGER_TRANSPORT_DSN: doctrine://default
       MAILER_DSN: smtp://mailer:1025
+      DEFAULT_URI: http://localhost:8089
     depends_on:
       database:
         condition: service_healthy

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -60,6 +61,45 @@ class ReservationRepository extends ServiceEntityRepository
             ->setParameter('reservation', $reservation)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    public function countOverlapping(Property $property, \DateTimeImmutable $checkin, \DateTimeImmutable $checkout, ?string $excludeId = null): int
+    {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['confirmed'])
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+
+        if ($excludeId !== null) {
+            $qb->andWhere('r.id != :excludeId')->setParameter('excludeId', $excludeId);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /** @return list<Reservation> */
+    public function findPendingByHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     public function sumCompletedRevenue(): float
