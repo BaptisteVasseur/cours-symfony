@@ -43,29 +43,7 @@
         {% endblock %}
     </head>
 
-    <body class="font-sans antialiased bg-white text-gray-900">
-        {% block content %}
-        <div class="min-h-screen flex flex-col">
-            {% include 'layout/header.html.twig' %}
-
-            {% for label, messages in app.flashes %}
-                {% for message in messages %}
-                    <div class="mx-auto w-full max-w-4xl px-4 pt-4">
-                        <div class="flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-medium shadow-card
-                            {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
-                               (label == 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
-                               'bg-amber-50 text-amber-800 border border-amber-200') }}">
-                            <i class="fa-solid {{ label == 'success' ? 'fa-circle-check text-emerald-500' : (label == 'error' ? 'fa-circle-xmark text-red-500' : 'fa-triangle-exclamation text-amber-500') }}"></i>
-                            {{ message }}
-                        </div>
-                    </div>
-                {% endfor %}
-            {% endfor %}
-
-            {% block body %}{% endblock %}
-
-            {% include 'layout/footer.html.twig' %}
-        </div>
-        {% endblock %}
+    <body class="font-sans antialiased bg-white text-gray-900 min-h-screen flex flex-col">
+        {% block body %}{% endblock %}
     </body>
 </html>
