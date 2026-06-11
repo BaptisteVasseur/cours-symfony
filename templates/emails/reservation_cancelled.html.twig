@@ -1,0 +1,12 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block body %}
+    <h1 style="font-size:20px;margin:0 0 12px;">{{ type.subject() }}</h1>
+    <p>La réservation suivante a été {{ type.value == 'rejected' ? 'refusée' : 'annulée' }} :</p>
+    {{ include('emails/_details.html.twig') }}
+    {% if reservation.cancellationReason %}
+        <p style="background:#fff5f5;border:1px solid #ffd6d6;border-radius:8px;padding:12px;color:#b42318;">
+            <strong>Motif :</strong> {{ reservation.cancellationReason }}
+        </p>
+    {% endif %}
+{% endblock %}

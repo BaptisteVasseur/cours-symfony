@@ -1,0 +1,9 @@
+{% set property = reservation.property %}
+{% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
+<table style="width:100%;border-collapse:collapse;margin:16px 0;">
+    <tr><td style="padding:4px 0;color:#666;">Logement</td><td style="padding:4px 0;font-weight:bold;text-align:right;">{{ property.title }}</td></tr>
+    <tr><td style="padding:4px 0;color:#666;">Arrivée</td><td style="padding:4px 0;font-weight:bold;text-align:right;">{{ reservation.checkinDate|date('d/m/Y') }}</td></tr>
+    <tr><td style="padding:4px 0;color:#666;">Départ</td><td style="padding:4px 0;font-weight:bold;text-align:right;">{{ reservation.checkoutDate|date('d/m/Y') }}</td></tr>
+    <tr><td style="padding:4px 0;color:#666;">Voyageurs</td><td style="padding:4px 0;font-weight:bold;text-align:right;">{{ reservation.guestsCount }}</td></tr>
+    <tr><td style="padding:4px 0;color:#666;">Total</td><td style="padding:4px 0;font-weight:bold;text-align:right;">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</td></tr>
+</table>
