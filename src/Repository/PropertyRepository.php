@@ -132,4 +132,71 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<Property>
+     */
+    public function searchPublished(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && trim($destination) !== '') {
+            $search = '%' . mb_strtolower(trim($destination)) . '%';
+            $qb->andWhere('LOWER(a.city) LIKE :search OR LOWER(a.addressLine1) LIKE :search OR LOWER(a.country) LIKE :search')
+                ->setParameter('search', $search);
+        }
+
+        if ($guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null && $checkin < $checkout) {
+            $nights = (int) $checkin->diff($checkout)->days;
+            $qb
+                ->andWhere('NOT EXISTS (
+                    SELECT reservationOverlap.id
+                    FROM App\Entity\Reservation reservationOverlap
+                    WHERE reservationOverlap.property = p
+                    AND reservationOverlap.status = :confirmedStatus
+                    AND reservationOverlap.checkinDate < :checkout
+                    AND reservationOverlap.checkoutDate > :checkin
+                )')
+                ->andWhere('NOT EXISTS (
+                    SELECT availabilityBlock.id
+                    FROM App\Entity\PropertyAvailability availabilityBlock
+                    WHERE availabilityBlock.property = p
+                    AND availabilityBlock.isAvailable = false
+                    AND availabilityBlock.availableDate >= :checkin
+                    AND availabilityBlock.availableDate < :checkout
+                )')
+                ->andWhere('NOT EXISTS (
+                    SELECT minimumStayRule.id
+                    FROM App\Entity\PropertyAvailability minimumStayRule
+                    WHERE minimumStayRule.property = p
+                    AND minimumStayRule.minimumStay IS NOT NULL
+                    AND minimumStayRule.minimumStay > :nights
+                    AND minimumStayRule.availableDate >= :checkin
+                    AND minimumStayRule.availableDate < :checkout
+                )')
+                ->setParameter('confirmedStatus', 'confirmed')
+                ->setParameter('nights', $nights)
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

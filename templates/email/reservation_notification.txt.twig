@@ -1,0 +1,24 @@
+{{ subject }}
+
+{% if event == 'pending_created' %}
+Une nouvelle demande de réservation nécessite votre validation.
+{% elseif event == 'confirmed_created' %}
+La réservation a été confirmée automatiquement.
+{% elseif event == 'confirmed' %}
+La demande de réservation a été acceptée.
+{% elseif event == 'refused' %}
+La demande de réservation a été refusée.
+{% elseif event == 'cancelled' %}
+La réservation a été annulée.
+{% else %}
+Une mise à jour a été effectuée sur la réservation.
+{% endif %}
+
+Logement : {{ property.title }}
+Dates : {{ reservation.checkinDate|date('d/m/Y') }} au {{ reservation.checkoutDate|date('d/m/Y') }}
+Voyageurs : {{ reservation.guestsCount }}
+Total : {{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}
+Statut : {{ reservation.status }}
+{% if reservation.cancellationReason %}
+Motif : {{ reservation.cancellationReason }}
+{% endif %}

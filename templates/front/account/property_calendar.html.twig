@@ -1,0 +1,141 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Calendrier hôte{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-7xl mx-auto w-full">
+        <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i>
+            Retour à mes propriétés
+        </a>
+
+        <div class="grid gap-8 xl:grid-cols-[1.4fr_0.9fr]">
+            <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                <div class="flex flex-col gap-4 md:flex-row md:items-center md:justify-between mb-6">
+                    <div>
+                        <h1 class="text-2xl font-semibold text-gray-900">{{ property.title }}</h1>
+                        <p class="text-sm text-gray-500 mt-1">Calendrier de disponibilités et séjours confirmés</p>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <a href="{{ path('app_host_property_calendar', { id: property.id, month: previousMonth|date('Y-m') }) }}" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50">
+                            <i class="fa-solid fa-chevron-left"></i>
+                        </a>
+                        <div class="min-w-40 text-center text-sm font-semibold text-gray-900">{{ currentMonth|date('F Y')|capitalize }}</div>
+                        <a href="{{ path('app_host_property_calendar', { id: property.id, month: nextMonth|date('Y-m') }) }}" class="inline-flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-700 hover:bg-gray-50">
+                            <i class="fa-solid fa-chevron-right"></i>
+                        </a>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-7 gap-2 text-xs font-semibold uppercase tracking-wide text-gray-500 mb-2">
+                    {% for dayName in ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] %}
+                        <div class="px-3 py-2">{{ dayName }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="space-y-2">
+                    {% for week in weeks %}
+                        <div class="grid grid-cols-7 gap-2">
+                            {% for day in week %}
+                                <div class="min-h-28 rounded-2xl border p-3 {{ day.inMonth ? 'border-gray-200 bg-white' : 'border-gray-100 bg-gray-50 text-gray-400' }}">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm font-semibold">{{ day.date|date('d') }}</span>
+                                        {% if day.booking %}
+                                            <span class="rounded-full bg-emerald-100 px-2 py-1 text-[10px] font-semibold text-emerald-800">Réservé</span>
+                                        {% elseif day.isBlocked %}
+                                            <span class="rounded-full bg-rose-100 px-2 py-1 text-[10px] font-semibold text-rose-800">Bloqué</span>
+                                        {% else %}
+                                            <span class="rounded-full bg-gray-100 px-2 py-1 text-[10px] font-semibold text-gray-600">Libre</span>
+                                        {% endif %}
+                                    </div>
+
+                                    {% if day.booking %}
+                                        <p class="mt-3 text-xs font-medium text-gray-700">{{ day.booking.guestName }}</p>
+                                    {% endif %}
+
+                                    {% if day.blockedReason %}
+                                        <p class="mt-3 text-xs text-rose-700">{{ day.blockedReason }}</p>
+                                    {% endif %}
+
+                                    {% if day.minimumStay %}
+                                        <p class="mt-2 text-[11px] text-gray-500">Min. {{ day.minimumStay }} nuits</p>
+                                    {% endif %}
+
+                                    {% if day.priceOverride %}
+                                        <p class="mt-1 text-[11px] text-gray-500">{{ day.priceOverride|number_format(2, ',', ' ') }} EUR</p>
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+
+            <div class="space-y-6">
+                <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900">Mettre à jour une période</h2>
+                    <p class="mt-1 text-sm text-gray-500">Bloquez des dates, rouvrez-les, ou ajoutez des règles de séjour.</p>
+
+                    <form method="post" action="{{ path('app_host_property_calendar_update', { id: property.id }) }}" class="mt-6 space-y-4">
+                        <input type="hidden" name="_token" value="{{ csrf_token('host_property_calendar_' ~ property.id) }}">
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label for="startDate" class="block text-sm font-medium text-gray-700 mb-1">Début</label>
+                                <input id="startDate" name="startDate" type="date" required class="w-full rounded-xl border border-gray-200 px-4 py-3">
+                            </div>
+                            <div>
+                                <label for="endDate" class="block text-sm font-medium text-gray-700 mb-1">Fin</label>
+                                <input id="endDate" name="endDate" type="date" required class="w-full rounded-xl border border-gray-200 px-4 py-3">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="availabilityMode" class="block text-sm font-medium text-gray-700 mb-1">Mode</label>
+                            <select id="availabilityMode" name="availabilityMode" class="w-full rounded-xl border border-gray-200 px-4 py-3">
+                                <option value="blocked">Indisponible</option>
+                                <option value="available">Disponible</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label for="blockedReason" class="block text-sm font-medium text-gray-700 mb-1">Motif</label>
+                            <textarea id="blockedReason" name="blockedReason" rows="3" class="w-full rounded-xl border border-gray-200 px-4 py-3" placeholder="Travaux, usage personnel, maintenance..."></textarea>
+                        </div>
+
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label for="minimumStay" class="block text-sm font-medium text-gray-700 mb-1">Séjour minimum</label>
+                                <input id="minimumStay" name="minimumStay" type="number" min="1" class="w-full rounded-xl border border-gray-200 px-4 py-3" placeholder="Ex. 3">
+                            </div>
+                            <div>
+                                <label for="priceOverride" class="block text-sm font-medium text-gray-700 mb-1">Tarif spécifique</label>
+                                <input id="priceOverride" name="priceOverride" type="number" min="0" step="0.01" class="w-full rounded-xl border border-gray-200 px-4 py-3" placeholder="Ex. 145.00">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="inline-flex w-full items-center justify-center rounded-xl bg-brand px-5 py-3 text-sm font-semibold text-white hover:opacity-95">
+                            Enregistrer la période
+                        </button>
+                    </form>
+                </section>
+
+                <section class="rounded-3xl border border-gray-200 bg-white p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900">Flux iCal</h2>
+                    <p class="mt-1 text-sm text-gray-500">Lien sécurisé à utiliser dans Google Calendar, Outlook ou un autre agenda.</p>
+
+                    <div class="mt-4 rounded-2xl bg-gray-50 p-4 text-sm text-gray-700 break-all">
+                        {{ absolute_url(path('app_property_calendar_export', { id: property.id }, false)) ~ '?token=' ~ property.calendarExportToken }}
+                    </div>
+
+                    <form method="post" action="{{ path('app_host_property_refresh_calendar_token', { id: property.id }) }}" class="mt-4">
+                        <input type="hidden" name="_token" value="{{ csrf_token('host_property_calendar_token_' ~ property.id) }}">
+                        <button type="submit" class="inline-flex items-center justify-center rounded-xl border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-700 hover:border-gray-300 hover:bg-gray-50">
+                            Régénérer le token
+                        </button>
+                    </form>
+                </section>
+            </div>
+        </div>
+    </main>
+{% endblock %}

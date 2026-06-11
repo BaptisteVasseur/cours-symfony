@@ -10,7 +10,12 @@ use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: PropertyAvailabilityRepository::class)]
-#[ORM\Table(name: 'property_availability')]
+#[ORM\Table(
+    name: 'property_availability',
+    uniqueConstraints: [
+        new ORM\UniqueConstraint(name: 'uniq_property_availability_property_day', columns: ['property_id', 'available_date']),
+    ],
+)]
 class PropertyAvailability
 {
     use UuidEntityTrait;
@@ -30,6 +35,9 @@ class PropertyAvailability
 
     #[ORM\Column(nullable: true)]
     private ?int $minimumStay = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $blockedReason = null;
 
     public function getProperty(): ?Property
     {
@@ -87,6 +95,18 @@ class PropertyAvailability
     public function setMinimumStay(?int $minimumStay): static
     {
         $this->minimumStay = $minimumStay;
+
+        return $this;
+    }
+
+    public function getBlockedReason(): ?string
+    {
+        return $this->blockedReason;
+    }
+
+    public function setBlockedReason(?string $blockedReason): static
+    {
+        $this->blockedReason = $blockedReason;
 
         return $this;
     }
