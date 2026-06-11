@@ -1,0 +1,67 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Recherche — HomeStay{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <form method="get" action="{{ path('app_search') }}"
+          class="bg-white border border-gray-200 rounded-2xl shadow-sm p-4 grid grid-cols-1 md:grid-cols-5 gap-3 items-end">
+        <div class="md:col-span-2">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Destination</label>
+            <input type="text" name="destination" value="{{ criteria.destination }}" placeholder="Ville ou adresse"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#FF385C]">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Arrivée</label>
+            <input type="date" name="checkin" value="{{ criteria.checkin }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+        </div>
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Départ</label>
+            <input type="date" name="checkout" value="{{ criteria.checkout }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+        </div>
+        <div class="flex gap-2">
+            <div class="flex-1">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Voyageurs</label>
+                <input type="number" name="guests" min="1" value="{{ criteria.guests }}" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+            </div>
+            <button type="submit" class="px-5 py-2 bg-[#FF385C] text-white font-semibold rounded-lg hover:bg-[#E11D48] transition self-end">Rechercher</button>
+        </div>
+    </form>
+
+    <h1 class="text-xl font-bold text-gray-900 mt-8 mb-4">{{ results|length }} logement(s) disponible(s)</h1>
+
+    {% if results is empty %}
+        <div class="bg-white border border-gray-200 rounded-2xl p-12 text-center text-gray-500">
+            Aucun logement ne correspond à votre recherche. Essayez d'élargir vos critères.
+        </div>
+    {% else %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for listing in results %}
+                {% set book_params = {id: listing.id} %}
+                {% if criteria.checkin and criteria.checkout %}
+                    {% set book_params = book_params|merge({checkin: criteria.checkin, checkout: criteria.checkout, guests: criteria.guests ?? 1}) %}
+                {% endif %}
+                <div class="property-card bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                    <div class="h-44 bg-gray-100 overflow-hidden">
+                        {% set cover = null %}
+                        {% for photo in listing.photos %}{% if cover is null and photo.isCover %}{% set cover = photo %}{% endif %}{% endfor %}
+                        {% if cover %}<img src="{{ cover.imageUrl }}" alt="{{ listing.title }}" class="w-full h-full object-cover">
+                        {% else %}<div class="w-full h-full flex items-center justify-center text-gray-300 text-5xl">🏠</div>{% endif %}
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-start justify-between gap-2">
+                            <h2 class="font-semibold text-gray-900 leading-tight">{{ listing.title }}</h2>
+                            {% if listing.location %}<span class="text-xs text-gray-400 whitespace-nowrap">{{ listing.location.city }}</span>{% endif %}
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1">{{ listing.maxGuests }} voyageurs max</p>
+                        <div class="mt-3 flex items-center justify-between">
+                            <p class="text-gray-900"><span class="font-bold">{{ listing.pricePerNight }} {{ listing.currency ?? 'EUR' }}</span> <span class="text-sm text-gray-500">/ nuit</span></p>
+                            <a href="{{ path('app_reservation_new', book_params) }}" class="text-sm font-medium text-[#FF385C] hover:underline">Réserver →</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
