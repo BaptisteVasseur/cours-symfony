@@ -131,6 +131,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: AuditLog::class, mappedBy: 'user')]
     private Collection $auditLogs;
 
+    /** @var Collection<int, Property> */
+    #[ORM\ManyToMany(targetEntity: Property::class, inversedBy: 'favoritedBy')]
+    #[ORM\JoinTable(name: 'user_favorites')]
+    private Collection $favoriteProperties;
+
     public function __construct()
     {
         $this->oauthAccounts = new ArrayCollection();
@@ -140,6 +145,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->paymentMethods = new ArrayCollection();
         $this->notifications = new ArrayCollection();
         $this->auditLogs = new ArrayCollection();
+        $this->favoriteProperties = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -497,6 +503,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeAuditLog(AuditLog $auditLog): static
     {
         $this->auditLogs->removeElement($auditLog);
+
+        return $this;
+    }
+
+    /** @return Collection<int, Property> */
+    public function getFavoriteProperties(): Collection
+    {
+        return $this->favoriteProperties;
+    }
+
+    public function addFavoriteProperty(Property $property): static
+    {
+        if (!$this->favoriteProperties->contains($property)) {
+            $this->favoriteProperties->add($property);
+        }
+
+        return $this;
+    }
+
+    public function removeFavoriteProperty(Property $property): static
+    {
+        $this->favoriteProperties->removeElement($property);
 
         return $this;
     }

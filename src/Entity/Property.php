@@ -167,6 +167,10 @@ class Property
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'property')]
     private Collection $reviews;
 
+    /** @var Collection<int, User> */
+    #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'favoriteProperties')]
+    private Collection $favoritedBy;
+
     public function __construct()
     {
         $this->propertyAmenities = new ArrayCollection();
@@ -175,6 +179,7 @@ class Property
         $this->iCalSyncs = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
+        $this->favoritedBy = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -588,5 +593,30 @@ class Property
         }
 
         return round($total / $this->reviews->count(), 2);
+    }
+
+    /** @return Collection<int, User> */
+    public function getFavoritedBy(): Collection
+    {
+        return $this->favoritedBy;
+    }
+
+    public function addFavoritedBy(User $user): static
+    {
+        if (!$this->favoritedBy->contains($user)) {
+            $this->favoritedBy->add($user);
+            $user->addFavoriteProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFavoritedBy(User $user): static
+    {
+        if ($this->favoritedBy->removeElement($user)) {
+            $user->removeFavoriteProperty($this);
+        }
+
+        return $this;
     }
 }
