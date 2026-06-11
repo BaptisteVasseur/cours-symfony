@@ -18,6 +18,11 @@ composer install --no-interaction --prefer-dist --no-scripts
 echo "==> Génération des autoloaders..."
 composer dump-autoload --no-interaction
 
+if [ "$#" -gt 0 ]; then
+  echo "==> Exécution de la commande fournie..."
+  exec "$@"
+fi
+
 echo "==> Warm-up du cache Symfony..."
 php bin/console cache:warmup
 
