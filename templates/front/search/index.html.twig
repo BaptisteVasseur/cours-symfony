@@ -1,15 +1,69 @@
 {% extends 'layout/app.html.twig' %}
 
+{% block title %}Recherche — Logements{% endblock %}
+
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Résultats de recherche</h1>
-        {% if destination %}<p class="text-gray-500 mb-8">Destination : {{ destination }}</p>{% endif %}
+<main class="flex-grow px-6 md:px-12 py-8">
+    {% include 'components/search_bar.html.twig' with {
+        variant: 'hero',
+        destination: destination ?? '',
+        checkin: checkin ? checkin|date('Y-m-d') : '',
+        checkout: checkout ? checkout|date('Y-m-d') : '',
+        guests: guests ?? 1,
+    } %}
+
+    <!-- Active filters summary -->
+    {% set hasFilters = destination or checkin or checkout or guests %}
+    {% if hasFilters %}
+        <div class="flex flex-wrap items-center gap-2 mb-6 text-sm text-gray-600">
+            <span class="font-semibold text-gray-900">Filtres actifs :</span>
+            {% if destination %}
+                <span class="bg-gray-100 px-3 py-1 rounded-full">
+                    <i class="fa-solid fa-location-dot mr-1 text-brand"></i>{{ destination }}
+                </span>
+            {% endif %}
+            {% if checkin and checkout %}
+                <span class="bg-gray-100 px-3 py-1 rounded-full">
+                    <i class="fa-solid fa-calendar mr-1 text-brand"></i>
+                    {{ checkin|date('d/m/Y') }} → {{ checkout|date('d/m/Y') }}
+                </span>
+            {% endif %}
+            {% if guests %}
+                <span class="bg-gray-100 px-3 py-1 rounded-full">
+                    <i class="fa-solid fa-person mr-1 text-brand"></i>
+                    {{ guests }} voyageur{{ guests > 1 ? 's' : '' }}
+                </span>
+            {% endif %}
+            <a href="{{ path('app_search') }}" class="text-brand hover:underline font-semibold ml-2">
+                Tout effacer
+            </a>
+        </div>
+    {% endif %}
+
+    <!-- Results count -->
+    <p class="text-sm text-gray-500 mb-6">
+        {{ properties|length }} logement{{ properties|length != 1 ? 's' : '' }} trouvé{{ properties|length != 1 ? 's' : '' }}
+        {% if destination %} pour <strong>{{ destination }}</strong>{% endif %}
+    </p>
+
+    {% if properties|length > 0 %}
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
             {% for property in properties %}
                 {% include 'components/card.html.twig' with { property: property } %}
-            {% else %}
-                <p class="col-span-full text-gray-500">Aucun logement trouvé.</p>
             {% endfor %}
         </div>
-    </main>
+    {% else %}
+        <div class="text-center py-20 max-w-md mx-auto">
+            <i class="fa-solid fa-house-circle-xmark text-5xl text-gray-300 mb-4"></i>
+            <h2 class="text-xl font-semibold text-gray-900 mb-2">Aucun logement disponible</h2>
+            <p class="text-gray-500 text-sm mb-6">
+                Essayez d'autres dates, une autre destination ou ajustez le nombre de voyageurs.
+            </p>
+            <a href="{{ path('app_home') }}"
+               class="inline-block bg-brand hover:bg-brandHover text-white font-semibold px-6 py-3 rounded-xl transition text-sm">
+                Voir tous les logements
+            </a>
+        </div>
+    {% endif %}
+</main>
 {% endblock %}
