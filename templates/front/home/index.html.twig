@@ -4,24 +4,11 @@
     <main class="flex-grow px-6 md:px-12 py-8">
         {% include 'components/search_bar.html.twig' %}
 
-        <div class="flex items-center space-x-8 overflow-x-auto pb-4 mb-8 no-scrollbar border-b border-gray-100">
-            <div class="flex flex-col items-center space-y-2 text-gray-500 hover:text-black border-b-2 border-transparent hover:border-black pb-2 cursor-pointer transition min-w-[56px]">
-                <i class="fa-solid fa-umbrella-beach text-xl"></i>
-                <span class="text-xs font-semibold whitespace-nowrap">Bord de mer</span>
-            </div>
-            <div class="flex flex-col items-center space-y-2 text-black border-b-2 border-black pb-2 cursor-pointer min-w-[56px]">
-                <i class="fa-solid fa-mountain-city text-xl"></i>
-                <span class="text-xs font-semibold whitespace-nowrap">Iconiques</span>
-            </div>
-            <div class="flex flex-col items-center space-y-2 text-gray-500 hover:text-black border-b-2 border-transparent hover:border-black pb-2 cursor-pointer transition min-w-[56px]">
-                <i class="fa-solid fa-fire text-xl"></i>
-                <span class="text-xs font-semibold whitespace-nowrap">Tendances</span>
-            </div>
-            <div class="flex flex-col items-center space-y-2 text-gray-500 hover:text-black border-b-2 border-transparent hover:border-black pb-2 cursor-pointer transition min-w-[56px]">
-                <i class="fa-solid fa-campground text-xl"></i>
-                <span class="text-xs font-semibold whitespace-nowrap">Campings</span>
-            </div>
-        </div>
+        {% include 'components/category_filters.html.twig' with {
+            category: category,
+            filter_route: 'app_home',
+            filter_base_query: {}
+        } %}
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
 

@@ -17,10 +17,13 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class HomeController extends AbstractController
 {
     #[Route('/', name: 'app_home')]
-    public function index(PropertyRepository $propertyRepository): Response
+    public function index(Request $request, PropertyRepository $propertyRepository): Response
     {
+        $category = $this->normalizeCategory((string) $request->query->get('category', ''));
+
         return $this->render('front/home/index.html.twig', [
-            'properties' => $propertyRepository->findForListing('published'),
+            'properties' => $propertyRepository->findForListing('published', $category),
+            'category' => $category,
         ]);
     }
 
@@ -61,6 +64,7 @@ class HomeController extends AbstractController
         $checkin = $this->parseDate($checkinValue);
         $checkout = $this->parseDate($checkoutValue);
         $guests = max(1, $request->query->getInt('guests', 1));
+        $category = $this->normalizeCategory((string) $request->query->get('category', ''));
         $dateError = null;
         $properties = [];
 
@@ -78,6 +82,7 @@ class HomeController extends AbstractController
                 $checkin,
                 $checkout,
                 $guests,
+                $category,
             );
         }
 
@@ -87,6 +92,7 @@ class HomeController extends AbstractController
             'checkout' => $checkout?->format('Y-m-d') ?? $checkoutValue,
             'guests' => $guests,
             'destination' => $destination,
+            'category' => $category,
             'dateError' => $dateError,
         ]);
     }
@@ -100,5 +106,12 @@ class HomeController extends AbstractController
         $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
 
         return $date !== false && $date->format('Y-m-d') === $value ? $date : null;
+    }
+
+    private function normalizeCategory(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return in_array($value, ['seaside', 'iconic', 'trending', 'camping'], true) ? $value : null;
     }
 }

@@ -25,6 +25,28 @@ final class HomeControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
     }
 
+    public function testHomeCategoryFiltersAreLinks(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorExists('a[href="/?category=seaside"]');
+        $this->assertSelectorExists('a[href="/?category=iconic"]');
+        $this->assertSelectorExists('a[href="/?category=trending"]');
+        $this->assertSelectorExists('a[href="/?category=camping"]');
+    }
+
+    public function testSearchCategoryFilterLoads(): void
+    {
+        $client = static::createClient();
+        $client->request('GET', '/search?category=camping');
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('[aria-current="page"] span', 'Campings');
+        $this->assertSelectorTextContains('main', 'Filtre : Campings');
+    }
+
     public function testDetailPageRequiresAuthentication(): void
     {
         $client = static::createClient();

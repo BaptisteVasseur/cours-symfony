@@ -9,12 +9,34 @@
             destination: destination,
             checkin: checkin,
             checkout: checkout,
-            guests: guests
+            guests: guests,
+            category: category
+        } %}
+
+        {% include 'components/category_filters.html.twig' with {
+            category: category,
+            filter_route: 'app_search',
+            filter_base_query: {
+                destination: destination,
+                checkin: checkin,
+                checkout: checkout,
+                guests: guests
+            }
         } %}
 
         <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Résultats de recherche</h1>
 
+        {% set categoryLabels = {
+            seaside: 'Bord de mer',
+            iconic: 'Iconiques',
+            trending: 'Tendances',
+            camping: 'Campings'
+        } %}
+
         <div class="text-gray-500 mb-8 space-y-1">
+            {% if category %}
+                <p>Filtre : {{ categoryLabels[category] }}</p>
+            {% endif %}
             {% if destination %}
                 <p>Destination : {{ destination }}</p>
             {% endif %}
