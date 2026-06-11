@@ -29,7 +29,7 @@ final class HostDashboardControllerTest extends WebTestCase
 
         $this->assertResponseIsSuccessful();
         $this->assertSelectorTextContains('h1', 'Bonjour');
-        $this->assertSelectorTextContains('main a', 'Tableau de bord');
+        $this->assertSelectorTextContains('main nav a, main div a[href*="dashboard"]', 'Tableau de bord');
     }
 
     public function testReservationsPageLoadsForHost(): void
