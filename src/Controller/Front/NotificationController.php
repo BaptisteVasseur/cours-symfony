@@ -4,12 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controller\Front;
 
-use App\Entity\Notification;
 use App\Entity\User;
 use App\Repository\NotificationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -28,15 +26,8 @@ final class NotificationController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        $notifications = $notificationRepository->createQueryBuilder('n')
-            ->andWhere('n.user = :user')
-            ->setParameter('user', $user)
-            ->orderBy('n.createdAt', 'DESC')
-            ->setMaxResults(50)
-            ->getQuery()
-            ->getResult();
+        $notifications = $notificationRepository->findByUserOrdered($user);
 
-        // Mark all as read
         foreach ($notifications as $notification) {
             if (!$notification->isRead()) {
                 $notification->setIsRead(true);

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Entity\Property;
 use App\Entity\PropertyAvailability;
 use App\Repository\PropertyAvailabilityRepository;
 use App\Repository\PropertyICalSyncRepository;
@@ -105,7 +106,7 @@ final class ICalSyncCommand extends Command
     }
 
     private function blockRangeFromIcal(
-        \App\Entity\Property $property,
+        Property $property,
         \DateTimeImmutable $from,
         \DateTimeImmutable $to,
         string $source,
