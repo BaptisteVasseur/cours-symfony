@@ -5,6 +5,8 @@
 {% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
 {% set hostProfile = property and property.host ? property.host.profile : null %}
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
+{% set isGuest = isGuest ?? false %}
+{% set isHost = isHost ?? false %}
 
 {% set statusLabels = {
     'confirmed': 'Confirmée',
@@ -24,15 +26,27 @@
         <a href="{{ path('app_reservation_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
             <i class="fa-solid fa-arrow-left"></i> Retour aux réservations
         </a>
+
+        {% for label, messages in app.flashes %}
+            {% for msg in messages %}
+                <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium {{ label == 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                    {{ msg }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
         <div class="mb-8">
             <div class="flex flex-wrap items-center gap-3 mb-2">
-                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Confirmation de réservation</h1>
+                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">
+                    {{ isHost and not isGuest ? 'Détail de réservation' : 'Confirmation de réservation' }}
+                </h1>
                 <span class="text-sm font-semibold px-3 py-1 rounded-full {{ statusColors[reservation.status]|default('bg-gray-100 text-gray-800') }}">
                     {{ statusLabels[reservation.status]|default(reservation.status) }}
                 </span>
             </div>
             <p class="text-gray-500">Réservation effectuée le {{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
         </div>
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2 space-y-6">
                 {% if property %}
@@ -48,19 +62,49 @@
                         </div>
                     </section>
                 {% endif %}
+
                 <section class="border border-gray-200 rounded-xl p-6">
                     <h2 class="text-lg font-semibold mb-4">Détails du séjour</h2>
                     <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                         <div><dt class="text-gray-500">Arrivée</dt><dd class="font-semibold">{{ reservation.checkinDate|date('d/m/Y') }}</dd></div>
                         <div><dt class="text-gray-500">Départ</dt><dd class="font-semibold">{{ reservation.checkoutDate|date('d/m/Y') }}</dd></div>
                         <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
+                        {% if isHost %}
+                            <div>
+                                <dt class="text-gray-500">Voyageur</dt>
+                                <dd class="font-semibold">{{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : reservation.guest.email }}</dd>
+                            </div>
+                        {% endif %}
+                        {% if reservation.cancellationReason %}
+                            <div class="sm:col-span-2">
+                                <dt class="text-gray-500">Motif d'annulation</dt>
+                                <dd class="font-semibold text-red-700">{{ reservation.cancellationReason }}</dd>
+                            </div>
+                        {% endif %}
                     </dl>
                 </section>
+
+                {% include 'front/reservation/partials/status_timeline.html.twig' %}
+
+                {% include 'front/reservation/partials/cancel_form.html.twig' %}
             </div>
+
             <aside>
-                <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
-                    <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
+                <div class="border border-gray-200 rounded-xl p-6 sticky top-28 space-y-4">
+                    <h2 class="text-lg font-semibold">Récapitulatif</h2>
                     <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                    {% if reservation.cleaningFee %}
+                        <p class="text-sm text-gray-500">dont {{ reservation.cleaningFee|number_format(2, ',', ' ') }} € de frais de ménage</p>
+                    {% endif %}
+                    {% if reservation.serviceFee %}
+                        <p class="text-sm text-gray-500">dont {{ reservation.serviceFee|number_format(2, ',', ' ') }} € de frais de service</p>
+                    {% endif %}
+                    {% if isHost %}
+                        <a href="{{ path('app_host_reservations') }}"
+                           class="block text-center text-sm font-semibold text-brand hover:underline mt-2">
+                            ← Toutes mes réservations
+                        </a>
+                    {% endif %}
                 </div>
             </aside>
         </div>
