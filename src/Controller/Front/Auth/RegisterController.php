@@ -9,6 +9,7 @@ use App\Entity\UserProfile;
 use App\Form\RegistrationType;
 use App\Repository\UserRepository;
 use App\Service\MailService;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
@@ -26,6 +27,7 @@ class RegisterController extends AbstractController
         UserPasswordHasherInterface $passwordHasher,
         UserRepository $userRepository,
         MailService $mailService,
+        NotificationService $notificationService,
     ): Response {
         if ($this->getUser() instanceof User) {
             return $this->redirectToRoute('app_home');
@@ -67,6 +69,13 @@ class RegisterController extends AbstractController
             $entityManager->flush();
 
             $mailService->sendRegistrationEmail($user);
+
+            $notificationService->notify(
+                $user,
+                'Bienvenue sur Airbnb Clone !',
+                'Votre inscription a été validée avec succès. Bienvenue dans notre communauté !',
+                $this->generateUrl('app_home')
+            );
 
             $this->addFlash('success', 'Compte créé avec succès. Vous pouvez vous connecter.');
 

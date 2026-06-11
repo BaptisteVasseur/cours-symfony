@@ -16,6 +16,7 @@ final readonly class BookingCreatedHandler
     public function __construct(
         private ReservationRepository $reservationRepository,
         private MailService $mailService,
+        private \App\Service\NotificationService $notificationService,
     ) {
     }
 
@@ -27,5 +28,14 @@ final readonly class BookingCreatedHandler
         }
 
         $this->mailService->sendBookingPendingHostEmail($reservation);
+
+        $property = $reservation->getProperty();
+        $host = $property?->getHost();
+        if ($host !== null) {
+            $guestName = $reservation->getGuest()?->getProfile()?->getFirstName() ?? 'Un voyageur';
+            $title = 'Nouvelle demande de réservation';
+            $body = sprintf('%s souhaite réserver votre logement "%s".', $guestName, $property->getTitle());
+            $this->notificationService->notify($host, $title, $body, '/compte/hote/reservations');
+        }
     }
 }

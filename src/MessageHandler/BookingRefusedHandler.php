@@ -16,6 +16,7 @@ final readonly class BookingRefusedHandler
     public function __construct(
         private ReservationRepository $reservationRepository,
         private MailService $mailService,
+        private \App\Service\NotificationService $notificationService,
     ) {
     }
 
@@ -27,5 +28,13 @@ final readonly class BookingRefusedHandler
         }
 
         $this->mailService->sendBookingRefusedEmail($reservation);
+
+        $property = $reservation->getProperty();
+        $guest = $reservation->getGuest();
+        if ($guest !== null && $property !== null) {
+            $title = 'Demande de réservation refusée';
+            $body = sprintf('Votre demande pour le logement "%s" a été refusée par l\'hôte. Motif : %s', $property->getTitle(), $reservation->getCancellationReason() ?? 'non spécifié');
+            $this->notificationService->notify($guest, $title, $body, '/reservations/' . $reservation->getId());
+        }
     }
 }

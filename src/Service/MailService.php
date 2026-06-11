@@ -6,6 +6,7 @@ namespace App\Service;
 
 use App\Entity\User;
 use App\Entity\Reservation;
+use App\Entity\Message;
 use Symfony\Bridge\Twig\Mime\TemplatedEmail;
 use Symfony\Component\Mailer\MailerInterface;
 use Symfony\Component\Mime\Address;
@@ -17,6 +18,34 @@ final class MailService
         private readonly MailerInterface $mailer,
         private readonly UrlGeneratorInterface $urlGenerator,
     ) {}
+
+    public function sendNewMessageEmail(Message $message, User $recipient): void
+    {
+        $emailAddress = $recipient->getEmail();
+        if ($emailAddress === null) {
+            return;
+        }
+
+        $conversationUrl = $this->urlGenerator->generate(
+            'app_messages_show',
+            ['id' => $message->getConversation()?->getId()],
+            UrlGeneratorInterface::ABSOLUTE_URL
+        );
+
+        $email = (new TemplatedEmail())
+            ->from(new Address('noreply@airbnb-clone.local', 'Airbnb Clone'))
+            ->to(new Address($emailAddress, $this->displayName($recipient)))
+            ->subject('Nouveau message reçu')
+            ->htmlTemplate('emails/new_message.html.twig')
+            ->context([
+                'messageContent' => $message->getContent(),
+                'senderName' => $this->displayName($message->getSender()),
+                'conversationUrl' => $conversationUrl,
+                'recipient' => $recipient,
+            ]);
+
+        $this->mailer->send($email);
+    }
 
     public function sendRegistrationEmail(User $user): void
     {
