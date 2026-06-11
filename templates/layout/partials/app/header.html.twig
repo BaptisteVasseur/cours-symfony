@@ -4,10 +4,16 @@
         <span class="hidden sm:inline">airbnb</span>
     </a>
 
-    <a href="{{ path('app_search') }}" class="flex-1 max-w-sm mx-auto hidden sm:flex items-center gap-2 border border-gray-200 rounded-full px-4 py-2 text-sm text-gray-500 hover:shadow-sm transition min-w-0">
+    <form action="{{ path('app_search') }}" method="get" data-turbo="false"
+          onsubmit="return !!this.querySelector('[name=destination]').value.trim()"
+          class="flex-1 max-w-sm mx-auto hidden sm:flex items-center gap-2 border border-gray-200 rounded-full px-4 py-2 text-sm hover:shadow-md transition min-w-0 focus-within:border-brand focus-within:shadow-sm">
         <i class="fa-solid fa-magnifying-glass text-brand shrink-0"></i>
-        <span class="truncate">Rechercher un logement</span>
-    </a>
+        <input type="text" name="destination"
+               value="{{ app.request.query.get('destination', '') }}"
+               placeholder="Rechercher un logement"
+               autocomplete="off"
+               class="flex-1 bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400 min-w-0">
+    </form>
 
     <div class="flex items-center gap-2 shrink-0 ml-auto">
         <a href="{{ path('app_search') }}" class="sm:hidden p-2 text-gray-600 hover:bg-gray-50 rounded-full" aria-label="Rechercher">
