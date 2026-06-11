@@ -12,7 +12,7 @@
                 <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Mes notifications</h1>
                 <p class="text-gray-500 mt-1">Suivez l'activité de votre compte et de vos réservations</p>
             </div>
-            {% set unreadCount = unread_notifications_count() %}
+            {% set unreadCount = notifications_unread_count(app.user) %}
             {% if unreadCount > 0 %}
                 <form action="{{ path('app_notifications_mark_all_read') }}" method="POST" class="m-0 shrink-0">
                     <button type="submit" class="w-full sm:w-auto text-sm font-semibold text-brand hover:text-brandHover border border-brand hover:bg-brand/5 px-4 py-2 rounded-full transition text-center">

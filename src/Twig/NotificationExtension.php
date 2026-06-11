@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Twig;
 
+use App\Entity\User;
 use App\Repository\NotificationRepository;
 use Symfony\Bundle\SecurityBundle\Security;
 use Twig\Extension\AbstractExtension;
@@ -21,6 +22,7 @@ final class NotificationExtension extends AbstractExtension
     {
         return [
             new TwigFunction('unread_notifications_count', [$this, 'getUnreadCount']),
+            new TwigFunction('notifications_unread_count', [$this, 'getUnreadCountForUser']),
             new TwigFunction('latest_notifications', [$this, 'getLatestNotifications']),
         ];
     }
@@ -28,6 +30,15 @@ final class NotificationExtension extends AbstractExtension
     public function getUnreadCount(): int
     {
         $user = $this->security->getUser();
+        if ($user === null) {
+            return 0;
+        }
+
+        return $this->notificationRepository->count(['user' => $user, 'isRead' => false]);
+    }
+
+    public function getUnreadCountForUser(?User $user): int
+    {
         if ($user === null) {
             return 0;
         }
@@ -49,3 +60,4 @@ final class NotificationExtension extends AbstractExtension
         );
     }
 }
+
