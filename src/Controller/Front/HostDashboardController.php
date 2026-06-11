@@ -17,6 +17,7 @@ use App\Security\Voter\ReservationVoter;
 use App\Service\BookingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -30,6 +31,7 @@ final class HostDashboardController extends AbstractController
     public function becomeHost(
         Request $request,
         EntityManagerInterface $entityManager,
+        Security $security,
     ): Response {
         $user = $this->getUser();
         if (!$user instanceof User) {
@@ -43,6 +45,8 @@ final class HostDashboardController extends AbstractController
         if ($request->isMethod('POST')) {
             $user->addAssignedRole(Roles::HOST);
             $entityManager->flush();
+
+            $security->login($user);
 
             $this->addFlash('success', 'Félicitations ! Vous êtes maintenant un hôte. Bienvenue sur votre tableau de bord !');
 
