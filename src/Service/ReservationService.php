@@ -14,7 +14,9 @@ use App\Message\ReservationPendingMessage;
 use App\Repository\PropertyAvailabilityRepository;
 use App\Repository\ReservationRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\LockMode;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 class ReservationService
 {
@@ -22,7 +24,7 @@ class ReservationService
         private readonly EntityManagerInterface $em,
         private readonly ReservationRepository $reservationRepository,
         private readonly PropertyAvailabilityRepository $availabilityRepository,
-        private readonly \Symfony\Component\Messenger\MessageBusInterface $bus,
+        private readonly MessageBusInterface $bus,
     ) {
     }
 
@@ -104,17 +106,28 @@ class ReservationService
 
         $property = $reservation->getProperty();
 
-        if ($this->reservationRepository->hasConfirmedConflict(
-            $property,
-            $reservation->getCheckinDate(),
-            $reservation->getCheckoutDate(),
-            $reservation
-        )) {
-            throw new BadRequestHttpException('Les dates ne sont plus disponibles.');
-        }
+        $this->em->getConnection()->beginTransaction();
 
-        $this->changeStatus($reservation, 'confirmed', $host);
-        $this->em->flush();
+        try {
+            $this->em->lock($property, LockMode::PESSIMISTIC_WRITE);
+
+            if ($this->reservationRepository->hasConfirmedConflict(
+                $property,
+                $reservation->getCheckinDate(),
+                $reservation->getCheckoutDate(),
+                $reservation
+            )) {
+                $this->em->getConnection()->rollBack();
+                throw new BadRequestHttpException('Les dates ne sont plus disponibles.');
+            }
+
+            $this->changeStatus($reservation, 'confirmed', $host);
+            $this->em->flush();
+            $this->em->getConnection()->commit();
+        } catch (\Exception $e) {
+            $this->em->getConnection()->rollBack();
+            throw $e;
+        }
 
         $this->bus->dispatch(new ReservationConfirmedMessage($reservation->getId()));
     }
