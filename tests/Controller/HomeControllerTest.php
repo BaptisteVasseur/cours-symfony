@@ -75,18 +75,28 @@ final class HomeControllerTest extends WebTestCase
         $guest = $userRepository->findOneBy(['email' => 'test@example.com']);
         $this->assertNotNull($guest);
 
-        $property = $propertyRepository->findOneBy(['status' => 'published']);
-        $this->assertNotNull($property);
+        $property = null;
+        $checkin = null;
+        $checkout = null;
 
-        if ($property->getHost()?->getId() === $guest->getId()) {
-            $properties = $propertyRepository->findBy(['status' => 'published']);
-            foreach ($properties as $p) {
-                if ($p->getHost()?->getId() !== $guest->getId()) {
-                    $property = $p;
-                    break;
+        for ($offset = 1; $offset <= 365; ++$offset) {
+            $candidateCheckin = new \DateTimeImmutable(sprintf('+%d days', $offset));
+            $candidateCheckout = $candidateCheckin->modify('+4 days');
+            $properties = $propertyRepository->searchAvailable(null, $candidateCheckin, $candidateCheckout, 1);
+
+            foreach ($properties as $candidate) {
+                if ($candidate->getHost()?->getId() !== $guest->getId()) {
+                    $property = $candidate;
+                    $checkin = $candidateCheckin;
+                    $checkout = $candidateCheckout;
+                    break 2;
                 }
             }
         }
+
+        $this->assertNotNull($property);
+        $this->assertNotNull($checkin);
+        $this->assertNotNull($checkout);
 
         $client->loginUser($guest);
 
@@ -94,8 +104,8 @@ final class HomeControllerTest extends WebTestCase
         $this->assertResponseIsSuccessful();
 
         $form = $crawler->selectButton('Confirmer la réservation')->form([
-            'booking[checkinDate]' => (new \DateTimeImmutable('+1 day'))->format('Y-m-d'),
-            'booking[checkoutDate]' => (new \DateTimeImmutable('+5 days'))->format('Y-m-d'),
+            'booking[checkinDate]' => $checkin->format('Y-m-d'),
+            'booking[checkoutDate]' => $checkout->format('Y-m-d'),
             'booking[guestsCount]' => 1,
         ]);
 
