@@ -1,0 +1,17 @@
+{# Bloc récapitulatif réutilisable : reservation #}
+<table width="100%" cellpadding="0" cellspacing="0" style="margin:16px 0;border:1px solid #e5e7eb;border-radius:8px;">
+    <tr><td style="padding:16px;">
+        <strong style="font-size:16px;">{{ reservation.property.title }}</strong>
+        {% if reservation.property.address %}
+            <div style="color:#6b7280;font-size:14px;">{{ reservation.property.address.city }}, {{ reservation.property.address.country }}</div>
+        {% endif %}
+        <table width="100%" cellpadding="4" cellspacing="0" style="margin-top:12px;font-size:14px;">
+            <tr><td style="color:#6b7280;">Arrivée</td><td align="right">{{ reservation.checkinDate|date('d/m/Y') }}</td></tr>
+            <tr><td style="color:#6b7280;">Départ</td><td align="right">{{ reservation.checkoutDate|date('d/m/Y') }}</td></tr>
+            <tr><td style="color:#6b7280;">Voyageurs</td><td align="right">{{ reservation.guestsCount }}</td></tr>
+            <tr><td style="color:#6b7280;">Voyageur</td><td align="right">{{ reservation.guest.email }}</td></tr>
+            <tr><td style="border-top:1px solid #e5e7eb;padding-top:8px;"><strong>Total</strong></td>
+                <td align="right" style="border-top:1px solid #e5e7eb;padding-top:8px;"><strong>{{ reservation.totalPrice }} {{ reservation.currency }}</strong></td></tr>
+        </table>
+    </td></tr>
+</table>

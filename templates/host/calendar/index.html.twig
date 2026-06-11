@@ -1,0 +1,71 @@
+{% extends 'layouts/base.html.twig' %}
+
+{% block title %}Calendrier — Airstay{% endblock %}
+
+{% block header %}
+    {% include 'components/_header_user.html.twig' %}
+{% endblock %}
+
+{% block body %}
+    <section class="max-w-5xl mx-auto px-6 py-10">
+
+        <h1 class="text-3xl font-bold mb-1">Calendrier</h1>
+        <p class="text-gray-600 mb-6">Vue d'ensemble de tous vos logements.</p>
+
+        {# Navigation mensuelle #}
+        <div class="flex items-center justify-between mb-4">
+            <a href="{{ path('app_host_calendar', { month: prevMonth }) }}"
+               class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">&larr;</a>
+            <h2 class="text-xl font-semibold">{{ calendar.label }}</h2>
+            <a href="{{ path('app_host_calendar', { month: nextMonth }) }}"
+               class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">&rarr;</a>
+        </div>
+
+        {# Légende #}
+        <div class="flex flex-wrap gap-4 text-xs text-gray-600 mb-4">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rausch"></span> Réservé</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-gray-300"></span> Bloqué</span>
+        </div>
+
+        {# Grille mensuelle #}
+        <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-500 mb-1">
+            {% for d in ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] %}<div>{{ d }}</div>{% endfor %}
+        </div>
+        <div class="grid grid-cols-7 gap-1">
+            {% if calendar.firstWeekday > 1 %}
+                {% for i in 1..(calendar.firstWeekday - 1) %}<div></div>{% endfor %}
+            {% endif %}
+            {% for cell in calendar.days %}
+                <div class="min-h-[5.5rem] rounded-lg border border-gray-200 p-1.5 flex flex-col gap-1 {{ cell.past ? 'opacity-40' : '' }}">
+                    <span class="text-sm font-semibold">{{ cell.day }}</span>
+                    <div class="flex flex-col gap-0.5 overflow-hidden">
+                        {% for event in cell.events %}
+                            <span class="truncate text-[10px] leading-tight px-1 py-0.5 rounded
+                                {{ event.status == 'booked' ? 'bg-rausch text-white' : 'bg-gray-300 text-gray-700' }}"
+                                  title="{{ event.title }}">
+                                {{ event.title }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+        {# Bloquer des dates : passer par le calendrier d'un logement précis #}
+        <div class="mt-10">
+            <h3 class="font-semibold mb-3">Gérer un logement</h3>
+            <div class="divide-y divide-gray-200 border border-gray-200 rounded-2xl overflow-hidden">
+                {% for property in properties %}
+                    <a href="{{ path('app_host_property_calendar', { id: property.id }) }}"
+                       class="flex items-center justify-between gap-4 px-5 py-3 hover:bg-gray-50">
+                        <span class="font-medium">{{ property.title }}</span>
+                        <span class="text-sm text-rausch">Bloquer / tarifs &rarr;</span>
+                    </a>
+                {% else %}
+                    <p class="px-5 py-3 text-gray-500">Aucun logement.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+    </section>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block content %}
+    <h1 style="font-size:20px;margin:0 0 8px;">Réservation annulée</h1>
+    <p style="color:#4b5563;font-size:14px;">Cette réservation a été annulée. Les dates ont été libérées.</p>
+
+    {% if reservation.cancellationReason %}
+        <p style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:12px;border-radius:8px;font-size:14px;">
+            <strong>Motif :</strong> {{ reservation.cancellationReason }}
+        </p>
+    {% endif %}
+
+    {% include 'emails/_recap.html.twig' %}
+{% endblock %}

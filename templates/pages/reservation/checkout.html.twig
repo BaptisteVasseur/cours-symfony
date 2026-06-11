@@ -1,0 +1,84 @@
+{% extends 'layouts/base.html.twig' %}
+
+{% block title %}Récapitulatif — {{ property.title }}{% endblock %}
+
+{% block header %}
+    {% include 'components/_header_user.html.twig' %}
+{% endblock %}
+
+{% block body %}
+    <section class="max-w-2xl mx-auto px-6 py-10">
+
+        <a href="{{ path('app_property_show', { id: property.id }) }}" class="text-sm text-gray-500 hover:text-gray-900">&larr; Retour au logement</a>
+        <h1 class="text-3xl font-bold mt-2 mb-6">Confirmer et payer</h1>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 rounded-lg px-4 py-3 text-sm {{ label == 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="border border-gray-200 rounded-2xl p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-1">{{ property.title }}</h2>
+            {% if property.address %}
+                <p class="text-gray-500 mb-4">{{ property.address.city }}, {{ property.address.country }}</p>
+            {% endif %}
+            <dl class="grid grid-cols-2 gap-y-3 text-sm">
+                <dt class="text-gray-500">Arrivée</dt><dd class="text-right font-medium">{{ checkin|date('d/m/Y') }}</dd>
+                <dt class="text-gray-500">Départ</dt><dd class="text-right font-medium">{{ checkout|date('d/m/Y') }}</dd>
+                <dt class="text-gray-500">Voyageurs</dt><dd class="text-right font-medium">{{ guests }}</dd>
+            </dl>
+        </div>
+
+        {% if not availability.available %}
+            <div class="border border-red-200 bg-red-50 rounded-2xl p-6">
+                <h2 class="font-semibold text-red-800 mb-2">Ces dates ne sont pas disponibles</h2>
+                <ul class="list-disc list-inside text-sm text-red-700 space-y-1">
+                    {% for reason in availability.reasons %}<li>{{ reason }}</li>{% endfor %}
+                </ul>
+                <a href="{{ path('app_property_show', { id: property.id }) }}"
+                   class="inline-block mt-4 text-sm font-semibold text-rausch hover:underline">Choisir d'autres dates</a>
+            </div>
+        {% else %}
+            <div class="border border-gray-200 rounded-2xl p-6 mb-6">
+                <h2 class="text-lg font-semibold mb-4">Détail du prix</h2>
+                <dl class="space-y-2 text-sm">
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">{{ price.nights }} nuit(s)</dt>
+                        <dd>{{ price.nightsTotal }} {{ price.currency }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Frais de ménage</dt>
+                        <dd>{{ price.cleaningFee }} {{ price.currency }}</dd>
+                    </div>
+                    <div class="flex justify-between">
+                        <dt class="text-gray-600">Frais de service</dt>
+                        <dd>{{ price.serviceFee }} {{ price.currency }}</dd>
+                    </div>
+                    <div class="flex justify-between border-t border-gray-200 pt-3 font-semibold text-base">
+                        <dt>Total</dt><dd>{{ price.total }} {{ price.currency }}</dd>
+                    </div>
+                    {% if price.securityDeposit != '0.00' %}
+                        <p class="text-xs text-gray-500 pt-2">Caution (non incluse) : {{ price.securityDeposit }} {{ price.currency }}</p>
+                    {% endif %}
+                </dl>
+            </div>
+
+            <form method="post" action="{{ path('app_reservation_book', { id: property.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('book' ~ property.id) }}">
+                <input type="hidden" name="checkin" value="{{ checkin|date('Y-m-d') }}">
+                <input type="hidden" name="checkout" value="{{ checkout|date('Y-m-d') }}">
+                <input type="hidden" name="guests" value="{{ guests }}">
+                <button type="submit" class="w-full py-3 bg-rausch hover:bg-rausch-dark text-white font-semibold rounded-lg transition">
+                    {{ property.instantBooking ? 'Réserver maintenant' : 'Envoyer la demande' }}
+                </button>
+                {% if not property.instantBooking %}
+                    <p class="text-center text-sm text-gray-500 mt-3">L'hôte doit accepter votre demande.</p>
+                {% endif %}
+            </form>
+        {% endif %}
+
+    </section>
+{% endblock %}

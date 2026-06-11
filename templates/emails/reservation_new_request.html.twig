@@ -1,0 +1,13 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block content %}
+    <h1 style="font-size:20px;margin:0 0 8px;">Nouvelle demande de réservation</h1>
+    <p style="color:#4b5563;font-size:14px;">Un voyageur souhaite réserver votre logement. Merci de répondre rapidement.</p>
+
+    {% include 'emails/_recap.html.twig' %}
+
+    <a href="http://localhost:8089{{ path('app_host_reservation_index') }}"
+       style="display:inline-block;background:#FF385C;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px;">
+        Voir la demande
+    </a>
+{% endblock %}

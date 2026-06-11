@@ -1,0 +1,42 @@
+{% extends 'layouts/base.html.twig' %}
+
+{% block title %}Mes logements — Airstay{% endblock %}
+
+{% block header %}
+    {% include 'components/_header_user.html.twig' %}
+{% endblock %}
+
+{% block body %}
+    <section class="max-w-5xl mx-auto px-6 py-10">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-3xl font-bold">Mes logements</h1>
+            <a href="{{ path('app_host_calendar') }}"
+               class="rounded-lg bg-rausch hover:bg-rausch-dark text-white text-sm font-semibold px-4 py-2">
+                Calendrier
+            </a>
+        </div>
+
+        {% if properties is empty %}
+            <p class="text-gray-600">Vous n'avez aucun logement pour le moment.</p>
+        {% else %}
+            <div class="divide-y divide-gray-200 border border-gray-200 rounded-2xl overflow-hidden">
+                {% for property in properties %}
+                    <a href="{{ path('app_host_property_calendar', { id: property.id }) }}"
+                       class="flex items-center justify-between gap-4 px-5 py-4 hover:bg-gray-50">
+                        <div>
+                            <p class="font-semibold">{{ property.title }}</p>
+                            {% if property.address %}
+                                <p class="text-sm text-gray-500">{{ property.address.city }}, {{ property.address.country }}</p>
+                            {% endif %}
+                            <span class="inline-block mt-1 text-xs px-2 py-0.5 rounded-full
+                                {{ property.status == 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">
+                                {{ property.status }}
+                            </span>
+                        </div>
+                        <span class="shrink-0 text-sm text-rausch">Gérer &rarr;</span>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+{% endblock %}

@@ -9,16 +9,38 @@
 {% block body %}
     <section class="max-w-2xl mx-auto px-6 py-12">
 
-        {# Bandeau confirmation #}
+        {% set banners = {
+            'confirmed': { bg: 'bg-green-100', stroke: 'stroke-green-600', title: 'Réservation confirmée' },
+            'pending':   { bg: 'bg-yellow-100', stroke: 'stroke-yellow-600', title: 'Demande envoyée' },
+            'cancelled': { bg: 'bg-red-100', stroke: 'stroke-red-600', title: 'Réservation annulée' },
+            'completed': { bg: 'bg-gray-100', stroke: 'stroke-gray-600', title: 'Séjour terminé' },
+        } %}
+        {% set banner = banners[reservation.status]|default(banners.pending) %}
+
+        {# Bandeau statut #}
         <div class="text-center mb-10">
-            <div class="w-16 h-16 mx-auto mb-4 rounded-full bg-green-100 flex items-center justify-center">
-                <svg viewBox="0 0 24 24" class="w-8 h-8 fill-none stroke-green-600 stroke-[2.5]">
+            <div class="w-16 h-16 mx-auto mb-4 rounded-full {{ banner.bg }} flex items-center justify-center">
+                <svg viewBox="0 0 24 24" class="w-8 h-8 fill-none {{ banner.stroke }} stroke-[2.5]">
                     <path d="M5 13l4 4L19 7" stroke-linecap="round" stroke-linejoin="round"></path>
                 </svg>
             </div>
-            <h1 class="text-3xl font-bold mb-2">Réservation confirmée</h1>
+            <h1 class="text-3xl font-bold mb-2">{{ banner.title }}</h1>
             <p class="text-gray-600">Référence : {{ reservation.id }}</p>
         </div>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 rounded-lg px-4 py-3 text-sm {{ label == 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        {% if reservation.status == 'cancelled' and reservation.cancellationReason %}
+            <div class="border border-red-200 bg-red-50 rounded-2xl p-4 mb-6 text-sm text-red-800">
+                <span class="font-semibold">Motif d'annulation :</span> {{ reservation.cancellationReason }}
+            </div>
+        {% endif %}
 
         {# Récap logement #}
         <div class="border border-gray-200 rounded-2xl p-6 mb-6">
@@ -72,6 +94,22 @@
                 </div>
             </dl>
         </div>
+
+        {% if reservation.status in ['pending', 'confirmed'] and reservation.guest == app.user %}
+            <form method="post" action="{{ path('app_reservation_cancel', { id: reservation.id }) }}"
+                  class="border border-gray-200 rounded-2xl p-5 mb-8">
+                <h2 class="font-semibold mb-3">Annuler la réservation</h2>
+                <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ reservation.id) }}">
+                <label class="text-sm block mb-3">Motif
+                    <input type="text" name="reason" required placeholder="Motif obligatoire"
+                           class="mt-1 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
+                </label>
+                <button type="submit" class="rounded-lg bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold px-4 py-2"
+                        onclick="return confirm('Confirmer l\'annulation ?')">
+                    Annuler ma réservation
+                </button>
+            </form>
+        {% endif %}
 
         <div class="flex gap-3">
             <a href="{{ path('app_reservation_history') }}"

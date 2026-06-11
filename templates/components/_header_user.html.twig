@@ -6,26 +6,46 @@
             {% include 'components/_logo.html.twig' with { svgClass: 'w-8 h-8 fill-current', textClass: 'text-xl font-bold tracking-tight hidden sm:inline' } %}
         </a>
 
-        {# Search bar #}
-        <div class="hidden md:flex items-center divide-x divide-gray-200 border border-gray-200 rounded-full py-2 pl-6 pr-2 shadow-sm hover:shadow-md transition cursor-pointer">
-            <span class="px-2 text-sm font-medium">N'importe où</span>
-            <span class="px-2 text-sm font-medium">N'importe quand</span>
-            <span class="px-2 text-sm text-gray-500">Voyageurs</span>
-            <span class="bg-rausch text-white p-2 rounded-full ml-2">
+        {# Barre de recherche unique (Partie C) — réutilisée sur toutes les pages #}
+        <form method="get" action="{{ path('app_search') }}"
+              class="hidden md:flex items-center divide-x divide-gray-200 border border-gray-200 rounded-full py-1.5 pl-4 pr-1.5 shadow-sm hover:shadow-md transition">
+            <input type="text" name="destination" value="{{ app.request.query.get('destination') }}"
+                   placeholder="Destination" class="px-2 text-sm w-28 focus:outline-none">
+            <input type="date" name="checkin" value="{{ app.request.query.get('checkin') }}"
+                   class="px-2 text-sm w-32 focus:outline-none text-gray-600">
+            <input type="date" name="checkout" value="{{ app.request.query.get('checkout') }}"
+                   class="px-2 text-sm w-32 focus:outline-none text-gray-600">
+            <input type="number" name="guests" min="1" value="{{ app.request.query.get('guests') }}"
+                   placeholder="Voy." class="px-2 text-sm w-14 focus:outline-none">
+            <button type="submit" class="bg-rausch hover:bg-rausch-dark text-white p-2 rounded-full ml-1">
                 <svg viewBox="0 0 32 32" class="w-4 h-4 fill-none stroke-current stroke-[4]"><path d="M13 24a11 11 0 100-22 11 11 0 000 22zm8-3l9 9" stroke-linecap="round"></path></svg>
-            </span>
-        </div>
+            </button>
+        </form>
 
         {# Right side #}
         <div class="flex items-center gap-2 shrink-0">
-            <a href="#" class="hidden lg:inline px-4 py-2 text-sm font-semibold rounded-full hover:bg-gray-100 transition">
-                Mettre mon logement
-            </a>
+            {% if is_granted('ROLE_HOST') %}
+                <a href="{{ path('app_host_property_index') }}" class="hidden lg:inline px-3 py-2 text-sm font-semibold rounded-full hover:bg-gray-100 transition">
+                    Mes logements
+                </a>
+                <a href="{{ path('app_host_calendar') }}" class="hidden lg:inline px-3 py-2 text-sm font-semibold rounded-full hover:bg-gray-100 transition">
+                    Calendrier
+                </a>
+                <a href="{{ path('app_host_reservation_index') }}" class="hidden lg:inline px-3 py-2 text-sm font-semibold rounded-full hover:bg-gray-100 transition">
+                    Demandes
+                </a>
+            {% else %}
+                <a href="#" class="hidden lg:inline px-4 py-2 text-sm font-semibold rounded-full hover:bg-gray-100 transition">
+                    Mettre mon logement
+                </a>
+            {% endif %}
 
             {% if app.user %}
-                <a href="{{ path('app_reservation_history') }}" class="hidden sm:inline px-3 py-2 text-sm font-medium rounded-full hover:bg-gray-100 transition">
-                    Mes réservations
-                </a>
+                {% if not is_granted('ROLE_HOST') %}
+                    <a href="{{ path('app_reservation_history') }}" class="hidden sm:inline px-3 py-2 text-sm font-medium rounded-full hover:bg-gray-100 transition">
+                        Mes réservations
+                    </a>
+                {% endif %}
                 <span class="hidden md:inline text-sm text-gray-600">{{ app.user.userIdentifier }}</span>
                 <a href="{{ path('app_logout') }}" class="px-4 py-2 text-sm font-semibold rounded-full border border-gray-200 hover:shadow-md transition">
                     Déconnexion

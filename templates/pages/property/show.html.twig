@@ -81,9 +81,23 @@
                     {% if property.securityDeposit %}
                         <p class="text-sm text-gray-600 mb-4">Caution : {{ property.securityDeposit }} €</p>
                     {% endif %}
-                    <button class="w-full py-3 bg-rausch hover:bg-rausch-dark text-white font-semibold rounded-lg transition">
-                        Réserver
-                    </button>
+                    <form method="get" action="{{ path('app_reservation_checkout', { id: property.id }) }}" class="space-y-3">
+                        <div class="grid grid-cols-2 gap-2">
+                            <label class="text-sm">Arrivée
+                                <input type="date" name="checkin" required class="mt-1 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
+                            </label>
+                            <label class="text-sm">Départ
+                                <input type="date" name="checkout" required class="mt-1 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
+                            </label>
+                        </div>
+                        <label class="text-sm block">Voyageurs
+                            <input type="number" name="guests" min="1" max="{{ property.maxGuests }}" value="1" required
+                                   class="mt-1 w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm">
+                        </label>
+                        <button type="submit" class="w-full py-3 bg-rausch hover:bg-rausch-dark text-white font-semibold rounded-lg transition">
+                            Réserver
+                        </button>
+                    </form>
                     {% if property.instantBooking %}
                         <p class="text-center text-sm text-gray-500 mt-3">Réservation instantanée disponible</p>
                     {% endif %}

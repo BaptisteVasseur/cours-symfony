@@ -1,0 +1,19 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block content %}
+    <h1 style="font-size:20px;margin:0 0 8px;">Demande refusée</h1>
+    <p style="color:#4b5563;font-size:14px;">L'hôte n'a malheureusement pas pu accepter votre demande.</p>
+
+    {% if reservation.cancellationReason %}
+        <p style="background:#fef2f2;border:1px solid #fecaca;color:#991b1b;padding:12px;border-radius:8px;font-size:14px;">
+            <strong>Motif :</strong> {{ reservation.cancellationReason }}
+        </p>
+    {% endif %}
+
+    {% include 'emails/_recap.html.twig' %}
+
+    <a href="http://localhost:8089{{ path('app_search') }}"
+       style="display:inline-block;background:#FF385C;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px;">
+        Trouver un autre logement
+    </a>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block content %}
+    <h1 style="font-size:20px;margin:0 0 8px;">Réservation confirmée ✅</h1>
+    <p style="color:#4b5563;font-size:14px;">Votre séjour est confirmé. Voici le récapitulatif :</p>
+
+    {% include 'emails/_recap.html.twig' %}
+
+    <a href="http://localhost:8089{{ path('app_reservation_confirmation', { id: reservation.id }) }}"
+       style="display:inline-block;background:#FF385C;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 22px;border-radius:8px;">
+        Voir ma réservation
+    </a>
+{% endblock %}

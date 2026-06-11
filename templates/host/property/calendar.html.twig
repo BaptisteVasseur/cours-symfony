@@ -1,0 +1,124 @@
+{% extends 'layouts/base.html.twig' %}
+
+{% block title %}Calendrier — {{ property.title }}{% endblock %}
+
+{% block header %}
+    {% include 'components/_header_user.html.twig' %}
+{% endblock %}
+
+{% block body %}
+    <section class="max-w-5xl mx-auto px-6 py-10">
+
+        <div class="mb-6">
+            <a href="{{ path('app_host_property_index') }}" class="text-sm text-gray-500 hover:text-gray-900">&larr; Mes logements</a>
+            <h1 class="text-3xl font-bold mt-2">{{ property.title }}</h1>
+            <p class="text-gray-600">Gestion du calendrier</p>
+        </div>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 rounded-lg px-4 py-3 text-sm
+                    {{ label == 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        {# Navigation mensuelle #}
+        <div class="flex items-center justify-between mb-4">
+            <a href="{{ path('app_host_property_calendar', { id: property.id, month: prevMonth }) }}"
+               class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">&larr;</a>
+            <h2 class="text-xl font-semibold">{{ calendar.label }}</h2>
+            <a href="{{ path('app_host_property_calendar', { id: property.id, month: nextMonth }) }}"
+               class="rounded-lg border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-50">&rarr;</a>
+        </div>
+
+        {# Légende #}
+        <div class="flex flex-wrap gap-4 text-xs text-gray-600 mb-4">
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-white border border-gray-300"></span> Disponible</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-gray-300"></span> Bloqué</span>
+            <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rausch"></span> Réservé</span>
+        </div>
+
+        {# Grille mensuelle #}
+        <div class="grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-500 mb-1">
+            {% for d in ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] %}<div>{{ d }}</div>{% endfor %}
+        </div>
+        <div class="grid grid-cols-7 gap-1">
+            {% if calendar.firstWeekday > 1 %}
+                {% for i in 1..(calendar.firstWeekday - 1) %}<div></div>{% endfor %}
+            {% endif %}
+            {% for cell in calendar.days %}
+                {% set classes = 'bg-white border-gray-200' %}
+                {% if cell.status == 'booked' %}{% set classes = 'bg-rausch text-white border-rausch' %}
+                {% elseif cell.status == 'blocked' %}{% set classes = 'bg-gray-300 text-gray-600 border-gray-300' %}{% endif %}
+                <div class="aspect-square rounded-lg border p-1.5 flex flex-col justify-between {{ classes }} {{ cell.past ? 'opacity-40' : '' }}">
+                    <span class="text-sm font-semibold">{{ cell.day }}</span>
+                    {% if cell.status != 'booked' %}
+                        <span class="text-[10px] {{ cell.status == 'blocked' ? 'text-gray-600' : 'text-gray-400' }}">{{ cell.price }} €</span>
+                    {% endif %}
+                </div>
+            {% endfor %}
+        </div>
+
+        {# Actions : bloquer / débloquer une période #}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-10">
+            {% for action in [
+                { route: 'app_host_property_block', title: 'Bloquer une période', cta: 'Bloquer', color: 'bg-gray-800 hover:bg-gray-900' },
+                { route: 'app_host_property_unblock', title: 'Débloquer une période', cta: 'Débloquer', color: 'bg-rausch hover:bg-rausch-dark' }
+            ] %}
+                <form method="post"
+                      action="{{ path(action.route, { id: property.id, month: calendar.year ~ '-' ~ calendar.month }) }}"
+                      class="rounded-2xl border border-gray-200 p-5">
+                    <h3 class="font-semibold mb-3">{{ action.title }}</h3>
+                    <input type="hidden" name="_token" value="{{ csrf_token('calendar' ~ property.id) }}">
+                    <div class="grid grid-cols-2 gap-3 mb-3">
+                        <label class="text-sm">Du
+                            <input type="date" name="start" required class="mt-1 w-full rounded-lg border-gray-300 border px-2 py-1.5">
+                        </label>
+                        <label class="text-sm">Au
+                            <input type="date" name="end" required class="mt-1 w-full rounded-lg border-gray-300 border px-2 py-1.5">
+                        </label>
+                    </div>
+                    <button type="submit" class="w-full rounded-lg {{ action.color }} text-white text-sm font-semibold py-2">
+                        {{ action.cta }}
+                    </button>
+                </form>
+            {% endfor %}
+        </div>
+
+        {# Export iCal sécurisé (Partie E) #}
+        <div class="rounded-2xl border border-gray-200 p-5 mt-6">
+            <h3 class="font-semibold mb-1">Synchronisation iCal (export)</h3>
+            <p class="text-sm text-gray-500 mb-3">Abonnez Google Calendar / Outlook aux séjours confirmés de ce logement.</p>
+
+            {% if property.icalToken %}
+                <div class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-xs break-all mb-3 font-mono">
+                    {{ url('app_property_ical_export', { id: property.id, token: property.icalToken }) }}
+                </div>
+                <div class="flex gap-2">
+                    <form method="post" action="{{ path('app_host_property_ical_generate', { id: property.id }) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('ical' ~ property.id) }}">
+                        <button type="submit" class="rounded-lg border border-gray-300 hover:bg-gray-50 text-sm font-semibold px-4 py-2">
+                            Régénérer
+                        </button>
+                    </form>
+                    <form method="post" action="{{ path('app_host_property_ical_revoke', { id: property.id }) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('ical' ~ property.id) }}">
+                        <button type="submit" class="rounded-lg bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold px-4 py-2">
+                            Révoquer
+                        </button>
+                    </form>
+                </div>
+            {% else %}
+                <form method="post" action="{{ path('app_host_property_ical_generate', { id: property.id }) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('ical' ~ property.id) }}">
+                    <button type="submit" class="rounded-lg bg-rausch hover:bg-rausch-dark text-white text-sm font-semibold px-4 py-2">
+                        Générer le lien iCal
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+    </section>
+{% endblock %}

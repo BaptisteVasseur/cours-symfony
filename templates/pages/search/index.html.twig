@@ -1,0 +1,41 @@
+{% extends 'layouts/base.html.twig' %}
+
+{% block title %}Recherche — Airstay{% endblock %}
+
+{% block header %}
+    {% include 'components/_header_user.html.twig' %}
+{% endblock %}
+
+{% block body %}
+    <section class="max-w-7xl mx-auto px-6 py-10">
+
+        <h1 class="text-2xl font-bold mb-1">
+            {{ results|length }} logement(s) trouvé(s)
+            {% if destination %}à « {{ destination }} »{% endif %}
+        </h1>
+        {% if checkin and checkout %}
+            <p class="text-gray-500 mb-6">{{ checkin|date('d/m/Y') }} → {{ checkout|date('d/m/Y') }}{% if guests %} · {{ guests }} voyageur(s){% endif %}</p>
+        {% else %}
+            <p class="text-gray-500 mb-6">Sélectionnez des dates pour filtrer sur les disponibilités.</p>
+        {% endif %}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {% for property in results %}
+                {% set cover = null %}
+                {% for media in property.media %}
+                    {% if cover is null or media.isCover %}{% set cover = media %}{% endif %}
+                {% endfor %}
+
+                {% include 'components/_property_card.html.twig' with {
+                    image: cover ? cover.fileUrl : null,
+                    title: property.title,
+                    city: property.address ? property.address.city ~ ', ' ~ property.address.country : 'Lieu inconnu',
+                    price: property.pricePerNight,
+                    url: path('app_property_show', { id: property.id })
+                } %}
+            {% else %}
+                <p class="text-gray-500 col-span-full">Aucun logement ne correspond à votre recherche.</p>
+            {% endfor %}
+        </div>
+    </section>
+{% endblock %}

@@ -51,6 +51,7 @@ security:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/register, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/host, roles: ROLE_HOST }
         - { path: ^/reservations, roles: ROLE_GUEST }
         - { path: ^/reservation, roles: ROLE_GUEST }
         - { path: ^/user, roles: ROLE_USER }
