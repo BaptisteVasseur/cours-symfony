@@ -5,16 +5,16 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Property;
-use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
 use App\Repository\PropertyRepository;
-use Doctrine\ORM\EntityManagerInterface;
+use App\Security\Voter\PropertyVoter;
+use App\Service\Booking\BookingService;
+use App\Service\Booking\BookingUnavailableException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
-use App\Security\Voter\PropertyVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
@@ -26,7 +26,7 @@ final class BookingController extends AbstractController
         Request $request,
         Property $property,
         PropertyRepository $propertyRepository,
-        EntityManagerInterface $entityManager,
+        BookingService $bookingService,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -44,57 +44,52 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_logement_detail', ['id' => $property->getId()]);
         }
 
-        $form = $this->createForm(BookingType::class);
+        $defaults = [];
+        $checkinParam = $request->query->get('checkin');
+        $checkoutParam = $request->query->get('checkout');
+        $guestsParam = $request->query->get('guests');
+        if (is_string($checkinParam) && $checkinParam !== '') {
+            try {
+                $defaults['checkinDate'] = new \DateTimeImmutable($checkinParam);
+            } catch (\Exception) {
+            }
+        }
+        if (is_string($checkoutParam) && $checkoutParam !== '') {
+            try {
+                $defaults['checkoutDate'] = new \DateTimeImmutable($checkoutParam);
+            } catch (\Exception) {
+            }
+        }
+        if (is_string($guestsParam) && ctype_digit($guestsParam) && (int) $guestsParam >= 1) {
+            $defaults['guestsCount'] = (int) $guestsParam;
+        }
+
+        $form = $this->createForm(BookingType::class, $defaults);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
-            $checkin = $data['checkinDate'];
-            $checkout = $data['checkoutDate'];
-            $guestsCount = (int) $data['guestsCount'];
 
-            if ($checkin >= $checkout) {
-                $this->addFlash('error', 'La date de départ doit être postérieure à la date d\'arrivée.');
+            try {
+                $reservation = $bookingService->book(
+                    $property,
+                    $user,
+                    $data['checkinDate'],
+                    $data['checkoutDate'],
+                    (int) $data['guestsCount'],
+                );
+            } catch (BookingUnavailableException $exception) {
+                $this->addFlash('error', $exception->getMessage());
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
 
-            if ($guestsCount > $property->getMaxGuests()) {
-                $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
-
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
-            }
-
-            $nights = (int) $checkin->diff($checkout)->days;
-            $nightlyRate = (float) $property->getPricePerNight();
-            $subtotal = $nightlyRate * $nights;
-            $cleaningFee = (float) ($property->getCleaningFee() ?? 0);
-            $serviceFee = round($subtotal * 0.12, 2);
-            $totalPrice = round($subtotal + $cleaningFee + $serviceFee, 2);
-
-            $reservation = new Reservation();
-            $reservation->setProperty($property);
-            $reservation->setGuest($user);
-            $reservation->setCheckinDate($checkin);
-            $reservation->setCheckoutDate($checkout);
-            $reservation->setGuestsCount($guestsCount);
-            $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
-            $reservation->setTotalPrice((string) $totalPrice);
-            $reservation->setCleaningFee($cleaningFee > 0 ? (string) $cleaningFee : null);
-            $reservation->setServiceFee((string) $serviceFee);
-            $reservation->setSecurityDeposit($property->getSecurityDeposit());
-            $reservation->setCurrency('EUR');
-
-            $entityManager->persist($reservation);
-            $entityManager->flush();
-
-            $this->addFlash('success', 'Votre réservation a été enregistrée.');
+            $this->addFlash(
+                'success',
+                $reservation->getStatus() === 'confirmed'
+                    ? 'Votre réservation est confirmée.'
+                    : 'Votre demande de réservation a été envoyée à l\'hôte.',
+            );
 
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }

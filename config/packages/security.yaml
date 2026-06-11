@@ -43,6 +43,7 @@ security:
         - { path: ^/(login|register|aide)$, roles: PUBLIC_ACCESS }
         - { path: ^/$, roles: PUBLIC_ACCESS }
         - { path: ^/search, roles: PUBLIC_ACCESS }
+        - { path: ^/calendrier/[^/]+/export\.ics$, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/property, roles: ROLE_ADMIN }
         - { path: ^/user, roles: ROLE_ADMIN }

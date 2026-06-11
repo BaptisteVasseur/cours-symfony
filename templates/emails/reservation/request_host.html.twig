@@ -1,0 +1,26 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% set guestName = guest.profile and (guest.profile.firstName or guest.profile.lastName)
+    ? (guest.profile.firstName ~ ' ' ~ guest.profile.lastName)|trim
+    : guest.email %}
+
+{% block content %}
+    <h1 style="font-size:20px;margin:0 0 16px;">Nouvelle demande de réservation</h1>
+    <p style="margin:0 0 16px;line-height:1.5;">
+        Vous avez reçu une nouvelle demande de réservation à valider pour votre logement
+        <strong>{{ property.title }}</strong>.
+    </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;font-size:14px;">
+        <tr><td style="padding:6px 0;color:#6b7280;width:160px;">Logement</td><td style="padding:6px 0;font-weight:bold;">{{ property.title }}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Arrivée</td><td style="padding:6px 0;">{{ reservation.checkinDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Départ</td><td style="padding:6px 0;">{{ reservation.checkoutDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Voyageur</td><td style="padding:6px 0;">{{ guestName }}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Email du voyageur</td><td style="padding:6px 0;">{{ guest.email }}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Montant total</td><td style="padding:6px 0;font-weight:bold;">{{ reservation.totalPrice }} {{ reservation.currency }}</td></tr>
+    </table>
+
+    <a href="{{ moderationUrl }}" style="display:inline-block;background-color:#e11d48;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:8px;">
+        Examiner la demande
+    </a>
+{% endblock %}

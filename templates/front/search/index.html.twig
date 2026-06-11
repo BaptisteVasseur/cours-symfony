@@ -1,15 +1,68 @@
 {% extends 'layout/app.html.twig' %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
         <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Résultats de recherche</h1>
-        {% if destination %}<p class="text-gray-500 mb-8">Destination : {{ destination }}</p>{% endif %}
-        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
-            {% for property in properties %}
-                {% include 'components/card.html.twig' with { property: property } %}
-            {% else %}
-                <p class="col-span-full text-gray-500">Aucun logement trouvé.</p>
-            {% endfor %}
+        <div class="flex flex-wrap gap-2 text-sm text-gray-600 mb-8">
+            {% if destination %}<span class="px-3 py-1 bg-gray-100 rounded-full">Destination : <strong>{{ destination }}</strong></span>{% endif %}
+            {% if checkin and checkout %}<span class="px-3 py-1 bg-gray-100 rounded-full">{{ checkin|date('d/m/Y') }} → {{ checkout|date('d/m/Y') }}</span>{% endif %}
+            {% if guests > 0 %}<span class="px-3 py-1 bg-gray-100 rounded-full">{{ guests }} voyageur{{ guests > 1 ? 's' : '' }}</span>{% endif %}
+            {% if propertyType %}<span class="px-3 py-1 bg-gray-100 rounded-full">Type : {{ propertyType }}</span>{% endif %}
+            {% if priceMin > 0 or priceMax > 0 %}<span class="px-3 py-1 bg-gray-100 rounded-full">Prix : {{ priceMin > 0 ? priceMin ~ ' €' : 'min' }} – {{ priceMax > 0 ? priceMax ~ ' €' : 'max' }}</span>{% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <aside class="lg:col-span-1">
+                <form method="get" action="{{ path('app_search') }}" class="sticky top-28 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm space-y-5">
+                    <input type="hidden" name="destination" value="{{ destination }}">
+                    <input type="hidden" name="checkin" value="{{ checkin ? checkin|date('Y-m-d') : '' }}">
+                    <input type="hidden" name="checkout" value="{{ checkout ? checkout|date('Y-m-d') : '' }}">
+                    <input type="hidden" name="guests" value="{{ guests }}">
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-800 mb-2">Trier par</label>
+                        <select name="sort" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
+                            <option value="" {{ sort is null or sort == '' ? 'selected' : '' }}>Plus récents</option>
+                            <option value="price_asc" {{ sort == 'price_asc' ? 'selected' : '' }}>Prix croissant</option>
+                            <option value="price_desc" {{ sort == 'price_desc' ? 'selected' : '' }}>Prix décroissant</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-800 mb-2">Type de logement</label>
+                        <select name="propertyType" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
+                            <option value="">Tous</option>
+                            {% for type in ['villa', 'loft', 'apartment', 'house', 'chalet'] %}
+                                <option value="{{ type }}" {{ propertyType == type ? 'selected' : '' }}>{{ type|capitalize }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold uppercase text-gray-800 mb-2">Prix par nuit (€)</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input type="number" name="priceMin" min="0" placeholder="Min" value="{{ priceMin > 0 ? priceMin : '' }}" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
+                            <input type="number" name="priceMax" min="0" placeholder="Max" value="{{ priceMax > 0 ? priceMax : '' }}" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <button type="submit" class="flex-1 bg-brand hover:bg-brandHover text-white font-semibold py-2.5 rounded-xl text-sm">Appliquer</button>
+                        <a href="{{ path('app_search') }}" class="text-sm text-gray-500 hover:text-gray-900 underline">Réinitialiser</a>
+                    </div>
+                </form>
+            </aside>
+
+            <section class="lg:col-span-3">
+                <p class="text-sm text-gray-500 mb-4">{{ properties|length }} logement{{ properties|length > 1 ? 's' : '' }} trouvé{{ properties|length > 1 ? 's' : '' }}</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-6 gap-y-10">
+                    {% for property in properties %}
+                        {% include 'components/card.html.twig' with { property: property } %}
+                    {% else %}
+                        <p class="col-span-full text-gray-500">Aucun logement ne correspond à votre recherche.</p>
+                    {% endfor %}
+                </div>
+            </section>
         </div>
     </main>
 {% endblock %}

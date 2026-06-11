@@ -1,0 +1,46 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% set guestName = guest.profile and (guest.profile.firstName or guest.profile.lastName)
+    ? (guest.profile.firstName ~ ' ' ~ guest.profile.lastName)|trim
+    : guest.email %}
+{% set hostName = host.profile and (host.profile.firstName or host.profile.lastName)
+    ? (host.profile.firstName ~ ' ' ~ host.profile.lastName)|trim
+    : host.email %}
+
+{% block content %}
+    <h1 style="font-size:20px;margin:0 0 16px;">Réservation annulée par le voyageur</h1>
+    <p style="margin:0 0 16px;line-height:1.5;">
+        Bonjour {{ hostName }}, le voyageur {{ guestName }} a annulé sa réservation pour
+        <strong>{{ property.title }}</strong>. Le calendrier est de nouveau disponible pour ces dates.
+    </p>
+
+    <table role="presentation" style="width:100%;border-collapse:collapse;margin:0 0 16px;">
+        <tr>
+            <td style="padding:8px 0;color:#525252;">Référence</td>
+            <td style="padding:8px 0;text-align:right;"><strong>{{ reservation.id }}</strong></td>
+        </tr>
+        <tr>
+            <td style="padding:8px 0;color:#525252;">Arrivée prévue</td>
+            <td style="padding:8px 0;text-align:right;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding:8px 0;color:#525252;">Départ prévu</td>
+            <td style="padding:8px 0;text-align:right;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding:8px 0;color:#525252;">Total initial</td>
+            <td style="padding:8px 0;text-align:right;">{{ reservation.totalPrice }} €</td>
+        </tr>
+    </table>
+
+    <div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:16px;margin:0 0 24px;">
+        <p style="margin:0 0 8px;color:#991b1b;font-weight:600;">Motif du voyageur</p>
+        <p style="margin:0;color:#7f1d1d;line-height:1.5;">{{ reason }}</p>
+    </div>
+
+    <p style="margin:0 0 24px;line-height:1.5;">
+        <a href="{{ reservationUrl }}" style="display:inline-block;background:#dc2626;color:#ffffff;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:600;">
+            Voir le détail
+        </a>
+    </p>
+{% endblock %}

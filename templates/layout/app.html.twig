@@ -5,6 +5,25 @@
 
     {% include 'layout/partials/app/header.html.twig' %}
 
+    {% set flashStyles = {
+        success: 'bg-green-50 border-green-200 text-green-800',
+        error: 'bg-red-50 border-red-200 text-red-800',
+        warning: 'bg-amber-50 border-amber-200 text-amber-900',
+        info: 'bg-blue-50 border-blue-200 text-blue-800',
+    } %}
+    {% set flashes = app.flashes %}
+    {% if flashes|length > 0 %}
+        <div class="max-w-5xl mx-auto w-full px-6 md:px-12 pt-4 space-y-2">
+            {% for label, messages in flashes %}
+                {% for message in messages %}
+                    <div class="border rounded-lg px-4 py-3 text-sm {{ flashStyles[label]|default('bg-gray-50 border-gray-200 text-gray-800') }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+    {% endif %}
+
     {% block content %}{% endblock %}
 
     {% include 'layout/partials/app/footer.html.twig' %}
