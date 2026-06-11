@@ -132,4 +132,63 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+    /**
+     * @return list<Property>
+     */
+    public function search(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        ?int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        // Destination : recherche texte sur la ville ou l'adresse
+        if ($destination !== null && trim($destination) !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :dest OR LOWER(a.addressLine1) LIKE :dest')
+                ->setParameter('dest', '%' . mb_strtolower(trim($destination)) . '%');
+        }
+
+        // Voyageurs : capacité suffisante
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        // Dates : on exclut les logements indisponibles sur la plage demandée
+        if ($checkin !== null && $checkout !== null && $checkin < $checkout) {
+            $qb->andWhere(
+                'NOT EXISTS (
+                    SELECT res.id FROM App\Entity\Reservation res
+                    WHERE res.property = p
+                      AND res.status = :confirmed
+                      AND res.checkinDate < :checkout
+                      AND res.checkoutDate > :checkin
+                )'
+            )
+            ->andWhere(
+                'NOT EXISTS (
+                    SELECT av.id FROM App\Entity\PropertyAvailability av
+                    WHERE av.property = p
+                      AND av.isAvailable = false
+                      AND av.availableDate >= :checkin
+                      AND av.availableDate < :checkout
+                )'
+            )
+            ->setParameter('confirmed', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }
