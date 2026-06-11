@@ -1,0 +1,48 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Mes notifications{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-3xl mx-auto w-full">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Notifications</h1>
+            {% if notifications is not empty %}
+                <form method="post" action="{{ path('app_notifications_mark_read') }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('notifications_read') }}">
+                    <button type="submit" class="text-sm font-semibold text-brand hover:underline">Tout marquer comme lu</button>
+                </form>
+            {% endif %}
+        </div>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {% if notifications is empty %}
+            <div class="text-center py-16 border border-dashed border-gray-200 rounded-xl">
+                <i class="fa-solid fa-bell-slash text-4xl text-gray-300 mb-4"></i>
+                <p class="text-gray-500">Aucune notification.</p>
+            </div>
+        {% else %}
+            <div class="space-y-2">
+                {% for notification in notifications %}
+                    <div class="flex items-start gap-3 border rounded-xl p-4 {{ notification.isRead ? 'border-gray-200 bg-white' : 'border-brand/30 bg-rose-50/40' }}">
+                        <div class="mt-0.5 w-8 h-8 rounded-full flex items-center justify-center {{ notification.isRead ? 'bg-gray-100 text-gray-400' : 'bg-brand/10 text-brand' }}">
+                            <i class="fa-solid fa-bell text-sm"></i>
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between gap-2">
+                                <p class="font-semibold text-gray-900 text-sm">{{ notification.title }}</p>
+                                <span class="text-xs text-gray-400 shrink-0">{{ notification.createdAt|date('d/m/Y H:i') }}</span>
+                            </div>
+                            {% if notification.content %}<p class="text-sm text-gray-600 mt-0.5">{{ notification.content }}</p>{% endif %}
+                        </div>
+                        {% if not notification.isRead %}<span class="w-2 h-2 rounded-full bg-brand mt-2 shrink-0"></span>{% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </main>
+{% endblock %}
