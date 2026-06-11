@@ -5,6 +5,10 @@
 {% block content %}
     <div class="flex-grow bg-gray-50/50">
         <main class="px-6 md:px-12 py-10 max-w-6xl mx-auto w-full">
+            <a href="{{ path('app_home') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+                <i class="fa-solid fa-arrow-left"></i> Retour à l'accueil
+            </a>
+
             {# Host Navigation Tabs #}
             <div class="flex items-center gap-6 border-b border-gray-200 mb-8 pb-1">
                 <a href="{{ path('app_host_dashboard') }}" class="text-sm font-semibold pb-4 border-b-2 border-brand text-gray-900">

@@ -2,6 +2,9 @@
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+        <a href="{{ path('app_home') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Retour à l'accueil
+        </a>
         {% include 'components/search_bar.html.twig' with {
             destination: destination,
             checkin: checkin,
