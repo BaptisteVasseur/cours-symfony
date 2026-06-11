@@ -17,7 +17,8 @@ export default class extends Controller {
 
     static values = {
         propertyId: String,
-        pricePerNight: Number
+        pricePerNight: Number,
+        cleaningFee: Number
     };
 
     connect() {
@@ -85,14 +86,26 @@ export default class extends Controller {
         if (this.hasNightsLabelTarget) {
             this.nightsLabelTarget.textContent = `${formattedPrice} × ${data.nights} ${nightsText}`;
         }
+
+        const pricePerNight = parseFloat(data.pricePerNight || this.pricePerNightValue);
+        const cleaningFee = this.hasCleaningFeeValue ? parseFloat(this.cleaningFeeValue) : 0;
+        
+        const pricePerNightCents = Math.round(pricePerNight * 100);
+        const subtotalCents = pricePerNightCents * data.nights;
+        const subtotal = subtotalCents / 100;
+        
         if (this.hasSubtotalTarget) {
-            this.subtotalTarget.textContent = this.formatPrice(data.subtotal);
+            this.subtotalTarget.textContent = this.formatPrice(subtotal);
         }
-        if (this.hasCleaningTarget && data.cleaningFee) {
-            this.cleaningTarget.textContent = this.formatPrice(data.cleaningFee);
+        if (this.hasCleaningTarget) {
+            this.cleaningTarget.textContent = this.formatPrice(cleaningFee);
         }
+        
+        const serviceFeeCents = Math.floor((subtotalCents * 12 + 50) / 100);
+        const serviceFee = serviceFeeCents / 100;
+        
         if (this.hasServiceTarget) {
-            this.serviceTarget.textContent = this.formatPrice(data.serviceFee);
+            this.serviceTarget.textContent = this.formatPrice(serviceFee);
         }
         if (this.hasTotalTarget) {
             this.totalTarget.textContent = this.formatPrice(data.totalPrice);

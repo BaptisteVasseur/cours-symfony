@@ -16,7 +16,8 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8"
              data-controller="booking-price"
              data-booking-price-property-id-value="{{ property.id }}"
-             data-booking-price-price-per-night-value="{{ property.pricePerNight }}">
+             data-booking-price-price-per-night-value="{{ property.pricePerNight }}"
+             data-booking-price-cleaning-fee-value="{{ property.cleaningFee|default('0.00') }}">
             <div class="lg:col-span-2">
                 <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">

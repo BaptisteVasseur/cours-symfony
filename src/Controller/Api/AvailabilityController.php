@@ -110,11 +110,9 @@ final class AvailabilityController extends AbstractController
 
         return new JsonResponse([
             'available' => true,
-            'nights' => $breakdown['nights'],
-            'subtotal' => $breakdown['subtotal'],
-            'cleaningFee' => $breakdown['cleaningFee'],
-            'serviceFee' => $breakdown['serviceFee'],
             'totalPrice' => $breakdown['totalPrice'],
+            'nights' => $breakdown['nights'],
+            'pricePerNight' => $property->getPricePerNight(),
         ]);
     }
 }
