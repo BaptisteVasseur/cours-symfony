@@ -1,0 +1,90 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Calendrier — {{ property.title }}{% endblock %}
+
+{% set stateClasses = {
+    'available': 'bg-white text-gray-900 border-gray-200',
+    'blocked': 'bg-gray-200 text-gray-500 border-gray-300 line-through',
+    'booked': 'bg-rose-100 text-rose-800 border-rose-200',
+} %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+        <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Mes propriétés
+        </a>
+
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-1">{{ property.title }}</h1>
+        <p class="text-gray-500 mb-6">Gestion du calendrier et des disponibilités</p>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <section class="lg:col-span-2 border border-gray-200 rounded-2xl p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <a href="{{ path('app_host_calendar', { id: property.id, month: prevMonth }) }}" class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50"><i class="fa-solid fa-chevron-left"></i></a>
+                    <h2 class="text-lg font-semibold capitalize">{{ monthLabel }}</h2>
+                    <a href="{{ path('app_host_calendar', { id: property.id, month: nextMonth }) }}" class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50"><i class="fa-solid fa-chevron-right"></i></a>
+                </div>
+
+                <div class="grid grid-cols-7 gap-1 text-center text-xs text-gray-400 mb-1">
+                    {% for d in ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] %}<div>{{ d }}</div>{% endfor %}
+                </div>
+                <div class="grid grid-cols-7 gap-1">
+                    {% for i in 1..leadingBlanks %}<div></div>{% endfor %}
+                    {% for day in days %}
+                        <div class="aspect-square rounded-lg border flex flex-col items-center justify-center text-sm {{ stateClasses[day.state] }}" title="{{ day.state }}">
+                            <span>{{ day.date|date('j') }}</span>
+                            {% if day.price %}<span class="text-[10px] text-gray-400">{{ day.price|number_format(0, ',', ' ') }}€</span>{% endif %}
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <div class="flex flex-wrap gap-4 mt-4 text-xs text-gray-500">
+                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-white border border-gray-300"></span> Disponible</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-gray-200 border border-gray-300"></span> Bloqué</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-100 border border-rose-200"></span> Réservé</span>
+                </div>
+            </section>
+
+            <aside class="space-y-6">
+                <section class="border border-gray-200 rounded-2xl p-6">
+                    <h2 class="text-base font-semibold mb-3">Bloquer / débloquer une période</h2>
+                    <form method="post" class="space-y-3">
+                        <input type="hidden" name="_token" value="{{ csrf_token('calendar' ~ property.id) }}">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Du</label>
+                            <input type="date" name="start" required class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Au</label>
+                            <input type="date" name="end" required class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
+                        </div>
+                        <div class="flex gap-2">
+                            <button type="submit" formaction="{{ path('app_host_calendar_block', { id: property.id }) }}" class="flex-1 bg-gray-800 hover:bg-gray-900 text-white text-sm font-semibold py-2 rounded-xl">Bloquer</button>
+                            <button type="submit" formaction="{{ path('app_host_calendar_unblock', { id: property.id }) }}" class="flex-1 border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm font-semibold py-2 rounded-xl">Débloquer</button>
+                        </div>
+                    </form>
+                </section>
+
+                <section class="border border-gray-200 rounded-2xl p-6">
+                    <h2 class="text-base font-semibold mb-1">Synchronisation iCal</h2>
+                    <p class="text-xs text-gray-500 mb-3">Lien d'export sécurisé (Google Calendar, Outlook…). Ne le partagez qu'avec des outils de confiance.</p>
+                    {% if icalUrl %}
+                        <input type="text" readonly value="{{ icalUrl }}" onclick="this.select()" class="w-full border border-gray-300 rounded-xl px-3 py-2 text-xs bg-gray-50 mb-3">
+                    {% endif %}
+                    <form method="post" action="{{ path('app_host_calendar_regenerate_token', { id: property.id }) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('calendar_token' ~ property.id) }}">
+                        <button type="submit" class="text-sm font-semibold text-brand hover:underline">
+                            <i class="fa-solid fa-rotate"></i> Régénérer le lien (révoquer l'ancien)
+                        </button>
+                    </form>
+                </section>
+            </aside>
+        </div>
+    </main>
+{% endblock %}
