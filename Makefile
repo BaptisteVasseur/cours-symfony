@@ -12,6 +12,13 @@ cache:
 logs:
 	docker compose logs -f --tail=100 php
 
+fixtures:
+	docker compose exec -it php php bin/console doctrine:fixtures:load --no-interaction
+
+migrate:
+	docker compose exec -it php php bin/console doctrine:migrations:migrate --no-interaction
+
+
 up start:
 	docker compose up -d && \
     echo "==> Les services ont été démarrés avec succès" && \
@@ -32,5 +39,7 @@ help:
 	@echo "  down     - Stop and remove the Docker containers"
 	@echo "  restart  - Restart the Docker containers"
 	@echo "  cache    - Clear the Symfony cache"
+	@echo "  fixtures - Load data fixtures into the database"
+	@echo "  migrate  - Run pending database migrations"
 	@echo "  logs     - Follow the logs of the PHP container"
 	@echo "  help     - Show this help message"

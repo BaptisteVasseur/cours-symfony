@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Votre séjour commence demain !</title>
+    <style>
+        body {
+            font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f7f7f7;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+            color: #222222;
+        }
+        .container {
+            max-width: 600px;
+            margin: 40px auto;
+            background-color: #ffffff;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e4e4e4;
+        }
+        .header {
+            background-color: #ffffff;
+            padding: 30px;
+            text-align: center;
+            border-bottom: 1px solid #ebebeb;
+        }
+        .logo {
+            color: #FF385C;
+            font-size: 28px;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        h1 {
+            font-size: 24px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 10px;
+            color: #222222;
+        }
+        .subtitle {
+            font-size: 16px;
+            color: #767676;
+            margin-bottom: 30px;
+        }
+        .card {
+            border: 1px solid #e4e4e4;
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 30px;
+            background-color: #fafafa;
+        }
+        .card-title {
+            font-size: 18px;
+            font-weight: 700;
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .details-list {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        .details-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px dashed #e4e4e4;
+            font-size: 14px;
+        }
+        .details-item:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        .label {
+            color: #767676;
+            flex-shrink: 0;
+            margin-right: 10px;
+        }
+        .value {
+            font-weight: 600;
+            color: #222222;
+            text-align: right;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #FF385C;
+            color: #ffffff !important;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 16px;
+            padding: 14px 28px;
+            border-radius: 8px;
+            text-align: center;
+            transition: background-color 0.2s ease;
+        }
+        .btn:hover {
+            background-color: #E61E4D;
+        }
+        .footer {
+            background-color: #f7f7f7;
+            padding: 24px 30px;
+            text-align: center;
+            font-size: 12px;
+            color: #767676;
+            border-top: 1px solid #ebebeb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="#" class="logo">airbnb</a>
+        </div>
+        <div class="content">
+            <h1>Votre séjour commence demain !</h1>
+            <div class="subtitle">Voici un rappel des détails et des instructions d'accès à votre logement.</div>
+            
+            <div class="card">
+                <div class="card-title">{{ property.title }}</div>
+                <ul class="details-list">
+                    <li class="details-item">
+                        <span class="label">Adresse</span>
+                        <span class="value">
+                            {{ property.address.addressLine1 }}<br>
+                            {% if property.address.addressLine2 %}
+                                {{ property.address.addressLine2 }}<br>
+                            {% endif %}
+                            {{ property.address.postalCode }} {{ property.address.city }}, {{ property.address.country }}
+                        </span>
+                    </li>
+                    <li class="details-item">
+                        <span class="label">Arrivée</span>
+                        <span class="value">
+                            {{ reservation.checkinDate|date('d/m/Y') }}
+                            {% if property.checkinTime %}
+                                à partir de {{ property.checkinTime|date('H:i') }}
+                            {% endif %}
+                        </span>
+                    </li>
+                    <li class="details-item">
+                        <span class="label">Départ</span>
+                        <span class="value">
+                            {{ reservation.checkoutDate|date('d/m/Y') }}
+                            {% if property.checkoutTime %}
+                                avant {{ property.checkoutTime|date('H:i') }}
+                            {% endif %}
+                        </span>
+                    </li>
+                    <li class="details-item">
+                        <span class="label">Voyageurs</span>
+                        <span class="value">{{ reservation.guestsCount }}</span>
+                    </li>
+                    <li class="details-item">
+                        <span class="label">Hôte</span>
+                        <span class="value">
+                            {{ reservation.host.profile.firstName }} {{ reservation.host.profile.lastName }}<br>
+                            <span style="font-size: 12px; font-weight: normal; color: #767676;">{{ reservation.host.email }}</span>
+                        </span>
+                    </li>
+                </ul>
+            </div>
+
+            <p>Pour toute question concernant la remise des clés ou l'accès au logement, nous vous invitons à contacter directement votre hôte.</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{{ reservationUrl }}" class="btn">Gérer ma réservation</a>
+            </div>
+            <p>Bon voyage et excellent séjour !<br>L'équipe Airbnb Clone</p>
+        </div>
+        <div class="footer">
+            <p>&copy; 2026 Airbnb Clone. Tous droits réservés.</p>
+        </div>
+    </div>
+</body>
+</html>

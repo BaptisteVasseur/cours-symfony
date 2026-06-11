@@ -8,6 +8,8 @@ use App\Entity\User;
 use App\Entity\UserProfile;
 use App\Form\RegistrationType;
 use App\Repository\UserRepository;
+use App\Service\MailService;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\Form\FormError;
@@ -24,6 +26,8 @@ class RegisterController extends AbstractController
         EntityManagerInterface $entityManager,
         UserPasswordHasherInterface $passwordHasher,
         UserRepository $userRepository,
+        MailService $mailService,
+        NotificationService $notificationService,
     ): Response {
         if ($this->getUser() instanceof User) {
             return $this->redirectToRoute('app_home');
@@ -41,7 +45,7 @@ class RegisterController extends AbstractController
 
                 return $this->render('front/auth/register.html.twig', [
                     'form' => $form,
-                ]);
+                ], new Response(status: Response::HTTP_UNPROCESSABLE_ENTITY));
             }
 
             $user = new User();
@@ -49,6 +53,7 @@ class RegisterController extends AbstractController
             $user->setPasswordHash($passwordHasher->hashPassword($user, $plainPassword));
             $user->setStatus('active');
             $user->setIsEmailVerified(false);
+            $user->setEmailVerificationToken(bin2hex(random_bytes(32)));
             $user->setPreferredLanguage('fr');
             $user->setPreferredCurrency('EUR');
 
@@ -58,9 +63,20 @@ class RegisterController extends AbstractController
             $profile->setLastName($data['lastName']);
             $profile->setIdentityStatus('unverified');
 
+            $user->setProfile($profile);
+
             $entityManager->persist($user);
             $entityManager->persist($profile);
             $entityManager->flush();
+
+            $mailService->sendVerificationEmail($user);
+
+            $notificationService->notify(
+                $user,
+                'Bienvenue sur Airbnb Clone !',
+                'Votre inscription a été validée avec succès. Bienvenue dans notre communauté !',
+                $this->generateUrl('app_home')
+            );
 
             $this->addFlash('success', 'Compte créé avec succès. Vous pouvez vous connecter.');
 
@@ -69,6 +85,8 @@ class RegisterController extends AbstractController
 
         return $this->render('front/auth/register.html.twig', [
             'form' => $form,
-        ]);
+        ], new Response(
+            status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
+        ));
     }
 }

@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: NotificationRepository::class)]
 #[ORM\Table(name: 'notifications')]
+#[ORM\Index(columns: ['user_id', 'is_read'], name: 'idx_notif_user_is_read')]
 class Notification
 {
     use UuidEntityTrait;
@@ -33,6 +34,9 @@ class Notification
 
     #[ORM\Column]
     private bool $isRead = false;
+
+    #[ORM\Column(length: 500, nullable: true)]
+    private ?string $linkUrl = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
@@ -110,6 +114,18 @@ class Notification
     public function setIsRead(bool $isRead): static
     {
         $this->isRead = $isRead;
+
+        return $this;
+    }
+
+    public function getLinkUrl(): ?string
+    {
+        return $this->linkUrl;
+    }
+
+    public function setLinkUrl(?string $linkUrl): static
+    {
+        $this->linkUrl = $linkUrl;
 
         return $this;
     }

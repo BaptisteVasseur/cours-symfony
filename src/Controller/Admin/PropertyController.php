@@ -53,7 +53,9 @@ final class PropertyController extends AbstractController
         return $this->render('admin/property/new.html.twig', [
             'property' => $property,
             'form' => $form,
-        ]);
+        ], new Response(
+            status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
+        ));
     }
 
     #[Route('/{id}', name: 'app_property_show', methods: ['GET'])]
@@ -84,7 +86,9 @@ final class PropertyController extends AbstractController
         return $this->render('admin/property/edit.html.twig', [
             'property' => $property,
             'form' => $form,
-        ]);
+        ], new Response(
+            status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
+        ));
     }
 
     #[Route('/{id}', name: 'app_property_delete', methods: ['POST'])]

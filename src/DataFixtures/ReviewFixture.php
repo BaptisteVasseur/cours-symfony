@@ -6,8 +6,9 @@ namespace App\DataFixtures;
 
 use App\Entity\Property;
 use App\Entity\Reservation;
-use App\Entity\ReservationStatusHistory;
+use App\Entity\BookingStatusHistory;
 use App\Entity\Review;
+use App\Enum\BookingStatus;
 use App\Entity\ReviewMedia;
 use App\Entity\ReviewReport;
 use App\Entity\User;
@@ -133,6 +134,8 @@ class ReviewFixture extends Fixture implements DependentFixtureInterface
                 $reservation = new Reservation();
                 $reservation->setProperty($property);
                 $reservation->setGuest($guest);
+                $reservation->setHost($property->getHost());
+                $reservation->setUpdatedAt(new \DateTimeImmutable());
                 $reservation->setCheckinDate(new \DateTimeImmutable(sprintf('-%d days', $daysAgo + 3)));
                 $reservation->setCheckoutDate(new \DateTimeImmutable(sprintf('-%d days', $daysAgo)));
                 $reservation->setGuestsCount(random_int(1, min(4, $property->getMaxGuests() ?? 4)));
@@ -144,11 +147,11 @@ class ReviewFixture extends Fixture implements DependentFixtureInterface
                 $reservation->setCurrency('EUR');
                 $manager->persist($reservation);
 
-                $history = new ReservationStatusHistory();
-                $history->setReservation($reservation);
-                $history->setOldStatus(null);
-                $history->setNewStatus('completed');
-                $history->setChangedBy($admin);
+                $history = new BookingStatusHistory();
+                $history->setBooking($reservation);
+                $history->setFromStatus(null);
+                $history->setToStatus(BookingStatus::COMPLETED);
+                $history->setActor('system');
                 $manager->persist($history);
 
                 $review = $this->createGuestReview($reservation, $guest, $host, $property, 'completed');

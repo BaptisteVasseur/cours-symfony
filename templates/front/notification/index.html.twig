@@ -1,0 +1,83 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Mes notifications{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-3xl mx-auto w-full" data-realtime-view="notifications-index">
+        <a href="{{ path('app_home') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Retour à l'accueil
+        </a>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Mes notifications</h1>
+                <p class="text-gray-500 mt-1">Suivez l'activité de votre compte et de vos réservations</p>
+            </div>
+            {% set unreadCount = notifications_unread_count(app.user) %}
+            {% if unreadCount > 0 %}
+                <form action="{{ path('app_notifications_mark_all_read') }}" method="POST" class="m-0 shrink-0">
+                    <input type="hidden" name="_token" value="{{ csrf_token('mark_all_read') }}">
+                    <button type="submit" class="w-full sm:w-auto text-sm font-semibold text-brand hover:text-brandHover border border-brand hover:bg-brand/5 px-4 py-2 rounded-full transition text-center">
+                        Tout marquer comme lu
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+
+        {% for message in app.flashes('success') %}
+            <div class="p-4 mb-6 text-sm text-green-800 rounded-lg bg-green-50" role="alert">
+                {{ message }}
+            </div>
+        {% endfor %}
+
+        {% if notifications|length > 0 %}
+            <div class="space-y-4">
+                {% for notif in notifications %}
+                    <form action="{{ path('app_notification_read', { id: notif.id }) }}" method="POST" class="m-0">
+                        <input type="hidden" name="_token" value="{{ csrf_token('read' ~ notif.id) }}">
+                        <button type="submit" class="w-full text-left p-5 border rounded-2xl hover:shadow-md transition bg-white block relative group {% if not notif.isRead %}border-brand/20 bg-brand/5/10{% else %}border-gray-200{% endif %}">
+                            <div class="flex items-start gap-4">
+                                <div class="p-3 rounded-full shrink-0 {% if not notif.isRead %}bg-brand/10 text-brand{% else %}bg-gray-100 text-gray-500{% endif %}">
+                                    {% if 'message' in notif.title|lower or 'message' in notif.content|lower %}
+                                        <i class="fa-regular fa-envelope text-lg"></i>
+                                    {% elseif 'réservation' in notif.title|lower or 'réservé' in notif.title|lower or 'demande' in notif.title|lower %}
+                                        <i class="fa-regular fa-calendar-check text-lg"></i>
+                                    {% elseif 'bienvenue' in notif.title|lower or 'inscription' in notif.title|lower %}
+                                        <i class="fa-regular fa-hand-spock text-lg"></i>
+                                    {% else %}
+                                        <i class="fa-regular fa-bell text-lg"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="flex-1 min-w-0 pr-6">
+                                    <h3 class="font-semibold text-gray-900 text-base {% if not notif.isRead %}text-brand{% endif %}">
+                                        {{ notif.title }}
+                                    </h3>
+                                    <p class="text-sm text-gray-600 mt-1 line-clamp-3">
+                                        {{ notif.content }}
+                                    </p>
+                                    <span class="text-xs text-gray-400 mt-2 block">
+                                        {{ notif.createdAt|date('d/m/Y \\à H:i') }}
+                                    </span>
+                                </div>
+                                
+                                {% if not notif.isRead %}
+                                    <span class="absolute top-5 right-5 h-2.5 w-2.5 rounded-full bg-brand group-hover:scale-110 transition shrink-0" title="Non lu"></span>
+                                {% endif %}
+                            </div>
+                        </button>
+                    </form>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-20 border border-dashed border-gray-200 rounded-3xl bg-white">
+                <div class="w-16 h-16 bg-gray-50 text-gray-300 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <i class="fa-regular fa-bell text-3xl"></i>
+                </div>
+                <h3 class="text-gray-900 font-semibold text-lg">Aucune notification</h3>
+                <p class="text-gray-500 mt-1 max-w-sm mx-auto">Vous recevrez des notifications ici dès qu'il y aura de l'activité sur votre compte.</p>
+                <a href="{{ path('app_home') }}" class="inline-block mt-6 text-sm font-semibold text-white bg-brand hover:bg-brandHover px-6 py-2.5 rounded-full transition">
+                    Retourner à l'accueil
+                </a>
+            </div>
+        {% endif %}
+    </main>
+{% endblock %}

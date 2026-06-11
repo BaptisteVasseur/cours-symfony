@@ -131,6 +131,15 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalToken = null;
+
+    #[ORM\Column(nullable: true)]
+    private ?int $minStayNights = null;
+
+    #[ORM\Column(length: 500, nullable: true)]
+    private ?string $externalIcalUrl = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -155,6 +164,10 @@ class Property
     #[ORM\OneToMany(targetEntity: PropertyAvailability::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $availabilities;
 
+    /** @var Collection<int, AvailabilityBlock> */
+    #[ORM\OneToMany(targetEntity: AvailabilityBlock::class, mappedBy: 'property', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $availabilityBlocks;
+
     /** @var Collection<int, PropertyICalSync> */
     #[ORM\OneToMany(targetEntity: PropertyICalSync::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $iCalSyncs;
@@ -167,14 +180,20 @@ class Property
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'property')]
     private Collection $reviews;
 
+    /** @var Collection<int, User> */
+    #[ORM\ManyToMany(targetEntity: User::class, mappedBy: 'favoriteProperties')]
+    private Collection $favoritedBy;
+
     public function __construct()
     {
         $this->propertyAmenities = new ArrayCollection();
         $this->media = new ArrayCollection();
         $this->availabilities = new ArrayCollection();
+        $this->availabilityBlocks = new ArrayCollection();
         $this->iCalSyncs = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
+        $this->favoritedBy = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -370,6 +389,50 @@ class Property
         return $this;
     }
 
+    public function getIcalToken(): ?string
+    {
+        return $this->icalToken;
+    }
+
+    public function setIcalToken(?string $icalToken): static
+    {
+        $this->icalToken = $icalToken;
+
+        return $this;
+    }
+
+    public function refreshIcalToken(): static
+    {
+        $this->icalToken = bin2hex(random_bytes(32));
+
+        return $this;
+    }
+
+    public function getMinStayNights(): ?int
+    {
+        return $this->minStayNights;
+    }
+
+    public function setMinStayNights(?int $minStayNights): static
+    {
+        $this->minStayNights = $minStayNights;
+
+        return $this;
+    }
+
+    public function getExternalIcalUrl(): ?string
+    {
+        return $this->externalIcalUrl;
+    }
+
+    public function setExternalIcalUrl(?string $externalIcalUrl): static
+    {
+        $externalIcalUrl = $externalIcalUrl !== null ? trim($externalIcalUrl) : null;
+        $this->externalIcalUrl = $externalIcalUrl !== '' ? $externalIcalUrl : null;
+
+        return $this;
+    }
+
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
@@ -493,6 +556,33 @@ class Property
         return $this;
     }
 
+    /** @return Collection<int, AvailabilityBlock> */
+    public function getAvailabilityBlocks(): Collection
+    {
+        return $this->availabilityBlocks;
+    }
+
+    public function addAvailabilityBlock(AvailabilityBlock $availabilityBlock): static
+    {
+        if (!$this->availabilityBlocks->contains($availabilityBlock)) {
+            $this->availabilityBlocks->add($availabilityBlock);
+            $availabilityBlock->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAvailabilityBlock(AvailabilityBlock $availabilityBlock): static
+    {
+        if ($this->availabilityBlocks->removeElement($availabilityBlock)) {
+            if ($availabilityBlock->getProperty() === $this) {
+                $availabilityBlock->setProperty(null);
+            }
+        }
+
+        return $this;
+    }
+
     /** @return Collection<int, PropertyICalSync> */
     public function getICalSyncs(): Collection
     {
@@ -588,5 +678,30 @@ class Property
         }
 
         return round($total / $this->reviews->count(), 2);
+    }
+
+    /** @return Collection<int, User> */
+    public function getFavoritedBy(): Collection
+    {
+        return $this->favoritedBy;
+    }
+
+    public function addFavoritedBy(User $user): static
+    {
+        if (!$this->favoritedBy->contains($user)) {
+            $this->favoritedBy->add($user);
+            $user->addFavoriteProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeFavoritedBy(User $user): static
+    {
+        if ($this->favoritedBy->removeElement($user)) {
+            $user->removeFavoriteProperty($this);
+        }
+
+        return $this;
     }
 }

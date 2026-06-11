@@ -3,7 +3,7 @@
 {% set property = reservation.property %}
 {% set cover = property ? property.coverMedia : null %}
 {% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
-{% set hostProfile = property and property.host ? property.host.profile : null %}
+{% set hostProfile = reservation.host ? reservation.host.profile : null %}
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
 {% set statusLabels = {
@@ -20,7 +20,9 @@
 } %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full"
+          data-realtime-view="reservation-show"
+          data-realtime-reservation-id="{{ reservation.id }}">
         <a href="{{ path('app_reservation_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
             <i class="fa-solid fa-arrow-left"></i> Retour aux réservations
         </a>
@@ -56,13 +58,231 @@
                         <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
                     </dl>
                 </section>
+
+                {% set isHost = reservation.host and reservation.host.id == app.user.id %}
+                <section class="border border-gray-200 rounded-xl p-6 bg-white">
+                    {% if isHost %}
+                        <h2 class="text-lg font-semibold mb-4">Informations sur le voyageur</h2>
+                        {% if guestProfile %}
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-700 text-sm overflow-hidden shrink-0">
+                                    {% if guestProfile.avatarUrl %}
+                                        <img src="{{ guestProfile.avatarUrl }}" alt="" class="w-full h-full object-cover">
+                                    {% else %}
+                                        {{ reservation.guest.profile.firstName|default(reservation.guest.email)|first|upper }}
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-900">{{ guestProfile.firstName }} {{ guestProfile.lastName }}</h3>
+                                    <p class="text-sm text-gray-500">{{ reservation.guest.email }}</p>
+                                    {% if reservation.guest.phone %}
+                                        <p class="text-xs text-gray-400 mt-0.5"><i class="fa-solid fa-phone"></i> {{ reservation.guest.phone }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="text-sm text-gray-500">{{ reservation.guest.email }}</p>
+                        {% endif %}
+                    {% else %}
+                        <h2 class="text-lg font-semibold mb-4">Votre hôte</h2>
+                        {% if hostProfile %}
+                            <div class="flex items-center gap-4">
+                                <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-700 text-sm overflow-hidden shrink-0">
+                                    {% if hostProfile.avatarUrl %}
+                                        <img src="{{ hostProfile.avatarUrl }}" alt="" class="w-full h-full object-cover">
+                                    {% else %}
+                                        {{ reservation.host.profile.firstName|default(reservation.host.email)|first|upper }}
+                                    {% endif %}
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-gray-900">{{ hostProfile.firstName }} {{ hostProfile.lastName }}</h3>
+                                    <p class="text-sm text-gray-500">{{ reservation.host.email }}</p>
+                                    {% if reservation.host.phone %}
+                                        <p class="text-xs text-gray-400 mt-0.5"><i class="fa-solid fa-phone"></i> {{ reservation.host.phone }}</p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="text-sm text-gray-500">{{ reservation.host.email }}</p>
+                        {% endif %}
+                    {% endif %}
+                </section>
+
+                <section class="border border-gray-200 rounded-xl p-6 bg-white shadow-sm">
+                    <h2 class="text-lg font-semibold mb-6 flex items-center gap-2 text-gray-900">
+                        <i class="fa-solid fa-clock-rotate-left text-gray-400"></i>
+                        Suivi de la réservation
+                    </h2>
+                    <div class="flow-root">
+                        <ul role="list" class="-mb-8">
+                            {% for history in reservation.statusHistory %}
+                                <li>
+                                    <div class="relative pb-8">
+                                        {% if not loop.last %}
+                                            <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                        {% endif %}
+                                        <div class="relative flex space-x-3">
+                                                                                    <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white
+                                                    {% if history.toStatus.value == 'pending' %}
+                                                        bg-yellow-50 text-yellow-600 ring-yellow-50
+                                                    {% elseif history.toStatus.value == 'confirmed' %}
+                                                        bg-green-50 text-green-600 ring-green-50
+                                                    {% elseif history.toStatus.value == 'completed' %}
+                                                        bg-blue-50 text-blue-600 ring-blue-50
+                                                    {% elseif history.toStatus.value == 'cancelled' %}
+                                                        bg-red-50 text-red-600 ring-red-50
+                                                    {% else %}
+                                                        bg-gray-50 text-gray-600 ring-gray-50
+                                                    {% endif %}">
+                                                    {% if history.toStatus.value == 'pending' %}
+                                                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                                                    {% elseif history.toStatus.value == 'confirmed' %}
+                                                        <i class="fa-solid fa-check text-xs"></i>
+                                                    {% elseif history.toStatus.value == 'completed' %}
+                                                        <i class="fa-solid fa-flag-checkered text-xs"></i>
+                                                    {% elseif history.toStatus.value == 'cancelled' %}
+                                                        <i class="fa-solid fa-xmark text-xs"></i>
+                                                    {% else %}
+                                                        <i class="fa-solid fa-circle text-[6px]"></i>
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                            <div class="flex-1 min-w-0 pt-1.5 flex justify-between space-x-4">
+                                                <div>
+                                                    <p class="text-sm font-semibold text-gray-900">
+                                                        {% if history.toStatus.value == 'pending' %}
+                                                            Demande de réservation envoyée
+                                                        {% elseif history.toStatus.value == 'confirmed' %}
+                                                            Réservation confirmée par l'hôte
+                                                        {% elseif history.toStatus.value == 'completed' %}
+                                                            Séjour terminé
+                                                        {% elseif history.toStatus.value == 'cancelled' %}
+                                                            {% if history.fromStatus and history.fromStatus.value == 'pending' %}
+                                                                {% if history.actor == 'guest' %}
+                                                                    Demande de réservation annulée par le voyageur
+                                                                {% elseif history.actor == 'host' %}
+                                                                    Demande de réservation refusée par l'hôte
+                                                                {% else %}
+                                                                    Demande expirée (non traitée sous 24h)
+                                                                {% endif %}
+                                                            {% else %}
+                                                                {% if history.actor == 'guest' %}
+                                                                    Réservation annulée par le voyageur
+                                                                {% elseif history.actor == 'host' %}
+                                                                    Réservation annulée par l'hôte
+                                                                {% else %}
+                                                                    Réservation annulée par le système
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        {% else %}
+                                                            Statut changé en {{ statusLabels[history.toStatus.value]|default(history.toStatus.value) }}
+                                                        {% endif %}
+                                                    </p>
+                                                    
+                                                    {% if history.toStatus.value == 'cancelled' and history.reason %}
+                                                        <div class="mt-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg p-2.5 max-w-md">
+                                                            <span class="font-semibold">Motif :</span> {{ history.reason }}
+                                                        </div>
+                                                    {% endif %}
+ 
+                                                    <p class="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
+                                                        {% if history.actor == 'guest' %}
+                                                            <span>Par le voyageur</span>
+                                                            <span class="text-gray-300">•</span>
+                                                        {% elseif history.actor == 'host' %}
+                                                            <span>Par l'hôte</span>
+                                                            <span class="text-gray-300">•</span>
+                                                        {% elseif history.actor == 'system' %}
+                                                            <span>Par le système</span>
+                                                            <span class="text-gray-300">•</span>
+                                                        {% endif %}
+                                                        <span>{{ history.createdAt|date('d/m/Y à H:i') }}</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            {% else %}
+                                <li class="text-sm text-gray-500 italic">Aucun historique disponible.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </section>
             </div>
-            <aside>
-                <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
-                    <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
-                    <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+
+            <aside class="space-y-6">
+                {% set isHost = reservation.host and reservation.host.id == app.user.id %}
+                <div class="border border-gray-200 rounded-xl p-6 sticky top-28 bg-white shadow-sm">
+                    <h2 class="text-base font-semibold mb-4 text-gray-500">Récapitulatif</h2>
+                    <p class="text-3xl font-bold text-gray-900 mb-6">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+
+                    <div class="space-y-3 pt-2">
+                        <a href="{{ path('app_reservation_contact', { id: reservation.id }) }}" class="flex items-center justify-center gap-2 w-full py-2.5 px-4 border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold rounded-xl text-xs transition">
+                            <i class="fa-solid fa-comment"></i> Contacter {% if isHost %}le voyageur{% else %}l'hôte{% endif %}
+                        </a>
+
+                        {% if isHost %}
+                            {% if reservation.status == 'pending' %}
+                                <form action="{{ path('app_host_reservation_accept', { id: reservation.id }) }}" method="POST" class="block w-full">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('accept' ~ reservation.id) }}">
+                                    <button type="submit" class="w-full py-2.5 px-4 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-xl text-xs transition shadow-sm">
+                                        Accepter la demande
+                                    </button>
+                                </form>
+
+                                <button type="button" onclick="toggleForm('decline-form-show')" class="w-full py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-xs transition border border-red-100">
+                                    Refuser la demande
+                                </button>
+
+                                <div id="decline-form-show" class="hidden p-4 bg-gray-50 border border-gray-200 rounded-xl mt-4">
+                                    <form action="{{ path('app_host_reservation_decline', { id: reservation.id }) }}" method="POST">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('decline' ~ reservation.id) }}">
+                                        <label for="decline_reason_show" class="block text-xs font-semibold text-gray-700 mb-2">Motif du refus :</label>
+                                        <textarea id="decline_reason_show" name="cancellation_reason" rows="2" required placeholder="Pourquoi refusez-vous cette demande ?" class="w-full text-xs p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-brand focus:border-brand bg-white mb-3"></textarea>
+                                        <button type="submit" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-lg transition shadow-sm">Confirmer le refus</button>
+                                    </form>
+                                </div>
+                            {% elseif reservation.status == 'confirmed' %}
+                                <button type="button" onclick="toggleForm('cancel-form-show')" class="w-full py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-xs transition border border-red-100">
+                                    Annuler la réservation
+                                </button>
+
+                                <div id="cancel-form-show" class="hidden p-4 bg-gray-50 border border-gray-200 rounded-xl mt-4">
+                                    <form action="{{ path('app_host_reservation_cancel', { id: reservation.id }) }}" method="POST">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ reservation.id) }}">
+                                        <label for="cancel_reason_show" class="block text-xs font-semibold text-gray-700 mb-2">Motif d'annulation :</label>
+                                        <textarea id="cancel_reason_show" name="cancellation_reason" rows="2" required placeholder="Veuillez renseigner un motif d'annulation..." class="w-full text-xs p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-brand focus:border-brand bg-white mb-3"></textarea>
+                                        <button type="submit" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-lg transition shadow-sm">Confirmer l'annulation</button>
+                                    </form>
+                                </div>
+                            {% endif %}
+                        {% elseif reservation.status in ['pending', 'confirmed'] %}
+                            <button type="button" onclick="toggleForm('cancel-guest-form-show')" class="w-full py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-xs transition border border-red-100">
+                                Annuler ma réservation
+                            </button>
+
+                            <div id="cancel-guest-form-show" class="hidden p-4 bg-gray-50 border border-gray-200 rounded-xl mt-4">
+                                <form action="{{ path('app_reservation_cancel', { id: reservation.id }) }}" method="POST">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('cancel_guest' ~ reservation.id) }}">
+                                    <label for="cancel_guest_reason_show" class="block text-xs font-semibold text-gray-700 mb-2">Motif d'annulation :</label>
+                                    <textarea id="cancel_guest_reason_show" name="cancellation_reason" rows="2" required placeholder="Veuillez renseigner un motif d'annulation..." class="w-full text-xs p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-brand focus:border-brand bg-white mb-3"></textarea>
+                                    <button type="submit" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-lg transition shadow-sm">Confirmer l'annulation</button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    </div>
                 </div>
             </aside>
         </div>
     </main>
+
+    <script>
+        function toggleForm(id) {
+            const formDiv = document.getElementById(id);
+            if (formDiv) {
+                formDiv.classList.toggle('hidden');
+            }
+        }
+    </script>
 {% endblock %}

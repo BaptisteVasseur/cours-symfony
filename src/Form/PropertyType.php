@@ -75,6 +75,10 @@ class PropertyType extends AbstractType
                 'label' => 'Prix / nuit (€)',
                 'scale' => 2,
             ])
+            ->add('minStayNights', IntegerType::class, [
+                'label' => 'Durée minimale de séjour',
+                'required' => false,
+            ])
             ->add('cleaningFee', NumberType::class, [
                 'label' => 'Frais de ménage (€)',
                 'required' => false,

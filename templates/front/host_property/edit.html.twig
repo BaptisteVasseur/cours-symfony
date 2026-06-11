@@ -1,0 +1,71 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Modifier l'annonce{% endblock %}
+
+{% form_theme form 'form/admin_theme.html.twig' %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+        <div class="mb-6">
+            <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition">
+                <i class="fa-solid fa-arrow-left text-xs"></i>
+                Retour à mes propriétés
+            </a>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 md:p-8">
+            <h1 class="text-2xl font-bold text-gray-900 mb-2">Modifier l'annonce « {{ property.title }} »</h1>
+            <p class="text-gray-500 mb-8">Modifiez les informations ci-dessous pour mettre à jour votre logement.</p>
+
+            {{ form_start(form, { attr: { class: 'space-y-6' } }) }}
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-4">
+                <div class="space-y-4">
+                    <h2 class="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 mb-4">Informations générales</h2>
+                    {{ form_row(form.title) }}
+                    {{ form_row(form.description) }}
+                    {{ form_row(form.propertyType) }}
+                    {{ form_row(form.cancellationPolicy) }}
+                </div>
+                
+                <div class="space-y-4">
+                    <h2 class="text-lg font-bold text-gray-900 border-b border-gray-100 pb-2 mb-4">Capacité, Tarifs & Règles</h2>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        {{ form_row(form.maxGuests) }}
+                        {{ form_row(form.bedrooms) }}
+                        {{ form_row(form.beds) }}
+                        {{ form_row(form.bathrooms) }}
+                    </div>
+                    
+                    {{ form_row(form.pricePerNight) }}
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        {{ form_row(form.cleaningFee) }}
+                        {{ form_row(form.securityDeposit) }}
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        {{ form_row(form.checkinTime) }}
+                        {{ form_row(form.checkoutTime) }}
+                    </div>
+
+                    <div class="pt-2">
+                        {{ form_row(form.instantBooking) }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-6 mt-8 border-t border-gray-200">
+                <a href="{{ path('app_account_properties') }}" class="text-sm font-semibold text-gray-600 hover:text-gray-900 px-4 py-2.5 rounded-lg hover:bg-gray-100 transition">
+                    Annuler
+                </a>
+                <button type="submit" class="bg-brand hover:bg-brandHover text-white font-semibold text-sm px-6 py-2.5 rounded-lg shadow-sm transition">
+                    Enregistrer les modifications
+                </button>
+            </div>
+
+            {{ form_end(form) }}
+        </div>
+    </main>
+{% endblock %}

@@ -1,0 +1,161 @@
+fichier de conception - tp symfony - booking engine & ical
+by Dilan EESHVARAN 4iw1
+-----------------------------------------------------------
+
+salut, voici la conception technique pour le module de reservation et d'import/export de calendriers ical.
+
+0. ANALYSE DU PROJET EXISTANT
+==============================
+
+apres avoir fouille dans le dossier src/Entity, voila ce que j'ai vu :
+1) Property : a deja le champ instantBooking (boolean) mais il lui manque les champs pour ical et stay nights
+(nuits séjour minimum) (icalToken, minStayNights, externalIcalUrl).
+2) Reservation : il existe deja un systeme de reservation dans le projet (lie aux paiements, factures...).
+   -> CHOIX TECHNIQUE : le sujet demande de coder une entite "Booking" avec des states specifique.
+   pour ne pas casser le code existant (les factures, payements etc qui pointent sur Reservation), 
+   on va creer l'entite Booking a cote. Elle sera dediee a notre nouveau moteur de reservation et a l'import/export ical.
+3) PropertyAvailability : il y a deja cette table en base qui stocke les dispos jour par jour (availableDate).
+   -> CHOIX TECHNIQUE : le sujet demande une entite AvailabilityBlock basee sur des periodes (date de debut et fin).
+   c'est beaucoup plus performant pour verifier les dispos sur de longues periodes et ca colle parfaitement au format ical.
+   ducoup, on va ajouter AvailabilityBlock sans toucher a l'ancien systeme jour par jour.
+4) Notification : l'entite existe deja mais avec les champs user, content, channel.
+   -> CHOIX TECHNIQUE : pour coller au sujet (partie G.8), on va adapter ou etendre cette entité.
+   on utilisera recipient (relation ManyToOne vers User), title, body (a la place de content),
+   et on rajoute le champ linkUrl (pour renvoyer vers la resa correspondante) sur clique sur le notif in app.
+5) User : pour recuperer le nom complet du guest ({guest.fullName} dans le ical),
+on voit que User est lie a UserProfile (qui a firstName et lastName).
+on va rajouter une methode getFullName() dans User qui combine les deux, ou renvoie l'email si le profil est vide.
+
+
+2. QUESTIONS - REFLEXION
+=================================================
+
+
+--- Modelisation temporelle : Le jour de check-out est-il réservable par un nouveau voyageur ? 
+Comment gérez-vous la superposition d'un départ à 11h et d'une arrivée à 15h dans votre schéma
+de données ?
+---
+
+oui, le jour de checkout est reservable par un autre voyageur. c'est le choix qu'on a fait et c'est
+le meme fonctionnement que airbnb en vrai.
+
+concretement, le checkout est a 11h du matin et le checkin du suivant est a 15h. donc y a un creneau 
+de 4h entre les deux pour faire le menage, la remise des cles etc. dans la vraie vie c'est comme ca
+que ca marche, on perd pas une journee de revenus pour rien.
+
+dans le schema de donnees, on modelise ca avec la convention "fin exclusive". la checkoutDate 
+represente le premier jour ou le voyageur n'est PLUS la. par exemple, un sejour du 10 au 15 juillet 
+(5 nuits), on stocke checkinDate = 2025-07-10 et checkoutDate = 2025-07-15. le voyageur dort la les 
+nuits du 10, 11, 12, 13, 14. le 15 il a degage a 11h.
+
+du coup dans la requete sql pour verifier les chevauchements on utilise des inegalites strictes :
+
+  b.checkinDate < :checkout AND b.checkoutDate > :checkin
+
+si un voyageur veut reserver du 15 au 18, la condition donne :
+  10 < 18 (vrai) AND 15 > 15 (faux) -> pas de chevauchement, c'est bon
+
+c'est propre et ca evite les bugs. la convention exclusive est aussi celle du format ical (DTEND)
+donc ca tombe bien pour l'export, pas de conversion a faire.
+
+
+--- Gestion des etats : Une demande Pending bloque-t-elle les dates ? Analysez les risques liés à
+ce choix (blocage abusif vs overbooking). ---
+
+non, une demande en pending ne bloque PAS les dates. c'est un choix delibere, meme si c'est le
+plus risque en terme d'overbooking.
+
+pourquoi ce choix ? parce que l'alternative (bloquer les dates des qu'une demande pending arrive)
+est pire en pratique. imagine un voyageur qui fait une demande pour le 14 juillet un mois a l'avance
+et que l'hote est en vacances et repond pas. pendant tout ce temps les dates sont bloquees et l'hote
+perd potentiellement des vraies reservations. c'est du blocage abusif et ca tue le business model.
+
+
+
+--- Concurrence : Comment votre base de données réagit-elle si deux utilisateurs valident un paiement
+à la milliseconde près pour le même logement et les mêmes dates ?
+ ---
+
+si on fait rien, on se retrouve avec un double booking
+classique, une race condition.
+
+notre solution : le verrouillage pessimiste en base de donnees (PESSIMISTIC_WRITE de doctrine).
+
+si un deuxieme utilisateur essaie de confirmer en meme temps, sa transaction va bloquer a l'etape 2
+en attendant que le premier ait fini. quand le verrou est relache, le deuxieme va re-verifier la
+dispo, et la les dates sont prises donc il recoit une BookingConflictException (409).
+
+
+--- Performance : Comment valider la disponibilité d'un logement sur 20 nuits consécutives sans
+saturer la base de requêtes SQL itératives  ---
+
+avec notre approche de periodes, on fait UNE SEULE requete SQL peu importe si c'est 2 nuits ou
+200 nuits :
+
+  SELECT COUNT(b.id) FROM booking b 
+  WHERE b.property_id = :property 
+  AND b.status = 'confirmed' 
+  AND b.checkin_date < :checkout 
+  AND b.checkout_date > :checkin
+
+c'est la formule canonique de chevauchement d'intervalles. elle marche avec n'importe quelle duree,
+pas de boucle, pas de generation de dates cote php. et la meme chose pour les AvailabilityBlocks.
+
+
+--- Asynchronisme : Pourquoi l'envoi d'email doit-il préférentiellement intervenir après le flush() de
+l'ORM ? ---
+
+parce que si on envoie le mail AVANT le flush() et que le flush() plante, le voyageur recoit un mail de
+confirmation pour une resa 
+qui n'existe pas en base. c'est le pire scenario possible, la personne arrive a l'appartement et l'hote
+a rien dans son dashboard.
+
+
+question 2 :  Quelle est la stratégie si RabbitMQ tombe en panne ?
+
+dans notre cas on utilise le transport doctrine:// donc les messages sont stockes dans la base de
+donnees elle meme, dans la table messenger_messages. c'est plus resilient que rabbitmq parce que
+si la base est up (et elle doit l'etre sinon rien marche), les messages sont persistes. meme si
+le worker crash, les messages restent dans la table et seront traites au prochain demarrage du 
+worker.
+
+et on a configure un retry_strategy avec max_retries: 3, delay: 1000, multiplier: 2. donc si
+l'envoi de mail echoue (mailpit down par exemple), messenger va retenter 3 fois avec un delai
+exponentiel (1s, 2s, 4s). apres 3 echecs le message va dans la dead letter queue (failed transport)
+et on peut le relancer manuellement plus tard avec messenger:failed:retry.
+
+en gros la resa est TOUJOURS sauvegardee en base, meme si le mail part pas. le mail est un
+side-effect, pas une condition de succes de la reservation.
+
+
+--- Structure SQL : Justifiez votre choix d'architecture pour le calendrier : table de jours individuels
+( PropertyAvailability ) ou table de périodes ( date_start , date_end ).
+ ---
+
+on a choisi la table de periodes plutot que la table
+de jours individuels.
+
+arguments :
+1) performance : une seule requete pour verifier n'importe quelle duree, pas de generation de range de dates cote applicatif, pas de boucle.
+2) moins de rows en base : un blocage de 30 jours = 1 row au lieu de 30. sur un site avec 500
+   proprietes et des blocages sur plusieurs mois, la difference est enorme en volume de donnees.
+3) coherence avec ical : le format ical utilise DTSTART et DTEND pour chaque evenement. stocker
+   des periodes en bdd rend l'export et l'import ical trivial, pas de regroupement de jours 
+   individuels a faire.
+4) gestion des modifications : si un hote veut debloquer 3 jours au milieu d'un bloc de 2 semaines,
+   c'est un peu plus complexe (il faut split le bloc en deux). mais en pratique c'est rare, et
+   la simplification des requetes de dispo compense largement.
+
+arguments pour les jours individuels :
+1) granularite : chaque jour peut avoir des metadonnees differentes (prix different par nuit, 
+   commentaire specifique). mais dans notre cas le prix est par propriete, pas par jour, donc
+   on en a pas besoin.
+2) simplicite des modifications : pour bloquer ou debloquer un jour precis, c'est un insert ou
+   delete simple. pas de splitting de periodes.
+
+au final, pour notre cas d'usage (verifier la dispo, exporter en ical, pas de tarif variable par
+nuit), les periodes sont clairement le meilleur choix. c'est ce que recommande aussi le sujet avec
+l'entite AvailabilityBlock(startDate, endDate).
+
+Note : la doc sur "Robustesse : Vous documenterez votre stratégie de gestion des conflits (chevauchement avec des
+réservations existantes, suppression d'événements distants)." est dispo dans le fichier "ical_import_conflicts.md" à la racine.

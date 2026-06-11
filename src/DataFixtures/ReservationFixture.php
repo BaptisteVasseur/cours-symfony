@@ -7,8 +7,9 @@ namespace App\DataFixtures;
 use App\Entity\Invoice;
 use App\Entity\Property;
 use App\Entity\Reservation;
-use App\Entity\ReservationStatusHistory;
+use App\Entity\BookingStatusHistory;
 use App\Entity\User;
+use App\Enum\BookingStatus;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
 use Doctrine\Persistence\ObjectManager;
@@ -79,6 +80,8 @@ class ReservationFixture extends Fixture implements DependentFixtureInterface
             $reservation = new Reservation();
             $reservation->setProperty($property);
             $reservation->setGuest($guest);
+            $reservation->setHost($property->getHost());
+            $reservation->setUpdatedAt(new \DateTimeImmutable());
             $reservation->setCheckinDate(new \DateTimeImmutable($checkin));
             $reservation->setCheckoutDate(new \DateTimeImmutable($checkout));
             $reservation->setGuestsCount($guestsCount);
@@ -91,19 +94,19 @@ class ReservationFixture extends Fixture implements DependentFixtureInterface
             $reservation->setCancellationReason($cancellationReason);
             $manager->persist($reservation);
 
-            $history = new ReservationStatusHistory();
-            $history->setReservation($reservation);
-            $history->setOldStatus(null);
-            $history->setNewStatus('pending');
-            $history->setChangedBy($guest);
+            $history = new BookingStatusHistory();
+            $history->setBooking($reservation);
+            $history->setFromStatus(null);
+            $history->setToStatus(BookingStatus::PENDING);
+            $history->setActor('guest');
             $manager->persist($history);
 
             if ($status !== 'pending') {
-                $historyConfirmed = new ReservationStatusHistory();
-                $historyConfirmed->setReservation($reservation);
-                $historyConfirmed->setOldStatus('pending');
-                $historyConfirmed->setNewStatus($status);
-                $historyConfirmed->setChangedBy($admin);
+                $historyConfirmed = new BookingStatusHistory();
+                $historyConfirmed->setBooking($reservation);
+                $historyConfirmed->setFromStatus(BookingStatus::PENDING);
+                $historyConfirmed->setToStatus(BookingStatus::from($status));
+                $historyConfirmed->setActor($status === 'cancelled' ? 'guest' : 'host');
                 $manager->persist($historyConfirmed);
             }
 

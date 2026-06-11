@@ -1,0 +1,74 @@
+<div class="relative" data-notifications-menu>
+    <button type="button" data-notifications-menu-toggle class="relative p-2.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-full transition shrink-0" aria-expanded="false" aria-haspopup="true" aria-label="Notifications">
+        <i class="fa-regular fa-bell text-lg"></i>
+        {% set count = notifications_unread_count(app.user) %}
+        <span data-realtime-notification-badge class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[9px] font-bold text-white ring-2 ring-white {{ count > 0 ? '' : 'hidden' }}">
+            {{ count }}
+        </span>
+    </button>
+
+    <div data-notifications-menu-dropdown class="hidden absolute right-0 top-full mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 py-2 z-50 overflow-hidden">
+        <div class="px-4 py-3 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+            <h3 class="font-semibold text-gray-900 text-sm">Notifications</h3>
+            {% if count > 0 %}
+                <form action="{{ path('app_notifications_mark_all_read') }}" method="POST" class="m-0">
+                    <input type="hidden" name="_token" value="{{ csrf_token('mark_all_read') }}">
+                    <button type="submit" class="text-xs text-brand hover:text-brandHover font-semibold transition">Tout marquer comme lu</button>
+                </form>
+            {% endif %}
+        </div>
+
+        <div class="max-h-96 overflow-y-auto divide-y divide-gray-100" data-realtime-notifications-list>
+            {% set notifs = latest_notifications(5) %}
+            {% if notifs is empty %}
+                <div class="p-6 text-center text-sm text-gray-500" data-realtime-notifications-empty>
+                    <i class="fa-regular fa-bell text-3xl text-gray-300 mb-2 block"></i>
+                    Aucune notification
+                </div>
+            {% else %}
+                {% for notif in notifs %}
+                    <form action="{{ path('app_notification_read', { id: notif.id }) }}" method="POST" class="m-0">
+                        <input type="hidden" name="_token" value="{{ csrf_token('read' ~ notif.id) }}">
+                        <button type="submit" class="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-start gap-3 {% if not notif.isRead %}bg-brand/5{% endif %}">
+                            <span class="mt-1.5 flex h-2 w-2 shrink-0 rounded-full {% if not notif.isRead %}bg-brand{% else %}bg-transparent{% endif %}"></span>
+                            <div class="flex-1 min-w-0">
+                                <p class="text-xs font-semibold text-gray-900 truncate {% if not notif.isRead %}text-brand{% endif %}">{{ notif.title }}</p>
+                                <p class="text-xs text-gray-500 mt-0.5 line-clamp-2">{{ notif.content }}</p>
+                                <p class="text-[10px] text-gray-400 mt-1">{{ notif.createdAt|date('d/m/Y H:i') }}</p>
+                            </div>
+                        </button>
+                    </form>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div class="border-t border-gray-100 py-1.5 text-center bg-gray-50/50">
+            <a href="{{ path('app_notifications_index') }}" class="text-xs font-semibold text-gray-700 hover:text-brand transition block py-1">
+                Voir toutes les notifications
+            </a>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.querySelectorAll('[data-notifications-menu]').forEach((menu) => {
+        const toggle = menu.querySelector('[data-notifications-menu-toggle]');
+        const dropdown = menu.querySelector('[data-notifications-menu-dropdown]');
+
+        toggle?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isOpen = !dropdown.classList.contains('hidden');
+            dropdown.classList.toggle('hidden', isOpen);
+            toggle.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+            // Fermer le menu de profil s'il est ouvert
+            document.querySelector('[data-profile-menu-dropdown]')?.classList.add('hidden');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!menu.contains(e.target)) {
+                dropdown.classList.add('hidden');
+                toggle?.setAttribute('aria-expanded', 'false');
+            }
+        });
+    });
+</script>

@@ -69,6 +69,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column]
     private bool $isEmailVerified = false;
 
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $emailVerificationToken = null;
+
     #[ORM\Column]
     private bool $is2faEnabled = false;
 
@@ -131,6 +134,11 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: AuditLog::class, mappedBy: 'user')]
     private Collection $auditLogs;
 
+    /** @var Collection<int, Property> */
+    #[ORM\ManyToMany(targetEntity: Property::class, inversedBy: 'favoritedBy')]
+    #[ORM\JoinTable(name: 'user_favorites')]
+    private Collection $favoriteProperties;
+
     public function __construct()
     {
         $this->oauthAccounts = new ArrayCollection();
@@ -140,6 +148,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->paymentMethods = new ArrayCollection();
         $this->notifications = new ArrayCollection();
         $this->auditLogs = new ArrayCollection();
+        $this->favoriteProperties = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -261,6 +270,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setIsEmailVerified(bool $isEmailVerified): static
     {
         $this->isEmailVerified = $isEmailVerified;
+
+        return $this;
+    }
+
+    public function getEmailVerificationToken(): ?string
+    {
+        return $this->emailVerificationToken;
+    }
+
+    public function setEmailVerificationToken(?string $emailVerificationToken): static
+    {
+        $this->emailVerificationToken = $emailVerificationToken;
 
         return $this;
     }
@@ -497,6 +518,28 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function removeAuditLog(AuditLog $auditLog): static
     {
         $this->auditLogs->removeElement($auditLog);
+
+        return $this;
+    }
+
+    /** @return Collection<int, Property> */
+    public function getFavoriteProperties(): Collection
+    {
+        return $this->favoriteProperties;
+    }
+
+    public function addFavoriteProperty(Property $property): static
+    {
+        if (!$this->favoriteProperties->contains($property)) {
+            $this->favoriteProperties->add($property);
+        }
+
+        return $this;
+    }
+
+    public function removeFavoriteProperty(Property $property): static
+    {
+        $this->favoriteProperties->removeElement($property);
 
         return $this;
     }

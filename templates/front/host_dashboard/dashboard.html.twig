@@ -1,0 +1,190 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Tableau de bord Hôte - Airbnb Clone{% endblock %}
+
+{% block content %}
+    <div class="flex-grow bg-gray-50/50" data-realtime-view="host-dashboard">
+        <main class="px-6 md:px-12 py-10 max-w-6xl mx-auto w-full">
+            <a href="{{ path('app_home') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+                <i class="fa-solid fa-arrow-left"></i> Retour à l'accueil
+            </a>
+            <div class="flex items-center gap-6 border-b border-gray-200 mb-8 pb-1">
+                <a href="{{ path('app_host_dashboard') }}" class="text-sm font-semibold pb-4 border-b-2 border-brand text-gray-900">
+                    Tableau de bord
+                </a>
+                <a href="{{ path('app_host_reservations') }}" class="text-sm font-medium pb-4 border-b-2 border-transparent text-gray-500 hover:text-gray-900 transition">
+                    Réservations reçues
+                </a>
+                <a href="{{ path('app_account_properties') }}" class="text-sm font-medium pb-4 border-b-2 border-transparent text-gray-500 hover:text-gray-900 transition">
+                    Mes propriétés
+                </a>
+            </div>
+
+            <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-950 tracking-tight">Bonjour, {{ app.user.profile.firstName|default('Hôte') }}</h1>
+                    <p class="text-gray-500 text-sm mt-1">Consultez l'activité de vos hébergements et gérez vos réservations.</p>
+                </div>
+                <div>
+                    <a href="{{ path('app_host_reservations') }}" class="inline-flex items-center gap-2 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2.5 rounded-xl text-sm transition shadow-sm">
+                        <i class="fa-solid fa-list-check text-gray-400"></i> Voir toutes les réservations
+                    </a>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between text-gray-400 mb-2">
+                            <span class="text-xs font-semibold uppercase tracking-wider">Revenus cumulés</span>
+                            <i class="fa-solid fa-euro-sign text-brand/80 text-lg"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold text-gray-900">{{ totalEarnings|number_format(2, ',', ' ') }} €</h2>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-4">Sur réservations confirmées / terminées</p>
+                </div>
+
+                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between text-gray-400 mb-2">
+                            <span class="text-xs font-semibold uppercase tracking-wider">Taux d'occupation</span>
+                            <i class="fa-solid fa-percent text-blue-500/80 text-lg"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold text-gray-900">{{ occupancyRate }} %</h2>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-4">Nuits réservées sur la base d'un mois</p>
+                </div>
+
+                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between text-gray-400 mb-2">
+                            <span class="text-xs font-semibold uppercase tracking-wider">Demandes en attente</span>
+                            {% if pendingCount > 0 %}
+                                <span class="flex h-2.5 w-2.5 relative">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-yellow-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-yellow-500"></span>
+                                </span>
+                            {% else %}
+                                <i class="fa-solid fa-hourglass-half text-yellow-500/80 text-lg"></i>
+                            {% endif %}
+                        </div>
+                        <h2 class="text-3xl font-bold text-gray-900">{{ pendingCount }}</h2>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-4">Réservations nécessitant votre réponse</p>
+                </div>
+
+                <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between text-gray-400 mb-2">
+                            <span class="text-xs font-semibold uppercase tracking-wider">Annonces actives</span>
+                            <i class="fa-solid fa-house text-green-500/80 text-lg"></i>
+                        </div>
+                        <h2 class="text-3xl font-bold text-gray-900">{{ activeListingsCount }}</h2>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-4">Logements visibles dans la recherche</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                        <h3 class="text-lg font-bold text-gray-900 mb-6">Réservations récentes</h3>
+
+                        {% if recentReservations|length > 0 %}
+                            <div class="divide-y divide-gray-100">
+                                {% for res in recentReservations %}
+                                    <div class="py-4 first:pt-0 last:pb-0 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-700 shrink-0 text-sm overflow-hidden">
+                                                {% if res.guest.profile.avatarUrl %}
+                                                    <img src="{{ res.guest.profile.avatarUrl }}" alt="" class="w-full h-full object-cover">
+                                                {% else %}
+                                                    {{ res.guest.profile.firstName|default(res.guest.email)|first|upper }}
+                                                {% endif %}
+                                            </div>
+                                            <div>
+                                                <p class="font-semibold text-gray-900 text-sm">
+                                                    {{ res.guest.profile.firstName|default('') }} {{ res.guest.profile.lastName|default('') }}
+                                                </p>
+                                                <p class="text-xs text-gray-400 mt-0.5">
+                                                    {{ res.property.title }}
+                                                </p>
+                                                <p class="text-xs text-gray-500 mt-1">
+                                                    {{ res.checkinDate|date('d M') }} – {{ res.checkoutDate|date('d M Y') }} · {{ res.guestsCount }} voyageurs
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex sm:flex-col items-center sm:items-end justify-between w-full sm:w-auto gap-2">
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full 
+                                                    {% if res.status == 'confirmed' %}bg-green-50 text-green-700 border border-green-200/50
+                                                    {% elseif res.status == 'completed' %}bg-blue-50 text-blue-700 border border-blue-200/50
+                                                    {% elseif res.status == 'pending' %}bg-yellow-50 text-yellow-700 border border-yellow-200/50
+                                                    {% else %}bg-red-50 text-red-700 border border-red-200/50{% endif %}">
+                                                    {% if res.status == 'confirmed' %}Confirmée
+                                                    {% elseif res.status == 'completed' %}Terminée
+                                                    {% elseif res.status == 'pending' %}En attente
+                                                    {% else %}Annulée{% endif %}
+                                                </span>
+                                                <span class="font-semibold text-gray-900 text-sm">
+                                                    {{ res.totalPrice }} €
+                                                </span>
+                                            </div>
+                                                                                        <div class="flex items-center gap-2 mt-1">
+                                                <a href="{{ path('app_reservation_contact', { id: res.id }) }}" class="text-xs font-medium text-gray-600 hover:text-gray-900 px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 transition" title="Contacter">
+                                                    <i class="fa-solid fa-comment mr-1"></i> Message
+                                                </a>
+                                                <a href="{{ path('app_reservation_show', { id: res.id }) }}" class="text-xs font-medium text-gray-600 hover:text-gray-900 px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 transition" title="Détails">
+                                                    <i class="fa-solid fa-eye"></i> Details
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-12">
+                                <i class="fa-solid fa-folder-open text-3xl text-gray-300 mb-3 block"></i>
+                                <p class="text-gray-500 text-sm">Aucune activité récente sur vos logements.</p>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <aside class="space-y-6">
+                    <div class="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-2xl p-6 shadow-sm relative overflow-hidden">
+                        <div class="absolute right-0 bottom-0 translate-x-4 translate-y-4 opacity-10 text-9xl">
+                            <i class="fa-solid fa-house-chimney"></i>
+                        </div>
+                        <h4 class="font-bold text-base mb-2">Des questions sur la location ?</h4>
+                        <p class="text-xs text-gray-300 leading-relaxed mb-6">
+                            Consultez notre guide de l'hôte pour configurer vos hébergements, optimiser vos tarifs de séjour ou gérer les taxes locales.
+                        </p>
+                        <a href="{{ path('app_help') }}" class="inline-flex items-center gap-2 bg-white text-gray-950 font-semibold px-4 py-2 rounded-xl text-xs hover:bg-gray-100 transition shadow-sm">
+                            Accéder au centre d'aide <i class="fa-solid fa-arrow-right-long"></i>
+                        </a>
+                    </div>
+
+                    <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                        <h4 class="font-bold text-gray-950 text-sm mb-4">Raccourcis rapides</h4>
+                        <ul class="space-y-3 text-sm">
+                            <li>
+                                <a href="{{ path('app_account_properties') }}" class="flex items-center justify-between text-gray-600 hover:text-gray-950 font-medium py-1 transition group">
+                                    <span>Gérer mes hébergements</span>
+                                    <i class="fa-solid fa-angle-right text-gray-400 group-hover:translate-x-0.5 transition"></i>
+                                </a>
+                            </li>
+                            <li>
+                                <a href="{{ path('app_messages_index') }}" class="flex items-center justify-between text-gray-600 hover:text-gray-950 font-medium py-1 transition group">
+                                    <span>Consulter la messagerie</span>
+                                    <i class="fa-solid fa-angle-right text-gray-400 group-hover:translate-x-0.5 transition"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </div>
+                </aside>
+            </div>
+        </main>
+    </div>
+{% endblock %}

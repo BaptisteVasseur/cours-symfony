@@ -17,17 +17,20 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 class HomeController extends AbstractController
 {
     #[Route('/', name: 'app_home')]
-    public function index(PropertyRepository $propertyRepository): Response
+    public function index(Request $request, PropertyRepository $propertyRepository): Response
     {
+        $category = $this->normalizeCategory((string) $request->query->get('category', ''));
+
         return $this->render('front/home/index.html.twig', [
-            'properties' => $propertyRepository->findForListing('published'),
+            'properties' => $propertyRepository->findForListing('published', $category),
+            'category' => $category,
         ]);
     }
 
     #[Route('/logement/{id}', name: 'app_logement_detail')]
     #[IsGranted('ROLE_USER')]
     #[IsGranted(PropertyVoter::VIEW, subject: 'property')]
-    public function detail(Property $property, PropertyRepository $propertyRepository, ReviewRepository $reviewRepository): Response
+    public function detail(Request $request, Property $property, PropertyRepository $propertyRepository, ReviewRepository $reviewRepository): Response
     {
         $property = $propertyRepository->findOneForDetail($property) ?? $property;
         $allReviews = $reviewRepository->findByPropertyOrdered($property);
@@ -36,6 +39,9 @@ class HomeController extends AbstractController
             'property' => $property,
             'reviews' => \array_slice($allReviews, 0, 5),
             'totalReviews' => \count($allReviews),
+            'checkin' => $request->query->get('checkin'),
+            'checkout' => $request->query->get('checkout'),
+            'guests' => $request->query->get('guests'),
         ]);
     }
 
@@ -55,15 +61,42 @@ class HomeController extends AbstractController
     #[Route('/search', name: 'app_search', methods: ['GET'])]
     public function search(Request $request, PropertyRepository $propertyRepository): Response
     {
-        $checkin = $this->parseDate($request->query->get('checkin'));
-        $checkout = $this->parseDate($request->query->get('checkout'));
+        $destination = trim((string) $request->query->get('destination', ''));
+        $checkinValue = trim((string) $request->query->get('checkin', ''));
+        $checkoutValue = trim((string) $request->query->get('checkout', ''));
+        $checkin = $this->parseDate($checkinValue);
+        $checkout = $this->parseDate($checkoutValue);
+        $guests = max(1, $request->query->getInt('guests', 1));
+        $category = $this->normalizeCategory((string) $request->query->get('category', ''));
+        $dateError = null;
+        $properties = [];
+
+        if ($checkinValue !== '' || $checkoutValue !== '') {
+            if ($checkin === null || $checkout === null) {
+                $dateError = 'Les dates d’arrivée et de départ doivent être renseignées ensemble au format valide.';
+            } elseif ($checkin >= $checkout) {
+                $dateError = 'La date de départ doit être postérieure à la date d’arrivée.';
+            }
+        }
+
+        if ($dateError === null) {
+            $properties = $propertyRepository->searchAvailable(
+                $destination !== '' ? $destination : null,
+                $checkin,
+                $checkout,
+                $guests,
+                $category,
+            );
+        }
 
         return $this->render('front/search/index.html.twig', [
-            'properties' => $propertyRepository->findForListing('published'),
-            'checkin' => $checkin,
-            'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'properties' => $properties,
+            'checkin' => $checkin?->format('Y-m-d') ?? $checkinValue,
+            'checkout' => $checkout?->format('Y-m-d') ?? $checkoutValue,
+            'guests' => $guests,
+            'destination' => $destination,
+            'category' => $category,
+            'dateError' => $dateError,
         ]);
     }
 
@@ -73,8 +106,15 @@ class HomeController extends AbstractController
             return null;
         }
 
-        $date = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
+        $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
 
-        return $date !== false ? $date : null;
+        return $date !== false && $date->format('Y-m-d') === $value ? $date : null;
+    }
+
+    private function normalizeCategory(?string $value): ?string
+    {
+        $value = trim((string) $value);
+
+        return in_array($value, ['seaside', 'iconic', 'trending', 'camping'], true) ? $value : null;
     }
 }

@@ -22,9 +22,10 @@ use App\Entity\PropertyAvailability;
 use App\Entity\PropertyMedia;
 use App\Entity\PropertyRule;
 use App\Entity\Reservation;
-use App\Entity\ReservationStatusHistory;
+use App\Entity\BookingStatusHistory;
 use App\Entity\User;
 use App\Entity\UserProfile;
+use App\Enum\BookingStatus;
 use App\Security\Roles;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
@@ -386,6 +387,8 @@ class TestAccountFixture extends Fixture implements DependentFixtureInterface
         $reservation = new Reservation();
         $reservation->setProperty($property);
         $reservation->setGuest($guest);
+        $reservation->setHost($property->getHost());
+        $reservation->setUpdatedAt(new \DateTimeImmutable());
         $reservation->setCheckinDate(new \DateTimeImmutable($checkin));
         $reservation->setCheckoutDate(new \DateTimeImmutable($checkout));
         $reservation->setGuestsCount($guestsCount);
@@ -397,19 +400,28 @@ class TestAccountFixture extends Fixture implements DependentFixtureInterface
         $reservation->setCurrency('EUR');
         $manager->persist($reservation);
 
-        $history = new ReservationStatusHistory();
-        $history->setReservation($reservation);
-        $history->setOldStatus(null);
-        $history->setNewStatus('pending');
-        $history->setChangedBy($guest);
+        $history = new BookingStatusHistory();
+        $history->setBooking($reservation);
+        $history->setFromStatus(null);
+        $history->setToStatus(BookingStatus::PENDING);
+        $history->setActor('guest');
         $manager->persist($history);
 
         if ($status !== 'pending') {
-            $confirmed = new ReservationStatusHistory();
-            $confirmed->setReservation($reservation);
-            $confirmed->setOldStatus('pending');
-            $confirmed->setNewStatus($status);
-            $confirmed->setChangedBy($changedBy);
+            $confirmed = new BookingStatusHistory();
+            $confirmed->setBooking($reservation);
+            $confirmed->setFromStatus(BookingStatus::PENDING);
+            $confirmed->setToStatus(BookingStatus::from($status));
+            
+            $actorStr = 'system';
+            if ($changedBy !== null) {
+                if ($reservation->getGuest() !== null && $changedBy->getId() === $reservation->getGuest()->getId()) {
+                    $actorStr = 'guest';
+                } elseif ($reservation->getHost() !== null && $changedBy->getId() === $reservation->getHost()->getId()) {
+                    $actorStr = 'host';
+                }
+            }
+            $confirmed->setActor($actorStr);
             $manager->persist($confirmed);
         }
 
