@@ -225,15 +225,12 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         $gallery->setIsCover(false);
         $manager->persist($gallery);
 
-        for ($day = 0; $day < 30; $day++) {
-            $availability = new PropertyAvailability();
-            $availability->setProperty($property);
-            $availability->setAvailableDate(new \DateTimeImmutable(sprintf('+%d days', $day)));
-            $availability->setIsAvailable($day % 7 !== 0);
-            $availability->setPriceOverride($day % 5 === 0 ? (string) ((float) $price * 1.2) : null);
-            $availability->setMinimumStay($day % 10 === 0 ? 3 : 1);
-            $manager->persist($availability);
-        }
+        $block = new PropertyAvailability();
+        $block->setProperty($property);
+        $block->setStartDate(new \DateTimeImmutable('+40 days'));
+        $block->setEndDate(new \DateTimeImmutable('+45 days'));
+        $block->setReason('Usage personnel');
+        $manager->persist($block);
 
         if ($withICal) {
             $iCalSync = new PropertyICalSync();
