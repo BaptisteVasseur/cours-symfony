@@ -7,6 +7,7 @@ namespace App\Controller\Front;
 use App\Entity\Property;
 use App\Repository\PropertyRepository;
 use App\Repository\ReviewRepository;
+use App\Service\AvailabilityChecker;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -53,17 +54,35 @@ class HomeController extends AbstractController
     }
 
     #[Route('/search', name: 'app_search', methods: ['GET'])]
-    public function search(Request $request, PropertyRepository $propertyRepository): Response
+    public function search(Request $request, PropertyRepository $propertyRepository, AvailabilityChecker $availabilityChecker): Response
     {
+        $destination = $request->query->get('destination');
+        $guests = $request->query->getInt('guests');
         $checkin = $this->parseDate($request->query->get('checkin'));
         $checkout = $this->parseDate($request->query->get('checkout'));
 
+        // Filtres SQL : destination (ville / adresse / pays) + capacité d'accueil.
+        $properties = $propertyRepository->search($destination, $guests > 0 ? $guests : null);
+
+        // Filtrage strict sur les disponibilités de la plage de dates (si fournie et cohérente).
+        if ($checkin !== null && $checkout !== null && $checkin < $checkout) {
+            $properties = array_values(array_filter(
+                $properties,
+                static fn (Property $property): bool => $availabilityChecker->isAvailable(
+                    $property,
+                    $checkin,
+                    $checkout,
+                    max($guests, 1),
+                ),
+            ));
+        }
+
         return $this->render('front/search/index.html.twig', [
-            'properties' => $propertyRepository->findForListing('published'),
+            'properties' => $properties,
             'checkin' => $checkin,
             'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'guests' => $guests,
+            'destination' => $destination,
         ]);
     }
 
