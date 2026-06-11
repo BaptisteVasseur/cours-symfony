@@ -8,6 +8,8 @@ use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
+use App\Message\ReservationConfirmedMessage;
+use App\Message\ReservationPendingMessage;
 use App\Repository\PropertyAvailabilityRepository;
 use App\Repository\PropertyRepository;
 use App\Repository\ReservationRepository;
@@ -15,6 +17,7 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\PropertyVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -31,6 +34,7 @@ final class BookingController extends AbstractController
         ReservationRepository $reservationRepository,
         PropertyAvailabilityRepository $availabilityRepository,
         EntityManagerInterface $entityManager,
+        MessageBusInterface $bus,
     ): Response {
         $property = $propertyRepository->findOneForDetail($property) ?? $property;
 
@@ -116,6 +120,12 @@ final class BookingController extends AbstractController
 
             $entityManager->persist($reservation);
             $entityManager->flush();
+
+            if ($reservation->getStatus() === 'pending') {
+                $bus->dispatch(new ReservationPendingMessage((string) $reservation->getId()));
+            } else {
+                $bus->dispatch(new ReservationConfirmedMessage((string) $reservation->getId()));
+            }
 
             $this->addFlash('success', 'Votre réservation a été enregistrée.');
 
