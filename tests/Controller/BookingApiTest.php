@@ -130,4 +130,65 @@ final class BookingApiTest extends WebTestCase
         // Expected status code is 409 Conflict
         $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
     }
+
+    public function testPostBookingDuplicateForSameGuestReturnsError(): void
+    {
+        $client = static::createClient();
+        
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        $propertyRepository = static::getContainer()->get(PropertyRepository::class);
+        $em = static::getContainer()->get(EntityManagerInterface::class);
+
+        // Fetch a user to act as guest
+        $guest = $userRepository->findOneBy(['email' => 'jeanmarc.dupont@email.com']);
+        $this->assertNotNull($guest);
+
+        // Fetch a property owned by someone else
+        $qb = $propertyRepository->createQueryBuilder('p');
+        $property = $qb->andWhere('p.host != :host')
+            ->setParameter('host', $guest)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+        $this->assertNotNull($property);
+
+        // Authenticate the guest
+        $client->loginUser($guest);
+
+        // Prepare checkin/checkout dates
+        $checkin = new \DateTimeImmutable('tomorrow + 20 days');
+        $checkout = $checkin->modify('+2 days');
+
+        // Create the first pending reservation
+        $client->request('POST', '/api/bookings', [], [], [
+            'CONTENT_TYPE' => 'application/ld+json',
+            'HTTP_ACCEPT' => 'application/ld+json',
+        ], json_encode([
+            'property' => '/api/properties/' . $property->getId(),
+            'guest' => '/api/users/' . $guest->getId(),
+            'checkinDate' => $checkin->format('Y-m-d'),
+            'checkoutDate' => $checkout->format('Y-m-d'),
+            'guestsCount' => 1,
+            'totalPrice' => '100.00',
+            'currency' => 'EUR',
+        ]));
+        $this->assertResponseIsSuccessful();
+
+        // Attempt to create a duplicate pending reservation for the same dates and guest
+        $client->request('POST', '/api/bookings', [], [], [
+            'CONTENT_TYPE' => 'application/ld+json',
+            'HTTP_ACCEPT' => 'application/ld+json',
+        ], json_encode([
+            'property' => '/api/properties/' . $property->getId(),
+            'guest' => '/api/users/' . $guest->getId(),
+            'checkinDate' => $checkin->format('Y-m-d'),
+            'checkoutDate' => $checkout->format('Y-m-d'),
+            'guestsCount' => 1,
+            'totalPrice' => '100.00',
+            'currency' => 'EUR',
+        ]));
+
+        // Expected error response is 409 Conflict because of duplicate active booking
+        $this->assertResponseStatusCodeSame(Response::HTTP_CONFLICT);
+    }
 }

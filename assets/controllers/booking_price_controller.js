@@ -140,4 +140,16 @@ export default class extends Controller {
             currency: 'EUR'
         }).format(parseFloat(value));
     }
+
+    disableSubmit(event) {
+        if (this.isSubmitting) {
+            event.preventDefault();
+            return;
+        }
+        this.isSubmitting = true;
+        if (this.hasSubmitBtnTarget) {
+            this.submitBtnTarget.disabled = true;
+            this.submitBtnTarget.textContent = 'Réservation en cours...';
+        }
+    }
 }

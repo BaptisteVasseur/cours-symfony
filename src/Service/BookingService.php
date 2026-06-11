@@ -15,6 +15,7 @@ use App\Message\BookingCancelledMessage;
 use App\Message\BookingConfirmedMessage;
 use App\Message\BookingCreatedMessage;
 use App\Message\BookingRefusedMessage;
+use App\Repository\BookingRepository;
 use Doctrine\DBAL\LockMode;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Messenger\MessageBusInterface;
@@ -27,6 +28,7 @@ final class BookingService
         private readonly BookingPriceCalculator $priceCalculator,
         private readonly MessageBusInterface $messageBus,
         private readonly RealtimePublisher $realtimePublisher,
+        private readonly BookingRepository $bookingRepository,
     ) {
     }
 
@@ -38,6 +40,7 @@ final class BookingService
         int $guestsCount,
     ): Reservation {
         $reservation = $this->entityManager->wrapInTransaction(function () use ($property, $guest, $checkin, $checkout, $guestsCount): Reservation {
+            $this->entityManager->lock($property, LockMode::PESSIMISTIC_WRITE);
             $this->assertCreationIsValid($property, $guest, $checkin, $checkout, $guestsCount);
 
             if (!$this->availabilityService->isAvailable($property, $checkin, $checkout, $guestsCount)) {
@@ -259,6 +262,10 @@ final class BookingService
     ): void {
         if ($property->getHost()?->getId() === $guest->getId()) {
             throw new \LogicException('Vous ne pouvez pas réserver votre propre logement.');
+        }
+
+        if ($this->bookingRepository->countOverlappingActiveForGuest($guest, $property, $checkin, $checkout) > 0) {
+            throw new UnavailableDatesException('Vous avez déjà une réservation en cours ou confirmée pour ce logement sur ces dates.');
         }
 
         if ($checkin >= $checkout) {

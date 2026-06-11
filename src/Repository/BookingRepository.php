@@ -58,6 +58,28 @@ class BookingRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
     }
 
+    public function countOverlappingActiveForGuest(
+        User $guest,
+        Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+    ): int {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.guest = :guest')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('guest', $guest)
+            ->setParameter('property', $property)
+            ->setParameter('statuses', [BookingStatus::PENDING, BookingStatus::CONFIRMED])
+            ->setParameter('checkout', $checkout)
+            ->setParameter('checkin', $checkin)
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
     /**
      * @return list<Reservation>
      */
