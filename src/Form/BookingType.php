@@ -11,6 +11,8 @@ use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 use Symfony\Component\Validator\Constraints\GreaterThanOrEqual;
 use Symfony\Component\Validator\Constraints\NotBlank;
+use Symfony\Component\Validator\Constraints\GreaterThan;
+
 
 class BookingType extends AbstractType
 {
@@ -18,17 +20,20 @@ class BookingType extends AbstractType
     {
         $builder
             ->add('checkinDate', DateType::class, [
-                'label' => 'Arrivée',
-                'widget' => 'single_text',
-                'constraints' => [new NotBlank(message: 'La date d\'arrivée est obligatoire.')],
-            ])
-            ->add('checkoutDate', DateType::class, [
-                'label' => 'Départ',
-                'widget' => 'single_text',
-                'constraints' => [
-                    new NotBlank(message: 'La date de départ est obligatoire.'),
-                ],
-            ])
+    'label' => 'Arrivée',
+    'widget' => 'single_text',
+    'input' => 'datetime_immutable',
+    'constraints' => [new NotBlank(message: 'La date d\'arrivée est obligatoire.')],
+])
+->add('checkoutDate', DateType::class, [
+    'label' => 'Départ',
+    'widget' => 'single_text',
+    'input' => 'datetime_immutable',
+    'constraints' => [
+        new NotBlank(message: 'La date de départ est obligatoire.'),
+        new GreaterThan(propertyPath: 'parent.all[checkinDate].data', message: 'La date de départ doit être après la date d\'arrivée.'),
+    ],
+])
             ->add('guestsCount', IntegerType::class, [
                 'label' => 'Voyageurs',
                 'constraints' => [

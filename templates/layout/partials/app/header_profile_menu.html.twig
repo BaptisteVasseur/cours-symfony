@@ -2,6 +2,9 @@
 {% set displayName = profile and (profile.firstName or profile.lastName) ? (profile.firstName ~ ' ' ~ profile.lastName)|trim : app.user.email %}
 {% set initials = profile and profile.firstName ? profile.firstName|first|upper ~ (profile.lastName ? profile.lastName|first|upper : '') : app.user.email|first|upper %}
 
+{% set pendingCount = 0 %}
+
+
 <div class="relative" data-profile-menu>
     <button type="button" data-profile-menu-toggle class="flex items-center space-x-3 border border-gray-200 rounded-full p-2 pl-3 hover:shadow-md transition bg-white" aria-expanded="false" aria-haspopup="true">
         <i class="fa-solid fa-bars text-gray-600 text-sm"></i>
@@ -21,10 +24,24 @@
                 <i class="fa-solid fa-suitcase-rolling w-4 text-center text-gray-400"></i>
                 Mes réservations
             </a>
-            <a href="{{ path('app_account_properties') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
+           <a href="{{ path('app_account_properties') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                 <i class="fa-solid fa-house w-4 text-center text-gray-400"></i>
                 Mes propriétés
             </a>
+            {% if is_granted('ROLE_HOST') %}
+            <a href="{{ path('app_host_reservations') }}" class="flex items-center justify-between gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
+                <div class="flex items-center gap-3">
+                    <i class="fa-solid fa-clock w-4 text-center text-gray-400"></i>
+                    Demandes reçues
+                </div>
+                {% set pendingCount = render(controller('App\\Controller\\Front\\HostReservationController::pendingCount')) %}
+                {% if pendingCount > 0 %}
+                    <span class="bg-red-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        {{ pendingCount }}
+                    </span>
+                {% endif %}
+            </a>
+            {% endif %}
             <a href="{{ path('app_messages_index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                 <i class="fa-solid fa-envelope w-4 text-center text-gray-400"></i>
                 Mes messages

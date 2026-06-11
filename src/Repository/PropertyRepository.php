@@ -132,4 +132,53 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+ * Recherche des logements avec filtres (destination, dates, capacité)
+ *
+ * @return list<Property>
+ */
+public function findBySearch(
+    ?string $destination,
+    ?\DateTimeImmutable $checkin,
+    ?\DateTimeImmutable $checkout,
+    int $guests = 0
+): array {
+    $qb = $this->createQueryBuilder('p')
+        ->addSelect('m', 'a')
+        ->leftJoin('p.media', 'm')
+        ->leftJoin('p.address', 'a')
+        ->where('p.status = :status')
+        ->setParameter('status', 'published');
+
+    // 1. Filtre par destination (ville ou adresse)
+    if ($destination !== null && $destination !== '') {
+        $qb->andWhere('a.city LIKE :destination OR a.addressLine1 LIKE :destination')
+           ->setParameter('destination', '%' . $destination . '%');
+    }
+
+    // 2. Filtre par capacité d'accueil
+    if ($guests > 0) {
+        $qb->andWhere('p.maxGuests >= :guests')
+           ->setParameter('guests', $guests);
+    }
+
+    // 3. Filtre par disponibilité des dates (le plus important !)
+    if ($checkin !== null && $checkout !== null) {
+        $qb->andWhere('p.id NOT IN (
+            SELECT IDENTITY(r.property) 
+            FROM App\Entity\Reservation r
+            WHERE r.status IN (:statuses)
+            AND r.checkinDate < :checkout
+            AND r.checkoutDate > :checkin
+        )')
+        ->setParameter('statuses', ['confirmed', 'pending'])
+        ->setParameter('checkin', $checkin)
+        ->setParameter('checkout', $checkout);
+    }
+
+    return $qb->orderBy('p.createdAt', 'DESC')
+              ->getQuery()
+              ->getResult();
+}
 }

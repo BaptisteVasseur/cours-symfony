@@ -15,6 +15,14 @@
         </a>
 
         {% if app.user %}
+            <a href="{{ path('app_notifications_index') }}" class="relative p-2 text-gray-600 hover:bg-gray-50 rounded-full transition" aria-label="Notifications">
+                <i class="fa-regular fa-bell text-xl"></i>
+                <span id="notification-badge" 
+                      class="hidden absolute top-1 right-1 bg-red-500 text-white text-xs font-bold rounded-full min-w-[18px] h-[18px] flex items-center justify-center px-1">
+                    0
+                </span>
+            </a>
+            
             {% include 'layout/partials/app/header_profile_menu.html.twig' %}
         {% else %}
             <a href="{{ path('app_login') }}" class="text-sm font-semibold py-2 px-4 border border-gray-200 rounded-full hover:shadow-md transition whitespace-nowrap">
@@ -23,3 +31,66 @@
         {% endif %}
     </div>
 </header>
+
+{% if app.user %}
+<script>
+    let lastBadgeCount = 0;
+    let badgeUpdatePromise = null;
+    
+    function updateNotificationBadge(force = false) {
+        // Ne pas faire plusieurs requêtes en même temps
+        if (badgeUpdatePromise) {
+            return badgeUpdatePromise;
+        }
+        
+        badgeUpdatePromise = fetch('{{ path('app_notifications_unread_count') }}', {
+            cache: 'no-store',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            const badge = document.getElementById('notification-badge');
+            if (data.count > 0) {
+                badge.classList.remove('hidden');
+                badge.textContent = data.count > 99 ? '99+' : data.count;
+            } else {
+                badge.classList.add('hidden');
+            }
+            lastBadgeCount = data.count;
+            badgeUpdatePromise = null;
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            badgeUpdatePromise = null;
+        });
+        
+        return badgeUpdatePromise;
+    }
+    
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            updateNotificationBadge();
+        });
+    } else {
+        updateNotificationBadge();
+    }
+    
+    setInterval(updateNotificationBadge, 15000);
+    
+    document.addEventListener('visibilitychange', function() {
+        if (!document.hidden) {
+            updateNotificationBadge();
+        }
+    });
+    
+    document.addEventListener('turbo:load', function() {
+        updateNotificationBadge();
+    });
+    
+    document.addEventListener('pjax:success', function() {
+        updateNotificationBadge();
+    });
+</script>
+{% endif %}

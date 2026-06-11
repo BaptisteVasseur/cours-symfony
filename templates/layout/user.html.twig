@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>{% block title %}Airbnb{% endblock %}</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script>
+            tailwind.config = {
+                theme: {
+                    extend: {
+                        colors: {
+                            'airbnb': '#FF385C',
+                            'airbnb-dark': '#E31C5F',
+                        },
+                        fontFamily: {
+                            'sans': ['Circular', 'Cereal', 'ui-sans-serif', 'system-ui', '-apple-system', 'sans-serif'],
+                        }
+                    }
+                }
+            }
+        </script>
+        <style>
+            * { box-sizing: border-box; }
+            body { font-family: 'Circular', Cereal, ui-sans-serif, system-ui, -apple-system, sans-serif; }
+        </style>
+        {% block stylesheets %}{% endblock %}
+    </head>
+    <body class="bg-white text-gray-900 min-h-screen flex flex-col">
+
+        {# ===== HEADER ===== #}
+        <header class="sticky top-0 z-50 bg-white border-b border-gray-200">
+            <div class="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between gap-4">
+
+                {# Logo #}
+                <a href="/" class="flex items-center gap-2 flex-shrink-0">
+                    <svg class="w-8 h-8 text-airbnb fill-current" viewBox="0 0 32 32" aria-label="Airbnb">
+                        <path fill="#FF385C" d="M16 1C10.925 1 5.989 3.672 3.335 7.991c-2.656 4.32-2.656 9.697 0 14.018C5.989 26.328 10.925 29 16 29c5.075 0 10.011-2.672 12.665-6.991 2.656-4.32 2.656-9.697 0-14.018C26.011 3.672 21.075 1 16 1zm0 25.333c-5.891 0-10.667-4.776-10.667-10.667S10.109 5 16 5s10.667 4.776 10.667 10.667S21.891 26.333 16 26.333zM16 9a7 7 0 100 14A7 7 0 0016 9zm0 12a5 5 0 110-10 5 5 0 010 10z"/>
+                    </svg>
+                    <span class="text-airbnb font-bold text-xl hidden sm:block">airbnb</span>
+                </a>
+
+                {# Search bar (desktop) #}
+                <div class="hidden md:flex items-center border border-gray-300 rounded-full shadow-sm hover:shadow-md transition-shadow cursor-pointer divide-x divide-gray-300">
+                    <button class="px-5 py-3 text-sm font-semibold hover:bg-gray-100 rounded-l-full transition-colors">
+                        Où
+                    </button>
+                    <button class="px-5 py-3 text-sm font-semibold hover:bg-gray-100 transition-colors">
+                        Arrivée
+                    </button>
+                    <button class="px-5 py-3 text-sm font-semibold hover:bg-gray-100 transition-colors">
+                        Départ
+                    </button>
+                    <button class="flex items-center gap-2 px-4 py-3 hover:bg-gray-100 rounded-r-full transition-colors">
+                        <span class="text-sm text-gray-500">Voyageurs</span>
+                        <span class="bg-airbnb text-white w-8 h-8 rounded-full flex items-center justify-center">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"/>
+                            </svg>
+                        </span>
+                    </button>
+                </div>
+
+                {# Nav right #}
+                <div class="flex items-center gap-2">
+                   
+
+                    {% if app.user %}
+ <a href="/reservations/history" class="hidden lg:block text-sm font-semibold px-4 py-3 rounded-full hover:bg-gray-200 bg-gray-100 transition-colors whitespace-nowrap">
+                        Mes réservations
+                    </a>
+                    {% endif %}
+                     <a href="#" class="hidden lg:block text-sm font-semibold px-4 py-3 rounded-full hover:bg-gray-200 bg-gray-100 transition-colors whitespace-nowrap">
+                        Mettez votre logement sur Airbnb
+                    </a>
+                    <button class="p-3 rounded-full hover:bg-gray-100 transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3"/>
+                        </svg>
+                    </button>
+                  {# User menu #}
+<div class="relative">
+    <div
+        class="flex items-center gap-2 border border-gray-300 rounded-full px-3 py-2 hover:shadow-md cursor-pointer transition-shadow"
+        onclick="this.nextElementSibling.classList.toggle('hidden')"
+    >
+        <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M3.75 17.25h16.5"/>
+        </svg>
+        <div class="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
+            <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/>
+            </svg>
+        </div>
+    </div>
+
+    {# Dropdown #}
+    <div class="hidden absolute right-0 top-14 w-48 bg-white rounded-2xl shadow-lg border border-gray-200 py-2 z-50">
+        {% if app.user %}
+            <div class="px-4 py-2 border-b border-gray-100 mb-1">
+                <p class="text-xs text-gray-400 truncate">{{ app.user.email }}</p>
+            </div>
+            <a href="{{ path('app_logout') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors">
+                Déconnexion
+            </a>
+        {% else %}
+            <a href="{{ path('app_register') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-gray-900 hover:bg-gray-50 transition-colors">
+                S'inscrire
+            </a>
+            <a href="{{ path('app_login') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                Se connecter
+            </a>
+        {% endif %}
+    </div>
+</div>
+                </div>
+            </div>
+
+            {# Mobile search bar #}
+            <div class="md:hidden px-6 pb-4">
+                <div class="flex items-center gap-3 border border-gray-300 rounded-full px-5 py-3 shadow-sm">
+                    <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35m0 0A7.5 7.5 0 104.5 4.5a7.5 7.5 0 0012.15 12.15z"/>
+                    </svg>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold truncate">Où allez-vous ?</p>
+                        <p class="text-xs text-gray-500 truncate">Partout · Toutes dates · Tous les voyageurs</p>
+                    </div>
+                    <button class="border border-gray-300 rounded-full p-2 flex-shrink-0">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        {# ===== CONTENU PRINCIPAL ===== #}
+        <main class="flex-1">
+            {% block body %}{% endblock %}
+        </main>
+
+        {# ===== FOOTER ===== #}
+        <footer class="bg-gray-50 border-t border-gray-200 mt-auto">
+            <div class="max-w-7xl mx-auto px-6 py-12">
+
+                {# Footer top grid #}
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-10 mb-10">
+
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-4">Assistance</h3>
+                        <ul class="space-y-3 text-sm text-gray-600">
+                            <li><a href="#" class="hover:underline">Centre d'aide</a></li>
+                            <li><a href="#" class="hover:underline">AirCover</a></li>
+                            <li><a href="#" class="hover:underline">Informations de sécurité</a></li>
+                            <li><a href="#" class="hover:underline">Voyager avec un animal</a></li>
+                            <li><a href="#" class="hover:underline">Signaler un problème de quartier</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-4">Communauté</h3>
+                        <ul class="space-y-3 text-sm text-gray-600">
+                            <li><a href="#" class="hover:underline">Airbnb.org : logements d'urgence</a></li>
+                            <li><a href="#" class="hover:underline">Lutte contre la discrimination</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-4">Accueil de voyageurs</h3>
+                        <ul class="space-y-3 text-sm text-gray-600">
+                            <li><a href="#" class="hover:underline">Essayez d'accueillir</a></li>
+                            <li><a href="#" class="hover:underline">AirCover pour les hôtes</a></li>
+                            <li><a href="#" class="hover:underline">Ressources pour les hôtes</a></li>
+                            <li><a href="#" class="hover:underline">Forum communautaire</a></li>
+                            <li><a href="#" class="hover:underline">Accueillir de manière responsable</a></li>
+                        </ul>
+                    </div>
+
+                    <div>
+                        <h3 class="text-sm font-semibold text-gray-900 mb-4">Airbnb</h3>
+                        <ul class="space-y-3 text-sm text-gray-600">
+                            <li><a href="#" class="hover:underline">Salle de presse</a></li>
+                            <li><a href="#" class="hover:underline">Nouvelles fonctionnalités</a></li>
+                            <li><a href="#" class="hover:underline">Offres d'emploi</a></li>
+                            <li><a href="#" class="hover:underline">Investisseurs</a></li>
+                            <li><a href="#" class="hover:underline">Accessibilité</a></li>
+                        </ul>
+                    </div>
+
+                </div>
+
+                {# Divider #}
+                <div class="border-t border-gray-200 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+
+                    <div class="flex flex-wrap items-center gap-1 text-sm text-gray-600">
+                        <span>© {{ "now"|date("Y") }} Airbnb, Inc.</span>
+                        <span>·</span>
+                        <a href="#" class="hover:underline">Conditions</a>
+                        <span>·</span>
+                        <a href="#" class="hover:underline">Plan du site</a>
+                        <span>·</span>
+                        <a href="#" class="hover:underline">Confidentialité</a>
+                        <span>·</span>
+                        <a href="#" class="hover:underline">Gestion des données</a>
+                    </div>
+
+                    <div class="flex items-center gap-4">
+                        {# Langue & devise #}
+                        <button class="flex items-center gap-2 text-sm font-semibold hover:underline">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 21a9.004 9.004 0 008.716-6.747M12 21a9.004 9.004 0 01-8.716-6.747M12 21c2.485 0 4.5-4.03 4.5-9S14.485 3 12 3m0 18c-2.485 0-4.5-4.03-4.5-9S9.515 3 12 3m0 0a8.997 8.997 0 017.843 4.582M12 3a8.997 8.997 0 00-7.843 4.582m15.686 0A11.953 11.953 0 0112 10.5c-2.998 0-5.74-1.1-7.843-2.918m15.686 0A8.959 8.959 0 0121 12c0 .778-.099 1.533-.284 2.253"/>
+                            </svg>
+                            Français (FR)
+                        </button>
+                        <button class="text-sm font-semibold hover:underline">€ EUR</button>
+
+                        {# Réseaux sociaux #}
+                        <div class="flex items-center gap-3">
+                            <a href="#" class="hover:opacity-70 transition-opacity" aria-label="Facebook">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                                </svg>
+                            </a>
+                            <a href="#" class="hover:opacity-70 transition-opacity" aria-label="Twitter / X">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                                </svg>
+                            </a>
+                            <a href="#" class="hover:opacity-70 transition-opacity" aria-label="Instagram">
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zM12 0C8.741 0 8.333.014 7.053.072 2.695.272.273 2.69.073 7.052.014 8.333 0 8.741 0 12c0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98C8.333 23.986 8.741 24 12 24c3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98C15.668.014 15.259 0 12 0zm0 5.838a6.162 6.162 0 100 12.324 6.162 6.162 0 000-12.324zM12 16a4 4 0 110-8 4 4 0 010 8zm6.406-11.845a1.44 1.44 0 100 2.881 1.44 1.44 0 000-2.881z"/>
+                                </svg>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </footer>
+
+        {% block javascripts %}{% endblock %}
+<script>
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.relative')) {
+            document.querySelectorAll('.relative > div:last-child').forEach(d => d.classList.add('hidden'));
+        }
+    });
+</script>
+
+    </body>
+</html>

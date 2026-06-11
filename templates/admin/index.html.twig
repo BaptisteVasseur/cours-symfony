@@ -1,0 +1,81 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block breadcrumb %}
+    <span class="text-gray-300">/</span>
+    <span class="text-gray-900 font-medium">Dashboard</span>
+{% endblock %}
+
+{% block body %}
+
+{# Stats cards #}
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+    <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Utilisateurs</p>
+        <p class="text-3xl font-bold text-gray-900">{{ stats.users ?? 0 }}</p>
+        <p class="text-xs text-gray-400 mt-1">inscrits au total</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Logements</p>
+        <p class="text-3xl font-bold text-gray-900">{{ stats.properties ?? 0 }}</p>
+        <p class="text-xs text-gray-400 mt-1">annonces actives</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Reservations</p>
+        <p class="text-3xl font-bold text-gray-900">{{ stats.reservations ?? 0 }}</p>
+        <p class="text-xs text-gray-400 mt-1">ce mois-ci</p>
+    </div>
+    <div class="bg-white rounded-2xl border border-gray-200 p-6">
+        <p class="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Revenus</p>
+        <p class="text-3xl font-bold text-gray-900">{{ stats.revenue ?? '0' }} €</p>
+        <p class="text-xs text-gray-400 mt-1">ce mois-ci</p>
+    </div>
+</div>
+
+{# Derniers logements #}
+<div class="bg-white rounded-2xl border border-gray-200 overflow-hidden">
+    <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <h2 class="text-sm font-semibold text-gray-900">Derniers logements</h2>
+        <a href="#" class="text-xs text-[#FF385C] hover:underline font-medium">Voir tout</a>
+    </div>
+    <table class="w-full text-sm">
+        <thead class="bg-gray-50 border-b border-gray-100">
+            <tr>
+                <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Titre</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Ville</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Type</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Prix / nuit</th>
+                <th class="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Statut</th>
+            </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+            {% for property in properties %}
+            <tr class="hover:bg-gray-50 transition-colors">
+                <td class="px-6 py-4 font-medium text-gray-900 truncate max-w-xs">{{ property.title }}</td>
+                <td class="px-6 py-4 text-gray-500">{{ property.address ? property.address.city : '-' }}</td>
+                <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                        {{ property.propertyType }}
+                    </span>
+                </td>
+                <td class="px-6 py-4 text-gray-900 font-semibold">{{ property.pricePerNight }} €</td>
+                <td class="px-6 py-4">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                        {% if property.status == 'active' %}bg-green-100 text-green-700
+                        {% elseif property.status == 'inactive' %}bg-gray-100 text-gray-500
+                        {% else %}bg-yellow-100 text-yellow-700{% endif %}">
+                        {{ property.status }}
+                    </span>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="5" class="px-6 py-8 text-center text-gray-400 text-sm">Aucun logement.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}
