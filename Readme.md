@@ -1,32 +1,40 @@
-# Appli Symfony Clone Airbnb
+# Airbnb Clone - Moteur de Réservation & Calendrier iCal
 
-## Etapes suivies pour le développement
+Ce projet est une implémentation avancée d'un système de réservation pour une plateforme type Airbnb, réalisée sous Symfony 8.
 
-1. Lire le cahier des charges
-2. En fonction du cahier des charges, générer un schéma de BDD avec PlantUML (plant text)
-3. Créer un projet Symfony de 0 soit via Composer, soit via Symfony CLI, soit via un repo + image Docker
-4. Créer les entités Doctrine en fonction du schéma de BDD
-5. Générer les migrations et les exécuter pour créer la BDD
-6. Créer des fixtures (php ou YAML) pour peupler la BDD avec des données de test
-7. Générer un premier controller + générer un layout user (+ d'autres layout ? admin ? hôte ? autre ?)
-8. Découper le template (avec de l'héritage + sous-templates/sous-composants)
-9. Créer les controllers et 4 pages pour : 
-   - Page d'accueil (listing des annonces) -> Repository
-   - Page d'historique des reservations -> Repository
-   - Page de détail d'une annonce -> Entité
-   - Page de confirmation de reservation -> Entité
+## 🚀 Fonctionnalités implémentées
 
+### 1. Moteur de Réservation (Booking Engine)
+*   **Workflow complet** : Gestion des états de réservation (`pending`, `confirmed`, `cancelled`).
+*   **Réservation Instantanée** : Les logements avec `instantBooking` sont confirmés automatiquement.
+*   **Modération Hôte** : Dashboard dédié permettant aux hôtes d'accepter ou de refuser des demandes avec un motif obligatoire en cas de refus.
+*   **Gestion des disponibilités** : Système anti-overbooking (vérification de superposition des dates) et blocage manuel de dates par l'hôte.
 
-10. Faire l'authentification 
-11. Bloquer l'accés à certaines pages en fonction des roles 
-    - Page détail d'un logement : que ceux qui sont connectés
-    - Pages admin : que ceux qui ont le role admin
-12. Afficher dynamiquement un bouton pour se connecter si on est pas connecté
-    + Un bouton pour se déconnecter si on est connecté
-    + Un bouton 'interface admin' si on a le role admin
-13. Afficher les réservations du user connecté sur la page d'historique des résas
-14. Créer un CRUD pour ajouter des propriétés, des users, des résas + adapter les forms types pour retirer ce qui est pas utile + faire faire le design des cruds à l'IA
-15. Ajouter les contraintes de validation sur les entités
-16. Intro API Platform et normalisation/dénormalisation
+### 2. Synchronisation iCal
+*   **Export iCal** : Flux `.ics` sécurisé par un jeton unique pour chaque logement. Permet de synchroniser ses réservations vers Google Calendar, Airbnb, etc.
+*   **Import iCal** : Commande console pour synchroniser des calendriers externes et bloquer les dates automatiquement.
 
-<!-- Voir les Events ? Faire de l'Asynchrone ? Ajouter des commandes personnalisées ? Faire de services pour séparer le code ? Voir l'envoie de mail ? Faire des appels API avec HTTP Client ? Système de Traductions ? -->
+### 3. Notifications & Performance
+*   **Emails riches** : Utilisation de templates HTML/Twig premium pour les confirmations et refus.
+*   **Asynchronisme** : Intégration de Symfony Messenger pour l'envoi des emails en tâche de fond (async).
+
+## 📍 Points d'entrée (Endpoints)
+
+| Rôle | Route | Description |
+|:---|:---|:---|
+| **Voyageur** | `/logement/{id}/reserver` | Formulaire de réservation. |
+| **Hôte** | `/host/reservations` | Dashboard de modération des demandes. |
+| **Hôte** | `/host/logement/{id}/disponibilites` | Blocage manuel de dates. |
+| **Public** | `/api/properties/{id}/calendar.ics?token=xxx` | Flux d'export iCal sécurisé. |
+| **Admin** | `/admin` | Interface d'administration globale. |
+| **Technique** | `http://localhost:8025` | Interface Mailpit pour voir les emails envoyés. |
+
+## 🛠️ Installation & Lancement
+
+1.  **Lancer l'environnement** : `make start`
+2.  **Installer les dépendances** : `make install`
+3.  **Charger les données de test** : `make fixtures`
+4.  **Lancer le worker email** : `make worker`
+
+---
+*Projet réalisé dans le cadre de l'évaluation continue ESGI.*

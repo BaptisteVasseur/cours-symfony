@@ -1,36 +1,33 @@
-.DEFAULT_GOAL := help
+.PHONY: help start stop install migrate fixtures worker ical-sync
 
-install:
-	docker compose up -d --build
+help: ## Affiche cette aide
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-sh:
-	docker compose exec -it php sh
+start: ## Démarre les containers
+	docker compose up -d
 
-cache:
-	docker compose exec -it php php bin/console cache:clear
+stop: ## Arrête les containers
+	docker compose stop
 
-logs:
-	docker compose logs -f --tail=100 php
+install: ## Installe les dépendances et prépare la BDD
+	docker compose exec php composer install
+	make migrate
+	make fixtures
 
-up start:
-	docker compose up -d && \
-    echo "==> Les services ont été démarrés avec succès" && \
-    echo "==> Vous pouvez accéder à l'application : http://localhost:8089" && \
-    echo "==> Vous pouvez accéder à l'interface de la BDD : http://localhost:8088" && \
-    echo "==> Vous pouvez accéder à l'interface de mailpit : http://localhost:8025"
+migrate: ## Applique les migrations
+	docker compose exec php php bin/console doctrine:migrations:migrate -n
 
-down stop:
-	docker compose down
+make-migration: ## Crée une nouvelle migration
+	docker compose exec php php bin/console make:migration
 
-restart: down up
+fixtures: ## Recharge toutes les données de test
+	docker compose exec php php bin/console doctrine:fixtures:load -n
 
-help:
-	@echo "Makefile commands:"
-	@echo "  install  - Premier lancement : build + démarrage de tout"
-	@echo "  sh       - Execute a shell inside the PHP container"
-	@echo "  up       - Start the Docker containers"
-	@echo "  down     - Stop and remove the Docker containers"
-	@echo "  restart  - Restart the Docker containers"
-	@echo "  cache    - Clear the Symfony cache"
-	@echo "  logs     - Follow the logs of the PHP container"
-	@echo "  help     - Show this help message"
+worker: ## Lance le worker pour l'envoi d'emails (Messenger)
+	docker compose exec php php bin/console messenger:consume async -vv
+
+ical-sync: ## Synchronise les flux iCal externes
+	docker compose exec php php bin/console app:ical:sync
+
+cache: ## Vide le cache
+	docker compose exec php php bin/console cache:clear

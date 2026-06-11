@@ -28,6 +28,14 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
             $this->getReference(FixtureReferences::USER_HOST_3, User::class),
         ];
 
+        // On ajoute les comptes de type host1@example.com, host2@example.com etc à la liste des hôtes possibles
+        for ($i = 1; $i <= 10; $i++) {
+            $hosts[] = $manager->getRepository(User::class)->findOneBy(['email' => sprintf('host%d@example.com', $i)]);
+        }
+
+        // On enlève les éventuels nuls
+        $hosts = array_filter($hosts);
+
         $policies = [
             $this->getReference(FixtureReferences::POLICY_FLEXIBLE, CancellationPolicy::class),
             $this->getReference(FixtureReferences::POLICY_MODERATE, CancellationPolicy::class),
@@ -182,7 +190,7 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         $property->setSecurityDeposit('200.00');
         $property->setCheckinTime(new \DateTimeImmutable('15:00'));
         $property->setCheckoutTime(new \DateTimeImmutable('11:00'));
-        $property->setInstantBooking($status === 'published');
+        $property->setInstantBooking($status === 'published' && $title !== 'Maison de Campagne Normande');
 
         $address = new PropertyAddress();
         $address->setCountry($country);
