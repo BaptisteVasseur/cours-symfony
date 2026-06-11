@@ -1,0 +1,114 @@
+Conception - Réservation et calendrier iCal
+
+
+1. Modifications du modèle de données
+--------------------------------------
+
+J'ai ajouté deux nouvelles entités et modifié les existantes :
+
+Nouvelle entité BlockedPeriod :
+  - id
+  - listing (ManyToOne -> Listing, nullable: false)
+  - startDate (DATE)
+  - endDate (DATE)
+  - reason (string, nullable) - pour préciser le motif (travaux, usage perso…)
+  - createdAt (DateTimeImmutable, auto-set dans le constructeur)
+
+Nouvelle entité Notification :
+  - id
+  - user (ManyToOne -> User)
+  - type (string)
+  - title (string)
+  - content (text)
+  - link (string, nullable) - URL vers laquelle rediriger au clic
+  - isRead (bool, default false)
+  - createdAt (DateTimeImmutable)
+
+Modifications sur Listing :
+  - instantBooking (bool, default false)
+  - icalToken (string(64), unique, nullable) - token pour l'export iCal
+
+Modifications sur Booking :
+  - cancelReason (text, nullable) - motif obligatoire en cas d'annulation
+
+
+2. Règles métiers
+------------------
+
+Flux de réservation :
+  Le voyageur soumet un formulaire avec checkin, checkout et guestsCount.
+  Le système vérifie 4 conditions avant de créer la réservation :
+    1. Le logement est actif (isActive = true)
+    2. La capacité est suffisante (maxGuests >= guestsCount)
+    3. Aucune BlockedPeriod ne chevauche la plage demandée
+    4. Aucune réservation confirmée ne chevauche la plage demandée
+    Si indisponible -> message flash d'erreur, retour au formulaire.
+  Si disponible ET instantBooking = true -> statut "confirmed" directement.
+  Si disponible ET instantBooking = false -> statut "pending", l'hôte doit valider.
+  Dans tous les cas une notification email est envoyée de façon asynchrone après la persistance.
+
+Confirmation par l'hôte :
+  Quand l'hôte accepte une demande pending, toutes les autres demandes pending
+  qui chevauchent les mêmes dates devront être automatiquement annulées.
+
+Annulation :
+  L'annulation libère immédiatement les dates et déclenche une notification email
+  pour les deux parties (hôte et voyageur).
+
+Expiration :
+  Une demande pending non traitée sous 24h sera annulée automatiquement.
+
+
+3. Modélisation temporelle
+---------------------------
+
+J'ai choisi de stocker les dates en type DATE (sans heure), et de traiter
+le checkout comme une date exclusive. Donc une réservation du 10 au 15 juillet
+= 5 nuits. Le 15 est libre pour une nouvelle arrivée.
+
+Pour détecter un chevauchement j'utilise la formule :
+  startDate < checkout AND endDate > checkin
+
+Avec cette formule, si une réservation A finit le 15/07 et une réservation B
+commence le 15/07 : 15 < 15 est FALSE donc pas de chevauchement
+
+Pour la question du départ à 11h et de l'arrivée à 15h : comme on stocke
+uniquement la date sans l'heure, la superposition est gérée automatiquement.
+
+
+3. Gestion des états
+------------------------------------------------------------------------
+
+Non une demande Pending ne bloque pas les dates car sinon n'importe qui pourrait abuser
+en envoyant pleins de demandes pour bloquer complètement un logement.
+Risque : Si il y as plusieurs demandes et que l'hôte en confirme une il faudra bien rejeté automatiquement les autres en attente.
+
+
+4. Performance
+--------------
+
+Pour valider 20 nuits consécutives, on n'execute pas 20 requêtes de disponibilité.
+La vérification se fait en une seule requête DQL qui intègre les 4 conditions d'indisponibilité
+(isActive, maxGuests, BlockedPeriod, Booking confirmed) avec des jointures et des conditions WHERE.
+
+
+5. Asynchronisme
+----------------
+
+L'email est dispatché APRÈS le flush() pour éviter d'envoyer le mail mais qu'ensuite
+une erreur ait lieu et que la réservation ne s'effectue pas en base.
+
+
+6. Structure SQL du calendrier
+-------------------------------
+
+J'ai choisi une table de périodes (date_start, date_end) plutôt qu'une table
+de jours individuels pour une raison de simplicité et de performance :
+
+Raisons :
+- Un hôte bloque rarement des jours isolés, il bloque des périodes (travaux
+  du 5 au 20, usage perso une semaine…).
+- Les requêtes de chevauchement sont tout aussi simples avec des périodes :
+  startDate < checkout AND endDate > checkin donc une seule condition.
+- Si on stockait un jour par ligne et qu'un hôte bloque un mois entier,
+  ça ferait 30 lignes pour rien. Avec les périodes, c'est une seule ligne.
