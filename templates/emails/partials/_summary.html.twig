@@ -1,0 +1,17 @@
+{% set property = reservation.property %}
+{% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
+{% set guestName = guestProfile and (guestProfile.firstName or guestProfile.lastName)
+    ? (guestProfile.firstName ~ ' ' ~ guestProfile.lastName)|trim
+    : (reservation.guest ? reservation.guest.email : '') %}
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border:1px solid #eee; border-radius:10px; margin:16px 0;">
+    <tr><td style="padding:14px 18px; font-size:14px; line-height:1.6;">
+        <strong style="font-size:15px;">{{ property ? property.title : 'Logement' }}</strong><br>
+        {% if property and property.address %}<span style="color:#666;">{{ property.address.city }}, {{ property.address.country }}</span><br>{% endif %}
+        <span style="color:#666;">Arrivée :</span> {{ reservation.checkinDate|date('d/m/Y') }}<br>
+        <span style="color:#666;">Départ :</span> {{ reservation.checkoutDate|date('d/m/Y') }}<br>
+        <span style="color:#666;">Voyageurs :</span> {{ reservation.guestsCount }}<br>
+        {% if guestName %}<span style="color:#666;">Voyageur :</span> {{ guestName }} ({{ reservation.guest.email }})<br>{% endif %}
+        <span style="color:#666;">Total :</span> <strong>{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</strong>
+    </td></tr>
+</table>

@@ -1,0 +1,20 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block subject %}Nouvelle demande de réservation{% endblock %}
+
+{% block content %}
+    <h1 style="font-size:20px; margin:0 0 12px;">Nouvelle demande de réservation</h1>
+    <p style="font-size:14px; line-height:1.6; color:#444;">
+        Un voyageur souhaite réserver votre logement. Cette demande est en attente de votre validation.
+    </p>
+
+    {{ include('emails/partials/_summary.html.twig') }}
+
+    {% if actionUrl is defined %}
+        <p style="margin:24px 0;">
+            <a href="{{ actionUrl }}" style="display:inline-block; background-color:#FF385C; color:#ffffff; text-decoration:none; padding:12px 22px; border-radius:8px; font-weight:bold; font-size:14px;">
+                Traiter la demande
+            </a>
+        </p>
+    {% endif %}
+{% endblock %}
