@@ -183,6 +183,7 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         $property->setCheckinTime(new \DateTimeImmutable('15:00'));
         $property->setCheckoutTime(new \DateTimeImmutable('11:00'));
         $property->setInstantBooking($status === 'published');
+        $property->setIcalToken(bin2hex(random_bytes(32)));
 
         $address = new PropertyAddress();
         $address->setCountry($country);

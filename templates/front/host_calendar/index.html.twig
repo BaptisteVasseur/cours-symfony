@@ -84,6 +84,36 @@
 
             <aside class="w-full lg:w-80 space-y-6">
                 <section class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                    <h2 class="text-base font-semibold text-gray-900 mb-4">Export iCal</h2>
+                    {% if property.icalToken %}
+                        <label for="ical_export_url" class="block text-xs font-semibold text-gray-600 mb-1">Lien sécurisé</label>
+                        <input id="ical_export_url" type="text" readonly value="{{ absolute_url(path('app_ical_export', { id: property.id, token: property.icalToken })) }}" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-xs text-gray-600 bg-gray-50">
+                    {% else %}
+                        <p class="text-sm text-gray-500 mb-3">Aucun lien iCal actif.</p>
+                    {% endif %}
+                    <form action="{{ path('app_host_ical_token_refresh', { id: property.id }) }}" method="POST" class="mt-4">
+                        <input type="hidden" name="_token" value="{{ csrf_token('refresh_ical_token' ~ property.id) }}">
+                        <button type="submit" class="w-full border border-gray-300 hover:bg-gray-50 text-gray-800 font-semibold py-2.5 rounded-lg text-sm">
+                            {{ property.icalToken ? 'Régénérer le lien' : 'Générer le lien' }}
+                        </button>
+                    </form>
+                </section>
+
+                <section class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                    <h2 class="text-base font-semibold text-gray-900 mb-4">Import iCal</h2>
+                    <form action="{{ path('app_host_ical_import_update', { id: property.id }) }}" method="POST" class="space-y-4">
+                        <input type="hidden" name="_token" value="{{ csrf_token('update_ical_import' ~ property.id) }}">
+                        <div>
+                            <label for="external_ical_url" class="block text-xs font-semibold text-gray-600 mb-1">URL externe</label>
+                            <input id="external_ical_url" name="external_ical_url" type="url" value="{{ property.externalIcalUrl }}" placeholder="https://..." class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm">
+                        </div>
+                        <button type="submit" class="w-full border border-gray-300 hover:bg-gray-50 text-gray-800 font-semibold py-2.5 rounded-lg text-sm">
+                            Enregistrer
+                        </button>
+                    </form>
+                </section>
+
+                <section class="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
                     <h2 class="text-base font-semibold text-gray-900 mb-4">Bloquer une période</h2>
                     <form action="{{ path('app_host_block_create', { id: property.id }) }}" method="POST" class="space-y-4">
                         <input type="hidden" name="_token" value="{{ csrf_token('block_period' ~ property.id) }}">
