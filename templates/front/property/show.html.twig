@@ -7,6 +7,13 @@
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-6 px-4 py-3 rounded-xl text-sm border {{ label == 'error' ? 'bg-red-50 text-red-800 border-red-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
         <div class="mb-6">
             <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">{{ property.title }}</h1>
             <div class="flex flex-wrap items-center gap-2 mt-2 text-sm text-gray-600">
@@ -110,38 +117,155 @@
                 </section>
             </div>
 
-            <aside class="lg:col-span-1">
+            <aside class="lg:col-span-1"
+                   data-controller="date-picker"
+                   data-date-picker-price-per-night-value="{{ property.pricePerNight }}"
+                   data-date-picker-cleaning-fee-value="{{ property.cleaningFee ?? 0 }}"
+                   data-date-picker-max-guests-value="{{ property.maxGuests }}"
+                   data-date-picker-blocked-dates-value="{{ blockedDates|json_encode }}"
+                   data-date-picker-calendar-url-value="{{ path('app_logement_calendar', {id: property.id}) }}">
+
                 <div class="sticky top-28 border border-gray-200 rounded-xl shadow-lg p-6">
                     <p class="text-2xl font-semibold mb-4">
                         <span class="font-bold">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span>
                         <span class="text-base font-normal text-gray-600"> / nuit</span>
                     </p>
-                    {% if property.cleaningFee %}
-                        <p class="text-sm text-gray-500 mb-4">Frais de ménage : {{ property.cleaningFee|number_format(0, ',', ' ') }} €</p>
-                    {% endif %}
+
                     <div class="border border-gray-300 rounded-lg mb-4">
-                        <div class="grid grid-cols-2 divide-x divide-gray-300">
+                        <div class="grid grid-cols-2 divide-x divide-gray-300 cursor-pointer hover:bg-gray-50 rounded-t-lg transition-colors"
+                             data-action="click->date-picker#openModal">
                             <div class="p-3">
                                 <p class="text-[10px] font-bold uppercase text-gray-800">Arrivée</p>
-                                <p class="text-sm text-gray-500">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
+                                <p class="text-sm text-gray-500" data-date-picker-target="sidebarCheckin">Ajouter une date</p>
                             </div>
                             <div class="p-3">
                                 <p class="text-[10px] font-bold uppercase text-gray-800">Départ</p>
-                                <p class="text-sm text-gray-500">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
+                                <p class="text-sm text-gray-500" data-date-picker-target="sidebarCheckout">Ajouter une date</p>
                             </div>
                         </div>
-                        <div class="p-3 border-t border-gray-300">
-                            <p class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</p>
-                            <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
+                        <div class="p-3 border-t border-gray-300 flex items-center justify-between">
+                            <div>
+                                <p class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</p>
+                                <p class="text-xs text-gray-400">Max {{ property.maxGuests }}</p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <button class="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:border-gray-900 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                        data-action="click->date-picker#decrementGuests"
+                                        data-date-picker-target="guestDecBtn">
+                                    <i class="fa-solid fa-minus text-xs"></i>
+                                </button>
+                                <span class="text-sm font-semibold w-4 text-center" data-date-picker-target="guestCount">1</span>
+                                <button class="w-7 h-7 rounded-full border border-gray-300 flex items-center justify-center text-gray-600 hover:border-gray-900 transition disabled:opacity-30 disabled:cursor-not-allowed"
+                                        data-action="click->date-picker#incrementGuests"
+                                        data-date-picker-target="guestIncBtn">
+                                    <i class="fa-solid fa-plus text-xs"></i>
+                                </button>
+                            </div>
                         </div>
                     </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
-                        Réserver
-                    </a>
-                    {% if property.instantBooking %}
-                        <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
+
+                    {% set isOwnProperty = app.user and property.host and app.user.id == property.host.id %}
+                    {% if isOwnProperty %}
+                        <span class="block w-full bg-gray-100 text-gray-400 font-semibold py-3 rounded-lg text-center cursor-not-allowed"
+                              title="Vous ne pouvez pas réserver votre propre logement">
+                            Réserver
+                        </span>
+                        <p class="text-center text-xs text-gray-400 mt-2">Vous êtes l'hôte de ce logement</p>
+                    {% else %}
+                        <a href="{{ path('app_booking_checkout', { id: property.id }) }}"
+                           data-date-picker-target="reserveLink"
+                           class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                            Réserver
+                        </a>
+                        {% if property.instantBooking %}
+                            <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
+                        {% endif %}
                     {% endif %}
                 </div>
+
+                <div data-date-picker-target="modal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4">
+                    <div class="absolute inset-0 bg-black/50" data-action="click->date-picker#closeModal"></div>
+
+                    <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+
+                        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                            <div class="flex items-center gap-6">
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase text-gray-500 mb-0.5">Arrivée</p>
+                                    <p class="text-sm font-semibold text-gray-900" data-date-picker-target="modalCheckin">Sélectionner</p>
+                                </div>
+                                <div class="w-px h-8 bg-gray-200"></div>
+                                <div>
+                                    <p class="text-[10px] font-bold uppercase text-gray-500 mb-0.5">Départ</p>
+                                    <p class="text-sm font-semibold text-gray-900" data-date-picker-target="modalCheckout">Sélectionner</p>
+                                </div>
+                            </div>
+                            <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
+                                    data-action="click->date-picker#closeModal">
+                                <i class="fa-solid fa-xmark text-gray-600"></i>
+                            </button>
+                        </div>
+
+                        <div class="flex gap-8 p-6">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between mb-6 px-2">
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
+                                            data-action="click->date-picker#prevMonth">
+                                        <i class="fa-solid fa-chevron-left text-sm text-gray-700"></i>
+                                    </button>
+                                    <button class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition"
+                                            data-action="click->date-picker#nextMonth">
+                                        <i class="fa-solid fa-chevron-right text-sm text-gray-700"></i>
+                                    </button>
+                                </div>
+                                <div data-date-picker-target="calendar"
+                                     data-action="click->date-picker#handleCalendarClick mouseover->date-picker#handleCalendarHover mouseleave->date-picker#handleCalendarLeave">
+                                </div>
+                            </div>
+
+                            <div class="w-64 shrink-0">
+                                <div class="border border-gray-200 rounded-xl p-5">
+                                    <p class="text-2xl font-bold text-gray-900">
+                                        {{ property.pricePerNight|number_format(0, ',', ' ') }} €
+                                        <span class="text-base font-normal text-gray-500">/ nuit</span>
+                                    </p>
+
+                                    <p class="text-sm text-gray-400 mt-3" data-date-picker-target="hint">
+                                        Sélectionnez vos dates pour voir le prix total.
+                                    </p>
+
+                                    <div data-date-picker-target="priceBreakdown" class="hidden mt-4 pt-4 border-t border-gray-200 space-y-3">
+                                        <div class="flex items-center justify-between text-sm text-gray-700">
+                                            <span data-date-picker-target="nights"></span>
+                                            <span data-date-picker-target="nightsAmount" class="font-medium"></span>
+                                        </div>
+                                        <div data-date-picker-target="cleaningFeeRow" class="hidden">
+                                            <div class="flex items-center justify-between text-sm text-gray-700">
+                                                <span>Ménage</span>
+                                                <span data-date-picker-target="cleaningFeeAmount" class="font-medium"></span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center justify-between font-bold text-gray-900 pt-3 border-t border-gray-200">
+                                            <span>Total</span>
+                                            <span data-date-picker-target="total"></span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="px-6 py-4 border-t border-gray-200">
+                            <button data-date-picker-target="selectBtn"
+                                    data-action="click->date-picker#select"
+                                    class="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 rounded-xl transition disabled:opacity-40 disabled:cursor-not-allowed"
+                                    disabled>
+                                Sélectionner
+                            </button>
+                        </div>
+
+                    </div>
+                </div>
+
             </aside>
         </div>
     </main>

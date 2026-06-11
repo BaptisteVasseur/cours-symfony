@@ -1,0 +1,45 @@
+<div class="flex gap-10 justify-center">
+    {% for monthData in [month1, month2] %}
+        <div class="w-56">
+            <div class="text-center font-semibold text-gray-800 mb-4">
+                {{ monthData.label }}
+            </div>
+            <div class="grid grid-cols-7 text-center text-xs text-gray-400 mb-1">
+                {% for label in ['Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa', 'Di'] %}
+                    <div>{{ label }}</div>
+                {% endfor %}
+            </div>
+            <div class="grid grid-cols-7">
+                {% for dayData in monthData.days %}
+                    {% if dayData is null %}
+                        <div></div>
+                    {% elseif not dayData.selectable %}
+                        <div class="flex items-center justify-center h-9 text-sm select-none {{ dayData.isBlocked ? 'text-gray-300 line-through cursor-not-allowed' : 'text-gray-200 cursor-not-allowed' }}">
+                            {{ dayData.day }}
+                        </div>
+                    {% else %}
+                        <div class="relative flex items-center justify-center h-9" data-date="{{ dayData.date }}">
+                            {% if dayData.rangeRight %}
+                                <div class="absolute inset-y-0 left-1/2 right-0 bg-gray-100"></div>
+                            {% elseif dayData.rangeLeft %}
+                                <div class="absolute inset-y-0 left-0 right-1/2 bg-gray-100"></div>
+                            {% elseif dayData.inRange %}
+                                <div class="absolute inset-0 bg-gray-100"></div>
+                            {% endif %}
+                            <div class="relative z-10 w-9 h-9 flex items-center justify-center rounded-full text-sm cursor-pointer transition-all
+                                {% if dayData.isCheckin or dayData.isCheckout %}
+                                    bg-gray-900 text-white font-medium
+                                {% elseif dayData.inRange %}
+                                    text-gray-800 hover:bg-gray-200
+                                {% else %}
+                                    text-gray-800 hover:ring-1 hover:ring-gray-900
+                                {% endif %}">
+                                {{ dayData.day }}
+                            </div>
+                        </div>
+                    {% endif %}
+                {% endfor %}
+            </div>
+        </div>
+    {% endfor %}
+</div>

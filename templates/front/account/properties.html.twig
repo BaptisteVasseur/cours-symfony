@@ -10,7 +10,13 @@
         {% if properties|length > 0 %}
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for property in properties %}
-                    {% include 'components/card.html.twig' with { property: property } %}
+                    <div class="flex flex-col gap-2">
+                        {% include 'components/card.html.twig' with { property: property } %}
+                        <a href="{{ path('app_host_manage', { id: property.id }) }}"
+                           class="flex items-center justify-center gap-2 text-sm font-semibold text-gray-700 border border-gray-200 rounded-xl py-2.5 hover:bg-gray-50 transition">
+                            <i class="fa-solid fa-sliders"></i>Gérer ce logement
+                        </a>
+                    </div>
                 {% endfor %}
             </div>
         {% else %}

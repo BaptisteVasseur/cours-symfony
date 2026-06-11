@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Nouvelle demande de réservation</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #e74c3c;">Nouvelle demande de réservation</h1>
+
+    <p>Bonjour {% if reservation.property.host.profile %}{{ reservation.property.host.profile.firstName }}{% else %}{{ reservation.property.host.email }}{% endif %},</p>
+
+    <p>Vous avez reçu une nouvelle demande de réservation pour votre logement <strong>{{ reservation.property.title }}</strong>.</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Voyageur</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+                {% if reservation.guest.profile %}
+                    {{ reservation.guest.profile.firstName }} {{ reservation.guest.profile.lastName }}
+                {% else %}
+                    {{ reservation.guest.email }}
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Arrivée</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Départ</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Voyageurs</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.guestsCount }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Montant total</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.totalPrice }} {{ reservation.currency }}</td>
+        </tr>
+    </table>
+
+    {% if reservation.status == 'pending' %}
+        <p style="background: #d4edda; padding: 12px; border-left: 4px solid #28a745;">
+            Connectez-vous à votre espace hôte pour accepter ou refuser cette demande.
+        </p>
+    {% else %}
+        <p>Cette réservation a été confirmée automatiquement (réservation instantanée).</p>
+    {% endif %}
+</body>
+</html>

@@ -360,15 +360,6 @@ class TestAccountFixture extends Fixture implements DependentFixtureInterface
             $manager->persist($media);
         }
 
-        for ($day = 0; $day < 21; $day++) {
-            $availability = new PropertyAvailability();
-            $availability->setProperty($property);
-            $availability->setAvailableDate(new \DateTimeImmutable(sprintf('+%d days', $day)));
-            $availability->setIsAvailable(true);
-            $availability->setMinimumStay(1);
-            $manager->persist($availability);
-        }
-
         return $property;
     }
 
@@ -396,6 +387,19 @@ class TestAccountFixture extends Fixture implements DependentFixtureInterface
         $reservation->setSecurityDeposit('150.00');
         $reservation->setCurrency('EUR');
         $manager->persist($reservation);
+
+        if ($status !== 'cancelled') {
+            $current = new \DateTimeImmutable($checkin);
+            $end = new \DateTimeImmutable($checkout);
+            while ($current < $end) {
+                $availability = new PropertyAvailability();
+                $availability->setProperty($property);
+                $availability->setReservation($reservation);
+                $availability->setOccupiedDate($current);
+                $manager->persist($availability);
+                $current = $current->modify('+1 day');
+            }
+        }
 
         $history = new ReservationStatusHistory();
         $history->setReservation($reservation);

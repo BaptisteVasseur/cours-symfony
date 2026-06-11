@@ -19,17 +19,12 @@ class PropertyAvailability
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[ORM\ManyToOne(inversedBy: 'availabilities')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Reservation $reservation = null;
+
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
-    private ?\DateTimeImmutable $availableDate = null;
-
-    #[ORM\Column]
-    private bool $isAvailable = true;
-
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
-    private ?string $priceOverride = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?int $minimumStay = null;
+    private ?\DateTimeImmutable $occupiedDate = null;
 
     public function getProperty(): ?Property
     {
@@ -43,50 +38,26 @@ class PropertyAvailability
         return $this;
     }
 
-    public function getAvailableDate(): ?\DateTimeImmutable
+    public function getReservation(): ?Reservation
     {
-        return $this->availableDate;
+        return $this->reservation;
     }
 
-    public function setAvailableDate(\DateTimeImmutable $availableDate): static
+    public function setReservation(?Reservation $reservation): static
     {
-        $this->availableDate = $availableDate;
+        $this->reservation = $reservation;
 
         return $this;
     }
 
-    public function isAvailable(): bool
+    public function getOccupiedDate(): ?\DateTimeImmutable
     {
-        return $this->isAvailable;
+        return $this->occupiedDate;
     }
 
-    public function setIsAvailable(bool $isAvailable): static
+    public function setOccupiedDate(\DateTimeImmutable $occupiedDate): static
     {
-        $this->isAvailable = $isAvailable;
-
-        return $this;
-    }
-
-    public function getPriceOverride(): ?string
-    {
-        return $this->priceOverride;
-    }
-
-    public function setPriceOverride(?string $priceOverride): static
-    {
-        $this->priceOverride = $priceOverride;
-
-        return $this;
-    }
-
-    public function getMinimumStay(): ?int
-    {
-        return $this->minimumStay;
-    }
-
-    public function setMinimumStay(?int $minimumStay): static
-    {
-        $this->minimumStay = $minimumStay;
+        $this->occupiedDate = $occupiedDate;
 
         return $this;
     }

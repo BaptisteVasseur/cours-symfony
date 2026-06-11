@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Votre réservation a été acceptée</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #28a745;">Réservation acceptée !</h1>
+
+    <p>Bonjour {% if reservation.guest.profile %}{{ reservation.guest.profile.firstName }}{% else %}{{ reservation.guest.email }}{% endif %},</p>
+
+    <p>Bonne nouvelle ! L'hôte a accepté votre demande de réservation pour le logement <strong>{{ reservation.property.title }}</strong>.</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Arrivée</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Départ</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Voyageurs</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.guestsCount }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Montant total</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.totalPrice }} {{ reservation.currency }}</td>
+        </tr>
+    </table>
+
+    <p style="background: #d4edda; padding: 12px; border-left: 4px solid #28a745;">
+        Votre séjour est confirmé. Bon voyage !
+    </p>
+</body>
+</html>

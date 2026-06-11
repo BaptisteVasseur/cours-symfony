@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -72,6 +73,104 @@ class ReservationRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
 
         return $result !== null ? (float) $result : 0.0;
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findPendingByProperty(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.type = :type')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'pending')
+            ->setParameter('type', 'booking')
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedUpcomingByProperty(Property $property, \DateTimeImmutable $today): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.type = :type')
+            ->andWhere('r.checkoutDate >= :today')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('type', 'booking')
+            ->setParameter('today', $today)
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findCancelledByProperty(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp', 'h')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->leftJoin('r.statusHistory', 'h')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.type = :type')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'cancelled')
+            ->setParameter('type', 'booking')
+            ->orderBy('r.checkinDate', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findBlocksByProperty(Property $property, \DateTimeImmutable $today): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.type = :type')
+            ->andWhere('r.checkoutDate >= :today')
+            ->setParameter('property', $property)
+            ->setParameter('type', 'block')
+            ->setParameter('today', $today)
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedAndBlocksForCalendar(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     /**

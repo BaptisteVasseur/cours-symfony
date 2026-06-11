@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Votre réservation a été refusée</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #e74c3c;">Réservation refusée</h1>
+
+    <p>Bonjour {% if reservation.guest.profile %}{{ reservation.guest.profile.firstName }}{% else %}{{ reservation.guest.email }}{% endif %},</p>
+
+    <p>Nous sommes désolés. L'hôte a refusé votre demande de réservation pour le logement <strong>{{ reservation.property.title }}</strong>.</p>
+
+    {% if reservation.cancellationReason %}
+        <p><strong>Motif :</strong> {{ reservation.cancellationReason }}</p>
+    {% endif %}
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Arrivée demandée</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Départ demandé</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+        </tr>
+    </table>
+
+    <p style="background: #f8d7da; padding: 12px; border-left: 4px solid #e74c3c;">
+        Vous pouvez rechercher d'autres logements disponibles pour ces dates.
+    </p>
+</body>
+</html>

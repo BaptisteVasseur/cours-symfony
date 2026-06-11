@@ -1,0 +1,73 @@
+I/ Réservation
+Premièrement, il faut faire le système de réservation d'un logement.
+Création du parcours de réservation : 
+- Selection des dates en fonction des disponibilités (via un modal calendrier)
+- Selection du nombre de voyageur
+- Page récapitulatif avec le prix final et le paiement et la soumission de la réservation
+- Page de récapitulatif (message en fonction de reservation instantanée ou pas).
+
+Modification de l'entité PropertyAvailability, pour PropertyUnavailability :
+- Permettra de stocker les jours indisponibles d'un logement
+- Récupération rapide du calendrier d'indisponibilité d'un logement
+- Chaque jour indisponible aura une liaison avec une réservation
+
+II/ Traitement des demandes
+Ensuite, faire une page de gestion d'une propiété pour l'hôte :
+- Calendrier de disponibilité
+- Liste des réservations à venir et en cours.
+- Pouvoir rendre indisponible un logement
+- Accepter/Refuser une demande (si non réservation instantanée)
+
+Lorsqu'un hôte rends un logement indisponible, il y aura une fausse réservation de faite, 
+pour les utilisateurs les jours seront bloqués comme une réservation normal. 
+
+IV/ Recherche sur la page d'accueil
+Faire la recherche sur la page d'accueil en fonction des critères de jour et des disponibilités du logement
+
+QUESTIONS :
+
+Modélisation temporelle : Le jour de check-out est-il réservable par un nouveau voyageur ?
+> Pour le moment, il est possible de reserver le même jour qu'un check-in, 
+par la suite, on peut voir pour ajouter une nouvelle régle à chaque logement, 
+afin de bloquer ou non ce jour pour les hôtes ayant besoin de plus de temps de check-out.
+
+Comment gérez-vous la superposition d'un départ à 11h et d'une arrivée à 15h dans votre schéma
+de données ?
+> Le dernier jour d'une réservation n'est pas compté comme un jour de réservation,
+donc un utilisateur voulant réserver pour un jour de checkout peut tout a fait le faire. 
+En base de données, lors d'une réservation, les jours d'occupation d'un logement sont enregistrés en fonction des dates.
+Par exemple une réservation du 20 au 23, aura un jour d'occupation pour le 20, 21 et 22 mais pas le 23. 
+Donc un autre utilisateur peut le reserver.
+
+Gestion des états : Une demande Pending bloque-t-elle les dates ? Analysez les risques liés à ce choix (blocage abusif vs overbooking).
+> Oui une demande en pending bloque les dates. 
+Le risque est qu'un utilisateur bloque beaucoup trop de date pour au final tout annulé afin de faire perdre du temps et de l'argent à l'hôte.
+On peut résoudre ça avec des mails envoyés a l'hôté a chaque nouvelle demande afin qu'il réponde plus rapidement.
+Ou encore bloquer une utilisateur faisant trop de demande.
+
+Concurrence : Comment votre base de données réagit-elle si deux utilisateurs valident un paiement
+à la milliseconde près pour le même logement et les mêmes dates ?
+> 
+
+Performance : Comment valider la disponibilité d'un logement sur 20 nuits consécutives sans
+saturer la base de requêtes SQL itératives ?
+> Avec une table contenant les jours indisponibles d'un logement, 
+on peut facilement voir si un jour est disponible ou pas avec une requete SELECT. 
+On récupére toutes les dates indisponible et on regarde si nos 20 nuits rentrent dans une des dates indisponible.
+
+
+Asynchronisme : Pourquoi l'envoi d'email doit-il préférentiellement intervenir après flush() de le l'ORM ?
+> Si l'envoie de l'email se fait avant le flush, il peut y arriver que le mail s'envoie et que les données ne soit pas sauvegarder.
+On envoie le mail une fois qu'on est sûr que la donnée est sauvegarder.
+
+Quelle est la stratégie si RabbitMQ tombe en panne ?
+> Les mails ne sont pas envoyés, on peut attendre qu'il redémarre et envoyer la file d'attente qui n'est en état failed
+
+Structure SQL : Justifiez votre choix d'architecture pour le calendrier : table de jours individuels
+( PropertyAvailability ) ou table de périodes ( date_start , date_end ).
+> Avec la table de jour individuels, on peut facilement récupérer les jours indisponibles d'un logement
+sans devoir faire plusieurs opérations comme récupérer toutes les réservations, puis voir les jours entre le checkin et checkout.
+Si un utilisateur demande un jour de disponibilité en particulier, on a juste a chercher dans la table,
+pour ce logement, si la date est occupé ou pas. Alors que juste une table réservation, 
+il faut regarder si la date du checkin est égal ou inférieur et la date de checkout est supérieur a la date voulu, et faire ça,
+pour toutes les réservations. 
