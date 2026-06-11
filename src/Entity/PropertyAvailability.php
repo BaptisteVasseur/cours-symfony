@@ -20,16 +20,7 @@ class PropertyAvailability
     private ?Property $property = null;
 
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
-    private ?\DateTimeImmutable $availableDate = null;
-
-    #[ORM\Column]
-    private bool $isAvailable = true;
-
-    #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
-    private ?string $priceOverride = null;
-
-    #[ORM\Column(nullable: true)]
-    private ?int $minimumStay = null;
+    private ?\DateTimeImmutable $blockedDate = null;
 
     public function getProperty(): ?Property
     {
@@ -43,50 +34,14 @@ class PropertyAvailability
         return $this;
     }
 
-    public function getAvailableDate(): ?\DateTimeImmutable
+    public function getBlockedDate(): ?\DateTimeImmutable
     {
-        return $this->availableDate;
+        return $this->blockedDate;
     }
 
-    public function setAvailableDate(\DateTimeImmutable $availableDate): static
+    public function setBlockedDate(\DateTimeImmutable $blockedDate): static
     {
-        $this->availableDate = $availableDate;
-
-        return $this;
-    }
-
-    public function isAvailable(): bool
-    {
-        return $this->isAvailable;
-    }
-
-    public function setIsAvailable(bool $isAvailable): static
-    {
-        $this->isAvailable = $isAvailable;
-
-        return $this;
-    }
-
-    public function getPriceOverride(): ?string
-    {
-        return $this->priceOverride;
-    }
-
-    public function setPriceOverride(?string $priceOverride): static
-    {
-        $this->priceOverride = $priceOverride;
-
-        return $this;
-    }
-
-    public function getMinimumStay(): ?int
-    {
-        return $this->minimumStay;
-    }
-
-    public function setMinimumStay(?int $minimumStay): static
-    {
-        $this->minimumStay = $minimumStay;
+        $this->blockedDate = $blockedDate;
 
         return $this;
     }

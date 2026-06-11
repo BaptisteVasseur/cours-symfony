@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Nouvelle demande de réservation</title>
+    <style>
+        body { font-family: Arial, sans-serif; color: #333; margin: 0; padding: 0; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 30px auto; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .header { background: #e63946; color: #fff; padding: 28px 32px; }
+        .header h1 { margin: 0; font-size: 22px; }
+        .body { padding: 28px 32px; }
+        .info-box { background: #f8f8f8; border-left: 4px solid #e63946; padding: 16px 20px; border-radius: 4px; margin: 20px 0; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; }
+        .info-row:last-child { margin-bottom: 0; }
+        .label { color: #666; font-size: 13px; }
+        .value { font-weight: bold; font-size: 14px; }
+        .cta { text-align: center; margin: 28px 0; }
+        .cta a { background: #e63946; color: #fff; padding: 12px 28px; border-radius: 6px; text-decoration: none; font-size: 15px; font-weight: bold; }
+        .footer { background: #f0f0f0; padding: 16px 32px; font-size: 12px; color: #888; text-align: center; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>Nouvelle demande de réservation</h1>
+    </div>
+    <div class="body">
+        <p>Bonjour {% if reservation.property.host.profile %}{{ reservation.property.host.profile.firstName }}{% else %}{{ reservation.property.host.email }}{% endif %},</p>
+        <p>Vous avez reçu une nouvelle demande de réservation pour votre logement <strong>{{ reservation.property.title }}</strong>.</p>
+
+        <div class="info-box">
+            <div class="info-row">
+                <span class="label">Logement</span>
+                <span class="value">{{ reservation.property.title }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Voyageur</span>
+                <span class="value">
+                    {% if reservation.guest.profile %}
+                        {{ reservation.guest.profile.firstName }} {{ reservation.guest.profile.lastName }}
+                    {% else %}
+                        {{ reservation.guest.email }}
+                    {% endif %}
+                </span>
+            </div>
+            <div class="info-row">
+                <span class="label">Email voyageur</span>
+                <span class="value">{{ reservation.guest.email }}</span>
+            </div>
+            {% if reservation.guest.phone %}
+            <div class="info-row">
+                <span class="label">Téléphone voyageur</span>
+                <span class="value">{{ reservation.guest.phone }}</span>
+            </div>
+            {% endif %}
+            <div class="info-row">
+                <span class="label">Arrivée</span>
+                <span class="value">{{ reservation.checkinDate|date('d/m/Y') }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Départ</span>
+                <span class="value">{{ reservation.checkoutDate|date('d/m/Y') }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Voyageurs</span>
+                <span class="value">{{ reservation.guestsCount }}</span>
+            </div>
+            <div class="info-row">
+                <span class="label">Total</span>
+                <span class="value">{{ reservation.totalPrice }} {{ reservation.currency }}</span>
+            </div>
+        </div>
+
+        <div class="cta">
+            <a href="{{ url('app_host_reservations') }}">Gérer la demande</a>
+        </div>
+
+        <p>Acceptez ou refusez cette demande depuis votre espace hôte. Sans action de votre part, la demande restera en attente.</p>
+    </div>
+    <div class="footer">
+        Cet email a été envoyé automatiquement. Merci de ne pas y répondre directement.
+    </div>
+</div>
+</body>
+</html>

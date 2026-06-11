@@ -1,0 +1,117 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Mes réservations (hôte){% endblock %}
+
+{% set statusLabels = {
+    'confirmed': 'Confirmée',
+    'completed': 'Terminée',
+    'pending': 'En attente',
+    'cancelled': 'Annulée',
+} %}
+{% set statusColors = {
+    'confirmed': 'bg-green-100 text-green-800',
+    'completed': 'bg-blue-100 text-blue-800',
+    'pending': 'bg-yellow-100 text-yellow-800',
+    'cancelled': 'bg-red-100 text-red-800',
+} %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {# --- Demandes en attente --- #}
+        <h1 class="text-2xl font-semibold text-gray-900 mb-2">Demandes en attente</h1>
+        <p class="text-gray-500 mb-6">Réservations nécessitant votre validation</p>
+
+        {% if pending|length == 0 %}
+            <div class="text-center py-10 border border-dashed border-gray-200 rounded-xl mb-10">
+                <i class="fa-regular fa-calendar-check text-3xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 text-sm">Aucune demande en attente.</p>
+            </div>
+        {% else %}
+            <div class="space-y-4 mb-10">
+                {% for reservation in pending %}
+                    {% set guest = reservation.guest %}
+                    {% set guestProfile = guest ? guest.profile : null %}
+                    <div class="border border-yellow-200 bg-yellow-50 rounded-xl p-6">
+                        <div class="flex flex-wrap items-start justify-between gap-4">
+                            <div>
+                                <p class="font-semibold text-gray-900">{{ reservation.property.title }}</p>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                                    · {{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' : '' }}
+                                </p>
+                                <p class="text-sm text-gray-500 mt-1">
+                                    Voyageur : <span class="font-medium text-gray-700">
+                                        {{ guestProfile and guestProfile.firstName ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : guest.email }}
+                                    </span>
+                                </p>
+                                <p class="text-sm font-semibold text-gray-900 mt-2">{{ reservation.totalPrice|number_format(2, ',', ' ') }} €</p>
+                                <p class="text-xs text-gray-400 mt-1">Demande reçue le {{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
+                            </div>
+                            <div class="flex flex-col gap-2 min-w-[180px]">
+                                <form method="post" action="{{ path('app_host_reservation_accept', {id: reservation.id}) }}" data-turbo="false">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('host_reservation_' ~ reservation.id) }}">
+                                    <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white text-sm font-semibold py-2 px-4 rounded-lg transition">
+                                        <i class="fa-solid fa-check mr-1"></i> Accepter
+                                    </button>
+                                </form>
+                                <details>
+                                    <summary class="w-full border border-gray-300 hover:bg-gray-50 text-sm font-semibold py-2 px-4 rounded-lg cursor-pointer list-none text-center text-gray-700">
+                                        <i class="fa-solid fa-xmark mr-1"></i> Refuser
+                                    </summary>
+                                    <form method="post" action="{{ path('app_host_reservation_refuse', {id: reservation.id}) }}" class="mt-2 space-y-2" data-turbo="false">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('host_reservation_' ~ reservation.id) }}">
+                                        <textarea name="reason" rows="2" required placeholder="Motif du refus (obligatoire)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+                                        <button type="submit" class="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-4 rounded-lg transition">
+                                            Confirmer le refus
+                                        </button>
+                                    </form>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+        {# --- Toutes les réservations --- #}
+        <h2 class="text-xl font-semibold text-gray-900 mb-4">Toutes les réservations</h2>
+
+        {% if all|length == 0 %}
+            <div class="text-center py-10 border border-dashed border-gray-200 rounded-xl">
+                <p class="text-gray-500 text-sm">Aucune réservation pour le moment.</p>
+            </div>
+        {% else %}
+            <div class="space-y-3">
+                {% for reservation in all %}
+                    {% set guest = reservation.guest %}
+                    {% set guestProfile = guest ? guest.profile : null %}
+                    <a href="{{ path('app_reservation_show', {id: reservation.id}) }}" class="block border border-gray-200 rounded-xl p-4 hover:bg-gray-50 transition">
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div>
+                                <p class="font-semibold text-gray-900 text-sm">{{ reservation.property.title }}</p>
+                                <p class="text-xs text-gray-500 mt-0.5">
+                                    {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                                    · {{ guestProfile and guestProfile.firstName ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : guest.email }}
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-3">
+                                <span class="text-sm font-semibold text-gray-900">{{ reservation.totalPrice|number_format(2, ',', ' ') }} €</span>
+                                <span class="text-xs font-semibold px-2 py-1 rounded-full {{ statusColors[reservation.status]|default('bg-gray-100 text-gray-800') }}">
+                                    {{ statusLabels[reservation.status]|default(reservation.status) }}
+                                </span>
+                            </div>
+                        </div>
+                    </a>
+                {% endfor %}
+            </div>
+        {% endif %}
+
+    </main>
+{% endblock %}
