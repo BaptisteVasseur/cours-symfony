@@ -116,4 +116,31 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Vérifie si au moins une réservation "confirmed" se superpose avec la plage [checkin, checkout).
+     *
+     * Condition d'overlap sur intervalles demi-ouverts [A,B) et [C,D) : A < D AND C < B.
+     * Autrement dit : checkinDate_existante < checkout ET checkoutDate_existante > checkin.
+     */
+    public function hasConfirmedOverlapping(
+        Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+    ): bool {
+        $count = (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
+    }
 }

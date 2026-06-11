@@ -51,4 +51,31 @@ class BlockoutRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Vérifie si au moins un blockout de l'hôte couvre un jour de la plage [checkin, checkout).
+     *
+     * Le blockout [startDate, endDate] est inclusif des deux bornes.
+     * Un jour d de la plage occupée vérifie : checkin <= d < checkout.
+     * Overlap entre blockout [S,E] et période [checkin, checkout) :
+     *   S < checkout  ET  E >= checkin
+     */
+    public function hasBlockoutInRange(
+        Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+    ): bool {
+        $count = (int) $this->createQueryBuilder('b')
+            ->select('COUNT(b.id)')
+            ->andWhere('b.property = :property')
+            ->andWhere('b.startDate < :checkout')
+            ->andWhere('b.endDate >= :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
+    }
 }
