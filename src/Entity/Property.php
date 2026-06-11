@@ -155,6 +155,10 @@ class Property
     #[ORM\OneToMany(targetEntity: PropertyAvailability::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $availabilities;
 
+    /** @var Collection<int, PropertyUnavailability> */
+    #[ORM\OneToMany(targetEntity: PropertyUnavailability::class, mappedBy: 'property', orphanRemoval: true)]
+    private Collection $unavailabilities;
+
     /** @var Collection<int, PropertyICalSync> */
     #[ORM\OneToMany(targetEntity: PropertyICalSync::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $iCalSyncs;
@@ -172,6 +176,7 @@ class Property
         $this->propertyAmenities = new ArrayCollection();
         $this->media = new ArrayCollection();
         $this->availabilities = new ArrayCollection();
+        $this->unavailabilities = new ArrayCollection();
         $this->iCalSyncs = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
@@ -489,6 +494,29 @@ class Property
     public function removeAvailability(PropertyAvailability $availability): static
     {
         $this->availabilities->removeElement($availability);
+
+        return $this;
+    }
+
+    /** @return Collection<int, PropertyUnavailability> */
+    public function getUnavailabilities(): Collection
+    {
+        return $this->unavailabilities;
+    }
+
+    public function addUnavailability(PropertyUnavailability $unavailability): static
+    {
+        if (!$this->unavailabilities->contains($unavailability)) {
+            $this->unavailabilities->add($unavailability);
+            $unavailability->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUnavailability(PropertyUnavailability $unavailability): static
+    {
+        $this->unavailabilities->removeElement($unavailability);
 
         return $this;
     }
