@@ -1,0 +1,26 @@
+Service de gestion de reservation Plan : 
+
+1. Gérer les instant booking et les manual booking avec différent status (pending, cancel, confiremed, Completed, free ).
+2. Gérer les conflits de reservation sur une période donnée et mettre à jour le bon status si disponible et l'affichage du calendrier
+3. Gérer spécifiquement les réservations en interne par utilisateur en remplissant un formulaire avec les dates -> mise à jour du status de la reservation 
+-> message flash + envoie email.
+4. Moteur de recherche via /search 4 parametre destination checkin checkout guest 
+5. Gérer l'annulation d'une reservation message flash des 2 parties via un bouton ou expiration Worker 24h 
+
+Modélisation temporelle :
+Oui, il est possible de reservé le jour d'un checkout, le jour et l'heure seront les deux clés.
+il faudrait qu'il y ai cependant au moins un espace de 3h entre un checkin et un checkout.
+
+Gestion des états : 
+Un pending ne bloque pas les dates cependant 3 personnes maximum peut réserver sur une planche de date qui se chevauche.
+Au delà, il y aurait trop de refus par utilisateur ce qui selon moi engenderait de la frustation justifié.
+
+Concurrence : 
+Il faudrait que la bdd lance une alerte ou active une notifacation lorsqu'il y a un paiement d'un meme montant au meme moment sur la meme plage de date.
+Afin que l'admin puisse gérer le probleme par la suite. 
+
+Performance : 
+Il faut reserver avec une date et une heure d'arriver et puis une date et une heure de départ
+Comme ceci on sait que les jours entre sont indisponible sans itérer chaque jour. 
+
+

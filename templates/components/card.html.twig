@@ -9,9 +9,11 @@
             src="{{ cover ? cover.fileUrl : placeholderImage }}"
             alt="{{ property.title }}"
         >
-        <button type="button" class="absolute top-3 right-3 text-white text-xl drop-shadow-md hover:scale-110 transition" aria-label="Ajouter aux favoris" onclick="event.preventDefault()">
-            <i class="fa-regular fa-heart"></i>
-        </button>
+        {% if app.user %}
+            <button type="button" class="absolute top-3 right-3 text-white text-xl drop-shadow-md hover:scale-110 transition" aria-label="Ajouter aux favoris" onclick="event.preventDefault()">
+                <i class="fa-regular fa-heart"></i>
+            </button>
+        {% endif %}
     </div>
     <div class="flex justify-between items-start gap-2">
         <h3 class="font-bold text-sm text-gray-900 line-clamp-1">{{ property.title }}</h3>
@@ -30,7 +32,17 @@
             {{ checkin|date('d') }}–{{ checkout|date('d/m') }}
         </p>
     {% endif %}
-    <p class="text-sm font-semibold">
-        <span class="font-bold">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span> nuit
-    </p>
+    <div class="flex items-center justify-between mt-0.5">
+        <p class="text-sm font-semibold">
+            <span class="font-bold">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span> nuit
+        </p>
+        {% if app.user and property.instantBooking %}
+            <span class="inline-flex items-center gap-1 text-xs text-brand font-semibold">
+                <i class="fa-solid fa-bolt text-[10px]"></i> Instantané
+            </span>
+        {% endif %}
+    </div>
+    {% if not app.user %}
+        <p class="text-xs text-gray-400 mt-1">Connectez-vous pour réserver</p>
+    {% endif %}
 </a>

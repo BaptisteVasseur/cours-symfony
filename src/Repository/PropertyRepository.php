@@ -118,6 +118,62 @@ class PropertyRepository extends ServiceEntityRepository
     }
 
     /**
+     * Search available properties, excluding those with confirmed reservations
+     * that conflict with the requested date range (3h gap rule applied).
+     *
+     * @return list<Property>
+     */
+    public function findAvailableForSearch(
+        ?string $destination = null,
+        ?\DateTimeImmutable $checkin = null,
+        ?\DateTimeImmutable $checkout = null,
+        ?int $guests = null,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :dest OR LOWER(a.country) LIKE :dest')
+                ->setParameter('dest', '%' . mb_strtolower($destination) . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            $qb->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        $this->getEntityManager()->createQueryBuilder()
+                            ->select('1')
+                            ->from('App\Entity\Reservation', 'r2')
+                            ->where('r2.property = p')
+                            ->andWhere('r2.status IN (:blockingStatuses)')
+                            ->andWhere('r2.checkinDate < :checkoutPlus3h')
+                            ->andWhere('r2.checkoutDate > :checkinMinus3h')
+                            ->getDQL(),
+                    ),
+                ),
+            )
+                ->setParameter('blockingStatuses', ['confirmed', 'completed'])
+                ->setParameter('checkoutPlus3h', $checkout->modify('+3 hours'))
+                ->setParameter('checkinMinus3h', $checkin->modify('-3 hours'));
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
      * @return list<Property>
      */
     public function findByHost(User $host): array
