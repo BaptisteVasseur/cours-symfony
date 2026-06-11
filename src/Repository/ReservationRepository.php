@@ -112,6 +112,31 @@ class ReservationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    public function hasOverlap(
+        \App\Entity\Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+        ?Reservation $exclude = null,
+    ): bool {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['pending', 'confirmed'])
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+
+        if ($exclude !== null) {
+            $qb->andWhere('r != :exclude')
+                ->setParameter('exclude', $exclude);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult() > 0;
+    }
+
     /**
      * @return list<Reservation>
      */

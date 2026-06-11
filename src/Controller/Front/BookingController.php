@@ -10,6 +10,7 @@ use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Form\BookingType;
 use App\Repository\PropertyRepository;
+use App\Repository\ReservationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,6 +28,7 @@ final class BookingController extends AbstractController
         Request $request,
         Property $property,
         PropertyRepository $propertyRepository,
+        ReservationRepository $reservationRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         if ($property->getStatus() !== 'published') {
@@ -57,19 +59,19 @@ final class BookingController extends AbstractController
             if ($checkin >= $checkout) {
                 $this->addFlash('error', 'La date de départ doit être postérieure à la date d\'arrivée.');
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
 
             if ($guestsCount > $property->getMaxGuests()) {
                 $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
+            }
+
+            if ($reservationRepository->hasOverlap($property, $checkin, $checkout)) {
+                $this->addFlash('error', 'Ce logement est déjà réservé sur ces dates.');
+
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
 
             $nights = (int) $checkin->diff($checkout)->days;

@@ -7,6 +7,7 @@ namespace App\Service;
 use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Repository\ReservationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class ReservationLifecycleService
@@ -18,11 +19,22 @@ final class ReservationLifecycleService
 
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
+        private readonly ReservationRepository $reservationRepository,
     ) {
     }
 
     public function confirm(Reservation $reservation, User $changedBy): void
     {
+        $property = $reservation->getProperty();
+        $checkin = $reservation->getCheckinDate();
+        $checkout = $reservation->getCheckoutDate();
+
+        if ($property !== null && $checkin !== null && $checkout !== null
+            && $this->reservationRepository->hasOverlap($property, $checkin, $checkout, $reservation)
+        ) {
+            throw new \LogicException('Ce logement est déjà réservé sur ces dates.');
+        }
+
         $this->transition($reservation, 'confirmed', $changedBy);
     }
 
