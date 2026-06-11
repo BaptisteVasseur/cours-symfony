@@ -6,16 +6,19 @@ namespace App\Entity;
 
 use App\Repository\ConversationParticipantRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ConversationParticipantRepository::class)]
 #[ORM\Table(name: 'conversation_participants')]
 class ConversationParticipant
 {
+    #[Assert\NotNull(message: 'La conversation est obligatoire.')]
     #[ORM\Id]
     #[ORM\ManyToOne(inversedBy: 'participants')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Conversation $conversation = null;
 
+    #[Assert\NotNull(message: 'L\'utilisateur est obligatoire.')]
     #[ORM\Id]
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]

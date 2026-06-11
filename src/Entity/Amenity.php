@@ -9,6 +9,7 @@ use App\Repository\AmenityRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AmenityRepository::class)]
 #[ORM\Table(name: 'amenities')]
@@ -16,12 +17,21 @@ class Amenity
 {
     use UuidEntityTrait;
 
+    #[Assert\NotBlank(message: 'Le code de l\'équipement est obligatoire.')]
+    #[Assert\Length(max: 50, maxMessage: 'Le code ne peut pas dépasser {{ limit }} caractères.')]
+    #[Assert\Regex(
+        pattern: '/^[a-z0-9_]+$/',
+        message: 'Le code ne peut contenir que des lettres minuscules, chiffres et tirets bas.',
+    )]
     #[ORM\Column(length: 50, unique: true)]
     private ?string $code = null;
 
+    #[Assert\NotBlank(message: 'Le libellé est obligatoire.')]
+    #[Assert\Length(max: 100, maxMessage: 'Le libellé ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 100)]
     private ?string $label = null;
 
+    #[Assert\Length(max: 50, maxMessage: 'La catégorie ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $category = null;
 

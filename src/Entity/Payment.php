@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PaymentRepository::class)]
 #[ORM\Table(name: 'payments')]
@@ -17,26 +18,48 @@ class Payment
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull(message: 'La réservation est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'payments')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Reservation $reservation = null;
 
+    #[Assert\NotNull(message: 'Le payeur est obligatoire.')]
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $payer = null;
 
+    #[Assert\NotBlank(message: 'Le prestataire de paiement est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['stripe', 'paypal'],
+        message: 'Le prestataire sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $provider = null;
 
+    #[Assert\NotBlank(message: 'L\'identifiant de transaction est obligatoire.')]
+    #[Assert\Length(max: 255, maxMessage: 'L\'identifiant ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 255)]
     private ?string $providerPaymentIntent = null;
 
+    #[Assert\NotBlank(message: 'Le montant est obligatoire.')]
+    #[Assert\PositiveOrZero(message: 'Le montant doit être supérieur ou égal à zéro.')]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $amount = null;
 
+    #[Assert\NotBlank(message: 'La devise est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['EUR', 'USD', 'GBP'],
+        message: 'La devise sélectionnée n\'est pas valide.',
+    )]
+    #[Assert\Length(max: 10, maxMessage: 'La devise ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 10)]
     private ?string $currency = null;
 
+    #[Assert\NotBlank(message: 'Le statut est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['pending', 'authorized', 'captured', 'succeeded', 'failed', 'refunded', 'cancelled'],
+        message: 'Le statut sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $status = null;
 

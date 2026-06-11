@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\NotificationRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: NotificationRepository::class)]
 #[ORM\Table(name: 'notifications')]
@@ -15,22 +16,34 @@ class Notification
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull(message: 'L\'utilisateur destinataire est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'notifications')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
+    #[Assert\NotBlank(message: 'Le type de notification est obligatoire.')]
+    #[Assert\Length(max: 50, maxMessage: 'Le type ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 50)]
     private ?string $type = null;
 
+    #[Assert\NotBlank(message: 'Le titre est obligatoire.')]
+    #[Assert\Length(max: 255, maxMessage: 'Le titre ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 255)]
     private ?string $title = null;
 
+    #[Assert\Length(max: 5000, maxMessage: 'Le contenu ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $content = null;
 
+    #[Assert\NotBlank(message: 'Le canal de diffusion est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['email', 'sms', 'push', 'in_app'],
+        message: 'Le canal sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $channel = null;
 
+    #[Assert\Type(type: 'bool')]
     #[ORM\Column]
     private bool $isRead = false;
 

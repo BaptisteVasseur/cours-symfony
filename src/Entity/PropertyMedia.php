@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PropertyMediaRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyMediaRepository::class)]
 #[ORM\Table(name: 'property_media')]
@@ -15,19 +16,33 @@ class PropertyMedia
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull(message: 'Le logement associé est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'media')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Assert\NotBlank(message: 'Le type de média est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['image', 'video'],
+        message: 'Le type de média sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $mediaType = null;
 
+    #[Assert\NotBlank(message: 'L\'URL du fichier est obligatoire.')]
+    #[Assert\Url(
+        message: 'Le lien du fichier n\'est pas une URL valide.',
+        protocols: ['http', 'https'],
+    )]
+    #[Assert\Length(max: 2048, maxMessage: 'L\'URL du fichier ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(type: Types::TEXT)]
     private ?string $fileUrl = null;
 
+    #[Assert\PositiveOrZero(message: 'L\'ordre d\'affichage doit être supérieur ou égal à zéro.')]
     #[ORM\Column]
     private int $sortOrder = 0;
 
+    #[Assert\Type(type: 'bool')]
     #[ORM\Column]
     private bool $isCover = false;
 

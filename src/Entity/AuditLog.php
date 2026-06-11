@@ -9,6 +9,7 @@ use App\Repository\AuditLogRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AuditLogRepository::class)]
 #[ORM\Table(name: 'audit_logs')]
@@ -20,15 +21,22 @@ class AuditLog
     #[ORM\JoinColumn(nullable: true)]
     private ?User $user = null;
 
+    #[Assert\NotBlank(message: 'L\'action est obligatoire.')]
+    #[Assert\Length(max: 100, maxMessage: 'L\'action ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 100)]
     private ?string $action = null;
 
+    #[Assert\NotBlank(message: 'Le type d\'entité est obligatoire.')]
+    #[Assert\Length(max: 100, maxMessage: 'Le type d\'entité ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 100)]
     private ?string $entityType = null;
 
+    #[Assert\NotNull(message: 'L\'identifiant de l\'entité est obligatoire.')]
     #[ORM\Column(type: 'uuid')]
     private ?Uuid $entity = null;
 
+    #[Assert\Ip(version: Assert\Ip::ALL, message: 'L\'adresse IP n\'est pas valide.')]
+    #[Assert\Length(max: 45, maxMessage: 'L\'adresse IP ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 45, nullable: true)]
     private ?string $ipAddress = null;
 

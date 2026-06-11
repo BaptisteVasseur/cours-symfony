@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PropertyICalSyncRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyICalSyncRepository::class)]
 #[ORM\Table(name: 'property_ical_sync')]
@@ -15,16 +16,26 @@ class PropertyICalSync
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull(message: 'Le logement associé est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'iCalSyncs')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Assert\NotBlank(message: 'Le nom du fournisseur est obligatoire.')]
+    #[Assert\Length(max: 100, maxMessage: 'Le nom du fournisseur ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 100)]
     private ?string $providerName = null;
 
+    #[Assert\NotBlank(message: 'L\'URL iCal est obligatoire.')]
+    #[Assert\Url(
+        message: 'Le lien iCal n\'est pas une URL valide.',
+        protocols: ['http', 'https', 'webcal'],
+    )]
+    #[Assert\Length(max: 2048, maxMessage: 'L\'URL iCal ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(type: Types::TEXT)]
     private ?string $iCalUrl = null;
 
+    #[Assert\Type(type: \DateTimeImmutable::class)]
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $lastSyncAt = null;
 

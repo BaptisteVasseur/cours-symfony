@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\OauthAccountRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OauthAccountRepository::class)]
 #[ORM\Table(name: 'oauth_accounts')]
@@ -15,13 +16,21 @@ class OauthAccount
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull(message: 'L\'utilisateur est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'oauthAccounts')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
+    #[Assert\NotBlank(message: 'Le fournisseur OAuth est obligatoire.')]
+    #[Assert\Choice(
+        choices: ['google', 'facebook', 'apple', 'github', 'linkedin'],
+        message: 'Le fournisseur OAuth sélectionné n\'est pas valide.',
+    )]
     #[ORM\Column(length: 50)]
     private ?string $provider = null;
 
+    #[Assert\NotBlank(message: 'L\'identifiant fournisseur est obligatoire.')]
+    #[Assert\Length(max: 255, maxMessage: 'L\'identifiant ne peut pas dépasser {{ limit }} caractères.')]
     #[ORM\Column(length: 255)]
     private ?string $providerUserId = null;
 
