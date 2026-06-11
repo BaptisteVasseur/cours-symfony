@@ -105,6 +105,16 @@ class Listing
     #[ORM\JoinTable(name: 'listing_amenities')]
     private Collection $amenities;
 
+    #[ORM\OneToMany(mappedBy: 'listing', targetEntity: AvailabilityBlock::class, orphanRemoval: true)]
+    private Collection $availabilityBlocks;
+
+    #[ORM\Column(length: 64, unique: true)]
+    private string $calendarToken;
+
+    #[ORM\Column(length: 1024, nullable: true)]
+    #[Assert\Url(message: 'L\'URL iCal n\'est pas valide.')]
+    private ?string $icalImportUrl = null;
+
     public function __construct()
     {
         $this->photos = new ArrayCollection();
@@ -112,6 +122,13 @@ class Listing
         $this->bookings = new ArrayCollection();
         $this->reviews = new ArrayCollection();
         $this->amenities = new ArrayCollection();
+        $this->availabilityBlocks = new ArrayCollection();
+        $this->calendarToken = self::generateCalendarToken();
+    }
+
+    public static function generateCalendarToken(): string
+    {
+        return bin2hex(random_bytes(32));
     }
 
     public function getId(): ?Uuid { return $this->id; }
@@ -175,19 +192,14 @@ class Listing
 
     public function getLocation(): ?ListingLocation { return $this->location; }
 
-    /** @return Collection<int, ListingPhoto> */
     public function getPhotos(): Collection { return $this->photos; }
 
-    /** @return Collection<int, ListingAvailability> */
     public function getAvailabilities(): Collection { return $this->availabilities; }
 
-    /** @return Collection<int, Booking> */
     public function getBookings(): Collection { return $this->bookings; }
 
-    /** @return Collection<int, Review> */
     public function getReviews(): Collection { return $this->reviews; }
 
-    /** @return Collection<int, Amenity> */
     public function getAmenities(): Collection { return $this->amenities; }
 
     public function addAmenity(Amenity $amenity): static
@@ -203,4 +215,30 @@ class Listing
         $this->amenities->removeElement($amenity);
         return $this;
     }
+
+    public function getAvailabilityBlocks(): Collection { return $this->availabilityBlocks; }
+
+    public function addAvailabilityBlock(AvailabilityBlock $block): static
+    {
+        if (!$this->availabilityBlocks->contains($block)) {
+            $this->availabilityBlocks->add($block);
+            $block->setListing($this);
+        }
+        return $this;
+    }
+
+    public function removeAvailabilityBlock(AvailabilityBlock $block): static
+    {
+        $this->availabilityBlocks->removeElement($block);
+        return $this;
+    }
+
+    public function getCalendarToken(): string { return $this->calendarToken; }
+    public function setCalendarToken(string $v): static { $this->calendarToken = $v; return $this; }
+    public function regenerateCalendarToken(): static { $this->calendarToken = self::generateCalendarToken(); return $this; }
+
+    public function getIcalImportUrl(): ?string { return $this->icalImportUrl; }
+    public function setIcalImportUrl(?string $v): static { $this->icalImportUrl = $v; return $this; }
+
+    public function isPublished(): bool { return $this->status === 'published'; }
 }
