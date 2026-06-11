@@ -29,7 +29,8 @@ final class HostReservationController extends AbstractController
         }
 
         return $this->render('front/host/reservations.html.twig', [
-            'reservations' => $reservationRepository->findPendingByHost($user),
+            'pending' => $reservationRepository->findPendingByHost($user),
+            'all' => $reservationRepository->findAllByHost($user),
         ]);
     }
 

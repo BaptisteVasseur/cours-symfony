@@ -100,6 +100,24 @@ class ReservationRepository extends ServiceEntityRepository
     /**
      * @return list<Reservation>
      */
+    /**
+     * @return list<Reservation>
+     */
+    public function findAllByHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'g', 'gp', 'a')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->leftJoin('p.address', 'a')
+            ->andWhere('p.host = :host')
+            ->setParameter('host', $host)
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findPendingByHost(User $host): array
     {
         return $this->createQueryBuilder('r')

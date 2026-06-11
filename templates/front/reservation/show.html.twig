@@ -58,9 +58,28 @@
                 </section>
             </div>
             <aside>
-                <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
-                    <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
-                    <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                <div class="border border-gray-200 rounded-xl p-6 sticky top-28 space-y-6">
+                    <div>
+                        <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
+                        <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                    </div>
+
+                    {% if reservation.status in ['pending', 'confirmed'] %}
+                        <div class="border-t border-gray-100 pt-4">
+                            <details class="group">
+                                <summary class="w-full border border-red-200 text-red-600 hover:bg-red-50 text-sm font-semibold py-2 px-4 rounded-lg cursor-pointer list-none text-center transition">
+                                    Annuler la réservation
+                                </summary>
+                                <form method="post" action="{{ path('app_reservation_cancel', {id: reservation.id}) }}" class="mt-3 space-y-3" data-turbo="false">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('cancel_reservation_' ~ reservation.id) }}">
+                                    <textarea name="reason" rows="3" required placeholder="Motif de l'annulation (obligatoire)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm resize-none"></textarea>
+                                    <button type="submit" class="w-full bg-red-500 hover:bg-red-600 text-white text-sm font-semibold py-2 px-4 rounded-lg transition">
+                                        Confirmer l'annulation
+                                    </button>
+                                </form>
+                            </details>
+                        </div>
+                    {% endif %}
                 </div>
             </aside>
         </div>
