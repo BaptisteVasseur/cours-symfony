@@ -1,0 +1,129 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block page_title %}Tableau de bord — Réservations{% endblock %}
+
+{% block body %}
+<div class="max-w-4xl mx-auto px-4 py-8 space-y-10">
+
+    <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold text-gray-900">Réservations</h1>
+        <a href="{{ path('host_listings') }}" class="text-sm text-airbnb hover:underline">← Mes logements</a>
+    </div>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="rounded-lg px-4 py-3 text-sm font-medium
+                {% if label == 'success' %}bg-green-50 text-green-700 border border-green-200
+                {% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {# ── Demandes en attente ── #}
+    <section>
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            Demandes en attente
+            {% if pendingBookings|length > 0 %}
+                <span class="bg-yellow-100 text-yellow-700 text-xs font-bold px-2 py-0.5 rounded-full">
+                    {{ pendingBookings|length }}
+                </span>
+            {% endif %}
+        </h2>
+
+        {% if pendingBookings is empty %}
+            <p class="text-sm text-gray-400 bg-gray-50 rounded-xl px-5 py-6 text-center">Aucune demande en attente.</p>
+        {% else %}
+            <div class="space-y-3">
+                {% for booking in pendingBookings %}
+                <div x-data="{ refuseOpen: false }" class="bg-white border border-gray-200 rounded-xl shadow-sm p-5">
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                        <div class="space-y-1">
+                            <p class="font-semibold text-gray-900">{{ booking.listing.title }}</p>
+                            <p class="text-sm text-gray-600">
+                                {% if booking.guest.profile %}{{ booking.guest.profile.firstName }} {{ booking.guest.profile.lastName }}{% else %}{{ booking.guest.email }}{% endif %}
+                                · {{ booking.guestsCount }} voyageur{{ booking.guestsCount > 1 ? 's' }}
+                            </p>
+                            <p class="text-sm text-gray-500">
+                                {{ booking.startDate|date('d/m/Y') }} → {{ booking.endDate|date('d/m/Y') }}
+                                · <strong>{{ booking.totalPrice }} €</strong>
+                            </p>
+                            <p class="text-xs text-gray-400">Reçue le {{ booking.createdAt|date('d/m/Y à H:i') }}</p>
+                        </div>
+
+                        <div class="flex items-center gap-2 shrink-0">
+                            {# Confirmer #}
+                            <form method="post" action="{{ path('host_booking_confirm', {id: booking.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('confirm_booking_' ~ booking.id) }}">
+                                <button type="submit"
+                                        class="flex items-center gap-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+                                    Accepter
+                                </button>
+                            </form>
+
+                            {# Refuser #}
+                            <button @click="refuseOpen = true"
+                                    class="flex items-center gap-1.5 border border-red-200 text-red-600 hover:bg-red-50 text-sm font-medium px-4 py-2 rounded-lg transition-colors">
+                                Refuser
+                            </button>
+                        </div>
+                    </div>
+
+                    {# Modal refus #}
+                    <div x-show="refuseOpen" x-cloak
+                         class="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+                        <div class="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4" @click.outside="refuseOpen = false">
+                            <h3 class="font-semibold text-gray-900 text-lg">Refuser la demande</h3>
+                            <p class="text-sm text-gray-500">Un motif est obligatoire. Le voyageur en sera informé par email.</p>
+                            <form method="post" action="{{ path('host_booking_refuse', {id: booking.id}) }}" class="space-y-3">
+                                <input type="hidden" name="_token" value="{{ csrf_token('refuse_booking_' ~ booking.id) }}">
+                                <textarea name="refuseReason" rows="3" required
+                                          placeholder="Ex : logement indisponible, contrainte personnelle…"
+                                          class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400"></textarea>
+                                <div class="flex gap-2 justify-end">
+                                    <button type="button" @click="refuseOpen = false"
+                                            class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                                        Annuler
+                                    </button>
+                                    <button type="submit"
+                                            class="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg hover:bg-red-700">
+                                        Confirmer le refus
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+
+    {# ── Séjours confirmés à venir ── #}
+    <section>
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Séjours confirmés à venir</h2>
+        {% if upcomingBookings is empty %}
+            <p class="text-sm text-gray-400 bg-gray-50 rounded-xl px-5 py-6 text-center">Aucun séjour à venir.</p>
+        {% else %}
+            <div class="space-y-3">
+                {% for booking in upcomingBookings %}
+                <div class="bg-white border border-gray-200 rounded-xl shadow-sm p-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <div class="space-y-0.5">
+                        <p class="font-semibold text-gray-900">{{ booking.listing.title }}</p>
+                        <p class="text-sm text-gray-600">
+                            {% if booking.guest.profile %}{{ booking.guest.profile.firstName }} {{ booking.guest.profile.lastName }}{% else %}{{ booking.guest.email }}{% endif %}
+                            · {{ booking.guestsCount }} voyageur{{ booking.guestsCount > 1 ? 's' }}
+                        </p>
+                        <p class="text-sm text-gray-500">{{ booking.startDate|date('d/m/Y') }} → {{ booking.endDate|date('d/m/Y') }} · <strong>{{ booking.totalPrice }} €</strong></p>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700 border border-green-200 self-start sm:self-auto">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>Confirmée
+                    </span>
+                </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}
