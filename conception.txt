@@ -1,0 +1,121 @@
+================================================================================
+CONCEPTION - MOTEUR DE RESERVATION & SYNCHRO iCal (Clone Airbnb / Symfony)
+================================================================================
+Auteur : (a completer)
+Stack  : Symfony 8.0, PHP 8.4, PostgreSQL 16, Doctrine ORM, Messenger, Mailpit.
+
+
+1. ANALYSE DE L'EXISTANT (ce que je reutilise)
+--------------------------------------------------------------------------------
+Le projet est deja initialise. Je m'appuie sur les entites en place plutot que
+de remodeliser :
+  - Reservation : status (pending/confirmed/completed/cancelled),
+    cancellationReason + Assert\Expression qui IMPOSE deja le motif si annulee.
+  - ReservationStatusHistory : tracabilite des transitions (oldStatus/newStatus/
+    changedBy) -> a remplir a chaque changement de statut.
+  - Property : instantBooking, status (draft/pending/published), maxGuests.
+  - PropertyAvailability : isAvailable / availableDate -> blocage de dates hote.
+  - PropertyICalSync : iCalUrl, lastSyncAt -> import iCal (partie F).
+  - PropertyAddress.city -> recherche "destination". User/Roles -> autorisations.
+
+
+2. AJOUTS AU MODELE (le strict minimum)
+--------------------------------------------------------------------------------
+  - Property.icalExportToken (string, unique, nullable) : secret de l'URL
+    d'export .ics, REVOCABLE (= regenere). Choisi plutot que UriSigner car le
+    sujet veut un token stocke en base et revocable.
+  - PropertyAvailability.source ('manual'|'ical_import') + sourceUid (nullable) :
+    distingue un blocage manuel d'un blocage importe, pour que la re-synchro
+    iCal n'efface jamais les blocages saisis par l'hote.
+Tout est nullable / avec defaut -> les fixtures restent valides. 1 seule
+migration.
+
+
+3. CYCLE DE VIE D'UNE RESERVATION
+--------------------------------------------------------------------------------
+  Creation -> pending OU confirmed (selon 4).
+  pending   -> confirmed (hote accepte) | cancelled (hote refuse + motif).
+  confirmed -> cancelled (hote/voyageur + motif, libere les dates) | completed.
+  cancelled et completed = etats FINAUX (aucune transition sortante).
+  Toute transition ecrit une ligne ReservationStatusHistory.
+
+
+4. INSTANTANE vs SUR DEMANDE (a la creation)
+--------------------------------------------------------------------------------
+  SI dates dispo (cf. 5) :
+      instantBooking == true  -> confirmed (dates verrouillees immediatement)
+      instantBooking == false -> pending  (attente validation hote)
+  SINON -> refus + flash "dates indisponibles".
+
+
+5. ALGORITHME DE DISPONIBILITE
+--------------------------------------------------------------------------------
+Plage [checkin, checkout[ (semi-ouverte : le jour de depart reste reservable).
+Disponible SSI les 4 conditions sont vraies :
+  C1  property.status == 'published'
+  C2  aucun PropertyAvailability isAvailable=false dans la plage
+  C3  aucune Reservation 'confirmed' qui chevauche :
+        (r.checkin < checkout) ET (r.checkout > checkin)
+        (pending et cancelled ne bloquent pas)
+  C4  guestsCount <= property.maxGuests
+C2 et C3 sont evaluees en SQL. Pour /search (N logements), j'exclus directement
+les logements bloques/reserves via NOT EXISTS, pour rester sur peu de requetes.
+
+
+6. SERVICES (controleurs fins, logique dans src/Service)
+--------------------------------------------------------------------------------
+  - AvailabilityChecker.isAvailable(property, in, out, guests) : les 4 conditions.
+    Source de verite unique, appelee par recherche + checkout + acceptation hote.
+  - BookingManager : create / confirm / reject / cancel. Verifie la transition,
+    ecrit l'historique, dispatche la notification. Re-verifie la dispo au moment
+    du POST et de l'acceptation (anti double-reservation).
+  - PriceCalculator : nuits * prix (priceOverride si present) + frais.
+  - ICalExporter (E) / ICalImporter (F).
+
+
+7. FLUX PRINCIPAUX
+--------------------------------------------------------------------------------
+  B.1 Voyageur : choix dates -> /checkout (recap + prix) -> POST -> re-verif
+      dispo -> creation (confirmed/pending) -> flash + redirection -> mail async.
+  B.2 Hote : tableau de bord des 'pending' de SES logements -> Accepter
+      (confirm) / Refuser (reject + motif), chaque action notifie par mail.
+  B.3 Annulation : motif obligatoire, libere les dates, notifie les 2 parties.
+
+
+8. NOTIFICATIONS ASYNCHRONES (D)
+--------------------------------------------------------------------------------
+Transport Messenger doctrine (async) + worker dedie ; Mailer -> Mailpit (8025).
+Le message porte l'ID de la reservation (pas l'entite). Le handler recharge,
+construit un TemplatedEmail (templates/email/) et envoie.
+  Nouvelle demande -> Hote | Confirmee -> Voyageur+Hote |
+  Refus -> Voyageur(+motif) | Annulation -> 2 parties(+motif).
+
+
+9. SYNCHRO iCal
+--------------------------------------------------------------------------------
+  Export (E) : GET /api/properties/{id}/calendar.ics?token=...
+    token compare avec hash_equals() ; invalide/absent -> 403, aucune donnee.
+    1 VEVENT par reservation 'confirmed' (UID/SUMMARY/DTSTART/DTEND/DESCRIPTION),
+    fins de ligne CRLF, Content-Type text/calendar.
+  Import (F, bonus) : commande app:ical:sync (Cron) via HTTP Client.
+    Met a jour uniquement les PropertyAvailability source='ical_import'.
+    Conflits : reservation 'confirmed' chevauchant un event distant = signalee,
+    PAS ecrasee ; event distant disparu = ligne 'ical_import' supprimee (par
+    sourceUid) ; flux injoignable/malforme = on n'efface rien, on logue,
+    lastSyncAt mis a jour seulement si succes. Commande idempotente.
+
+
+10. SECURITE
+--------------------------------------------------------------------------------
+  - Espace hote = ROLE_HOST. Voters (Property/Reservation) : un hote n'agit que
+    sur SES logements, un voyageur n'annule que SES reservations.
+  - Endpoint .ics hors firewall (calendrier externe sans session) : protege
+    uniquement par le token en base, compare en temps constant.
+
+
+11. RISQUES
+--------------------------------------------------------------------------------
+  - Double reservation simultanee : mitige par la re-verif au POST (verrou
+    pessimiste possible en evolution).
+  - Dates en type DATE (pas DATETIME) -> pas de souci de fuseau a l'import/export.
+================================================================================
