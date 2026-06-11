@@ -78,5 +78,45 @@
         {{ form_end(form) }}
     </div>
 
+    {# ── Synchronisation iCal ── #}
+    <div id="ical" class="mt-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div class="flex items-center gap-2 mb-1">
+            <i class="fa-regular fa-calendar text-gray-500"></i>
+            <h2 class="text-base font-semibold text-gray-900">Synchronisation iCal</h2>
+        </div>
+        <p class="text-sm text-gray-500 mb-4">
+            Importez ce lien dans Google Calendar, Outlook ou tout autre agenda compatible pour y voir vos réservations confirmées.
+        </p>
+
+        {% if property.calendarToken %}
+            {% set icalUrl = url('app_ical_export', { id: property.id }) ~ '?token=' ~ property.calendarToken %}
+            <div class="flex items-center gap-2 mb-4">
+                <input type="text" readonly value="{{ icalUrl }}" id="ical-url"
+                    class="flex-1 text-xs border border-gray-300 rounded-lg px-3 py-2 bg-gray-50 text-gray-600 font-mono truncate">
+                <button type="button" onclick="navigator.clipboard.writeText('{{ icalUrl }}').then(() => this.textContent = 'Copié !')"
+                    class="shrink-0 text-xs font-semibold px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition whitespace-nowrap">
+                    Copier
+                </button>
+            </div>
+            <form method="post" action="{{ path('app_host_ical_revoke', { id: property.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('ical_revoke' ~ property.id) }}">
+                <button type="submit"
+                    class="text-xs text-red-500 hover:text-red-700 font-medium underline">
+                    Révoquer le lien (désactive la synchronisation)
+                </button>
+            </form>
+        {% else %}
+            <p class="text-sm text-gray-400 mb-4 italic">Aucun lien iCal généré pour ce logement.</p>
+            <form method="post" action="{{ path('app_host_ical_generate', { id: property.id }) }}">
+                <input type="hidden" name="_token" value="{{ csrf_token('ical_generate' ~ property.id) }}">
+                <button type="submit"
+                    class="inline-flex items-center gap-2 bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition">
+                    <i class="fa-solid fa-link text-xs"></i>
+                    Générer le lien iCal
+                </button>
+            </form>
+        {% endif %}
+    </div>
+
 </main>
 {% endblock %}

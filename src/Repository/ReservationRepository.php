@@ -97,6 +97,9 @@ class ReservationRepository extends ServiceEntityRepository
     public function findConfirmedByProperty(Property $property): array
     {
         return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
             ->where('r.property = :property')
             ->andWhere('r.status = :status')
             ->setParameter('property', $property)

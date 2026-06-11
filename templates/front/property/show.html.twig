@@ -154,6 +154,17 @@
                                class="text-center text-gray-600 hover:text-gray-900 underline">
                                 Gérer toutes les indisponibilités
                             </a>
+                            {% if property.calendarToken %}
+                                <a href="{{ path('app_host_property_edit', { id: property.id }) }}#ical"
+                                   class="text-center text-brand hover:underline font-medium">
+                                    <i class="fa-regular fa-calendar mr-1"></i>Voir le lien iCal
+                                </a>
+                            {% else %}
+                                <a href="{{ path('app_host_property_edit', { id: property.id }) }}#ical"
+                                   class="text-center text-gray-400 hover:text-gray-600 underline">
+                                    Générer un lien iCal
+                                </a>
+                            {% endif %}
                         </div>
 
                     {% else %}
