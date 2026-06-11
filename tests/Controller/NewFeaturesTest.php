@@ -184,5 +184,40 @@ final class NewFeaturesTest extends WebTestCase
             $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
         }
     }
+
+    public function testDeactivateHostRemovesRoleAndProperties(): void
+    {
+        $client = static::createClient();
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        $host = $userRepository->findOneBy(['email' => 'jeanmarc.dupont@email.com']);
+        $this->assertNotNull($host);
+
+        $propertyRepository = static::getContainer()->get(PropertyRepository::class);
+        $initialPropertyCount = $propertyRepository->count(['host' => $host]);
+        $this->assertGreaterThan(0, $initialPropertyCount);
+
+        $client->loginUser($host);
+        
+        $crawler = $client->request('GET', '/compte/parametres');
+        $this->assertResponseIsSuccessful();
+        
+        $form = $crawler->selectButton('Désactiver le mode hôte et supprimer mes annonces')->form();
+        $client->submit($form);
+
+        $this->assertResponseRedirects('/compte/parametres');
+        $client->followRedirect();
+        $this->assertSelectorTextContains('.text-emerald-900', 'Votre statut d\'hôte a été désactivé');
+
+        // Check database
+        $entityManager = static::getContainer()->get(\Doctrine\ORM\EntityManagerInterface::class);
+        $entityManager->clear();
+
+        $updatedUser = $userRepository->find($host->getId());
+        $this->assertFalse(in_array('ROLE_HOST', $updatedUser->getRoles(), true));
+
+        $updatedPropertyCount = $propertyRepository->count(['host' => $host]);
+        $this->assertEquals(0, $updatedPropertyCount);
+    }
 }
+
 

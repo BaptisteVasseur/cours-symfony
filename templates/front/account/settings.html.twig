@@ -21,5 +21,20 @@
                 <button type="submit" class="bg-brand hover:bg-brandHover text-white font-semibold px-6 py-3 rounded-xl transition">Enregistrer</button>
             {{ form_end(form) }}
         </div>
+
+        {% if is_granted('ROLE_HOST') %}
+            <div class="mt-8 bg-red-50 border border-red-200 rounded-2xl p-6 shadow-sm">
+                <h2 class="text-lg font-semibold text-red-900 mb-2">Zone de danger : Désactiver le statut d'hôte</h2>
+                <p class="text-sm text-red-700 mb-6">
+                    En désactivant le statut d'hôte, toutes vos annonces (ainsi que toutes leurs réservations, avis et historiques associés) seront définitivement supprimées. Cette action est irréversible.
+                </p>
+                <form action="{{ path('app_account_deactivate_host') }}" method="POST" onsubmit="return confirm('Êtes-vous sûr de vouloir redevenir un utilisateur simple ? Toutes vos annonces seront définitivement supprimées.');">
+                    <input type="hidden" name="_token" value="{{ csrf_token('deactivate_host') }}">
+                    <button type="submit" class="bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-3 rounded-xl transition">
+                        Désactiver le mode hôte et supprimer mes annonces
+                    </button>
+                </form>
+            </div>
+        {% endif %}
     </main>
 {% endblock %}
