@@ -20,17 +20,20 @@ class BookingType extends AbstractType
             ->add('checkinDate', DateType::class, [
                 'label' => 'Arrivée',
                 'widget' => 'single_text',
+                'input' => 'datetime_immutable',
+                'data' => $options['checkin'] ? new \DateTimeImmutable($options['checkin']) : null,
                 'constraints' => [new NotBlank(message: 'La date d\'arrivée est obligatoire.')],
             ])
             ->add('checkoutDate', DateType::class, [
                 'label' => 'Départ',
                 'widget' => 'single_text',
-                'constraints' => [
-                    new NotBlank(message: 'La date de départ est obligatoire.'),
-                ],
+                'input' => 'datetime_immutable',
+                'data' => $options['checkout'] ? new \DateTimeImmutable($options['checkout']) : null,
+                'constraints' => [new NotBlank(message: 'La date de départ est obligatoire.')],
             ])
             ->add('guestsCount', IntegerType::class, [
                 'label' => 'Voyageurs',
+                'data' => $options['guests'] ?? 1,
                 'constraints' => [
                     new NotBlank(message: 'Le nombre de voyageurs est obligatoire.'),
                     new GreaterThanOrEqual(1, message: 'Il doit y avoir au moins {{ compared_value }} voyageur.'),
@@ -43,6 +46,13 @@ class BookingType extends AbstractType
     {
         $resolver->setDefaults([
             'csrf_token_id' => 'booking',
+            'checkin' => null,
+            'checkout' => null,
+            'guests' => null,
         ]);
+
+        $resolver->setAllowedTypes('checkin', ['null', 'string']);
+        $resolver->setAllowedTypes('checkout', ['null', 'string']);
+        $resolver->setAllowedTypes('guests', ['null', 'int']);
     }
 }

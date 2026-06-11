@@ -31,6 +31,9 @@ class PropertyAvailability
     #[ORM\Column(nullable: true)]
     private ?int $minimumStay = null;
 
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $icalSyncSource = null;
+
     public function getProperty(): ?Property
     {
         return $this->property;
@@ -87,6 +90,18 @@ class PropertyAvailability
     public function setMinimumStay(?int $minimumStay): static
     {
         $this->minimumStay = $minimumStay;
+
+        return $this;
+    }
+
+    public function getIcalSyncSource(): ?string
+    {
+        return $this->icalSyncSource;
+    }
+
+    public function setIcalSyncSource(?string $icalSyncSource): static
+    {
+        $this->icalSyncSource = $icalSyncSource;
 
         return $this;
     }

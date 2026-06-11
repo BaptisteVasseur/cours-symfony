@@ -77,10 +77,6 @@ class UserType extends AbstractType
                 'label' => 'Email vérifié',
                 'required' => false,
             ])
-            ->add('is2faEnabled', CheckboxType::class, [
-                'label' => 'Double authentification activée',
-                'required' => false,
-            ])
             ->add('preferredLanguage', ChoiceType::class, [
                 'label' => 'Langue',
                 'required' => false,
@@ -150,13 +146,13 @@ class UserType extends AbstractType
     private function availableRoles(array $options): array
     {
         if ($options['manage_elevated_roles']) {
-            return Roles::ASSIGNABLE;
+            return array_flip(Roles::ASSIGNABLE);
         }
 
-        return array_filter(
+        return array_flip(array_filter(
             Roles::ASSIGNABLE,
             static fn (string $role): bool => !in_array($role, [Roles::ADMIN, Roles::SUPER_ADMIN], true),
             ARRAY_FILTER_USE_KEY,
-        );
+        ));
     }
 }

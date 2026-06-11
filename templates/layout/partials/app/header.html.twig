@@ -15,6 +15,15 @@
         </a>
 
         {% if app.user %}
+            {% set unreadNotifications = unread_notifications_count(app.user) %}
+            <a href="{{ path('app_notifications') }}" class="relative p-2 text-gray-600 hover:bg-gray-50 rounded-full" aria-label="Notifications">
+                <i class="fa-solid fa-bell text-lg"></i>
+                {% if unreadNotifications > 0 %}
+                    <span class="absolute top-0.5 right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white text-xs font-bold leading-none">
+                        {{ unreadNotifications > 9 ? '9+' : unreadNotifications }}
+                    </span>
+                {% endif %}
+            </a>
             {% include 'layout/partials/app/header_profile_menu.html.twig' %}
         {% else %}
             <a href="{{ path('app_login') }}" class="text-sm font-semibold py-2 px-4 border border-gray-200 rounded-full hover:shadow-md transition whitespace-nowrap">

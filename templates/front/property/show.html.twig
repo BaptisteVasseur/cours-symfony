@@ -5,8 +5,18 @@
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80' %}
 {% set hostProfile = property.host ? property.host.profile : null %}
 
+{% set isOwner = app.user and property.host and app.user.id == property.host.id %}
+
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+
+        {% for message in app.flashes('error') %}
+            <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm">{{ message }}</div>
+        {% endfor %}
+        {% for message in app.flashes('success') %}
+            <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm">{{ message }}</div>
+        {% endfor %}
+
         <div class="mb-6">
             <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">{{ property.title }}</h1>
             <div class="flex flex-wrap items-center gap-2 mt-2 text-sm text-gray-600">
@@ -119,27 +129,64 @@
                     {% if property.cleaningFee %}
                         <p class="text-sm text-gray-500 mb-4">Frais de ménage : {{ property.cleaningFee|number_format(0, ',', ' ') }} €</p>
                     {% endif %}
-                    <div class="border border-gray-300 rounded-lg mb-4">
-                        <div class="grid grid-cols-2 divide-x divide-gray-300">
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Arrivée</p>
-                                <p class="text-sm text-gray-500">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
-                            </div>
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Départ</p>
-                                <p class="text-sm text-gray-500">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
-                            </div>
+                    {% if isOwner %}
+                        <div class="mt-4 p-4 bg-gray-50 border border-gray-200 rounded-lg text-sm text-gray-500 text-center">
+                            <i class="fa-solid fa-house-chimney-user mb-1 block text-lg text-gray-400"></i>
+                            Vous êtes l'hôte de ce logement.
+                            <a href="{{ path('app_host_calendar', { id: property.id }) }}" class="block mt-2 text-brand hover:underline font-medium">
+                                Gérer le calendrier →
+                            </a>
                         </div>
-                        <div class="p-3 border-t border-gray-300">
-                            <p class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</p>
-                            <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
-                        </div>
-                    </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
-                        Réserver
-                    </a>
+                    {% elseif app.user %}
+                        <form id="booking-widget" method="GET" action="{{ path('app_booking_checkout', { id: property.id }) }}">
+                            <div class="border border-gray-300 rounded-lg mb-4">
+                                <div class="grid grid-cols-2 divide-x divide-gray-300">
+                                    <div class="p-3">
+                                        <label class="block text-[10px] font-bold uppercase text-gray-800 mb-1">Arrivée</label>
+                                        <input type="date" name="checkin" id="widget-checkin"
+                                            class="w-full text-sm text-gray-700 bg-transparent outline-none"
+                                            min="{{ 'now'|date('Y-m-d') }}">
+                                    </div>
+                                    <div class="p-3">
+                                        <label class="block text-[10px] font-bold uppercase text-gray-800 mb-1">Départ</label>
+                                        <input type="date" name="checkout" id="widget-checkout"
+                                            class="w-full text-sm text-gray-700 bg-transparent outline-none"
+                                            min="{{ 'now'|date('Y-m-d') }}">
+                                    </div>
+                                </div>
+                                <div class="p-3 border-t border-gray-300">
+                                    <label class="block text-[10px] font-bold uppercase text-gray-800 mb-1">Voyageurs</label>
+                                    <input type="number" name="guests" min="1" max="{{ property.maxGuests }}" value="1"
+                                        class="w-full text-sm text-gray-700 bg-transparent outline-none">
+                                </div>
+                            </div>
+                            <button type="submit" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                                Réserver
+                            </button>
+                        </form>
+                    {% else %}
+                        <a href="{{ path('app_login') }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                            Se connecter pour réserver
+                        </a>
+                    {% endif %}
+                    <script>
+                    (function(){
+                        const ci = document.getElementById('widget-checkin');
+                        const co = document.getElementById('widget-checkout');
+                        ci?.addEventListener('change', function(){
+                            if(co && (!co.value || co.value <= ci.value)){
+                                const next = new Date(ci.value);
+                                next.setDate(next.getDate()+1);
+                                co.min = ci.value;
+                                co.value = next.toISOString().split('T')[0];
+                            }
+                        });
+                    })();
+                    </script>
                     {% if property.instantBooking %}
-                        <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
+                        <p class="text-center text-xs text-gray-500 mt-3">⚡ Réservation instantanée disponible</p>
+                    {% else %}
+                        <p class="text-center text-xs text-gray-500 mt-3">⏳ Sur demande — validation par l'hôte</p>
                     {% endif %}
                 </div>
             </aside>

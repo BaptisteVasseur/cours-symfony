@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr">
+<body style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #FF5A5F;">Votre séjour commence demain !</h1>
+    <p>Bonjour {% if reservation.guest.profile and reservation.guest.profile.firstName %}{{ reservation.guest.profile.firstName }}{% else %}{{ reservation.guest.email }}{% endif %},</p>
+    <p>Votre réservation pour <strong>{{ reservation.property.title }}</strong> débute <strong>demain le {{ reservation.checkinDate|date('d/m/Y') }}</strong>. Voici toutes les informations utiles pour votre arrivée.</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Logement</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.property.title }}</strong></td>
+        </tr>
+        {% if reservation.property.address %}
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Adresse</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                {{ reservation.property.address.addressLine1 }},
+                {{ reservation.property.address.postalCode }}
+                {{ reservation.property.address.city }},
+                {{ reservation.property.address.country }}
+            </td>
+        </tr>
+        {% endif %}
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Arrivée</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                <strong>{{ reservation.checkinDate|date('d/m/Y') }}</strong>
+                {% if reservation.property.checkinTime %}
+                    à partir de <strong>{{ reservation.property.checkinTime|date('H:i') }}</strong>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Départ</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">
+                <strong>{{ reservation.checkoutDate|date('d/m/Y') }}</strong>
+                {% if reservation.property.checkoutTime %}
+                    avant <strong>{{ reservation.property.checkoutTime|date('H:i') }}</strong>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Voyageurs</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;"><strong>{{ reservation.guestsCount }}</strong></td>
+        </tr>
+        {% if reservation.property.host %}
+        <tr>
+            <td style="padding: 8px; color: #666;">Contact hôte</td>
+            <td style="padding: 8px;">
+                {% if reservation.property.host.profile and reservation.property.host.profile.firstName %}
+                    <strong>{{ reservation.property.host.profile.firstName }} {{ reservation.property.host.profile.lastName }}</strong><br>
+                {% endif %}
+                <span style="color: #666; font-size: 13px;">{{ reservation.property.host.email }}</span>
+            </td>
+        </tr>
+        {% endif %}
+    </table>
+
+    {% if reservation.property.rules and reservation.property.rules.additionalRules %}
+    <div style="background: #f9f9f9; border-left: 3px solid #FF5A5F; padding: 12px 16px; margin: 16px 0; border-radius: 4px;">
+        <p style="margin: 0 0 6px; font-weight: bold; font-size: 14px;">Règles du logement</p>
+        <p style="margin: 0; font-size: 13px; color: #555;">{{ reservation.property.rules.additionalRules }}</p>
+    </div>
+    {% endif %}
+
+    <p>Bon séjour !</p>
+    <p style="color: #999; font-size: 12px;">Cet email a été envoyé automatiquement par votre plateforme de location.</p>
+</body>
+</html>

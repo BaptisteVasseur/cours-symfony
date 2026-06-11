@@ -12,6 +12,22 @@ cache:
 logs:
 	docker compose logs -f --tail=100 php
 
+fixtures:
+	docker compose exec -T php php bin/console doctrine:fixtures:load --no-interaction
+	@echo "==> Fixtures chargées. Comptes de démo (mot de passe pour tous : password) :"
+	@echo "    - Super admin   : admin@airbnb-clone.fr"
+	@echo "    - Admin / modé  : moderation@airbnb-clone.fr"
+	@echo "    - Hôte          : jeanmarc.dupont@email.com"
+	@echo "    - Voyageur      : sophie.chen@email.com"
+	@echo "    - Hôte + Admin  : test@example.com"
+
+fixtures-fresh:
+	docker compose exec -T database psql -U app -d postgres -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = 'app' AND pid <> pg_backend_pid();" || true
+	docker compose exec -T php php bin/console doctrine:database:drop --force --if-exists
+	docker compose exec -T php php bin/console doctrine:database:create --if-not-exists
+	docker compose exec -T php php bin/console doctrine:migrations:migrate --no-interaction
+	$(MAKE) fixtures
+
 up start:
 	docker compose up -d && \
     echo "==> Les services ont été démarrés avec succès" && \

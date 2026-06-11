@@ -1,0 +1,134 @@
+{% extends 'layout/app.html.twig' %}
+
+{% set statusLabels = { 'confirmed': 'Confirmée', 'completed': 'Terminée', 'pending': 'En attente', 'cancelled': 'Annulée' } %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+        <div class="mb-8">
+            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Tableau de bord hôte</h1>
+            <p class="text-gray-500 mt-1">Demandes en attente de validation</p>
+        </div>
+
+        {% for message in app.flashes('success') %}
+            <div class="mb-4 p-4 bg-green-50 border border-green-200 text-green-800 rounded-xl text-sm">{{ message }}</div>
+        {% endfor %}
+        {% for message in app.flashes('error') %}
+            <div class="mb-4 p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm">{{ message }}</div>
+        {% endfor %}
+
+        {% if toCompleteReservations|default([])|length > 0 %}
+            <div class="mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Séjours terminés à confirmer</h2>
+                <div class="space-y-4">
+                    {% for reservation in toCompleteReservations %}
+                        {% set property = reservation.property %}
+                        {% set guest = reservation.guest %}
+                        {% set guestProfile = guest ? guest.profile : null %}
+                        {% set guestName = guestProfile and (guestProfile.firstName or guestProfile.lastName) ? (guestProfile.firstName ~ ' ' ~ guestProfile.lastName)|trim : guest.email %}
+                        <div class="border border-blue-200 bg-blue-50 rounded-xl p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">Checkout passé</span>
+                                    <span class="text-xs text-gray-400">{{ reservation.checkoutDate|date('d/m/Y') }}</span>
+                                </div>
+                                <h3 class="font-semibold text-gray-900">{{ property.title }}</h3>
+                                <p class="text-sm text-gray-600">Voyageur : <strong>{{ guestName }}</strong></p>
+                                <p class="text-sm text-gray-600">{{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}</p>
+                            </div>
+                            <form method="POST" action="{{ path('app_host_reservation_complete', { id: reservation.id }) }}" class="shrink-0">
+                                <input type="hidden" name="_token" value="{{ csrf_token('complete_reservation_' ~ reservation.id) }}">
+                                <button type="submit" class="px-4 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition">
+                                    Marquer comme terminé
+                                </button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% if confirmedReservations|default([])|length > 0 %}
+            <div class="mb-8">
+                <h2 class="text-lg font-semibold text-gray-900 mb-4">Réservations confirmées à venir</h2>
+                <div class="space-y-4">
+                    {% for reservation in confirmedReservations %}
+                        {% set property = reservation.property %}
+                        {% set guest = reservation.guest %}
+                        {% set guestProfile = guest ? guest.profile : null %}
+                        {% set guestName = guestProfile and (guestProfile.firstName or guestProfile.lastName) ? (guestProfile.firstName ~ ' ' ~ guestProfile.lastName)|trim : guest.email %}
+                        <div class="border border-green-200 bg-green-50 rounded-xl p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-green-100 text-green-800">Confirmée</span>
+                                    <span class="text-xs text-gray-400">{{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}</span>
+                                </div>
+                                <h3 class="font-semibold text-gray-900">{{ property.title }}</h3>
+                                <p class="text-sm text-gray-600">Voyageur : <strong>{{ guestName }}</strong> ({{ guest.email }})</p>
+                                <p class="text-sm text-gray-600 mt-1">{{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' }} · {{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</p>
+                            </div>
+                            <a href="{{ path('app_reservation_show', { id: reservation.id }) }}" class="shrink-0 px-4 py-2 border border-green-300 text-green-800 text-sm font-semibold rounded-lg hover:bg-green-100 transition text-center">
+                                Voir le détail
+                            </a>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        <h2 class="text-lg font-semibold text-gray-900 mb-4">Demandes en attente</h2>
+
+        {% if pendingReservations|length > 0 %}
+            <div class="space-y-4">
+                {% for reservation in pendingReservations %}
+                    {% set property = reservation.property %}
+                    {% set guest = reservation.guest %}
+                    {% set guestProfile = guest ? guest.profile : null %}
+                    {% set guestName = guestProfile and (guestProfile.firstName or guestProfile.lastName) ? (guestProfile.firstName ~ ' ' ~ guestProfile.lastName)|trim : guest.email %}
+                    <div class="border border-yellow-200 bg-yellow-50 rounded-xl p-6">
+                        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                            <div>
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-yellow-100 text-yellow-800">En attente</span>
+                                    <span class="text-xs text-gray-400">depuis {{ reservation.createdAt|date('d/m/Y à H:i') }}</span>
+                                </div>
+                                <h2 class="font-semibold text-gray-900">{{ property.title }}</h2>
+                                <p class="text-sm text-gray-600">Voyageur : <strong>{{ guestName }}</strong> ({{ guest.email }})</p>
+                                <p class="text-sm text-gray-600 mt-1">
+                                    {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                                    · {{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' }}
+                                </p>
+                                <p class="text-sm font-semibold text-gray-900 mt-1">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</p>
+                            </div>
+                            <div class="flex flex-col gap-2 shrink-0">
+                                <form method="POST" action="{{ path('app_host_reservation_confirm', { id: reservation.id }) }}" class="inline">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('confirm_reservation_' ~ reservation.id) }}">
+                                    <button type="submit" class="w-full px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition">
+                                        ✓ Accepter
+                                    </button>
+                                </form>
+                                <div x-data="{ open: false }">
+                                    <button @click="open = !open" type="button" class="w-full px-4 py-2 bg-red-50 border border-red-200 text-red-700 text-sm font-semibold rounded-lg hover:bg-red-100 transition">
+                                        ✗ Refuser
+                                    </button>
+                                    <div x-show="open" x-cloak class="mt-2">
+                                        <form method="POST" action="{{ path('app_host_reservation_refuse', { id: reservation.id }) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('refuse_reservation_' ~ reservation.id) }}">
+                                            <textarea name="reason" rows="2" placeholder="Motif du refus (obligatoire)" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" required></textarea>
+                                            <button type="submit" class="mt-1 w-full px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition">
+                                                Confirmer le refus
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-16 border border-dashed border-gray-200 rounded-xl">
+                <p class="text-gray-500">Aucune demande en attente.</p>
+            </div>
+        {% endif %}
+    </main>
+{% endblock %}

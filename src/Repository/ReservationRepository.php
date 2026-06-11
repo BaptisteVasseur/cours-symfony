@@ -92,4 +92,152 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function countConfirmedConflicts(
+        \App\Entity\Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+        ?Reservation $exclude = null,
+    ): int {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+
+        if ($exclude !== null) {
+            $qb->andWhere('r != :exclude')->setParameter('exclude', $exclude);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedForProperty(\App\Entity\Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkoutDate >= :today')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('today', new \DateTimeImmutable('today'))
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedUpcomingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkoutDate > :today')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('today', new \DateTimeImmutable('today'))
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedPassedForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkoutDate <= :today')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('today', new \DateTimeImmutable('today'))
+            ->orderBy('r.checkoutDate', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findCheckinTomorrow(): array
+    {
+        $tomorrow = new \DateTimeImmutable('tomorrow');
+
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'a', 'g', 'gp', 'host', 'hostProfile')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate = :tomorrow')
+            ->setParameter('status', 'confirmed')
+            ->setParameter('tomorrow', $tomorrow)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findExpiredPending(): array
+    {
+        $limit = new \DateTimeImmutable('-24 hours');
+
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.createdAt <= :limit')
+            ->setParameter('status', 'pending')
+            ->setParameter('limit', $limit)
+            ->getQuery()
+            ->getResult();
+    }
 }
+

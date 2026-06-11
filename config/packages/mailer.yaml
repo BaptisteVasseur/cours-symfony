@@ -1,3 +1,7 @@
 framework:
     mailer:
         dsn: '%env(MAILER_DSN)%'
+        envelope:
+            sender: 'noreply@airbnb-clone.fr'
+        headers:
+            From: 'Airbnb Clone <noreply@airbnb-clone.fr>'
