@@ -1,0 +1,201 @@
+Cahier des charges fonctionnel — Moteur de réservation et gestion des disponibilités
+=============================================================================
+
+Objectif
+--------
+Fournir un moteur de réservation robuste pour les `Property` du projet :
+- gérer les disponibilités (calendriers, blackout, règles périodiques),
+- permettre la réservation (validation, paiement, état),
+- préserver l'intégrité en cas de concurrence (double-booking),
+- exposer une API claire pour le frontend et l'administration,
+- offrir notifications et webhooks pour intégrations externes.
+
+Principes généraux
+-------------------
+- Sécurité : pas de fuite d'informations privées; validations serveur obligatoires.
+- Atomicité : opérations liées à la réservation (vérif dispo, création, paiement) doivent être atomiques ou compensées.
+- Idempotence : endpoints critiques (webhooks, création) idempotents.
+- Tests : couverture PHPUnit pour logique métier et intégration.
+
+Cas d'usage (flux principaux)
+-----------------------------
+1. Recherche d'un logement → affichage calendrier disponible (front).
+2. Hôte marque des dates indisponibles / bloque des plages.
+3. Voyageur initie une réservation : sélection dates, nombre d'invités, extras.
+4. Validation côté serveur : disponibilité, règles (min/max nights), prix.
+5. Création d'une réservation en statut `pending`.
+6. Réservation acceptée par l'hôte → réservation `confirmed`.
+7. Annulation selon politique d'annulation (mise à jour d'état).
+8. Expiration automatique des `pending` après TTL (libération des dates).
+
+Cas d'usage annexes
+-------------------
+- Modification par l'hôte (bloquer / débloquer dates, accepter/refuser demandes si mode request-to-book).
+- Surbooking detection et résolution (priorité: première réservation confirmée).
+- Export calendrier (iCal) et synchronisation (import iCal pour hôtes externes).
+
+Concepts et définitions
+------------------------
+- Slot / Plage de disponibilité : intervalle [start,end) sur une `Property`.
+- Blockout : plage explicitement indisponible (propriétaire/admin).
+- Reservation : entité représentant une demande/contrat entre voyageur et hôte.
+- Période tampon (turnover) : jours requis entre réservations (check-out → check-in).
+
+Règles de disponibilité
+----------------------
+- Disponibilité globale = calendrier maître de la propriété moins les `Blockout` et `Reservation` confirmées.
+- Règles configurables par propriété : `min_nights`, `max_nights`, `advance_book_days`, `allow_same_day_booking`, `turnover_days`.
+- Overlap interdit pour réservations confirmées.
+- `pending` bloque temporairement (soft lock) pour une durée TTL configurable (ex: 15 minutes).
+
+- Modèle de données (schéma conceptuel)
+- ------------------------------------
+- Entités principales (noms suggérés)
+- `Property` (existant) — référence principale.
+- `Reservation`
+	- id, property_id, user_id, start_date, end_date, guests,
+	- status ENUM {pending, confirmed, cancelled, completed, expired},
+	- created_at, updated_at, expires_at
+- `AvailabilityWindow` (optionnel) — séries récurrentes de disponibilité ou saisons (start,end, price_rule_id)
+- `Blockout` — id, property_id, start_date, end_date, reason, created_by
+- `PriceRule` / `Pricing` — règles de prix par saison, weekend, extras
+- `ReservationItem` (optionnel) — lignes de facturation (nuitée, frais nettoyage, extra)
+- `CancellationPolicy` — liée à propriété (type, conditions)
+
+Remarques DB
+- Indexes : `property_id(start_date,end_date)`, `status`, `expires_at`.
+
+Cycle de vie d'une réservation
+-----------------------------
+Définitions métier — statuts obligatoires :
+- `pending` : demande envoyée par le voyageur ; en attente d'action de l'hôte ou d'expiration.
+- `confirmed` : réservation acceptée et dates verrouillées pour la `Property`.
+- `cancelled` : annulation par voyageur, hôte, ou système (ex: expiration).
+- `completed` : séjour terminé (date actuelle > end_date).
+
+Règles de transition :
+- Création initiale → `pending` par défaut.
+- Si `Property.instantBooking == true` ET `AvailabilityService::isAvailable(...) == true` alors la création passe automatiquement en `confirmed` (auto-accept).
+- `pending` → `confirmed` : action de l'hôte (accept) ou auto-confirm si `instantBooking`.
+- `pending` → `cancelled` : rejet par l'hôte ou expiration TTL du `pending`.
+- `confirmed` → `cancelled` : annulation selon politique d'annulation (host ou traveller).
+- `confirmed` → `completed` : processus automatique après la date `end_date`.
+
+Verrouillage des dates :
+- Seules les réservations en statut `confirmed` doivent verrouiller définitivement les dates dans le calendrier.
+- Les `pending` appliquent un soft-lock (TTL) pour améliorer l'expérience utilisateur mais ne constituent pas une garantie stricte sans validation finale.
+
+Comportement de création côté API (`POST /api/properties/{id}/reservations`) :
+1. Vérifier `AvailabilityService::isAvailable(property, start, end)` dans une transaction ou avec un lock approprié.
+2. Créer la `Reservation` en `pending` et enregistrer `expires_at = now() + TTL`.
+3. Si `instantBooking` et toujours disponible, promouvoir la réservation en `confirmed` (dans la même transaction si possible) et générer les `Blockout`/marquages nécessaires.
+
+Operations idempotentes :
+- Les actions `accept`, `reject`, et les transitions doivent être idempotentes et valider l'état courant avant d'effectuer une transition.
+
+Audit et traçabilité
+--------------------
+- Conserver un historique des transitions (ex: `ReservationHistory` ou `AuditLog`) avec : reservation_id, from_status, to_status, actor_id, reason, metadata, created_at.
+
+- Utiliser `Date` (sans heure) pour plages en jour-intégral ou `DateTimeImmutable` si heures requises.
+- Indexes : `property_id(start_date,end_date)`, `status`, `expires_at`.
+
+API — Endpoints principaux (suggestion)
+-------------------------------------
+GET /api/properties/{id}/calendar?from=YYYY-MM-DD&to=YYYY-MM-DD
+	- Renvoie plages occupées, blockouts, règles principalières et prix par jour.
+
+POST /api/properties/{id}/reservations
+	- Payload : start_date, end_date, guests, extras, idempotency_key
+	- Retour : `Reservation` (status pending ou confirmed selon mode).
+
+GET /api/reservations/{id}
+	- Détails d'une réservation.
+
+PUT /api/properties/{id}/blockouts
+	- CRUD des blockouts (auth hôte/admin).
+
+Business rules côté API
+-----------------------
+- Vérifier disponibilité atomiquement avant création finale (see Concurrency).
+- Refuser si violation `min_nights`/`max_nights`/`advance_book_days`/`turnover_days`.
+- Autoriser création `pending` si disponibilités présentes.
+
+Concurrence et intégrité (prévenir double-booking)
+-------------------------------------------------
+Approches proposées :
+- Pessimistic locking (recommandé pour simplicité) : dans transaction DB, sélectionner rangées pertinentes avec `FOR UPDATE` (ou équivalent Doctrine pessimistic lock) lors de la vérification et création.
+- Optimistic approach : vérifier disponibilité et reconfimer avant commit; en cas de conflit, rejeter et demander retry.
+- Soft-lock `pending` avec TTL : empêche court laps de temps d'être réservé par d'autres, mais nécessite revalidation stricte avant confirmation.
+
+TTL et expiration
+-----------------
+- `pending` expire après configurable (ex: 15 minutes) ; un job cron/worker purge et passe au statut `expired` libérant les dates.
+
+Webhooks et background jobs
+---------------------------
+- Worker `reservation:expire` → nettoie `pending` expirées.
+- Worker `reservation:reminders` → envoie rappels avant arrivée.
+
+iCal / ICS — import & export
+---------------------------
+- Objectif : permettre aux hôtes d'importer des calendriers externes (Airbnb, Booking.com, etc.) et d'exporter le calendrier de la `Property` au format ICS pour synchronisation.
+- Endpoints suggérés :
+	- GET /api/properties/{id}/calendar.ics — export ICS (VEVENT pour chaque réservation confirmée et blockout). UID : `reservation-{id}@yourhost` ou `blockout-{id}@yourhost`.
+	- POST /api/properties/{id}/calendar/import — payload : `{ "ical_url": "https://.../calendar.ics", "source": "airbnb", "sync": true }` ou upload direct du fichier.
+
+- Comportement d'import :
+	- Parser chaque `VEVENT` et convertir en `Blockout` (ou en `ExternalCalendarEntry`) si le VEVENT représente une réservation externe.
+	- Stocker `external_uid` (UID VEVENT) pour permettre des synchronisations incrémentales et éviter les doublons.
+	- Lors de sync régulière (cron/worker), mettre à jour/ajouter/supprimer les blockouts en fonction des changements détectés.
+
+- Stratégie : importer les calendriers externes comme blocages de disponibilité (blockouts) — ne pas créer de `Reservation` locale automatiquement sauf cas spécifique.
+
+- Gestion des conflits : les blockouts importés ont priorité d'hôte externe, mais une politique de priorité configurable doit exister (ex : priorité locale > externe ou inverse).
+
+- Librairies PHP recommandées : `eluceo/ical` (génération ICS) et `sabre/vobject` (parsing ICS) — ajouter via Composer.
+
+- Tâche de synchronisation : `reservation:sync-ical` — job qui parcourt les calendars externes configurés pour chaque `Property`, récupère l'ICS, le parse et applique les diff (insert/update/delete) atomiquement.
+
+- Tests : fixtures ICS pour cas de VEVENT modifié, supprimé, timezone differences et recurring events (RRULE).
+
+
+Interface hôte / admin
+----------------------
+- Calendrier visuel (calendrier par propriété) : afficher réservations, blockouts, demandes en attente.
+- Actions : bloquer/débloquer dates, forcer annulation, exporter iCal.
+
+Tests et critères d'acceptation
+-------------------------------
+- Tests unitaires : logique de calcul de disponibilité, règles `min/max nights`, turnover.
+- Tests d'intégration : création de réservation complète, expiration TTL, transitions d'état.
+- Tests E2E (optionnel) : parcours frontend réservation.
+- Critères d'acceptation min :
+	- Création d'une réservation confirmée bloque les dates correspondantes.
+	- Deux utilisateurs ne peuvent pas obtenir une confirmation simultanée pour les mêmes dates.
+	- `pending` expirent et libèrent les dates.
+
+Sécurité et conformité
+---------------------
+- Aucun secret dans le repo ; utiliser variables d'environnement et `dotenv`.
+- Conserver logs d'événements pour audits.
+
+Roadmap immédiate (prochaine action technique)
+--------------------------------------------
+1. Implémenter les entités DB suivantes et créer migrations : `Reservation`, `Blockout`, `PriceRule` (starter).
+2. Ajouter fixtures de test pour scénarios courants (reservation overlapping, blockouts).
+3. Implémenter service `AvailabilityService` (méthodes : `isAvailable(property, start, end)`, `getCalendar(property, from, to)`).
+4. Implémenter endpoint `POST /api/properties/{id}/reservations` avec verrouillage pessimiste et création `pending`.
+
+Acceptation et livraison
+------------------------
+Livrable initial (MVP) :
+- Entities + migrations + fixtures
+- Service de disponibilité testé
+- Endpoint création de réservation + worker d'expiration
+- Documentation courte dans `conception.txt` et spéc API
+
+Suivi
+-----
+Après validation de ce cahier des charges, je passe à la conception détaillée du modèle de données et j'implémente les entités initiales.
+
