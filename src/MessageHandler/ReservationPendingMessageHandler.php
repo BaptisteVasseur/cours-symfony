@@ -25,9 +25,13 @@ final class ReservationPendingMessageHandler
             return;
         }
 
-        $host     = $reservation->getProperty()->getHost();
-        $guest    = $reservation->getGuest();
         $property = $reservation->getProperty();
+        $host     = $property->getHost();
+        $guest    = $reservation->getGuest();
+
+        if ($host === null) {
+            return;
+        }
 
         $email = (new Email())
             ->from('noreply@airbnb-clone.local')

@@ -25,9 +25,13 @@ final class ReservationConfirmedMessageHandler
             return;
         }
 
-        $host     = $reservation->getProperty()->getHost();
-        $guest    = $reservation->getGuest();
         $property = $reservation->getProperty();
+        $host     = $property->getHost();
+        $guest    = $reservation->getGuest();
+
+        if ($host === null) {
+            return;
+        }
 
         $body = sprintf(
             '<h2>Réservation confirmée !</h2>

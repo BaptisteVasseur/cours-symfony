@@ -64,7 +64,8 @@ final class HostReservationController extends AbstractController
         $history->setReservation($reservation);
         $history->setOldStatus('pending');
         $history->setNewStatus('confirmed');
-        $history->setChangedBy($this->getUser());
+        $changer = $this->getUser();
+        $history->setChangedBy($changer instanceof User ? $changer : null);
 
         $entityManager->persist($history);
         $entityManager->flush();
@@ -102,7 +103,8 @@ final class HostReservationController extends AbstractController
             $history->setReservation($reservation);
             $history->setOldStatus('pending');
             $history->setNewStatus('rejected');
-            $history->setChangedBy($this->getUser());
+            $changer = $this->getUser();
+        $history->setChangedBy($changer instanceof User ? $changer : null);
 
             $entityManager->persist($history);
             $entityManager->flush();
@@ -151,7 +153,8 @@ final class HostReservationController extends AbstractController
             $history->setReservation($reservation);
             $history->setOldStatus($oldStatus);
             $history->setNewStatus('cancelled');
-            $history->setChangedBy($this->getUser());
+            $changer = $this->getUser();
+        $history->setChangedBy($changer instanceof User ? $changer : null);
 
             $entityManager->persist($history);
             $entityManager->flush();

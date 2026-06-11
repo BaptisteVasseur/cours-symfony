@@ -149,25 +149,4 @@ class ReservationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    /**
-     * @return array<int, array{checkin: string, checkout: string}>
-     */
-    public function findBookedRanges(string $propertyId): array
-    {
-        $rows = $this->createQueryBuilder('r')
-            ->select('r.checkinDate', 'r.checkoutDate')
-            ->where('IDENTITY(r.property) = :propertyId')
-            ->andWhere('r.status NOT IN (:excluded)')
-            ->andWhere('r.checkoutDate >= :today')
-            ->setParameter('propertyId', $propertyId)
-            ->setParameter('excluded', ['cancelled', 'rejected'])
-            ->setParameter('today', new \DateTimeImmutable('today'))
-            ->getQuery()
-            ->getResult();
-
-        return array_map(fn($row) => [
-            'checkin'  => $row['checkinDate']->format('Y-m-d'),
-            'checkout' => $row['checkoutDate']->format('Y-m-d'),
-        ], $rows);
-    }
 }
