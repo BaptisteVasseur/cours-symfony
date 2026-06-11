@@ -29,6 +29,26 @@ Ce projet est une implémentation avancée d'un système de réservation pour un
 | **Admin** | `/admin` | Interface d'administration globale. |
 | **Technique** | `http://localhost:8025` | Interface Mailpit pour voir les emails envoyés. |
 
+## 👥 Comptes de Test
+
+Tous les comptes utilisent le mot de passe : `password`
+
+| Rôle | Email | Scénario à tester |
+|:---|:---|:---|
+| **Super Admin** | `admin@airbnb-clone.fr` | Gestion globale sur `/admin` |
+| **Hôte (Host)** | `jeanmarc.dupont@email.com` | Accepter/Refuser sur `/host/reservations` |
+| **Voyageur (Guest)** | `sophie.chen@email.com` | Faire une demande de réservation. |
+| **Voyageur (Guest 2)** | `lucas.bernard@email.com` | Tester le blocage (overbooking). |
+
+## ✨ Expérience Utilisateur (UX) & Design
+
+Le projet a été enrichi avec une attention particulière portée au design :
+*   **Interface Hôte Premium** : Dashboard conçu avec TailwindCSS (Cards, Glassmorphism, animations au survol).
+*   **Navigation Intuitive** : Ajout d'un bouton "Mode Hôte" dynamique dans le header pour basculer facilement.
+*   **Feedback Visuel** : Gestion des messages d'erreur et de succès via des notifications "Flash" animées et compatibles avec Turbo.
+*   **Emails Stylisés** : Les notifications ne sont plus en texte brut mais utilisent un template responsive aux couleurs de la marque.
+*   **Optimisation Turbo** : Intégration des codes HTTP 422 pour une fluidité parfaite du tunnel de réservation sans rechargement de page complet.
+
 ## 🛠️ Installation & Lancement
 
 1.  **Lancer l'environnement** : `make start`
