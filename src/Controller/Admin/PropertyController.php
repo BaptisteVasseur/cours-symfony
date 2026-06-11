@@ -14,7 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
-#[Route('/property')]
+#[Route('/admin/property')]
 #[IsGranted('ROLE_ADMIN')]
 final class PropertyController extends AbstractController
 {

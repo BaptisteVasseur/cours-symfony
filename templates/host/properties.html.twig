@@ -1,0 +1,87 @@
+{% extends 'layouts/user.html.twig' %}
+
+{% block title %}Mes logements{% endblock %}
+
+{% block content %}
+    <main class="mx-auto max-w-6xl px-6 py-10">
+        <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold text-rose-500">Espace hôte</p>
+                <h1 class="text-3xl font-bold text-neutral-900">
+                    Mes logements
+                </h1>
+                <p class="mt-2 text-neutral-500">
+                    Retrouvez vos logements et accédez rapidement à leur calendrier.
+                </p>
+            </div>
+
+            <a href="{{ path('app_home') }}"
+               class="rounded-full border border-neutral-300 px-5 py-2 text-sm font-semibold hover:bg-neutral-100">
+                Retour à l'accueil
+            </a>
+        </div>
+
+        {% if properties is empty %}
+            <section class="rounded-3xl border border-neutral-200 bg-white p-10 text-center shadow-sm">
+                <h2 class="text-xl font-bold text-neutral-900">
+                    Aucun logement trouvé
+                </h2>
+                <p class="mt-2 text-neutral-500">
+                    Vous n'avez pas encore de logement associé à votre compte.
+                </p>
+            </section>
+        {% else %}
+            <section class="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {% for property in properties %}
+                    {% set cover = property.coverMedia %}
+
+                    <article class="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm">
+                        <div class="h-52 bg-neutral-100">
+                            <img
+                                src="{{ cover ? cover.fileUrl : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' }}"
+                                alt="{{ property.title }}"
+                                class="h-full w-full object-cover"
+                            >
+                        </div>
+
+                        <div class="p-5">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <h2 class="text-lg font-bold text-neutral-900">
+                                        {{ property.title }}
+                                    </h2>
+
+                                    <p class="mt-1 text-sm text-neutral-500">
+                                        {{ property.propertyType|capitalize }} · {{ property.maxGuests }} voyageur{{ property.maxGuests > 1 ? 's' : '' }}
+                                    </p>
+                                </div>
+
+                                <span class="rounded-full px-3 py-1 text-xs font-semibold
+                                    {{ property.status == 'published' ? 'bg-green-50 text-green-700' : 'bg-neutral-100 text-neutral-600' }}">
+                                    {{ property.status }}
+                                </span>
+                            </div>
+
+                            <div class="mt-4 text-sm text-neutral-600">
+                                <p>
+                                    {{ property.pricePerNight }} € / nuit
+                                </p>
+                            </div>
+
+                            <div class="mt-5 flex flex-col gap-3">
+                                <a href="{{ path('app_host_property_calendar', { id: property.id }) }}"
+                                   class="rounded-full bg-rose-500 px-5 py-3 text-center text-sm font-bold text-white hover:bg-rose-600">
+                                    Voir le calendrier
+                                </a>
+                                <a href="{{ path('app_property_detail', { id: property.id }) }}"
+                                   class="rounded-full border border-neutral-300 px-5 py-3 text-center text-sm font-semibold text-neutral-800 hover:bg-neutral-100">
+                                    Voir la fiche
+                                </a>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </section>
+        {% endif %}
+    </main>
+{% endblock %}
