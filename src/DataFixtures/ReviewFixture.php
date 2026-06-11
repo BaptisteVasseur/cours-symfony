@@ -8,6 +8,7 @@ use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\Review;
+use App\Enum\BookingStatus;
 use App\Entity\ReviewMedia;
 use App\Entity\ReviewReport;
 use App\Entity\User;
@@ -148,9 +149,9 @@ class ReviewFixture extends Fixture implements DependentFixtureInterface
 
                 $history = new ReservationStatusHistory();
                 $history->setReservation($reservation);
-                $history->setOldStatus(null);
-                $history->setNewStatus('completed');
-                $history->setChangedBy($admin);
+                $history->setFromStatus(null);
+                $history->setToStatus(BookingStatus::COMPLETED);
+                $history->setActor('system');
                 $manager->persist($history);
 
                 $review = $this->createGuestReview($reservation, $guest, $host, $property, 'completed');

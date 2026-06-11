@@ -230,9 +230,22 @@ final class BookingService
     {
         $history = new ReservationStatusHistory();
         $history->setReservation($reservation);
-        $history->setOldStatus($oldStatus?->value);
-        $history->setNewStatus($newStatus->value);
-        $history->setChangedBy($actor);
+        $history->setFromStatus($oldStatus);
+        $history->setToStatus($newStatus);
+
+        $actorStr = 'system';
+        if ($actor !== null) {
+            if ($reservation->getGuest() !== null && $actor->getId() === $reservation->getGuest()->getId()) {
+                $actorStr = 'guest';
+            } elseif ($reservation->getHost() !== null && $actor->getId() === $reservation->getHost()->getId()) {
+                $actorStr = 'host';
+            }
+        }
+        $history->setActor($actorStr);
+
+        if ($newStatus === BookingStatus::CANCELLED) {
+            $history->setReason($reservation->getCancellationReason());
+        }
 
         $this->entityManager->persist($history);
     }

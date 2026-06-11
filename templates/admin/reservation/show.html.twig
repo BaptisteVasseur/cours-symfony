@@ -149,12 +149,21 @@
                             <div class="flex items-center justify-between text-sm border-b border-gray-100 pb-3 last:border-0 last:pb-0">
                                 <div>
                                     <span class="font-medium text-gray-900">
-                                        {{ history.oldStatus ? statusLabels[history.oldStatus]|default(history.oldStatus) ~ ' → ' : '' }}
-                                        {{ statusLabels[history.newStatus]|default(history.newStatus) }}
+                                        {{ history.fromStatus ? statusLabels[history.fromStatus.value]|default(history.fromStatus.value) ~ ' → ' : '' }}
+                                        {{ statusLabels[history.toStatus.value]|default(history.toStatus.value) }}
                                     </span>
-                                    {% if history.changedBy %}
-                                        <p class="text-xs text-gray-400 mt-0.5">Par {{ history.changedBy.email }}</p>
-                                    {% endif %}
+                                    <p class="text-xs text-gray-400 mt-0.5">
+                                        {% if history.actor == 'guest' %}
+                                            Par le voyageur
+                                        {% elseif history.actor == 'host' %}
+                                            Par l'hôte
+                                        {% elseif history.actor == 'system' %}
+                                            Par le système
+                                        {% endif %}
+                                        {% if history.reason %}
+                                            — Motif : {{ history.reason }}
+                                        {% endif %}
+                                    </p>
                                 </div>
                                 <span class="text-xs text-gray-400">{{ history.createdAt|date('d/m/Y H:i') }}</span>
                             </div>

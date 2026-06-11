@@ -124,26 +124,25 @@
                                             <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
                                         {% endif %}
                                         <div class="relative flex space-x-3">
-                                            <div>
-                                                <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white
-                                                    {% if history.newStatus == 'pending' %}
+                                                                                    <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white
+                                                    {% if history.toStatus.value == 'pending' %}
                                                         bg-yellow-50 text-yellow-600 ring-yellow-50
-                                                    {% elseif history.newStatus == 'confirmed' %}
+                                                    {% elseif history.toStatus.value == 'confirmed' %}
                                                         bg-green-50 text-green-600 ring-green-50
-                                                    {% elseif history.newStatus == 'completed' %}
+                                                    {% elseif history.toStatus.value == 'completed' %}
                                                         bg-blue-50 text-blue-600 ring-blue-50
-                                                    {% elseif history.newStatus == 'cancelled' %}
+                                                    {% elseif history.toStatus.value == 'cancelled' %}
                                                         bg-red-50 text-red-600 ring-red-50
                                                     {% else %}
                                                         bg-gray-50 text-gray-600 ring-gray-50
                                                     {% endif %}">
-                                                    {% if history.newStatus == 'pending' %}
+                                                    {% if history.toStatus.value == 'pending' %}
                                                         <i class="fa-solid fa-paper-plane text-xs"></i>
-                                                    {% elseif history.newStatus == 'confirmed' %}
+                                                    {% elseif history.toStatus.value == 'confirmed' %}
                                                         <i class="fa-solid fa-check text-xs"></i>
-                                                    {% elseif history.newStatus == 'completed' %}
+                                                    {% elseif history.toStatus.value == 'completed' %}
                                                         <i class="fa-solid fa-flag-checkered text-xs"></i>
-                                                    {% elseif history.newStatus == 'cancelled' %}
+                                                    {% elseif history.toStatus.value == 'cancelled' %}
                                                         <i class="fa-solid fa-xmark text-xs"></i>
                                                     {% else %}
                                                         <i class="fa-solid fa-circle text-[6px]"></i>
@@ -153,48 +152,50 @@
                                             <div class="flex-1 min-w-0 pt-1.5 flex justify-between space-x-4">
                                                 <div>
                                                     <p class="text-sm font-semibold text-gray-900">
-                                                        {% if history.newStatus == 'pending' %}
+                                                        {% if history.toStatus.value == 'pending' %}
                                                             Demande de réservation envoyée
-                                                        {% elseif history.newStatus == 'confirmed' %}
+                                                        {% elseif history.toStatus.value == 'confirmed' %}
                                                             Réservation confirmée par l'hôte
-                                                        {% elseif history.newStatus == 'completed' %}
+                                                        {% elseif history.toStatus.value == 'completed' %}
                                                             Séjour terminé
-                                                        {% elseif history.newStatus == 'cancelled' %}
-                                                            {% if history.oldStatus == 'pending' %}
-                                                                {% if history.changedBy %}
-                                                                    {% if history.changedBy.id == reservation.guest.id %}
-                                                                        Demande de réservation annulée par le voyageur
-                                                                    {% else %}
-                                                                        Demande de réservation refusée par l'hôte
-                                                                    {% endif %}
+                                                        {% elseif history.toStatus.value == 'cancelled' %}
+                                                            {% if history.fromStatus and history.fromStatus.value == 'pending' %}
+                                                                {% if history.actor == 'guest' %}
+                                                                    Demande de réservation annulée par le voyageur
+                                                                {% elseif history.actor == 'host' %}
+                                                                    Demande de réservation refusée par l'hôte
                                                                 {% else %}
                                                                     Demande expirée (non traitée sous 24h)
                                                                 {% endif %}
                                                             {% else %}
-                                                                {% if history.changedBy %}
-                                                                    {% if history.changedBy.id == reservation.guest.id %}
-                                                                        Réservation annulée par le voyageur
-                                                                    {% else %}
-                                                                        Réservation annulée par l'hôte
-                                                                    {% endif %}
+                                                                {% if history.actor == 'guest' %}
+                                                                    Réservation annulée par le voyageur
+                                                                {% elseif history.actor == 'host' %}
+                                                                    Réservation annulée par l'hôte
                                                                 {% else %}
                                                                     Réservation annulée par le système
                                                                 {% endif %}
                                                             {% endif %}
                                                         {% else %}
-                                                            Statut changé en {{ statusLabels[history.newStatus]|default(history.newStatus) }}
+                                                            Statut changé en {{ statusLabels[history.toStatus.value]|default(history.toStatus.value) }}
                                                         {% endif %}
                                                     </p>
                                                     
-                                                    {% if history.newStatus == 'cancelled' and reservation.cancellationReason %}
+                                                    {% if history.toStatus.value == 'cancelled' and history.reason %}
                                                         <div class="mt-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg p-2.5 max-w-md">
-                                                            <span class="font-semibold">Motif :</span> {{ reservation.cancellationReason }}
+                                                            <span class="font-semibold">Motif :</span> {{ history.reason }}
                                                         </div>
                                                     {% endif %}
-
+ 
                                                     <p class="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
-                                                        {% if history.changedBy %}
-                                                            <span>Par {{ history.changedBy.profile.firstName|default(history.changedBy.email) }}</span>
+                                                        {% if history.actor == 'guest' %}
+                                                            <span>Par le voyageur</span>
+                                                            <span class="text-gray-300">•</span>
+                                                        {% elseif history.actor == 'host' %}
+                                                            <span>Par l'hôte</span>
+                                                            <span class="text-gray-300">•</span>
+                                                        {% elseif history.actor == 'system' %}
+                                                            <span>Par le système</span>
                                                             <span class="text-gray-300">•</span>
                                                         {% endif %}
                                                         <span>{{ history.createdAt|date('d/m/Y à H:i') }}</span>

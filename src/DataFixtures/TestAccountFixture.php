@@ -25,6 +25,7 @@ use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Entity\UserProfile;
+use App\Enum\BookingStatus;
 use App\Security\Roles;
 use Doctrine\Bundle\FixturesBundle\Fixture;
 use Doctrine\Common\DataFixtures\DependentFixtureInterface;
@@ -401,17 +402,26 @@ class TestAccountFixture extends Fixture implements DependentFixtureInterface
 
         $history = new ReservationStatusHistory();
         $history->setReservation($reservation);
-        $history->setOldStatus(null);
-        $history->setNewStatus('pending');
-        $history->setChangedBy($guest);
+        $history->setFromStatus(null);
+        $history->setToStatus(BookingStatus::PENDING);
+        $history->setActor('guest');
         $manager->persist($history);
 
         if ($status !== 'pending') {
             $confirmed = new ReservationStatusHistory();
             $confirmed->setReservation($reservation);
-            $confirmed->setOldStatus('pending');
-            $confirmed->setNewStatus($status);
-            $confirmed->setChangedBy($changedBy);
+            $confirmed->setFromStatus(BookingStatus::PENDING);
+            $confirmed->setToStatus(BookingStatus::from($status));
+            
+            $actorStr = 'system';
+            if ($changedBy !== null) {
+                if ($reservation->getGuest() !== null && $changedBy->getId() === $reservation->getGuest()->getId()) {
+                    $actorStr = 'guest';
+                } elseif ($reservation->getHost() !== null && $changedBy->getId() === $reservation->getHost()->getId()) {
+                    $actorStr = 'host';
+                }
+            }
+            $confirmed->setActor($actorStr);
             $manager->persist($confirmed);
         }
 

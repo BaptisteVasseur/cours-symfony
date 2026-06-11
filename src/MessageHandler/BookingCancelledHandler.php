@@ -35,10 +35,10 @@ final readonly class BookingCancelledHandler
         $host = $property?->getHost();
 
         // Determine who cancelled
-        $actor = null;
+        $actorStr = null;
         foreach ($reservation->getStatusHistory() as $history) {
-            if ($history->getNewStatus() === BookingStatus::CANCELLED->value) {
-                $actor = $history->getChangedBy();
+            if ($history->getToStatus() === BookingStatus::CANCELLED) {
+                $actorStr = $history->getActor();
             }
         }
 
@@ -46,8 +46,8 @@ final readonly class BookingCancelledHandler
 
         if ($property !== null) {
             // If the actor is the guest, notify the host
-            if ($actor !== null && $guest !== null && $actor->getId() === $guest->getId()) {
-                if ($host !== null) {
+            if ($actorStr === 'guest') {
+                if ($host !== null && $guest !== null) {
                     $guestName = $guest->getProfile()?->getFirstName() ?? 'Le voyageur';
                     $title = 'Réservation annulée par le voyageur';
                     $body = sprintf('%s a annulé sa réservation pour "%s". Motif : %s', $guestName, $property->getTitle(), $reason);
@@ -55,7 +55,7 @@ final readonly class BookingCancelledHandler
                 }
             } 
             // If the actor is the host, notify the guest
-            elseif ($actor !== null && $host !== null && $actor->getId() === $host->getId()) {
+            elseif ($actorStr === 'host') {
                 if ($guest !== null) {
                     $title = 'Réservation annulée par l\'hôte';
                     $body = sprintf('L\'hôte a annulé votre réservation pour "%s". Motif : %s', $property->getTitle(), $reason);

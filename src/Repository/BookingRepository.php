@@ -103,7 +103,7 @@ class BookingRepository extends ServiceEntityRepository
     public function findOneForDetail(Reservation $reservation): ?Reservation
     {
         return $this->createQueryBuilder('r')
-            ->addSelect('p', 'm', 'a', 'g', 'gp', 'host', 'hostProfile', 'h', 'changedBy', 'pay', 'ref', 'inv', 'payo', 'disp', 'openedBy', 'payer')
+            ->addSelect('p', 'm', 'a', 'g', 'gp', 'host', 'hostProfile', 'h', 'pay', 'ref', 'inv', 'payo', 'disp', 'openedBy', 'payer')
             ->leftJoin('r.property', 'p')
             ->leftJoin('p.media', 'm')
             ->leftJoin('p.address', 'a')
@@ -112,7 +112,6 @@ class BookingRepository extends ServiceEntityRepository
             ->leftJoin('p.host', 'host')
             ->leftJoin('host.profile', 'hostProfile')
             ->leftJoin('r.statusHistory', 'h')
-            ->leftJoin('h.changedBy', 'changedBy')
             ->leftJoin('r.payments', 'pay')
             ->leftJoin('pay.refunds', 'ref')
             ->leftJoin('pay.payer', 'payer')

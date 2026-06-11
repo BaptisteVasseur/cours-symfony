@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Entity;
 
 use App\Entity\Trait\UuidEntityTrait;
+use App\Enum\BookingStatus;
 use App\Repository\ReservationStatusHistoryRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -16,18 +17,21 @@ class ReservationStatusHistory
     use UuidEntityTrait;
 
     #[ORM\ManyToOne(inversedBy: 'statusHistory')]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?Reservation $reservation = null;
 
-    #[ORM\Column(length: 50, nullable: true)]
-    private ?string $oldStatus = null;
+    #[ORM\Column(enumType: BookingStatus::class, nullable: true)]
+    private ?BookingStatus $fromStatus = null;
 
-    #[ORM\Column(length: 50)]
-    private ?string $newStatus = null;
+    #[ORM\Column(enumType: BookingStatus::class)]
+    private ?BookingStatus $toStatus = null;
 
-    #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: true)]
-    private ?User $changedBy = null;
+    // 'guest' | 'host' | 'system'
+    #[ORM\Column(length: 10, nullable: true)]
+    private ?string $actor = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $reason = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
@@ -49,38 +53,50 @@ class ReservationStatusHistory
         return $this;
     }
 
-    public function getOldStatus(): ?string
+    public function getFromStatus(): ?BookingStatus
     {
-        return $this->oldStatus;
+        return $this->fromStatus;
     }
 
-    public function setOldStatus(?string $oldStatus): static
+    public function setFromStatus(?BookingStatus $fromStatus): static
     {
-        $this->oldStatus = $oldStatus;
+        $this->fromStatus = $fromStatus;
 
         return $this;
     }
 
-    public function getNewStatus(): ?string
+    public function getToStatus(): ?BookingStatus
     {
-        return $this->newStatus;
+        return $this->toStatus;
     }
 
-    public function setNewStatus(string $newStatus): static
+    public function setToStatus(?BookingStatus $toStatus): static
     {
-        $this->newStatus = $newStatus;
+        $this->toStatus = $toStatus;
 
         return $this;
     }
 
-    public function getChangedBy(): ?User
+    public function getActor(): ?string
     {
-        return $this->changedBy;
+        return $this->actor;
     }
 
-    public function setChangedBy(?User $changedBy): static
+    public function setActor(?string $actor): static
     {
-        $this->changedBy = $changedBy;
+        $this->actor = $actor;
+
+        return $this;
+    }
+
+    public function getReason(): ?string
+    {
+        return $this->reason;
+    }
+
+    public function setReason(?string $reason): static
+    {
+        $this->reason = $reason;
 
         return $this;
     }
