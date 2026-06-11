@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Property;
-use App\Entity\Reservation;
 use App\Entity\User;
+use App\Exception\UnavailableDatesException;
 use App\Form\BookingType;
 use App\Repository\PropertyRepository;
+use App\Service\BookingService;
 use App\Service\MailService;
-use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,7 +27,7 @@ final class BookingController extends AbstractController
         Request $request,
         Property $property,
         PropertyRepository $propertyRepository,
-        EntityManagerInterface $entityManager,
+        BookingService $bookingService,
         MailService $mailService,
     ): Response {
         if ($property->getStatus() !== 'published') {
@@ -55,8 +55,10 @@ final class BookingController extends AbstractController
             $checkout = $data['checkoutDate'];
             $guestsCount = (int) $data['guestsCount'];
 
-            if ($checkin >= $checkout) {
-                $this->addFlash('error', 'La date de départ doit être postérieure à la date d\'arrivée.');
+            try {
+                $reservation = $bookingService->create($property, $user, $checkin, $checkout, $guestsCount);
+            } catch (UnavailableDatesException|\LogicException $exception) {
+                $this->addFlash('error', $exception->getMessage());
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
@@ -64,39 +66,9 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            if ($guestsCount > $property->getMaxGuests()) {
-                $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
-
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+            if ($reservation->getStatus() === 'confirmed') {
+                $mailService->sendBookingConfirmationEmail($reservation);
             }
-
-            $nights = (int) $checkin->diff($checkout)->days;
-            $nightlyRate = (float) $property->getPricePerNight();
-            $subtotal = $nightlyRate * $nights;
-            $cleaningFee = (float) ($property->getCleaningFee() ?? 0);
-            $serviceFee = round($subtotal * 0.12, 2);
-            $totalPrice = round($subtotal + $cleaningFee + $serviceFee, 2);
-
-            $reservation = new Reservation();
-            $reservation->setProperty($property);
-            $reservation->setGuest($user);
-            $reservation->setCheckinDate($checkin);
-            $reservation->setCheckoutDate($checkout);
-            $reservation->setGuestsCount($guestsCount);
-            $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
-            $reservation->setTotalPrice((string) $totalPrice);
-            $reservation->setCleaningFee($cleaningFee > 0 ? (string) $cleaningFee : null);
-            $reservation->setServiceFee((string) $serviceFee);
-            $reservation->setSecurityDeposit($property->getSecurityDeposit());
-            $reservation->setCurrency('EUR');
-
-            $entityManager->persist($reservation);
-            $entityManager->flush();
-
-            $mailService->sendBookingConfirmationEmail($reservation);
 
             $this->addFlash('success', 'Votre réservation a été enregistrée.');
 
