@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -91,5 +92,34 @@ class ReservationRepository extends ServiceEntityRepository
             ->orderBy('r.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * @param list<string> $statuses
+     *
+     * @return list<Reservation>
+     */
+    public function findOverlapping(
+        Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+        array $statuses = ['confirmed'],
+        ?Reservation $exclude = null,
+    ): array {
+        $qb = $this->createQueryBuilder('r')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', $statuses)
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+
+        if ($exclude !== null) {
+            $qb->andWhere('r != :exclude')->setParameter('exclude', $exclude);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 }

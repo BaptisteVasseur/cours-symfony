@@ -48,4 +48,7 @@ final class FixtureReferences
     public const RESERVATION_TEST_AS_GUEST_COMPLETED = 'reservation_test_as_guest_completed';
     public const RESERVATION_TEST_ON_LISTING = 'reservation_test_on_listing';
     public const RESERVATION_TEST_ON_LISTING_PENDING = 'reservation_test_on_listing_pending';
+
+    public const UNAVAILABILITY_PROPERTY_2 = 'unavailability_property_2';
+    public const UNAVAILABILITY_PROPERTY_3 = 'unavailability_property_3';
 }

@@ -131,6 +131,9 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -159,6 +162,10 @@ class Property
     #[ORM\OneToMany(targetEntity: PropertyICalSync::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $iCalSyncs;
 
+    /** @var Collection<int, Unavailability> */
+    #[ORM\OneToMany(targetEntity: Unavailability::class, mappedBy: 'property', orphanRemoval: true, cascade: ['persist'])]
+    private Collection $unavailabilities;
+
     /** @var Collection<int, Reservation> */
     #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'property')]
     private Collection $reservations;
@@ -173,6 +180,7 @@ class Property
         $this->media = new ArrayCollection();
         $this->availabilities = new ArrayCollection();
         $this->iCalSyncs = new ArrayCollection();
+        $this->unavailabilities = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
@@ -370,6 +378,18 @@ class Property
         return $this;
     }
 
+    public function getIcalToken(): ?string
+    {
+        return $this->icalToken;
+    }
+
+    public function setIcalToken(?string $icalToken): static
+    {
+        $this->icalToken = $icalToken;
+
+        return $this;
+    }
+
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
@@ -512,6 +532,29 @@ class Property
     public function removeICalSync(PropertyICalSync $iCalSync): static
     {
         $this->iCalSyncs->removeElement($iCalSync);
+
+        return $this;
+    }
+
+    /** @return Collection<int, Unavailability> */
+    public function getUnavailabilities(): Collection
+    {
+        return $this->unavailabilities;
+    }
+
+    public function addUnavailability(Unavailability $unavailability): static
+    {
+        if (!$this->unavailabilities->contains($unavailability)) {
+            $this->unavailabilities->add($unavailability);
+            $unavailability->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUnavailability(Unavailability $unavailability): static
+    {
+        $this->unavailabilities->removeElement($unavailability);
 
         return $this;
     }
