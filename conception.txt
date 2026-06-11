@@ -1,0 +1,206 @@
+Conception — Moteur de réservation & calendrier iCal
+Clone Airbnbb (projet cours-symfony)
+
+Auteur : Fu Danny
+Sujet : module réservation, disponibilités, recherche, mails et iCal.
+
+
+"Property" du sujet = "Listing" du projet
+
+Le sujet parle de "Property" et de "PropertyAvailability". Mais dans le code qui existe déjà,
+le logement s'appelle Listing (avec ListingLocation, ListingPhoto, etc.). Je ne voulais pas
+tout renommer pour coller au sujet, ça aurait cassé l'existant. Donc je garde Listing partout
+et je fais juste la correspondance :
+
+"Property"                     -> Listing
+"PropertyAvailability"         -> une nouvelle entité AvailabilityBlock
+la route /api/properties/{id}  -> Pointe vers un Listing.
+
+Il existe déjà une entité ListingAvailability, mais c'est un modèle
+"par jour". Je ne le modifie pas, je la laisse pour la tarification jour par jour.
+Pour le moteur de réservation, il raisonne en périodes
+(Voir le point n°6).
+
+
+ 1. Le check-out est-il réservable ? (modélisation des dates)
+
+J'ai choisi de modéliser un séjour comme un intervalle semi-ouvert : [checkIn, checkOut[.
+Concrètement le jour de checkIn est la première nuit dormie, et le jour de checkOut n'est pas
+une nuit facturée : c'est le jour où on rend les clés. Donc oui, le jour de check-out est
+réservable par quelqu'un d'autre qui arrive ce jour-là.
+
+C'est la réponse pour les cas du type "départ à 11h / arrivée à 15h le même jour". Pas besoin de gérer les
+heures dans la base : comme la borne de fin est exclue, une réservation qui finit le 15 et une autre
+qui commence le 15 ne se chevauchent pas.
+
+Du coup partout (en SQL comme en PHP) j'utilise la même règle de chevauchement, qui est
+la règle classique pour deux intervalles :
+
+    A.checkIn < B.checkOut  ET  B.checkIn < A.checkOut
+
+Elle est symétrique et elle exclut bien le cas "checkOut == checkIn d'à côté". Je garde aussi
+la contrainte checkOut > checkIn (il y a déjà un Assert\Callback dessus dans l'entité) et
+checkIn pas dans le passé pour une création côté front.
+
+
+ 2. Est-ce qu'une demande Pending bloque les dates ?
+
+Les états d'une réservation : Pending -> Confirmed -> Completed, et Cancelled qui peut arriver
+depuis Pending ou Confirmed. Je modélise ça avec un enum PHP (BookingStatus).
+
+Pour résoudre ce problème : Une demande Pending ne bloque pas les dates. Seules les réservations Confirmed
+et les blocages manuels de l'hôte rendent une période indisponible.
+
+Voici les risques potentiels :
+
+  - Si Pending bloque : on ouvre la porte au blocage abusif. N'importe qui pourrait geler le
+    calendrier d'un hôte en envoyant des demandes qu'il n'honore jamais.
+
+  - Si Pending ne bloque pas : deux voyageurs peuvent demander les mêmes dates. Mais
+    c'est le but du mode "sur demande" : l'hôte choisit. Le danger d'overbooking
+    n'arrive qu'au moment où l'hôte accepte. Et là je revérifie la dispo dans la transaction
+    d'acceptation (voir point n°3). Si l'hôte accepte la première, la deuxième pourra plus être
+    confirmée.
+
+Pour limiter les abus, j'ajoute l'expiration automatique des Pending de plus de 24h. Et en
+mode instantané, on skip Pending : si les dates sont libres, on passe
+direct en Confirmed.
+
+
+ 3. Deux paiements à la même milliseconde sur les mêmes dates
+
+Les deux requêtes lisent "0 réservation confirmée", passent le test de dispo, et insèrent toutes
+les deux ce qui provoquerait l'overbooking.
+
+Ma solution : verouillage pessimiste + transaction. La création/confirmation tourne dans une seule
+transaction, et au tout début je pose un "verrou" en écriture sur la ligne du logement :
+
+      $em->find(Listing::class, $id, LockMode::PESSIMISTIC_WRITE);   // SELECT ... FOR UPDATE
+
+Ce FOR UPDATE force les transactions sur le même logement à passer les unes après les autres.
+La deuxième attend que la première ait commité ; quand elle reprend, elle revoit la réservation
+Confirmed que la première vient de créer, son test de chevauchement échoue, et elle rollback
+proprement. Pas d'overbooking.
+
+Pourquoi pessimiste et pas optimiste ? Parce que sur des dates demandées, le conflit est probable
+et la section critique est très courte (un seul logement, deux requêtes). Un "verrou" optimiste
+m'obligerait à gérer des retries.
+
+
+ 4. Valider 20 nuits sans faire 20 requêtes
+
+Comme je raisonne en intervalle et pas en jours, je valide la dispo en 2 requêtes EXISTS dont le
+coût ne dépend pas du nombre de nuits (1 nuit ou 300, c'est pareil) :
+
+   -- une réservation confirmée chevauche-t-elle la période ?
+   SELECT 1 FROM booking
+    WHERE listing_id = :id AND booking_status = 'confirmed'
+      AND check_in < :checkout AND check_out > :checkin
+    LIMIT 1;
+
+   -- un blocage manuel chevauche-t-il la période ?
+   SELECT 1 FROM availability_block
+    WHERE listing_id = :id AND start_date < :checkout AND end_date > :checkin
+    LIMIT 1;
+
+Disponible = logement publié + capacité suffisante + aucune des deux requêtes ne remonte de ligne.
+Les colonnes de dates sont indexées, donc on reste sur du parcours d'index. La recherche /search
+reprend exactement la même logique avec un NOT EXISTS corrélé, écrit en QueryBuilder.
+Aucune boucle PHP de filtrage, tout est fait en SQL.
+
+
+ 5. Pourquoi envoyer l'email après le flush(), et si RabbitMQ tombe ?
+
+Pour le "après flush", il y a deux raisons et la première est la plus importante : le worker qui
+envoie le mail est un processus séparé, et il recharge la réservation par son id. Si je dispatche
+le message avant le commit, le worker peut tourner avant que la ligne existe vraiment en base ->
+il ne trouve rien (ou un état non commité, qui n'est jamais visible de dehors). Donc je passe au
+handler un UUID, pas l'objet Doctrine, et il recharge l'entité fraîche.
+
+Autre raison, je ne notifie un événement ("réservation créée") que s'il est vraiment
+enregistré. Si le flush échoue et rollback, aucun mail ne doit partir. Envoyer après flush garantit ça.
+
+Et puis envoyer en asynchrone tout court, c'est pour ne pas bloquer le voyageur :
+Je ne veux pas que ça ralentisse ou casse la réservation. Le voyageur a sa réponse
+tout de suite, le mail suit.
+
+Pour la panne de RabbitMQ : dans ce projet le transport "async" est branché sur doctrine://default,
+donc les messages sont stockés EN BASE (table messenger_messages), la même base que les données.
+Si le worker est down, les messages s'accumulent etseront traités au redémarrage, rien n'est perdu.
+Si un jour on passe sur une file de messages externe et qu'elle tombe,
+le dispatch peut lever une exception. Comme la résa est déjà enregistrée, je ne veux pas la faire
+échouer : je mets donc un try/catch avec log autour du dispatch. La retry_strategy (3 essais)
+gère les pannes courtes, et sinon le message va dans "failed" (doctrine) pour être relancé
+manuellement. Aucune notif n'est perdue silencieusement.
+
+Sur la même mécanique async, j'ai ajouté le rappel de check-in à J-1 : une commande planifiable
+(cron) repère les arrivées du lendemain et envoie au voyageur un mail avec les infos d'accès
+(adresse + contact de l'hôte), via le worker. Pour éviter d'envoyer deux fois le même rappel si la
+commande tourne plusieurs fois, je marque un champ checkinReminderSentAt sur la réservation avant
+de dispatcher : au passage suivant, elle est ignorée (la requête filtre déjà ce champ).
+
+
+ 6. Table de périodes plutôt que table de jours
+
+Je stocke des PÉRIODES (start_date /end_date), pas des jours.
+Les blocages = AvailabilityBlock, et les réservations sont aussi des périodes.
+
+Pourquoi :
+  - Volume : un blocage "travaux" d'un an = 1 ligne en périodes, contre 365 lignes en jours. À
+    l'échelle de plein de logements, le modèle "jour" explose (logements × jours).
+  - Requêtes : la question c'est "est-ce que cette plage en croise une autre ?". Le prédicat
+    (start < :end AND end > :start) répond en O(1) sur un index. En modèle jour il faudrait
+    joindre/compter N lignes.
+  - Écriture : créer ou supprimer un blocage, c'est un seul INSERT/DELETE, pas N opérations à
+    garder cohérentes.
+
+Quand est-ce que le modèle "jour" serait justifié ? Seulement pour des données vraiment par jour :
+un prix différent chaque date, du stock multi-unités, un min-stay par jour.
+c'est ce que fait l'entité ListingAvailability du projet.
+Périodes pour la dispo/réservations, jours pour le tarif.
+
+
+ 7. Logique métier
+
+Je sors toute la logique des contrôleurs.
+
+Mes services :
+  - AvailabilityService       : isAvailable() + les périodes indisponibles pour le calendrier
+  - PricingService            : le devis (nuits × prix + frais), renvoie un PriceQuote
+  - BookingStateMachineService: les transitions autorisées
+  - BookingService            : create/confirm/reject/cancel/complete (transaction + "verrou"" +
+                                écriture de l'historique + dispatch des mails)
+  - CalendarService           : construit la grille mensuelle pour la vue
+  - ICalExportService         : génère le .ics
+  - ICalImportService         : parse un .ics en périodes
+  - NotificationService       : notifs in-app + déclenchement des mails
+
+À côté : un value object DateRange, un DTO
+PriceQuote, et deux voters (ListingVoter pour "seul l'hôte gère son logement", BookingVoter pour
+"seul le voyageur concerné / l'hôte / l'admin peut annuler ou modérer"). Pour la traçabilité
+j'écris une ligne BookingHistory à chaque changement de statut, ce qui me donne la
+timeline sur la fiche réservation.
+
+
+ Sécurisation de l'export iCal
+
+L'URL est /api/properties/{id}/calendar.ics?token=XXX. Le calendarToken
+est unique par logement, stocké en base et régénérable par l'hôte.
+Je valide le token en temps constant avec hash_equals ; token absent ou faux = 403 et zéro donnée.
+L'endpoint est volontairement hors du firewall connecté (c'est Google/Outlook qui le consomme),
+c'est le token qui protège. Le fichier ne contient que les séjours Confirmed
+
+
+ Import iCal et gestion des conflits
+
+L'hôte renseigne une URL iCal externe (Listing::icalImportUrl). La commande app:ical:sync télécharge
+le flux avec HttpClient, ICalImportService le parse, et je crée des AvailabilityBlock de source
+"ical" en gardant l'UID de chaque événement.
+  - Doublons : la clé (logement, external_uid) fait que relancer la commande met à jour au lieu de
+    dupliquer.
+  - Suppression distante : si un événement disparaît du flux, je supprime le block local "ical"
+    dont l'UID n'est plus là.
+  - Conflit avec une réservation Confirmed locale : je n'écrase jamais une réservation. Je crée quand même
+    le block (info "occupé ailleurs") mais je logue un avertissement pour l'hôte. Et je ne touche
+    jamais aux blocks "manual" saisis par l'hôte, seulement aux "ical".
+
