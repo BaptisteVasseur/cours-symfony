@@ -115,4 +115,58 @@ final class ReservationMailer
 
         $this->mailer->send($email);
     }
+
+    public function sendReservationCancelled(Reservation $reservation, User $cancelledBy): void
+    {
+        $guest = $reservation->getGuest();
+        $property = $reservation->getProperty();
+        $host = $property?->getHost();
+        $reason = (string) $reservation->getCancellationReason();
+        $reservationUrl = $this->urlGenerator->generate(
+            'app_reservation_show',
+            ['id' => (string) $reservation->getId()],
+            UrlGeneratorInterface::ABSOLUTE_URL,
+        );
+
+        $cancelledByHost = $host instanceof User
+            && (string) $host->getId() === (string) $cancelledBy->getId();
+
+        if ($cancelledByHost) {
+            if ($guest instanceof User && $guest->getEmail() !== null) {
+                $this->mailer->send(
+                    (new TemplatedEmail())
+                        ->to($guest->getEmail())
+                        ->subject('Votre réservation a été annulée par l\'hôte — '.$property?->getTitle())
+                        ->htmlTemplate('emails/reservation/cancelled_by_host.html.twig')
+                        ->context([
+                            'reservation' => $reservation,
+                            'property' => $property,
+                            'guest' => $guest,
+                            'host' => $host,
+                            'reason' => $reason,
+                            'reservationUrl' => $reservationUrl,
+                        ])
+                );
+            }
+
+            return;
+        }
+
+        if ($host instanceof User && $host->getEmail() !== null) {
+            $this->mailer->send(
+                (new TemplatedEmail())
+                    ->to($host->getEmail())
+                    ->subject('Réservation annulée par le voyageur — '.$property?->getTitle())
+                    ->htmlTemplate('emails/reservation/cancelled_by_guest.html.twig')
+                    ->context([
+                        'reservation' => $reservation,
+                        'property' => $property,
+                        'guest' => $guest,
+                        'host' => $host,
+                        'reason' => $reason,
+                        'reservationUrl' => $reservationUrl,
+                    ])
+            );
+        }
+    }
 }

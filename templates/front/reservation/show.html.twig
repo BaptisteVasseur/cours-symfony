@@ -56,6 +56,24 @@
                         <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
                     </dl>
                 </section>
+                {% if reservation.status == 'cancelled' and reservation.cancellationReason %}
+                    <section class="border border-red-200 bg-red-50 rounded-xl p-6">
+                        <h2 class="text-lg font-semibold text-red-800 mb-2">Motif d'annulation</h2>
+                        <p class="text-red-900 leading-relaxed">{{ reservation.cancellationReason }}</p>
+                    </section>
+                {% endif %}
+                {% if cancellable and cancelForm is not null %}
+                    <section class="border border-gray-200 rounded-xl p-6">
+                        <h2 class="text-lg font-semibold mb-2">Annuler ma réservation</h2>
+                        <p class="text-sm text-gray-600 mb-4">Le motif sera transmis à l'hôte. Les dates seront immédiatement libérées.</p>
+                        {{ form_start(cancelForm, { attr: { class: 'space-y-3' }}) }}
+                            {{ form_row(cancelForm.reason) }}
+                            <button type="submit" onclick="return confirm('Confirmer l\'annulation de cette réservation ?');" class="inline-flex items-center justify-center px-5 py-2 rounded-lg bg-red-600 text-white font-semibold hover:bg-red-700">
+                                Annuler la réservation
+                            </button>
+                        {{ form_end(cancelForm) }}
+                    </section>
+                {% endif %}
             </div>
             <aside>
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28">

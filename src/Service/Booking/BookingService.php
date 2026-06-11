@@ -103,6 +103,46 @@ final class BookingService
         return $reservation;
     }
 
+    public function cancelReservation(Reservation $reservation, User $actor, string $reason): void
+    {
+        if (!in_array($reservation->getStatus(), ['pending', 'confirmed'], true)) {
+            throw new \DomainException('Cette réservation ne peut plus être annulée.');
+        }
+
+        $reason = trim($reason);
+        if ($reason === '') {
+            throw new \DomainException('Le motif d\'annulation est obligatoire.');
+        }
+
+        $property = $reservation->getProperty();
+        if (!$property instanceof Property) {
+            throw new \DomainException('Réservation sans logement associé.');
+        }
+
+        $isGuest = $reservation->getGuest() !== null
+            && (string) $reservation->getGuest()->getId() === (string) $actor->getId();
+        $isHost = $property->getHost() !== null
+            && (string) $property->getHost()->getId() === (string) $actor->getId();
+        if (!$isGuest && !$isHost) {
+            throw new \DomainException('Vous n\'êtes pas autorisé à annuler cette réservation.');
+        }
+
+        $previousStatus = (string) $reservation->getStatus();
+
+        $this->em->wrapInTransaction(function () use ($reservation, $property, $actor, $previousStatus, $reason): void {
+            if ($previousStatus === 'confirmed') {
+                $this->em->lock($property, LockMode::PESSIMISTIC_WRITE);
+            }
+
+            $reservation->setStatus('cancelled');
+            $reservation->setCancellationReason($reason);
+            $this->em->persist($this->buildHistory($reservation, $previousStatus, 'cancelled', $actor));
+            $this->em->flush();
+        });
+
+        $this->reservationMailer->sendReservationCancelled($reservation, $actor);
+    }
+
     private function createPendingRequest(
         Property $property,
         User $guest,

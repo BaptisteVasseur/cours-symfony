@@ -120,6 +120,21 @@
                         </div>
                     </div>
                 {% endif %}
+
+                {% if reservation.status == 'confirmed' and cancelForm is defined %}
+                    <div class="border border-gray-200 rounded-xl p-6 space-y-4">
+                        <h2 class="text-lg font-semibold">Annuler cette réservation</h2>
+                        <p class="text-sm text-gray-600">Le motif sera transmis au voyageur. Les dates seront immédiatement libérées.</p>
+                        {{ form_start(cancelForm, { attr: { class: 'space-y-3' } }) }}
+                            {{ form_row(cancelForm.reason) }}
+                            <button type="submit"
+                                    onclick="return confirm('Confirmer l\'annulation de cette réservation ?');"
+                                    class="w-full inline-flex items-center justify-center gap-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded-xl py-3 transition">
+                                <i class="fa-solid fa-ban"></i> Annuler la réservation
+                            </button>
+                        {{ form_end(cancelForm) }}
+                    </div>
+                {% endif %}
             </aside>
         </div>
     </main>
