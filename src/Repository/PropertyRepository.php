@@ -7,6 +7,7 @@ namespace App\Repository;
 use App\Entity\Property;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -26,6 +27,68 @@ class PropertyRepository extends ServiceEntityRepository
     /**
      * @return list<Property>
      */
+    /**
+     * @return list<Property>
+     */
+    public function findForSearch(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        ?int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.addressLine1) LIKE :destination')
+                ->setParameter('destination', '%' . strtolower($destination) . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            // Exclure les logements ayant un jour bloqué manuellement dans la plage
+            $qb->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        'SELECT 1 FROM App\Entity\PropertyAvailability pa
+                         WHERE pa.property = p
+                         AND pa.blockedDate >= :checkin
+                         AND pa.blockedDate < :checkout'
+                    )
+                )
+            )
+            // Exclure les logements ayant une réservation confirmed/pending qui chevauche
+            ->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        'SELECT 1 FROM App\Entity\Reservation res
+                         WHERE res.property = p
+                         AND res.status IN (:statuses)
+                         AND res.checkinDate < :checkout
+                         AND res.checkoutDate > :checkin'
+                    )
+                )
+            )
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout)
+            ->setParameter('statuses', ['confirmed', 'pending']);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
     public function findForListing(?string $status = null): array
     {
         $qb = $this->createQueryBuilder('p')
