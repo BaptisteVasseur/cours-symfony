@@ -1,0 +1,135 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Calendrier — {{ property.title }}{% endblock %}
+
+{% set dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] %}
+{% set statusStyles = {
+    available: { cell: 'bg-white border-gray-200', label: '', text: '' },
+    reserved:  { cell: 'bg-rose-50 border-rose-200', label: 'Réservé', text: 'text-rose-700' },
+    pending:   { cell: 'bg-amber-50 border-amber-200', label: 'En attente', text: 'text-amber-700' },
+    blocked:   { cell: 'bg-gray-100 border-gray-300', label: 'Bloqué', text: 'text-gray-600' }
+} %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+        <a href="{{ path('app_account_properties') }}" class="text-sm text-gray-500 hover:text-gray-900">
+            <i class="fa-solid fa-arrow-left mr-1"></i> Mes propriétés
+        </a>
+
+        <div class="flex flex-wrap items-end justify-between gap-4 mt-3 mb-6">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Calendrier</h1>
+                <p class="text-gray-500">{{ property.title }}</p>
+            </div>
+            <a href="{{ path('app_host_property_edit', { id: property.id }) }}"
+               class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-brand">
+                <i class="fa-regular fa-pen-to-square"></i> Modifier l'annonce
+            </a>
+        </div>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium border
+                    {{ label == 'error' ? 'bg-red-50 text-red-800 border-red-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <section class="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-center justify-between mb-4">
+                    <a href="{{ path('app_host_calendar', { id: property.id, mois: calendar.prev }) }}"
+                       class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50" aria-label="Mois précédent">
+                        <i class="fa-solid fa-chevron-left text-sm"></i>
+                    </a>
+                    <h2 class="text-lg font-semibold text-gray-900">{{ calendar.label }}</h2>
+                    <a href="{{ path('app_host_calendar', { id: property.id, mois: calendar.next }) }}"
+                       class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50" aria-label="Mois suivant">
+                        <i class="fa-solid fa-chevron-right text-sm"></i>
+                    </a>
+                </div>
+
+                <div class="grid grid-cols-7 gap-1 mb-1 text-center text-xs font-semibold text-gray-400 uppercase">
+                    {% for name in dayNames %}
+                        <div>{{ name }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="grid grid-cols-7 gap-1">
+                    {% for week in calendar.weeks %}
+                        {% for day in week %}
+                            {% set style = statusStyles[day.status] %}
+                            <div class="relative min-h-16 rounded-lg border p-1.5 text-sm
+                                {{ style.cell }}
+                                {{ not day.inMonth ? 'opacity-40' : '' }}
+                                {{ day.isPast ? 'opacity-50' : '' }}
+                                {{ day.isToday ? 'ring-2 ring-brand' : '' }}"
+                                {% if day.block and day.block.blockNote %}title="{{ day.block.blockNote }}"{% endif %}
+                                {% if day.reservation %}title="{{ day.reservation.guest.profile.firstName ?? 'Voyageur' }} — {{ day.reservation.checkinDate|date('d/m') }} → {{ day.reservation.checkoutDate|date('d/m') }}"{% endif %}>
+                                <span class="font-semibold text-gray-700">{{ day.day }}</span>
+                                {% if day.status == 'blocked' %}
+                                    <span class="absolute bottom-1 left-1 right-1 truncate text-[10px] font-medium text-gray-600">
+                                        <i class="fa-solid fa-lock text-[9px] mr-0.5"></i>{{ day.block.blockNote|default('Bloqué') }}
+                                    </span>
+                                {% elseif style.label %}
+                                    <span class="absolute bottom-1 left-1 right-1 truncate text-[10px] font-medium {{ style.text }}">{{ style.label }}</span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+
+                <div class="flex flex-wrap gap-4 mt-4 text-xs text-gray-500">
+                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-white border border-gray-200"></span> Disponible</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-rose-50 border border-rose-200"></span> Réservé</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-50 border border-amber-200"></span> En attente</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-gray-100 border border-gray-300"></span> Bloqué</span>
+                </div>
+            </section>
+
+            <aside class="space-y-6">
+                <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                    <h3 class="font-semibold text-gray-900 mb-4">Bloquer une période</h3>
+                    {{ form_start(blockForm, { attr: { class: 'space-y-4' } }) }}
+                        {{ form_row(blockForm.startDate, { row_attr: { class: 'space-y-1.5' }, label_attr: { class: 'block text-sm font-semibold text-gray-900' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm' } }) }}
+                        {{ form_row(blockForm.endDate, { row_attr: { class: 'space-y-1.5' }, label_attr: { class: 'block text-sm font-semibold text-gray-900' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm' } }) }}
+                        {{ form_row(blockForm.blockNote, { row_attr: { class: 'space-y-1.5' }, label_attr: { class: 'block text-sm font-semibold text-gray-900' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm' } }) }}
+                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold px-4 py-2.5 rounded-xl transition">
+                            <i class="fa-solid fa-lock mr-1"></i> Bloquer
+                        </button>
+                    {{ form_end(blockForm) }}
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                    <h3 class="font-semibold text-gray-900 mb-4">Indisponibilités du mois</h3>
+                    {% if calendar.blocks|length > 0 %}
+                        <ul class="space-y-3">
+                            {% for block in calendar.blocks %}
+                                <li class="flex items-start justify-between gap-3 text-sm">
+                                    <div>
+                                        <p class="font-medium text-gray-900">
+                                            {{ block.startDate|date('d/m/Y') }} → {{ block.endDate|date('d/m/Y') }}
+                                        </p>
+                                        {% if block.blockNote %}
+                                            <p class="text-gray-500">{{ block.blockNote }}</p>
+                                        {% endif %}
+                                    </div>
+                                    <form method="post" action="{{ path('app_host_calendar_block_delete', { id: property.id, blockId: block.id }) }}"
+                                          onsubmit="return confirm('Supprimer ce blocage ?');">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('delete-block-' ~ block.id) }}">
+                                        <button type="submit" class="text-gray-400 hover:text-red-600" aria-label="Supprimer">
+                                            <i class="fa-solid fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-500">Aucune indisponibilité ce mois-ci.</p>
+                    {% endif %}
+                </div>
+            </aside>
+        </div>
+    </main>
+{% endblock %}

@@ -2,7 +2,14 @@
 {% set averageRating = property.averageRating %}
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
-<a href="{{ path('app_logement_detail', { id: property.id }) }}" class="group block">
+{% set detailParams = { id: property.id } %}
+{% for key in ['checkin', 'checkout', 'guests'] %}
+    {% if app.request.query.get(key) %}
+        {% set detailParams = detailParams|merge({ (key): app.request.query.get(key) }) %}
+    {% endif %}
+{% endfor %}
+
+<a href="{{ path('app_logement_detail', detailParams) }}" class="group block">
     <div class="relative aspect-square w-full overflow-hidden rounded-xl mb-3">
         <img
             class="h-full w-full object-cover group-hover:scale-105 transition duration-300"

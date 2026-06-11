@@ -10,7 +10,19 @@
         {% if properties|length > 0 %}
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for property in properties %}
-                    {% include 'components/card.html.twig' with { property: property } %}
+                    <div>
+                        {% include 'components/card.html.twig' with { property: property } %}
+                        <div class="mt-2 flex flex-wrap gap-4">
+                            <a href="{{ path('app_host_property_edit', { id: property.id }) }}"
+                               class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-brand">
+                                <i class="fa-regular fa-pen-to-square"></i> Modifier l'annonce
+                            </a>
+                            <a href="{{ path('app_host_calendar', { id: property.id }) }}"
+                               class="inline-flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-brand">
+                                <i class="fa-regular fa-calendar"></i> Gérer le calendrier
+                            </a>
+                        </div>
+                    </div>
                 {% endfor %}
             </div>
         {% else %}

@@ -9,6 +9,7 @@ use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
 use App\Repository\PropertyRepository;
+use App\Service\ReservationMailer;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -27,6 +28,7 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
+        ReservationMailer $reservationMailer,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -93,6 +95,13 @@ final class BookingController extends AbstractController
 
             $entityManager->persist($reservation);
             $entityManager->flush();
+
+            // Partie D : notifications asynchrones selon le mode de réservation.
+            if ($reservation->getStatus() === 'confirmed') {
+                $reservationMailer->sendConfirmation($reservation);
+            } else {
+                $reservationMailer->sendNewRequestToHost($reservation);
+            }
 
             $this->addFlash('success', 'Votre réservation a été enregistrée.');
 

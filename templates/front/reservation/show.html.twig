@@ -61,6 +61,37 @@
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
                     <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
                     <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+
+                    {% if reservation.status == 'cancelled' and reservation.cancellationReason %}
+                        <div class="mt-4 pt-4 border-t border-gray-200">
+                            <p class="text-xs font-bold uppercase text-gray-500 mb-1">Motif d'annulation</p>
+                            <p class="text-sm text-gray-700">{{ reservation.cancellationReason }}</p>
+                        </div>
+                    {% endif %}
+
+                    {% if reservation.status in ['pending', 'confirmed'] %}
+                        <div class="mt-4 pt-4 border-t border-gray-200" data-controller="modal">
+                            <button type="button" data-action="modal#open" class="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-semibold py-2.5 rounded-lg transition">
+                                Annuler ma réservation
+                            </button>
+                            <div data-modal-target="dialog" class="hidden fixed inset-0 z-[80] bg-black/50 flex items-center justify-center p-4"
+                                 data-action="click->modal#closeOnBackdrop keydown@window->modal#closeOnEsc">
+                                <div class="bg-white rounded-2xl shadow-xl w-full max-w-md p-6">
+                                    <h3 class="text-lg font-semibold text-gray-900">Annuler ma réservation</h3>
+                                    <p class="text-sm text-gray-500 mt-1">Cette action est définitive et libère les dates. Indiquez le motif.</p>
+                                    <form method="post" action="{{ path('app_reservation_cancel', { id: reservation.id }) }}" class="mt-4 space-y-2">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('cancel-' ~ reservation.id) }}">
+                                        <textarea name="reason" rows="3" required minlength="10" placeholder="Motif (10 caractères minimum)" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea>
+                                        <p class="text-xs text-gray-400">Au moins 10 caractères.</p>
+                                        <div class="flex gap-3 pt-2">
+                                            <button type="button" data-action="modal#close" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 text-sm font-semibold py-2.5 rounded-lg transition">Retour</button>
+                                            <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold py-2.5 rounded-lg transition">Confirmer l'annulation</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    {% endif %}
                 </div>
             </aside>
         </div>

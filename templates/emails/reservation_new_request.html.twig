@@ -1,0 +1,19 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block heading %}Nouvelle demande de réservation{% endblock %}
+
+{% block body %}
+    <p>Bonjour {{ hostName }},</p>
+    <p>Vous avez reçu une nouvelle demande de réservation pour <strong>{{ propertyTitle }}</strong>.</p>
+    <ul>
+        <li>Dates : du {{ checkin|date('d/m/Y') }} au {{ checkout|date('d/m/Y') }}</li>
+        <li>Voyageurs : {{ guestsCount }}</li>
+        <li>Voyageur : {{ guestName }} ({{ guestEmail }})</li>
+        <li>Total : {{ total }} {{ currency }}</li>
+    </ul>
+    <p style="margin-top:24px;">
+        <a href="{{ ctaUrl }}" style="background:#FF385C; color:#fff; padding:12px 22px; border-radius:8px; text-decoration:none; font-weight:bold; display:inline-block;">
+            Accepter ou refuser la demande
+        </a>
+    </p>
+{% endblock %}

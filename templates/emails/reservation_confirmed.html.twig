@@ -1,0 +1,19 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block heading %}Votre réservation est confirmée{% endblock %}
+
+{% block body %}
+    <p>Bonjour,</p>
+    <p>La réservation pour <strong>{{ propertyTitle }}</strong> est confirmée.</p>
+    <h3 style="margin:20px 0 8px;">Récapitulatif</h3>
+    <ul>
+        <li>Dates : du {{ checkin|date('d/m/Y') }} au {{ checkout|date('d/m/Y') }}</li>
+        <li>Voyageurs : {{ guestsCount }}</li>
+        <li>Montant total : <strong>{{ total }} {{ currency }}</strong></li>
+    </ul>
+    <h3 style="margin:20px 0 8px;">Coordonnées</h3>
+    <p>
+        Voyageur : {{ guestName }} ({{ guestEmail }})<br>
+        Hôte : {{ hostName }} ({{ hostEmail }})
+    </p>
+{% endblock %}
