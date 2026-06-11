@@ -25,6 +25,7 @@ security:
                 check_path: app_login
                 enable_csrf: true
                 csrf_token_id: login
+                default_target_path: app_home
             logout:
                 path: app_logout
                 # where to redirect after logout
