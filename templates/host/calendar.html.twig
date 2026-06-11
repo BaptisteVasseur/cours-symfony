@@ -106,6 +106,33 @@
                     </form>
                     <p class="text-xs text-gray-400 mt-3">Seuls les blocages manuels sont libérés. Les dates importées via iCal restent gérées par la synchronisation.</p>
                 </div>
+
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h3 class="font-semibold text-gray-900 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-calendar-days text-brand"></i> Synchronisation iCal
+                    </h3>
+                    {% if property.icalExportToken %}
+                        <p class="text-xs text-gray-500 mb-2">Abonnez votre agenda (Outlook, Google Calendar) à cette URL pour voir vos séjours confirmés :</p>
+                        <input type="text" readonly value="{{ url('app_property_ical_export', { id: property.id, token: property.icalExportToken }) }}"
+                               onclick="this.select()"
+                               class="w-full border border-gray-300 rounded-xl px-3 py-2 text-xs font-mono mb-3 bg-gray-50">
+                        <form method="post" action="{{ path('app_host_ical_regenerate', { id: property.id }) }}"
+                              onsubmit="return confirm('Régénérer le lien ? L\'ancien lien cessera de fonctionner.');">
+                            <input type="hidden" name="_token" value="{{ csrf_token('ical' ~ property.id) }}">
+                            <button type="submit" class="text-sm text-gray-700 font-semibold border border-gray-300 hover:bg-gray-50 px-4 py-2 rounded-xl transition">
+                                Régénérer / révoquer le lien
+                            </button>
+                        </form>
+                    {% else %}
+                        <p class="text-xs text-gray-500 mb-3">Activez un lien sécurisé pour exporter votre calendrier vers un agenda externe.</p>
+                        <form method="post" action="{{ path('app_host_ical_regenerate', { id: property.id }) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('ical' ~ property.id) }}">
+                            <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold text-sm py-2.5 rounded-xl transition">
+                                Activer la synchronisation iCal
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
             </div>
         </div>
     </div>

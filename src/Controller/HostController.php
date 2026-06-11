@@ -13,6 +13,7 @@ use App\Repository\ReservationRepository;
 use App\Service\AvailabilityManager;
 use App\Service\BookingException;
 use App\Service\BookingManager;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -223,6 +224,20 @@ final class HostController extends AbstractController
         }
 
         return $this->redirectToRoute('app_host_calendar', $params, Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/properties/{id}/ical/regenerate', name: 'app_host_ical_regenerate', methods: ['POST'])]
+    public function regenerateIcalToken(Property $property, Request $request, EntityManagerInterface $em): Response
+    {
+        $this->denyUnlessOwner($property);
+
+        if ($this->isCsrfTokenValid('ical'.$property->getId(), $request->getPayload()->getString('_token'))) {
+            $property->setIcalExportToken(bin2hex(random_bytes(32)));
+            $em->flush();
+            $this->addFlash('success', 'Lien de synchronisation iCal régénéré. L\'ancien lien est désormais invalide.');
+        }
+
+        return $this->redirectToCalendar($property);
     }
 
     private function denyUnlessOwner(Property $property): void
