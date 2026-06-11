@@ -42,17 +42,21 @@ security:
         # ROLE_PRESTATAIRE, ROLE_CLIENT, ROLE_BANNI, ROLE_VIP, ROLE_ADMIN
         # ROLE_SUPER_ADMIN
 
+        ROLE_HOST: ROLE_USER
+        ROLE_GUEST: ROLE_USER
         ROLE_PRESTATAIRE: ROLE_USER
         ROLE_CLIENT: ROLE_USER
         ROLE_BANNI: ROLE_USER
         ROLE_VIP: ROLE_USER
-        ROLE_ADMIN: [ROLE_PRESTATAIRE, ROLE_SERVICE_CLIENT, ROLE_PREPARATEUR_COMMANDE, ROLE_CLIENT, ROLE_BANNI, ROLE_VIP]
+        ROLE_ADMIN: [ROLE_HOST, ROLE_GUEST, ROLE_PRESTATAIRE, ROLE_SERVICE_CLIENT, ROLE_PREPARATEUR_COMMANDE, ROLE_CLIENT, ROLE_BANNI, ROLE_VIP]
         ROLE_SUPER_ADMIN: ROLE_ADMIN
 
     # Note: Only the *first* matching rule is applied
     access_control:
-        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/admin,   roles: ROLE_ADMIN }
         - { path: ^/listing, roles: ROLE_ADMIN }
+        - { path: ^/host,    roles: ROLE_HOST }
+        - { path: ^/booking, roles: ROLE_USER }
 #        - { path: ^/(login|register), roles: PUBLIC_ACCESS }
 #        - { path: ^/, roles: ROLE_USER }
 
