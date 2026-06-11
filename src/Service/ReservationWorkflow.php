@@ -15,8 +15,10 @@ use Doctrine\ORM\EntityManagerInterface;
  */
 final class ReservationWorkflow
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly ReservationMailer $mailer,
+    ) {
     }
 
     /**
@@ -27,7 +29,8 @@ final class ReservationWorkflow
         $this->transition($reservation, 'confirmed', $actor);
         $this->entityManager->flush();
 
-        // TODO (B.2) : notifier le voyageur de l'acceptation par email (asynchrone) — à brancher plus tard.
+        // Partie D : réservation validée -> voyageur + hôte (asynchrone via Messenger).
+        $this->mailer->sendConfirmation($reservation);
     }
 
     /**
@@ -40,7 +43,8 @@ final class ReservationWorkflow
         $this->transition($reservation, 'cancelled', $actor);
         $this->entityManager->flush();
 
-        // TODO (B.2/B.3) : notifier les deux parties par email (asynchrone) — à brancher plus tard.
+        // Partie D : refus / annulation -> parties concernées avec le motif (asynchrone via Messenger).
+        $this->mailer->sendCancellation($reservation);
     }
 
     private function transition(Reservation $reservation, string $newStatus, User $actor): void

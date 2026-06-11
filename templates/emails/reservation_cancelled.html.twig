@@ -1,0 +1,12 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block heading %}Réservation annulée{% endblock %}
+
+{% block body %}
+    <p>Bonjour,</p>
+    <p>La réservation pour <strong>{{ propertyTitle }}</strong>
+        ({{ checkin|date('d/m/Y') }} → {{ checkout|date('d/m/Y') }}) a été annulée.</p>
+    <p style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px 16px;">
+        <strong>Motif :</strong> {{ reason|default('Non précisé') }}
+    </p>
+{% endblock %}

@@ -43,3 +43,9 @@ On ne valide pas un logement sur 20 nuits consécutives, mais surtout entre 2 da
 
 Le meilleur choix pour moi serait de gérer les réservations et les blocages avec des intervalles start end, cela permet d’éviter d’avoir une ligne pour chaque jour dans la base de données. 
 Le problème qui peut se poser est avec les chevauchements mais il est déjà géré par la réservation
+
+————Asynchronisme————
+
+Les emails sont envoyés après le flush doctrine pour garantir que la réservation existe bien en bdd avant d'envoyer une confirmation
+
+Si RabbitMQ est down, les messages resteront dans la file d'attente et seront envoyés une fois le service de nouveau disponible
