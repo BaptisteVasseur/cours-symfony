@@ -19,7 +19,10 @@
                 <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">{{ property.title }}</h1>
                 <p class="text-gray-500 mt-1">Calendrier des reservations confirmees et indisponibilites.</p>
             </div>
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-2 flex-wrap">
+                <a href="{{ path('app_host_property_settings', { id: property.id }) }}" class="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50">
+                    <i class="fa-solid fa-gear mr-1"></i> Parametres
+                </a>
                 <a href="{{ path('app_host_property_calendar', { id: property.id, month: previousMonth }) }}" class="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50">Mois precedent</a>
                 <a href="{{ path('app_host_property_calendar', { id: property.id, month: nextMonth }) }}" class="px-4 py-2 border border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50">Mois suivant</a>
             </div>
@@ -79,12 +82,44 @@
                 </section>
 
                 <section class="border border-gray-200 rounded-xl p-5 bg-white">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-3">Import iCal</h2>
+                    {{ form_start(importForm, { attr: { class: 'space-y-4' } }) }}
+                        {{ form_row(importForm.providerName, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', placeholder: 'Airbnb, Booking...' } }) }}
+                        {{ form_row(importForm.iCalUrl, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', placeholder: 'https://...' } }) }}
+                        <button type="submit" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 rounded-xl">Ajouter le flux</button>
+                    {{ form_end(importForm) }}
+
+                    <div class="mt-5 space-y-3">
+                        {% for sync in iCalSyncs %}
+                            <div class="border border-gray-100 rounded-xl p-3">
+                                <p class="text-sm font-semibold text-gray-900">{{ sync.providerName }}</p>
+                                <p class="text-xs text-gray-500 truncate mt-1">{{ sync.iCalUrl }}</p>
+                                <p class="text-xs text-gray-400 mt-1">
+                                    Derniere synchro : {{ sync.lastSyncAt ? sync.lastSyncAt|date('d/m/Y H:i') : 'jamais' }}
+                                </p>
+                                <form method="post" action="{{ path('app_host_property_ical_import_delete', { id: property.id, sync: sync.id }) }}" class="mt-2">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete_ical_import_' ~ sync.id) }}">
+                                    <button type="submit" class="text-xs font-semibold text-red-700 hover:underline">Supprimer le flux</button>
+                                </form>
+                            </div>
+                        {% else %}
+                            <p class="text-sm text-gray-500">Aucun flux externe configure.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <section class="border border-gray-200 rounded-xl p-5 bg-white">
                     <h2 class="text-lg font-semibold text-gray-900 mb-4">Periodes bloquees</h2>
                     <div class="space-y-3">
                         {% for block in blocks %}
                             <div class="border border-gray-100 rounded-xl p-3">
                                 <p class="text-sm font-semibold text-gray-900">{{ block.dateStart|date('d/m/Y') }} au {{ block.dateEnd|date('d/m/Y') }}</p>
-                                <p class="text-xs text-gray-500 mt-1">{{ block.reason|default('Indisponible') }}</p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    {{ block.reason|default('Indisponible') }}
+                                    {% if block.source == 'ical' %}
+                                        <span class="ml-1 rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-semibold text-gray-600">iCal</span>
+                                    {% endif %}
+                                </p>
                                 <form method="post" action="{{ path('app_host_property_availability_delete', { id: property.id, availability: block.id }) }}" class="mt-2">
                                     <input type="hidden" name="_token" value="{{ csrf_token('delete_availability_' ~ block.id) }}">
                                     <button type="submit" class="text-xs font-semibold text-red-700 hover:underline">Debloquer</button>

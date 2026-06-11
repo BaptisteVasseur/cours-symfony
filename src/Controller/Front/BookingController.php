@@ -9,6 +9,7 @@ use App\Entity\User;
 use App\Form\BookingType;
 use App\Repository\PropertyRepository;
 use App\Security\Voter\PropertyVoter;
+use App\Service\AvailabilityService;
 use App\Service\ReservationService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -25,6 +26,7 @@ final class BookingController extends AbstractController
         Request $request,
         Property $property,
         PropertyRepository $propertyRepository,
+        AvailabilityService $availabilityService,
         ReservationService $reservationService,
     ): Response {
         if ($property->getStatus() !== 'published') {
@@ -38,13 +40,14 @@ final class BookingController extends AbstractController
         }
 
         if ($property->getHost()?->getId() === $user->getId()) {
-            $this->addFlash('error', 'Vous ne pouvez pas reserver votre propre logement.');
+            $this->addFlash('error', 'Vous ne pouvez pas reserver votre propre logement. Vous pouvez gerer son calendrier ici.');
 
-            return $this->redirectToRoute('app_logement_detail', ['id' => $property->getId()]);
+            return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
         }
 
         $form = $this->createForm(BookingType::class);
         $form->handleRequest($request);
+        $bookingCalendar = $availabilityService->buildBookingCalendar($property);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
@@ -60,6 +63,7 @@ final class BookingController extends AbstractController
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
                     'form' => $form,
+                    'bookingCalendar' => $bookingCalendar,
                 ]);
             }
 
@@ -74,6 +78,7 @@ final class BookingController extends AbstractController
         return $this->render('front/property/booking.html.twig', [
             'property' => $property,
             'form' => $form,
+            'bookingCalendar' => $bookingCalendar,
         ]);
     }
 }

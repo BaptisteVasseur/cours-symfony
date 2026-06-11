@@ -1,6 +1,6 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}Réserver — {{ property.title }}{% endblock %}
+{% block title %}Reserver - {{ property.title }}{% endblock %}
 
 {% set cover = property.coverMedia %}
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
@@ -10,22 +10,50 @@
         <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
             <i class="fa-solid fa-arrow-left"></i> Retour au logement
         </a>
+
         {% for label, messages in app.flashes %}
             {% for message in messages %}
                 <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
             {% endfor %}
         {% endfor %}
+
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
-                <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
+                <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre reservation</h1>
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                     {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                            {{ form_row(form.checkinDate, { label: 'Arrivee', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                            {{ form_row(form.checkoutDate, { label: 'Depart', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
                         </div>
                         {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
-                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
+
+                        <div class="space-y-5">
+                            <div>
+                                <h2 class="text-sm font-semibold text-gray-900">Disponibilites</h2>
+                                <p class="text-xs text-gray-500 mt-1">Les dates grisees et rayees ne peuvent pas etre reservees.</p>
+                            </div>
+                            {% for month in bookingCalendar %}
+                                <div>
+                                    <h3 class="text-sm font-semibold text-gray-900 mb-2">{{ month.label }}</h3>
+                                    <div class="grid grid-cols-7 gap-1 text-center">
+                                        {% for label in ['L', 'M', 'M', 'J', 'V', 'S', 'D'] %}
+                                            <div class="text-[11px] font-semibold text-gray-400 py-1">{{ label }}</div>
+                                        {% endfor %}
+                                        {% for day in month.days %}
+                                            <div
+                                                class="rounded-lg py-2 text-xs {{ day.currentMonth ? '' : 'opacity-30' }} {{ day.unavailable ? 'bg-gray-100 text-gray-400 line-through' : 'bg-white border border-gray-200 text-gray-900' }}"
+                                                title="{{ day.reason|default('Disponible') }}"
+                                            >
+                                                {{ day.date|date('d') }}
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+
+                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la reservation</button>
                     {{ form_end(form) }}
                 </div>
             </div>
@@ -34,7 +62,7 @@
                     <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
                     <div class="p-5">
                         <h2 class="font-semibold">{{ property.title }}</h2>
-                        <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+                        <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} EUR <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
                     </div>
                 </div>
             </aside>

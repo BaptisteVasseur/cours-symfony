@@ -135,9 +135,15 @@
                             <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
                         </div>
                     </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
-                        Réserver
-                    </a>
+                    {% if app.user and property.host and property.host.id == app.user.id %}
+                        <a href="{{ path('app_host_property_calendar', { id: property.id }) }}" class="block w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 rounded-lg transition text-center">
+                            Parametres calendrier
+                        </a>
+                    {% else %}
+                        <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                            Reserver
+                        </a>
+                    {% endif %}
                     {% if property.instantBooking %}
                         <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
                     {% endif %}

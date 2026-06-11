@@ -11,6 +11,7 @@ use App\Repository\ReservationRepository;
 use App\Security\Voter\ReservationVoter;
 use App\Service\ReservationService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\Form\FormFactoryInterface;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -20,6 +21,11 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 #[IsGranted('ROLE_HOST')]
 final class HostReservationController extends AbstractController
 {
+    public function __construct(
+        private readonly FormFactoryInterface $formFactory,
+    ) {
+    }
+
     #[Route('/demandes', name: 'app_host_reservation_pending', methods: ['GET'])]
     public function pending(ReservationRepository $reservationRepository): Response
     {
@@ -33,7 +39,7 @@ final class HostReservationController extends AbstractController
             $id = $reservation->getId()?->toRfc4122();
             $rows[] = [
                 'reservation' => $reservation,
-                'declineForm' => $this->createNamed('decline_' . $id, CancellationType::class, null, [
+                'declineForm' => $this->formFactory->createNamed('decline_' . $id, CancellationType::class, null, [
                     'action' => $this->generateUrl('app_host_reservation_decline', ['id' => $id]),
                 ])->createView(),
             ];
@@ -77,7 +83,7 @@ final class HostReservationController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
-        $form = $this->createNamed('decline_' . $reservation->getId()?->toRfc4122(), CancellationType::class);
+        $form = $this->formFactory->createNamed('decline_' . $reservation->getId()?->toRfc4122(), CancellationType::class);
         $form->handleRequest($request);
 
         if (!$form->isSubmitted() || !$form->isValid()) {

@@ -6,8 +6,12 @@ namespace App\Controller\Front;
 
 use App\Entity\Property;
 use App\Entity\PropertyAvailability;
+use App\Entity\PropertyICalSync;
 use App\Form\AvailabilityBlockType;
+use App\Form\PropertyICalSyncType;
+use App\Form\PropertySettingsType;
 use App\Repository\PropertyAvailabilityRepository;
+use App\Repository\PropertyICalSyncRepository;
 use App\Repository\ReservationRepository;
 use App\Security\Voter\PropertyVoter;
 use App\Service\AvailabilityService;
@@ -29,6 +33,7 @@ final class HostCalendarController extends AbstractController
         Request $request,
         Property $property,
         PropertyAvailabilityRepository $availabilityRepository,
+        PropertyICalSyncRepository $iCalSyncRepository,
         ReservationRepository $reservationRepository,
         AvailabilityService $availabilityService,
         EntityManagerInterface $entityManager,
@@ -40,6 +45,20 @@ final class HostCalendarController extends AbstractController
 
         $form = $this->createForm(AvailabilityBlockType::class);
         $form->handleRequest($request);
+
+        $iCalSync = new PropertyICalSync();
+        $importForm = $this->createForm(PropertyICalSyncType::class, $iCalSync);
+        $importForm->handleRequest($request);
+
+        if ($importForm->isSubmitted() && $importForm->isValid()) {
+            $iCalSync->setProperty($property);
+            $entityManager->persist($iCalSync);
+            $entityManager->flush();
+
+            $this->addFlash('success', 'Flux iCal ajoute. Il sera synchronise par la commande app:ical:sync.');
+
+            return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+        }
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
@@ -64,12 +83,14 @@ final class HostCalendarController extends AbstractController
         return $this->render('front/host/calendar.html.twig', [
             'property' => $property,
             'form' => $form,
+            'importForm' => $importForm,
             'monthStart' => $monthStart,
             'previousMonth' => $monthStart->modify('-1 month')->format('Y-m'),
             'nextMonth' => $monthStart->modify('+1 month')->format('Y-m'),
             'days' => $this->buildCalendarDays($gridStart, $gridEnd, $monthStart, $blocks, $reservations),
             'blocks' => $blocks,
             'reservations' => $reservations,
+            'iCalSyncs' => $iCalSyncRepository->findBy(['property' => $property], ['providerName' => 'ASC']),
             'iCalUrl' => $this->generateUrl('app_property_calendar_ics', [
                 'id' => $property->getId(),
                 'token' => $property->getICalExportToken(),
@@ -87,6 +108,28 @@ final class HostCalendarController extends AbstractController
         $property->regenerateICalExportToken();
         $entityManager->flush();
         $this->addFlash('success', 'Lien iCal regenere.');
+
+        return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+    }
+
+    #[Route('/ical/imports/{sync}/supprimer', name: 'app_host_property_ical_import_delete', methods: ['POST'])]
+    public function deleteImport(
+        Request $request,
+        Property $property,
+        PropertyICalSync $sync,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        if ($sync->getProperty()?->getId() !== $property->getId()) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('delete_ical_import_' . $sync->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $entityManager->remove($sync);
+        $entityManager->flush();
+        $this->addFlash('success', 'Flux iCal supprime.');
 
         return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
     }
@@ -111,6 +154,30 @@ final class HostCalendarController extends AbstractController
         $this->addFlash('success', 'Periode debloquee.');
 
         return $this->redirectToRoute('app_host_property_calendar', ['id' => $property->getId()]);
+    }
+
+    #[Route('/parametres', name: 'app_host_property_settings', methods: ['GET', 'POST'])]
+    public function settings(
+        Request $request,
+        Property $property,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        $form = $this->createForm(PropertySettingsType::class, $property);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $property->setUpdatedAt(new \DateTimeImmutable());
+            $entityManager->flush();
+
+            $this->addFlash('success', 'Paramètres mis à jour avec succès.');
+
+            return $this->redirectToRoute('app_host_property_settings', ['id' => $property->getId()]);
+        }
+
+        return $this->render('front/host/settings.html.twig', [
+            'property' => $property,
+            'form' => $form,
+        ]);
     }
 
     private function resolveMonthStart(Request $request): \DateTimeImmutable
