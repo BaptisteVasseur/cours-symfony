@@ -19,9 +19,14 @@
                 {% for property in properties %}
                     <div>
                         {% include 'components/card.html.twig' with { property: property } %}
-                        <a href="{{ path('app_host_property_calendar', { id: property.id }) }}" class="mt-3 inline-flex items-center gap-2 text-sm font-semibold text-brand hover:underline">
-                            <i class="fa-solid fa-calendar-days"></i> Calendrier
-                        </a>
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <a href="{{ path('app_host_property_calendar', { id: property.id }) }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                <i class="fa-solid fa-calendar-days"></i> Calendrier
+                            </a>
+                            <a href="{{ path('app_host_property_settings', { id: property.id }) }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+                                <i class="fa-solid fa-gear"></i> Parametres
+                            </a>
+                        </div>
                     </div>
                 {% endfor %}
             </div>
