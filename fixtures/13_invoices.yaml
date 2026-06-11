@@ -1,0 +1,7 @@
+App\Entity\Invoice:
+  invoice_{1..10}:
+    reservation: '@reservation_<current()>'
+    invoiceNumber: '<numerify("INV-####-####")>'
+    pdfUrl: 'https://monsite.fr/invoices/invoice_<current()>.pdf'
+    totalAmount: '<randomFloat(2, 200, 3000)>'
+    createdAt: '<dateTimeBetween("-4 months", "-1 month")>'

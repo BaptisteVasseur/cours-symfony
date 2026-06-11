@@ -1,0 +1,6 @@
+App\Entity\PropertyICalSync:
+  ical_{1..3}:
+    property: '<randomElement([@property_1, @property_2, @property_3])>'
+    providerName: '<randomElement(["airbnb","booking","vrbo"])>'
+    iCalUrl: 'https://calendar.example.com/ical/<md5(uuid())>.ics'
+    lastSyncAt: '<dateTimeBetween("-1 month", "now")>'

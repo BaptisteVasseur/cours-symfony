@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\UserDocumentRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: UserDocumentRepository::class)]
 #[ORM\Table(name: 'user_documents')]
@@ -15,16 +16,23 @@ class UserDocument
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne(inversedBy: 'documents')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['passport', 'id_card', 'driving_license'])]
     #[ORM\Column(length: 50)]
     private ?string $type = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Url(requireTld: false)]
     #[ORM\Column(type: Types::TEXT)]
     private ?string $fileUrl = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['pending', 'verified', 'rejected'])]
     #[ORM\Column(length: 50)]
     private ?string $verificationStatus = null;
 

@@ -1,0 +1,35 @@
+App\Entity\ReservationStatusHistory:
+  history_1:
+    reservation: '@reservation_1'
+    oldStatus: 'pending'
+    newStatus: 'confirmed'
+    changedBy: '@user_1'
+    createdAt: '<dateTimeBetween("-4 months", "-3 months")>'
+
+  history_2:
+    reservation: '@reservation_2'
+    oldStatus: 'pending'
+    newStatus: 'confirmed'
+    changedBy: '@user_2'
+    createdAt: '<dateTimeBetween("-4 months", "-3 months")>'
+
+  history_3:
+    reservation: '@reservation_3'
+    oldStatus: 'pending'
+    newStatus: 'confirmed'
+    changedBy: '@user_3'
+    createdAt: '<dateTimeBetween("-4 months", "-3 months")>'
+
+  history_4:
+    reservation: '@reservation_3'
+    oldStatus: 'confirmed'
+    newStatus: 'completed'
+    changedBy: '@user_3'
+    createdAt: '<dateTimeBetween("-2 months", "-1 month")>'
+
+  history_5:
+    reservation: '@reservation_cancelled_1'
+    oldStatus: 'pending'
+    newStatus: 'cancelled'
+    changedBy: '@user_13'
+    createdAt: '<dateTimeBetween("-3 months", "-2 months")>'

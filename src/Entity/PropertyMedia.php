@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PropertyMediaRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyMediaRepository::class)]
 #[ORM\Table(name: 'property_media')]
@@ -15,13 +16,18 @@ class PropertyMedia
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne(inversedBy: 'media')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['image', 'video'])]
     #[ORM\Column(length: 50)]
     private ?string $mediaType = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Url(requireTld: false)]
     #[ORM\Column(type: Types::TEXT)]
     private ?string $fileUrl = null;
 

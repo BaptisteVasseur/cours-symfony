@@ -1,0 +1,8 @@
+App\Entity\Payout:
+  payout_{1..8}:
+    host: '<randomElement([@user_1, @user_2, @user_3, @user_4, @user_5])>'
+    reservation: '@reservation_<current()>'
+    amount: '<randomFloat(2, 100, 2000)>'
+    currency: '<randomElement(["EUR","USD","GBP"])>'
+    status: '<randomElement(["pending","paid","paid","paid"])>'
+    paidAt: '<dateTimeBetween("-2 months", "now")>'

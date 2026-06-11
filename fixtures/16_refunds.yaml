@@ -1,0 +1,7 @@
+App\Entity\Refund:
+  refund_{1..3}:
+    payment: '@payment_<current()>'
+    amount: '<randomFloat(2, 50, 500)>'
+    reason: '<sentence(6)>'
+    status: '<randomElement(["pending","processed","processed"])>'
+    createdAt: '<dateTimeBetween("-2 months", "now")>'

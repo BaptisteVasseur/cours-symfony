@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PropertyAddressRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyAddressRepository::class)]
 #[ORM\Table(name: 'property_addresses')]
@@ -15,28 +16,39 @@ class PropertyAddress
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull]
     #[ORM\OneToOne(inversedBy: 'address', targetEntity: Property::class)]
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 100)]
     #[ORM\Column(length: 100)]
     private ?string $country = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 100)]
     #[ORM\Column(length: 100)]
     private ?string $city = null;
 
+    #[Assert\Length(max: 20)]
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $postalCode = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private ?string $addressLine1 = null;
 
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $addressLine2 = null;
 
+    #[Assert\Range(min: -90, max: 90)]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
     private ?string $latitude = null;
 
+    #[Assert\Range(min: -180, max: 180)]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
     private ?string $longitude = null;
 

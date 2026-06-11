@@ -1,0 +1,17 @@
+App\Entity\CancellationPolicy:
+  policy_flexible:
+    code: 'flexible'
+    label: 'Flexible'
+    description: 'Remboursement complet jusqu''à 24h avant l''arrivée.'
+  policy_moderate:
+    code: 'moderate'
+    label: 'Modérée'
+    description: 'Remboursement complet jusqu''à 5 jours avant l''arrivée.'
+  policy_strict:
+    code: 'strict'
+    label: 'Stricte'
+    description: 'Remboursement de 50% jusqu''à 1 semaine avant l''arrivée.'
+  policy_non_refundable:
+    code: 'non_refundable'
+    label: 'Non remboursable'
+    description: 'Aucun remboursement après la réservation.'

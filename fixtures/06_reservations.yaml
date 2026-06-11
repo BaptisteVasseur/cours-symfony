@@ -1,0 +1,28 @@
+App\Entity\Reservation:
+  reservation_{1..10}:
+    property: '<randomElement([@property_1, @property_2, @property_3, @property_4, @property_5, @property_6, @property_7])>'
+    guest: '<randomElement([@user_6, @user_7, @user_8, @user_9, @user_10, @user_11, @user_12])>'
+    checkinDate: '<dateTimeBetween("-3 months", "-1 month")>'
+    checkoutDate: '<dateTimeBetween("-1 month", "now")>'
+    guestsCount: '<numberBetween(1, 6)>'
+    status: '<randomElement(["confirmed","confirmed","completed","completed","pending"])>'
+    totalPrice: '<randomFloat(2, 200, 3000)>'
+    cleaningFee: '<randomFloat(2, 20, 100)>'
+    serviceFee: '<randomFloat(2, 15, 80)>'
+    securityDeposit: '<randomFloat(2, 100, 400)>'
+    currency: '<randomElement(["EUR","USD","GBP"])>'
+    createdAt: '<dateTimeBetween("-4 months", "-2 months")>'
+
+  reservation_cancelled_{1..3}:
+    property: '<randomElement([@property_8, @property_9, @property_10])>'
+    guest: '<randomElement([@user_13, @user_14, @user_15])>'
+    checkinDate: '<dateTimeBetween("-2 months", "-1 month")>'
+    checkoutDate: '<dateTimeBetween("-1 month", "now")>'
+    guestsCount: '<numberBetween(1, 4)>'
+    status: 'cancelled'
+    totalPrice: '<randomFloat(2, 150, 1500)>'
+    cleaningFee: '<randomFloat(2, 20, 60)>'
+    serviceFee: '<randomFloat(2, 10, 50)>'
+    currency: 'EUR'
+    cancellationReason: 'Annulation à la demande du client.'
+    createdAt: '<dateTimeBetween("-3 months", "-2 months")>'

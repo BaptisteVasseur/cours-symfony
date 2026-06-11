@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PaymentMethodRepository;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PaymentMethodRepository::class)]
 #[ORM\Table(name: 'payment_methods')]
@@ -14,25 +15,35 @@ class PaymentMethod
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne(inversedBy: 'paymentMethods')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['stripe', 'paypal'])]
     #[ORM\Column(length: 50)]
     private ?string $provider = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private ?string $providerPaymentMethodId = null;
 
+    #[Assert\Choice(choices: ['visa', 'mastercard', 'amex', 'cb'])]
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $brand = null;
 
+    #[Assert\Length(exactly: 4)]
+    #[Assert\Regex(pattern: '/^\d{4}$/')]
     #[ORM\Column(length: 4, nullable: true)]
     private ?string $last4 = null;
 
+    #[Assert\Range(min: 1, max: 12)]
     #[ORM\Column(nullable: true)]
     private ?int $expirationMonth = null;
 
+    #[Assert\Range(min: 2024, max: 2040)]
     #[ORM\Column(nullable: true)]
     private ?int $expirationYear = null;
 

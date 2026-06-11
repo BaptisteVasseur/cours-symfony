@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\DisputeRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: DisputeRepository::class)]
 #[ORM\Table(name: 'disputes')]
@@ -15,17 +16,22 @@ class Dispute
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne(inversedBy: 'disputes')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Reservation $reservation = null;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $openedBy = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['open', 'resolved', 'closed'])]
     #[ORM\Column(length: 50)]
     private ?string $status = null;
 
+    #[Assert\Length(max: 2000)]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $resolution = null;
 

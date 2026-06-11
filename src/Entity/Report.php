@@ -9,6 +9,7 @@ use App\Repository\ReportRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: ReportRepository::class)]
 #[ORM\Table(name: 'reports')]
@@ -16,19 +17,27 @@ class Report
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $reporter = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['user', 'property', 'review'])]
     #[ORM\Column(length: 50)]
     private ?string $targetType = null;
 
+    #[Assert\NotNull]
     #[ORM\Column(type: 'uuid')]
     private ?Uuid $target = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 10, max: 2000)]
     #[ORM\Column(type: Types::TEXT)]
     private ?string $reason = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['pending', 'reviewed', 'dismissed'])]
     #[ORM\Column(length: 50)]
     private ?string $status = null;
 

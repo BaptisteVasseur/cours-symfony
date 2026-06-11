@@ -1,0 +1,7 @@
+App\Entity\Dispute:
+  dispute_{1..3}:
+    reservation: '@reservation_cancelled_<current()>'
+    openedBy: '<randomElement([@user_13, @user_14, @user_15])>'
+    status: '<randomElement(["open","resolved","closed"])>'
+    resolution: '<sentence(8)>'
+    createdAt: '<dateTimeBetween("-2 months", "now")>'

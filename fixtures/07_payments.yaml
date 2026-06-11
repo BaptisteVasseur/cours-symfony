@@ -1,0 +1,11 @@
+App\Entity\Payment:
+  payment_{1..10}:
+    reservation: '@reservation_<current()>'
+    payer: '<randomElement([@user_6, @user_7, @user_8, @user_9, @user_10])>'
+    provider: '<randomElement(["stripe","paypal"])>'
+    providerPaymentIntent: '<md5(uuid())>'
+    amount: '<randomFloat(2, 150, 3000)>'
+    currency: '<randomElement(["EUR","USD","GBP"])>'
+    status: '<randomElement(["succeeded","succeeded","pending","failed"])>'
+    paidAt: '<dateTimeBetween("-3 months", "now")>'
+    createdAt: '<dateTimeBetween("-4 months", "-1 day")>'

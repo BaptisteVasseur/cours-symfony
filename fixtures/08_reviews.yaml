@@ -1,0 +1,9 @@
+App\Entity\Review:
+  review_{1..8}:
+    reservation: '@reservation_<current()>'
+    reviewer: '<randomElement([@user_6, @user_7, @user_8, @user_9, @user_10, @user_11])>'
+    reviewedUser: '<randomElement([@user_1, @user_2, @user_3, @user_4, @user_5])>'
+    property: '<randomElement([@property_1, @property_2, @property_3, @property_4, @property_5])>'
+    rating: '<numberBetween(3, 5)>'
+    comment: '<randomElement(["Séjour absolument parfait, logement conforme aux photos et hôte très accueillant. Je recommande vivement !", "Appartement propre et bien situé, idéal pour visiter la ville. L''hôte a été très réactif à nos questions.", "Magnifique endroit, vue époustouflante et équipements au top. On reviendra sans hésiter.", "Très beau logement, calme et reposant. La décoration est soignée et le lit très confortable.", "Hôte adorable qui nous a donné plein de bons plans. Le logement était parfaitement équipé.", "Coup de cœur pour ce logement atypique et chaleureux. Emplacement idéal pour explorer la région.", "Séjour inoubliable dans ce cadre exceptionnel. Tout était parfait du début à la fin.", "Logement spacieux et lumineux, très bien équipé. Communication fluide avec l''hôte. Parfait !"])>'
+    createdAt: '<dateTimeBetween("-2 months", "-1 week")>'

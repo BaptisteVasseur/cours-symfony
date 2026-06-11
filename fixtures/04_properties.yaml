@@ -1,0 +1,277 @@
+App\Entity\PropertyAddress:
+  address_1:
+    country: 'France'
+    city: 'Nice'
+    postalCode: '06000'
+    addressLine1: '12 Promenade des Anglais'
+    latitude: '43.6961'
+    longitude: '7.2660'
+
+  address_2:
+    country: 'France'
+    city: 'Paris'
+    postalCode: '75004'
+    addressLine1: '8 Rue des Archives'
+    latitude: '48.8566'
+    longitude: '2.3522'
+
+  address_3:
+    country: 'France'
+    city: 'Chamonix'
+    postalCode: '74400'
+    addressLine1: '3 Route du Mont-Blanc'
+    latitude: '45.9237'
+    longitude: '6.8694'
+
+  address_4:
+    country: 'France'
+    city: 'Lyon'
+    postalCode: '69002'
+    addressLine1: '22 Quai de la Saône'
+    latitude: '45.7440'
+    longitude: '4.8357'
+
+  address_5:
+    country: 'France'
+    city: 'Les Baux-de-Provence'
+    postalCode: '13520'
+    addressLine1: '5 Chemin des Lavandes'
+    latitude: '43.7444'
+    longitude: '4.7956'
+
+  address_6:
+    country: 'France'
+    city: 'Biarritz'
+    postalCode: '64200'
+    addressLine1: '7 Avenue de la Grande Plage'
+    latitude: '43.4832'
+    longitude: '-1.5586'
+
+  address_7:
+    country: 'France'
+    city: 'Bordeaux'
+    postalCode: '33000'
+    addressLine1: '45 Rue du Vignoble'
+    latitude: '44.8378'
+    longitude: '-0.5792'
+
+  address_8:
+    country: 'France'
+    city: 'Marseille'
+    postalCode: '13002'
+    addressLine1: '3 Rue du Vieux-Port'
+    latitude: '43.2965'
+    longitude: '5.3698'
+
+  address_9:
+    country: 'France'
+    city: 'Dinard'
+    postalCode: '35800'
+    addressLine1: '2 Chemin de la Côte d''Émeraude'
+    latitude: '48.6337'
+    longitude: '-2.0625'
+
+  address_10:
+    country: 'France'
+    city: 'Cannes'
+    postalCode: '06400'
+    addressLine1: '18 Boulevard de la Croisette'
+    latitude: '43.5528'
+    longitude: '7.0174'
+
+App\Entity\PropertyRule:
+  rules_{1..10}:
+    petsAllowed: '<randomElement([true, false, false])>'
+    smokingAllowed: '<randomElement([true, false, false, false])>'
+    partiesAllowed: '<randomElement([true, false, false, false, false])>'
+
+App\Entity\Property:
+  property_1:
+    host: '@user_1'
+    cancellationPolicy: '@policy_flexible'
+    title: 'Villa avec piscine vue mer à Nice'
+    description: 'Magnifique villa provençale avec piscine privée et vue panoramique sur la mer. Idéale pour des vacances en famille ou entre amis. Terrasse ensoleillée, barbecue, et accès direct à la plage à 5 minutes à pied.'
+    propertyType: 'villa'
+    status: 'published'
+    maxGuests: 8
+    bedrooms: 4
+    beds: 5
+    bathrooms: 2
+    pricePerNight: '320.00'
+    cleaningFee: '60.00'
+    securityDeposit: '400.00'
+    instantBooking: true
+    createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    address: '@address_1'
+    rules: '@rules_1'
+
+  property_2:
+    host: '@user_2'
+    cancellationPolicy: '@policy_moderate'
+    title: 'Appartement moderne au cœur de Paris'
+    description: 'Bel appartement haussmannien entièrement rénové, situé dans le Marais. Lumineux, décoré avec goût, à deux pas des musées et restaurants. Idéal pour découvrir Paris.'
+    propertyType: 'apartment'
+    status: 'published'
+    maxGuests: 4
+    bedrooms: 2
+    beds: 2
+    bathrooms: 1
+    pricePerNight: '180.00'
+    cleaningFee: '35.00'
+    securityDeposit: '200.00'
+    instantBooking: false
+    createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    address: '@address_2'
+    rules: '@rules_2'
+
+  property_3:
+    host: '@user_3'
+    cancellationPolicy: '@policy_strict'
+    title: 'Chalet montagnard avec jacuzzi à Chamonix'
+    description: 'Authentique chalet en bois au pied des pistes avec jacuzzi extérieur et cheminée. Vue imprenable sur le Mont-Blanc. Parfait pour les amateurs de ski et de randonnée.'
+    propertyType: 'chalet'
+    status: 'published'
+    maxGuests: 6
+    bedrooms: 3
+    beds: 4
+    bathrooms: 2
+    pricePerNight: '250.00'
+    cleaningFee: '50.00'
+    securityDeposit: '300.00'
+    instantBooking: true
+    createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    address: '@address_3'
+    rules: '@rules_3'
+
+  property_4:
+    host: '@user_1'
+    cancellationPolicy: '@policy_flexible'
+    title: 'Loft industriel à Lyon Confluence'
+    description: 'Grand loft de 90m² dans le quartier tendance de la Confluence. Plafonds hauts, verrières, cuisine ouverte équipée. À deux pas des musées et des quais de Saône.'
+    propertyType: 'loft'
+    status: 'published'
+    maxGuests: 3
+    bedrooms: 1
+    beds: 2
+    bathrooms: 1
+    pricePerNight: '120.00'
+    cleaningFee: '25.00'
+    securityDeposit: '150.00'
+    instantBooking: true
+    createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    address: '@address_4'
+    rules: '@rules_4'
+
+  property_5:
+    host: '@user_2'
+    cancellationPolicy: '@policy_moderate'
+    title: 'Maison de charme avec jardin en Provence'
+    description: 'Belle maison de village en pierre avec jardin ombragé et terrasse. Entourée de lavandes et de vignes, à proximité des Baux-de-Provence. Piscine partagée avec les voisins.'
+    propertyType: 'house'
+    status: 'published'
+    maxGuests: 6
+    bedrooms: 3
+    beds: 3
+    bathrooms: 2
+    pricePerNight: '195.00'
+    cleaningFee: '45.00'
+    securityDeposit: '250.00'
+    instantBooking: false
+    createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    address: '@address_5'
+    rules: '@rules_5'
+
+  property_6:
+    host: '@user_3'
+    cancellationPolicy: '@policy_non_refundable'
+    title: 'Studio cosy près de la plage à Biarritz'
+    description: 'Petit studio bien agencé à 200m de la grande plage de Biarritz. Idéal pour un séjour en couple. Décoration marine, balcon avec vue sur l''océan.'
+    propertyType: 'apartment'
+    status: 'published'
+    maxGuests: 2
+    bedrooms: 1
+    beds: 1
+    bathrooms: 1
+    pricePerNight: '95.00'
+    cleaningFee: '20.00'
+    securityDeposit: '100.00'
+    instantBooking: true
+    createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    address: '@address_6'
+    rules: '@rules_6'
+
+  property_7:
+    host: '@user_4'
+    cancellationPolicy: '@policy_flexible'
+    title: 'Villa contemporaine avec piscine à Bordeaux'
+    description: 'Villa moderne de plain-pied avec grande piscine chauffée et jardin paysagé. Cuisine ouverte haut de gamme, terrasse couverte. À 15 min du centre de Bordeaux et des vignobles.'
+    propertyType: 'villa'
+    status: 'published'
+    maxGuests: 10
+    bedrooms: 5
+    beds: 6
+    bathrooms: 3
+    pricePerNight: '380.00'
+    cleaningFee: '80.00'
+    securityDeposit: '500.00'
+    instantBooking: false
+    createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    address: '@address_7'
+    rules: '@rules_7'
+
+  property_8:
+    host: '@user_4'
+    cancellationPolicy: '@policy_moderate'
+    title: 'Appartement vue mer à Marseille'
+    description: 'Bel appartement en hauteur avec vue panoramique sur la mer et le Vieux-Port. Proche du Panier et des calanques. Idéal pour explorer Marseille et ses environs.'
+    propertyType: 'apartment'
+    status: 'published'
+    maxGuests: 4
+    bedrooms: 2
+    beds: 2
+    bathrooms: 1
+    pricePerNight: '140.00'
+    cleaningFee: '30.00'
+    securityDeposit: '180.00'
+    instantBooking: true
+    createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    address: '@address_8'
+    rules: '@rules_8'
+
+  property_9:
+    host: '@user_5'
+    cancellationPolicy: '@policy_strict'
+    title: 'Maison bretonne face à la mer à Dinard'
+    description: 'Charmante maison de pêcheur rénovée avec vue directe sur la mer. Jardin avec accès à la plage privée. Atmosphère authentique et reposante en Bretagne.'
+    propertyType: 'house'
+    status: 'published'
+    maxGuests: 5
+    bedrooms: 2
+    beds: 3
+    bathrooms: 1
+    pricePerNight: '160.00'
+    cleaningFee: '40.00'
+    securityDeposit: '200.00'
+    instantBooking: false
+    createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    address: '@address_9'
+    rules: '@rules_9'
+
+  property_10:
+    host: '@user_5'
+    cancellationPolicy: '@policy_flexible'
+    title: 'Penthouse luxueux avec terrasse à Cannes'
+    description: 'Penthouse d''exception au dernier étage avec grande terrasse et vue à 360° sur la Croisette et la mer. Intérieur haut de gamme, spa privé. À quelques pas du Palais des Festivals.'
+    propertyType: 'loft'
+    status: 'published'
+    maxGuests: 6
+    bedrooms: 3
+    beds: 3
+    bathrooms: 2
+    pricePerNight: '450.00'
+    cleaningFee: '90.00'
+    securityDeposit: '600.00'
+    instantBooking: false
+    createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    address: '@address_10'
+    rules: '@rules_10'

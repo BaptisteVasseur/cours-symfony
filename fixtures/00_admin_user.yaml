@@ -1,0 +1,20 @@
+App\Entity\UserProfile:
+  profile_admin:
+    firstName: 'Admin'
+    lastName: 'Système'
+    identityStatus: 'verified'
+    createdAt: '<dateTimeBetween("-2 years", "-1 month")>'
+
+App\Entity\User:
+  user_admin:
+    email: 'admin@airbnb.fr'
+    passwordHash: '$2y$13$llO/TC1HQAMSypKeM1udzuEYnUFM7Fp3t392Wi9DC8pbZkViV8mfa'
+    status: 'active'
+    isEmailVerified: true
+    is2faEnabled: false
+    preferredLanguage: 'fr'
+    preferredCurrency: 'EUR'
+    createdAt: '<dateTimeBetween("-2 years", "-1 month")>'
+    assignedRoles:
+      - 'ROLE_ADMIN'
+    profile: '@profile_admin'

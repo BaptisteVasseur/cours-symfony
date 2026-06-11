@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\OauthAccountRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: OauthAccountRepository::class)]
 #[ORM\Table(name: 'oauth_accounts')]
@@ -15,19 +16,26 @@ class OauthAccount
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne(inversedBy: 'oauthAccounts')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $user = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['google', 'facebook', 'apple'])]
     #[ORM\Column(length: 50)]
     private ?string $provider = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private ?string $providerUserId = null;
 
+    #[Assert\Length(max: 2000)]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $accessToken = null;
 
+    #[Assert\Length(max: 2000)]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $refreshToken = null;
 

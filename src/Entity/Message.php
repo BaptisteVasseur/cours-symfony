@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\MessageRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: MessageRepository::class)]
 #[ORM\Table(name: 'messages')]
@@ -15,20 +16,26 @@ class Message
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne(inversedBy: 'messages')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Conversation $conversation = null;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $sender = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['text', 'attachment'])]
     #[ORM\Column(length: 50)]
     private ?string $messageType = null;
 
+    #[Assert\Length(max: 5000)]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $content = null;
 
+    #[Assert\Url(requireTld: false)]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $attachmentUrl = null;
 

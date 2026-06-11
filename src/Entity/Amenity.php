@@ -9,6 +9,7 @@ use App\Repository\AmenityRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: AmenityRepository::class)]
 #[ORM\Table(name: 'amenities')]
@@ -16,12 +17,17 @@ class Amenity
 {
     use UuidEntityTrait;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 50)]
     #[ORM\Column(length: 50, unique: true)]
     private ?string $code = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 100)]
     #[ORM\Column(length: 100)]
     private ?string $label = null;
 
+    #[Assert\Length(max: 50)]
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $category = null;
 

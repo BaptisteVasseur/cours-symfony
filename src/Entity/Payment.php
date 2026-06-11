@@ -10,6 +10,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PaymentRepository::class)]
 #[ORM\Table(name: 'payments')]
@@ -17,26 +18,38 @@ class Payment
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne(inversedBy: 'payments')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Reservation $reservation = null;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $payer = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['stripe', 'paypal'])]
     #[ORM\Column(length: 50)]
     private ?string $provider = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private ?string $providerPaymentIntent = null;
 
+    #[Assert\NotNull]
+    #[Assert\Positive]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $amount = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['EUR', 'USD', 'GBP'])]
     #[ORM\Column(length: 10)]
     private ?string $currency = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['pending', 'succeeded', 'failed', 'refunded'])]
     #[ORM\Column(length: 50)]
     private ?string $status = null;
 

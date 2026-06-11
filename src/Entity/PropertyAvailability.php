@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PropertyAvailabilityRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyAvailabilityRepository::class)]
 #[ORM\Table(name: 'property_availability')]
@@ -15,19 +16,23 @@ class PropertyAvailability
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne(inversedBy: 'availabilities')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Assert\NotNull]
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     private ?\DateTimeImmutable $availableDate = null;
 
     #[ORM\Column]
     private bool $isAvailable = true;
 
+    #[Assert\Positive]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $priceOverride = null;
 
+    #[Assert\Range(min: 1, max: 365)]
     #[ORM\Column(nullable: true)]
     private ?int $minimumStay = null;
 

@@ -1,0 +1,349 @@
+App\Entity\PropertyMedia:
+    # Property 1 - Villa Nice
+    media_1_1:
+        property: "@property_1"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1564013799919-ab600027ffc6?w=1200&q=80"
+        sortOrder: 0
+        isCover: true
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_1_2:
+        property: "@property_1"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200&q=80"
+        sortOrder: 1
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_1_3:
+        property: "@property_1"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=1200&q=80"
+        sortOrder: 2
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_1_4:
+        property: "@property_1"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1522771739844-6a9f6d5f14af?w=1200&q=80"
+        sortOrder: 3
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_1_5:
+        property: "@property_1"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1571003123894-1f0594d2b5d9?w=1200&q=80"
+        sortOrder: 4
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+
+    # Property 2 - Appartement Paris
+    media_2_1:
+        property: "@property_2"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200&q=80"
+        sortOrder: 0
+        isCover: true
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_2_2:
+        property: "@property_2"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1598928506311-c55ded91a20c?w=1200&q=80"
+        sortOrder: 1
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_2_3:
+        property: "@property_2"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?w=1200&q=80"
+        sortOrder: 2
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_2_4:
+        property: "@property_2"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=1200&q=80"
+        sortOrder: 3
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_2_5:
+        property: "@property_2"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=1200&q=80"
+        sortOrder: 4
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+
+    # Property 3 - Chalet Chamonix
+    media_3_1:
+        property: "@property_3"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=1200&q=80"
+        sortOrder: 0
+        isCover: true
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_3_2:
+        property: "@property_3"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?w=1200&q=80"
+        sortOrder: 1
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_3_3:
+        property: "@property_3"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1618221195710-dd6b41faaea6?w=1200&q=80"
+        sortOrder: 2
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_3_4:
+        property: "@property_3"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1507089947368-19c1da9775ae?w=1200&q=80"
+        sortOrder: 3
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_3_5:
+        property: "@property_3"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1600210492493-0946911123ea?w=1200&q=80"
+        sortOrder: 4
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+
+    # Property 4 - Loft Lyon
+    media_4_1:
+        property: "@property_4"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1493809842364-78817add7ffb?w=1200&q=80"
+        sortOrder: 0
+        isCover: true
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_4_2:
+        property: "@property_4"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&q=80"
+        sortOrder: 1
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_4_3:
+        property: "@property_4"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1560185007-cde436f6a4d0?w=1200&q=80"
+        sortOrder: 2
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_4_4:
+        property: "@property_4"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=1200&q=80"
+        sortOrder: 3
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+
+    # Property 5 - Maison Provence
+    media_5_1:
+        property: "@property_5"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1416331108676-a22ccb276e35?w=1200&q=80"
+        sortOrder: 0
+        isCover: true
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_5_2:
+        property: "@property_5"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&q=80"
+        sortOrder: 1
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_5_3:
+        property: "@property_5"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=1200&q=80"
+        sortOrder: 2
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_5_4:
+        property: "@property_5"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?w=1200&q=80"
+        sortOrder: 3
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_5_5:
+        property: "@property_5"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1567767292278-a4f21aa2d36e?w=1200&q=80"
+        sortOrder: 4
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+
+    # Property 6 - Studio Biarritz
+    media_6_1:
+        property: "@property_6"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1554995207-c18c203602cb?w=1200&q=80"
+        sortOrder: 1
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_6_2:
+        property: "@property_6"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?w=1200&q=80"
+        sortOrder: 2
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_6_3:
+        property: "@property_6"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1536376072261-38c75010e6c9?w=1200&q=80"
+        sortOrder: 3
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_6_4:
+        property: "@property_6"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1540518614846-7eded433c457?w=1200&q=80"
+        sortOrder: 4
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+
+    # Property 7 - Villa Bordeaux
+    media_7_1:
+        property: "@property_7"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=1200&q=80"
+        sortOrder: 0
+        isCover: true
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_7_2:
+        property: "@property_7"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=1200&q=80"
+        sortOrder: 1
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_7_3:
+        property: "@property_7"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1615529328331-f8917597711f?w=1200&q=80"
+        sortOrder: 2
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_7_4:
+        property: "@property_7"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1200&q=80"
+        sortOrder: 3
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_7_5:
+        property: "@property_7"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1512916194211-3f2b7f5f7de4?w=1200&q=80"
+        sortOrder: 4
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+
+    # Property 8 - Appartement Marseille
+    media_8_1:
+        property: "@property_8"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1200&q=80"
+        sortOrder: 0
+        isCover: true
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_8_2:
+        property: "@property_8"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1502005229762-cf1b2da7c5d6?w=1200&q=80"
+        sortOrder: 1
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_8_3:
+        property: "@property_8"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1493663284031-b7e3aefcae8e?w=1200&q=80"
+        sortOrder: 2
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_8_4:
+        property: "@property_8"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1524758631624-e2822e304c36?w=1200&q=80"
+        sortOrder: 3
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_8_5:
+        property: "@property_8"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1600210491369-e753d80a41f3?w=1200&q=80"
+        sortOrder: 4
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+
+    # Property 9 - Maison Dinard
+    media_9_1:
+        property: "@property_9"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=1200&q=80"
+        sortOrder: 0
+        isCover: true
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_9_2:
+        property: "@property_9"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1599619351208-3e6c839d6828?w=1200&q=80"
+        sortOrder: 1
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_9_3:
+        property: "@property_9"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=1200&q=80"
+        sortOrder: 2
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_9_4:
+        property: "@property_9"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1484154218962-a197022b5858?w=1200&q=80"
+        sortOrder: 4
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+
+    # Property 10 - Penthouse Cannes
+    media_10_1:
+        property: "@property_10"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1583608205776-bfd35f0d9f83?w=1200&q=80"
+        sortOrder: 0
+        isCover: true
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_10_2:
+        property: "@property_10"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1615529328331-f8917597711f?w=1200&q=80"
+        sortOrder: 1
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_10_3:
+        property: "@property_10"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1613490493576-7fde63acd811?w=1200&q=80"
+        sortOrder: 2
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_10_4:
+        property: "@property_10"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1600121848594-d8644e57abab?w=1200&q=80"
+        sortOrder: 3
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+    media_10_5:
+        property: "@property_10"
+        mediaType: "image"
+        fileUrl: "https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200&q=80"
+        sortOrder: 4
+        isCover: false
+        createdAt: '<dateTimeBetween("-1 year", "-1 month")>'

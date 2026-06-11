@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PayoutRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PayoutRepository::class)]
 #[ORM\Table(name: 'payouts')]
@@ -15,20 +16,28 @@ class Payout
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $host = null;
 
+    #[Assert\NotNull]
     #[ORM\ManyToOne(inversedBy: 'payouts')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Reservation $reservation = null;
 
+    #[Assert\NotNull]
+    #[Assert\Positive]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $amount = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['EUR', 'USD', 'GBP'])]
     #[ORM\Column(length: 10)]
     private ?string $currency = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Choice(choices: ['pending', 'paid', 'failed'])]
     #[ORM\Column(length: 50)]
     private ?string $status = null;
 

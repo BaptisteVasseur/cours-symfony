@@ -1,0 +1,5 @@
+App\Entity\PropertyAvailability:
+  availability_{1..30}:
+    property: '<randomElement([@property_1, @property_2, @property_3, @property_4, @property_5])>'
+    availableDate: '<dateTimeBetween("now", "+6 months")>'
+    minimumStay: '<numberBetween(1, 7)>'

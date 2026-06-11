@@ -1,0 +1,9 @@
+App\Entity\Notification:
+  notification_{1..20}:
+    user: '<randomElement([@user_1, @user_2, @user_3, @user_4, @user_5, @user_6, @user_7, @user_8])>'
+    type: '<randomElement(["reservation_confirmed","payment_received","review_posted","message_received","reservation_cancelled"])>'
+    title: '<sentence(3)>'
+    content: '<sentence(8)>'
+    channel: '<randomElement(["email","push","sms"])>'
+    isRead: '<randomElement([true, false])>'
+    createdAt: '<dateTimeBetween("-2 months", "now")>'

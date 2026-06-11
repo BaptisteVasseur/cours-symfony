@@ -1,0 +1,25 @@
+App\Entity\UserDocument:
+  doc_{1..10}:
+    user: '<randomElement([@user_1, @user_2, @user_3, @user_4, @user_5, @user_6, @user_7, @user_8, @user_9, @user_10])>'
+    type: '<randomElement(["passport","id_card","driving_license"])>'
+    fileUrl: 'https://monsite.fr/documents/doc_<current()>.pdf'
+    verificationStatus: '<randomElement(["pending","verified","rejected"])>'
+    createdAt: '<dateTimeBetween("-1 year", "-1 month")>'
+
+App\Entity\PaymentMethod:
+  payment_method_{1..8}:
+    user: '<randomElement([@user_6, @user_7, @user_8, @user_9, @user_10, @user_11, @user_12])>'
+    provider: '<randomElement(["stripe","paypal"])>'
+    providerPaymentMethodId: '<md5(uuid())>'
+    brand: '<randomElement(["visa","mastercard","amex"])>'
+    last4: '<numerify("####")>'
+    expirationMonth: '<numberBetween(1, 12)>'
+    expirationYear: '<numberBetween(2025, 2030)>'
+
+App\Entity\OauthAccount:
+  oauth_{1..5}:
+    user: '<randomElement([@user_1, @user_2, @user_3, @user_4, @user_5])>'
+    provider: '<randomElement(["google","facebook","apple"])>'
+    providerUserId: '<md5(uuid())>'
+    accessToken: '<md5(uuid())>'
+    createdAt: '<dateTimeBetween("-1 year", "-1 month")>'

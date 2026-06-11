@@ -1,0 +1,41 @@
+App\Entity\Amenity:
+  amenity_wifi:
+    code: 'wifi'
+    label: 'Wi-Fi'
+    category: 'connectivity'
+  amenity_parking:
+    code: 'parking'
+    label: 'Parking gratuit'
+    category: 'transport'
+  amenity_pool:
+    code: 'pool'
+    label: 'Piscine'
+    category: 'outdoor'
+  amenity_ac:
+    code: 'air_conditioning'
+    label: 'Climatisation'
+    category: 'comfort'
+  amenity_kitchen:
+    code: 'kitchen'
+    label: 'Cuisine équipée'
+    category: 'kitchen'
+  amenity_washer:
+    code: 'washer'
+    label: 'Lave-linge'
+    category: 'laundry'
+  amenity_tv:
+    code: 'tv'
+    label: 'Télévision'
+    category: 'entertainment'
+  amenity_heating:
+    code: 'heating'
+    label: 'Chauffage'
+    category: 'comfort'
+  amenity_gym:
+    code: 'gym'
+    label: 'Salle de sport'
+    category: 'wellness'
+  amenity_bbq:
+    code: 'bbq'
+    label: 'Barbecue'
+    category: 'outdoor'

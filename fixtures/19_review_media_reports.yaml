@@ -1,0 +1,11 @@
+App\Entity\ReviewMedia:
+  review_media_{1..4}:
+    review: '<randomElement([@review_1, @review_2, @review_3, @review_4])>'
+    fileUrl: 'https://picsum.photos/seed/review<current()>/800/600'
+
+App\Entity\ReviewReport:
+  review_report_{1..3}:
+    review: '<randomElement([@review_5, @review_6, @review_7])>'
+    reportedBy: '<randomElement([@user_6, @user_7, @user_8])>'
+    reason: '<sentence(6)>'
+    status: '<randomElement(["pending","reviewed","dismissed"])>'

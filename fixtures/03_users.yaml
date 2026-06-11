@@ -1,0 +1,22 @@
+App\Entity\UserProfile:
+  profile_{1..20}:
+    firstName: '<firstName()>'
+    lastName: '<lastName()>'
+    birthDate: '<dateTimeBetween("-60 years", "-18 years")>'
+    avatarUrl: 'https://i.pravatar.cc/150?u=<current()>'
+    bio: '<randomElement(["Passionné de voyages et de découvertes, j''aime partager mes logements avec des voyageurs du monde entier.", "Hôte expérimenté depuis 3 ans, je mets un point d''honneur à offrir un séjour inoubliable.", "Amoureux de ma région, je loue mon appartement pour vous faire découvrir les trésors locaux.", "Propriétaire attentionné, je suis toujours disponible pour mes voyageurs.", "Grand voyageur moi-même, je sais ce que vous recherchez pour un séjour parfait."])>'
+    identityStatus: '<randomElement(["unverified","pending","verified","verified"])>'
+    createdAt: '<dateTimeBetween("-2 years", "-1 month")>'
+
+App\Entity\User:
+  user_{1..20}:
+    email: '<safeEmail()>'
+    phone: '<numerify("+336########")>'
+    passwordHash: '<md5(uuid())>'
+    status: '<randomElement(["active","active","active","pending","suspended"])>'
+    isEmailVerified: '<randomElement([true, true, true, false])>'
+    is2faEnabled: '<randomElement([true, false, false, false])>'
+    preferredLanguage: '<randomElement(["fr","en","es"])>'
+    preferredCurrency: '<randomElement(["EUR","USD","GBP"])>'
+    createdAt: '<dateTimeBetween("-2 years", "-1 month")>'
+    profile: '@profile_<current()>'

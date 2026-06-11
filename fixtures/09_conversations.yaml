@@ -1,0 +1,21 @@
+App\Entity\Conversation:
+  conversation_{1..8}:
+    reservation: '@reservation_<current()>'
+    createdAt: '<dateTimeBetween("-3 months", "-1 week")>'
+
+App\Entity\ConversationParticipant:
+  participant_guest_{1..8}:
+    conversation: '@conversation_<current()>'
+    user: '<randomElement([@user_6, @user_7, @user_8, @user_9, @user_10])>'
+  participant_host_{1..8}:
+    conversation: '@conversation_<current()>'
+    user: '<randomElement([@user_1, @user_2, @user_3])>'
+
+App\Entity\Message:
+  message_{1..20}:
+    conversation: '<randomElement([@conversation_1, @conversation_2, @conversation_3, @conversation_4, @conversation_5])>'
+    sender: '<randomElement([@user_1, @user_2, @user_6, @user_7, @user_8])>'
+    messageType: 'text'
+    content: '<sentence(8)>'
+    isFlagged: false
+    createdAt: '<dateTimeBetween("-2 months", "now")>'

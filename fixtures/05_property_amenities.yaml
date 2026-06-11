@@ -1,0 +1,49 @@
+App\Entity\PropertyAmenity:
+  prop_amenity_1:
+    property: '@property_1'
+    amenity: '@amenity_wifi'
+  prop_amenity_2:
+    property: '@property_1'
+    amenity: '@amenity_kitchen'
+  prop_amenity_3:
+    property: '@property_2'
+    amenity: '@amenity_wifi'
+  prop_amenity_4:
+    property: '@property_2'
+    amenity: '@amenity_pool'
+  prop_amenity_5:
+    property: '@property_3'
+    amenity: '@amenity_ac'
+  prop_amenity_6:
+    property: '@property_3'
+    amenity: '@amenity_parking'
+  prop_amenity_7:
+    property: '@property_4'
+    amenity: '@amenity_bbq'
+  prop_amenity_8:
+    property: '@property_4'
+    amenity: '@amenity_wifi'
+  prop_amenity_9:
+    property: '@property_5'
+    amenity: '@amenity_pool'
+  prop_amenity_10:
+    property: '@property_5'
+    amenity: '@amenity_gym'
+  prop_amenity_11:
+    property: '@property_6'
+    amenity: '@amenity_heating'
+  prop_amenity_12:
+    property: '@property_7'
+    amenity: '@amenity_tv'
+  prop_amenity_13:
+    property: '@property_7'
+    amenity: '@amenity_washer'
+  prop_amenity_14:
+    property: '@property_8'
+    amenity: '@amenity_wifi'
+  prop_amenity_15:
+    property: '@property_9'
+    amenity: '@amenity_parking'
+  prop_amenity_16:
+    property: '@property_10'
+    amenity: '@amenity_pool'

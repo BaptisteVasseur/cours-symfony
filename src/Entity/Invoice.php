@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\InvoiceRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: InvoiceRepository::class)]
 #[ORM\Table(name: 'invoices')]
@@ -15,16 +16,22 @@ class Invoice
 {
     use UuidEntityTrait;
 
+    #[Assert\NotNull]
     #[ORM\OneToOne(inversedBy: 'invoice', targetEntity: Reservation::class)]
     #[ORM\JoinColumn(nullable: false)]
     private ?Reservation $reservation = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(max: 50)]
     #[ORM\Column(length: 50, unique: true)]
     private ?string $invoiceNumber = null;
 
+    #[Assert\Url(requireTld: false)]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $pdfUrl = null;
 
+    #[Assert\NotNull]
+    #[Assert\Positive]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $totalAmount = null;
 
