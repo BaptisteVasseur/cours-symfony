@@ -1,7 +1,6 @@
 {% extends 'layout/base.html.twig' %}
 
 {% block body %}
-<body class="font-sans antialiased bg-white text-gray-900 flex flex-col min-h-screen">
     {% include 'layout/partials/app/header.html.twig' %}
 
     {% for label, messages in app.flashes %}
@@ -21,5 +20,4 @@
     {% block content %}{% endblock %}
 
     {% include 'layout/partials/app/footer.html.twig' %}
-</body>
 {% endblock %}

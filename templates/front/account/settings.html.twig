@@ -1,27 +1,123 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}Paramètres du compte{% endblock %}
+{% block title %}Paramètres — StayNest{% endblock %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-2xl mx-auto w-full">
-        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Paramètres du compte</h1>
-        <p class="text-gray-500 mb-2">{{ user.email }}</p>
-        <p class="text-gray-500 mb-8">Gérez vos préférences et votre sécurité</p>
+<main class="flex-grow max-w-4xl mx-auto w-full px-4 py-10">
 
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium bg-emerald-50 text-emerald-800 border border-emerald-200">{{ message }}</div>
-            {% endfor %}
-        {% endfor %}
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-900">Mon compte</h1>
+        <p class="text-gray-400 text-sm mt-1">Gérez votre profil et vos préférences</p>
+    </div>
 
-        <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-            {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
-                {{ form_row(form.phone, { row_attr: { class: 'space-y-2' }, label_attr: { class: 'block text-sm font-semibold text-gray-900' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                {{ form_row(form.preferredLanguage, { row_attr: { class: 'space-y-2' }, label_attr: { class: 'block text-sm font-semibold text-gray-900' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                {{ form_row(form.preferredCurrency, { row_attr: { class: 'space-y-2' }, label_attr: { class: 'block text-sm font-semibold text-gray-900' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                {{ form_row(form.plainPassword, { row_attr: { class: 'space-y-2' }, label_attr: { class: 'block text-sm font-semibold text-gray-900' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                <button type="submit" class="bg-brand hover:bg-brandHover text-white font-semibold px-6 py-3 rounded-xl transition">Enregistrer</button>
-            {{ form_end(form) }}
+    <div class="flex flex-col md:flex-row gap-8">
+
+        {# Sidebar nav #}
+        <nav class="md:w-52 shrink-0">
+            <ul class="space-y-1">
+                <li>
+                    <a href="{{ path('app_account_profile') }}"
+                       class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-surface hover:text-gray-900 transition">
+                        <i class="fa-solid fa-user w-4 text-center text-gray-400"></i>
+                        Profil
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ path('app_account_settings') }}"
+                       class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold bg-surface text-gray-900">
+                        <i class="fa-solid fa-gear w-4 text-center text-brand"></i>
+                        Paramètres
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ path('app_reservation_index') }}"
+                       class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-surface hover:text-gray-900 transition">
+                        <i class="fa-solid fa-suitcase-rolling w-4 text-center text-gray-400"></i>
+                        Mes réservations
+                    </a>
+                </li>
+                {% if is_granted('ROLE_HOST') %}
+                <li>
+                    <a href="{{ path('app_host_reservation_index') }}"
+                       class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-gray-500 hover:bg-surface hover:text-gray-900 transition">
+                        <i class="fa-solid fa-house-chimney-user w-4 text-center text-gray-400"></i>
+                        Dashboard hôte
+                    </a>
+                </li>
+                {% endif %}
+                <li class="pt-2 border-t border-gray-100">
+                    <a href="{{ path('app_logout') }}"
+                       class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition">
+                        <i class="fa-solid fa-right-from-bracket w-4 text-center"></i>
+                        Se déconnecter
+                    </a>
+                </li>
+            </ul>
+        </nav>
+
+        {# Content #}
+        <div class="flex-1 min-w-0 space-y-6">
+
+            {# Account info card #}
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-card p-6">
+                <h2 class="text-base font-bold text-gray-900 mb-1">Compte</h2>
+                <p class="text-sm text-gray-400 mb-6">{{ user.email }}</p>
+
+                {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
+
+                    {{ form_row(form.phone, {
+                        label_attr: { class: 'block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5' },
+                        attr: { class: 'w-full border border-gray-200 bg-surface rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition', placeholder: '+33 6 00 00 00 00' }
+                    }) }}
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                        {{ form_row(form.preferredLanguage, {
+                            label_attr: { class: 'block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5' },
+                            attr: { class: 'w-full border border-gray-200 bg-surface rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition' }
+                        }) }}
+                        {{ form_row(form.preferredCurrency, {
+                            label_attr: { class: 'block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5' },
+                            attr: { class: 'w-full border border-gray-200 bg-surface rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition' }
+                        }) }}
+                    </div>
+
+                    <div class="pt-2 flex justify-end">
+                        <button type="submit"
+                            class="bg-brand hover:bg-brandHover text-white font-semibold px-7 py-3 rounded-xl transition text-sm shadow-sm">
+                            Enregistrer
+                        </button>
+                    </div>
+
+                {{ form_end(form) }}
+            </div>
+
+            {# Change password card #}
+            <div class="bg-white border border-gray-100 rounded-2xl shadow-card p-6">
+                <h2 class="text-base font-bold text-gray-900 mb-1">Mot de passe</h2>
+                <p class="text-sm text-gray-400 mb-6">Laissez vide pour ne pas changer</p>
+
+                <div class="max-w-sm">
+                    {# plainPassword field is part of the same form above — use a separate visual block #}
+                    <label class="block text-xs font-semibold text-gray-600 uppercase tracking-wide mb-1.5">Nouveau mot de passe</label>
+                    <input type="password" name="account_settings[plainPassword]"
+                        class="w-full border border-gray-200 bg-surface rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition"
+                        placeholder="••••••••••">
+                    <p class="text-xs text-gray-400 mt-1.5">Minimum 8 caractères</p>
+                </div>
+            </div>
+
+            {# Danger zone #}
+            <div class="border border-red-100 rounded-2xl p-6">
+                <h2 class="text-base font-bold text-red-600 mb-1">Zone dangereuse</h2>
+                <p class="text-sm text-gray-400 mb-4">Ces actions sont irréversibles.</p>
+                <a href="{{ path('app_logout') }}"
+                   class="inline-flex items-center gap-2 text-sm font-semibold text-red-600 border border-red-200 hover:bg-red-50 px-5 py-2.5 rounded-xl transition">
+                    <i class="fa-solid fa-right-from-bracket"></i>
+                    Se déconnecter
+                </a>
+            </div>
+
         </div>
-    </main>
+    </div>
+</main>
 {% endblock %}
