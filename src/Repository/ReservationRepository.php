@@ -81,6 +81,24 @@ class ReservationRepository extends ServiceEntityRepository
             ->getResult();
     }
 
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedForIcal(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findOneForDetail(Reservation $reservation): ?Reservation
     {
         return $this->createQueryBuilder('r')
@@ -189,5 +207,20 @@ class ReservationRepository extends ServiceEntityRepository
             ->setParameter('status', 'pending')
             ->getQuery()
             ->getSingleScalarResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findExpiredPending(\DateTimeImmutable $threshold): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.createdAt < :threshold')
+            ->setParameter('status', 'pending')
+            ->setParameter('threshold', $threshold)
+            ->orderBy('r.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 }

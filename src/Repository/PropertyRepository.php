@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\AvailabilityBlock;
 use App\Entity\Property;
+use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -62,6 +64,76 @@ class PropertyRepository extends ServiceEntityRepository
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
+    public function searchAvailable(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        $destination = trim((string) $destination);
+        if ($destination !== '') {
+            $qb->andWhere(
+                $qb->expr()->orX(
+                    'LOWER(a.city) LIKE :destination',
+                    'LOWER(a.addressLine1) LIKE :destination',
+                    'LOWER(a.addressLine2) LIKE :destination',
+                ),
+            )
+                ->setParameter('destination', '%'.mb_strtolower($destination).'%');
+        }
+
+        if ($guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            $reservationClass = Reservation::class;
+            $blockClass = AvailabilityBlock::class;
+
+            $qb->andWhere(sprintf(
+                'NOT EXISTS (
+                    SELECT reservationConflict.id
+                    FROM %s reservationConflict
+                    WHERE reservationConflict.property = p
+                    AND reservationConflict.status = :confirmedStatus
+                    AND reservationConflict.checkinDate < :checkout
+                    AND reservationConflict.checkoutDate > :checkin
+                )',
+                $reservationClass,
+            ))
+                ->andWhere(sprintf(
+                    'NOT EXISTS (
+                        SELECT blockConflict.id
+                        FROM %s blockConflict
+                        WHERE blockConflict.property = p
+                        AND blockConflict.startDate < :checkout
+                        AND blockConflict.endDate > :checkin
+                    )',
+                    $blockClass,
+                ))
+                ->setParameter('confirmedStatus', 'confirmed')
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     public function countByStatus(string $status): int
@@ -129,6 +201,20 @@ class PropertyRepository extends ServiceEntityRepository
             ->andWhere('p.host = :host')
             ->setParameter('host', $host)
             ->orderBy('p.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
+    public function findWithExternalIcalUrl(): array
+    {
+        return $this->createQueryBuilder('p')
+            ->andWhere('p.externalIcalUrl IS NOT NULL')
+            ->andWhere('p.externalIcalUrl <> :empty')
+            ->setParameter('empty', '')
+            ->orderBy('p.createdAt', 'ASC')
             ->getQuery()
             ->getResult();
     }
