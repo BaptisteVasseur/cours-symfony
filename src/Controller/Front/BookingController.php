@@ -6,6 +6,7 @@ namespace App\Controller\Front;
 
 use App\Entity\Property;
 use App\Entity\Reservation;
+use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Form\BookingType;
 use App\Message\ReservationCreatedMessage;
@@ -105,6 +106,13 @@ final class BookingController extends AbstractController
             $reservation->setServiceFee((string) $serviceFee);
             $reservation->setSecurityDeposit($property->getSecurityDeposit());
             $reservation->setCurrency('EUR');
+
+            $history = new ReservationStatusHistory();
+            $history->setReservation($reservation);
+            $history->setOldStatus(null);
+            $history->setNewStatus($reservation->getStatus());
+            $history->setChangedBy($user);
+            $entityManager->persist($history);
 
             $entityManager->persist($reservation);
             $entityManager->flush();

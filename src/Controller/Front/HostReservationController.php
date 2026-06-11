@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Reservation;
+use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Form\CancellationReasonType;
 use App\Message\ReservationStatusChangedMessage;
@@ -55,6 +56,13 @@ final class HostReservationController extends AbstractController
             return $this->redirectToRoute('app_host_reservations_index');
         }
 
+        $history = new ReservationStatusHistory();
+        $history->setReservation($reservation);
+        $history->setOldStatus('pending');
+        $history->setNewStatus('confirmed');
+        $history->setChangedBy($this->getUser());
+        $entityManager->persist($history);
+
         $reservation->setStatus('confirmed');
         $entityManager->flush();
 
@@ -86,6 +94,13 @@ final class HostReservationController extends AbstractController
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $history = new ReservationStatusHistory();
+            $history->setReservation($reservation);
+            $history->setOldStatus('pending');
+            $history->setNewStatus('cancelled');
+            $history->setChangedBy($this->getUser());
+            $entityManager->persist($history);
+
             $reservation->setStatus('cancelled');
             $reservation->setCancellationReason($form->get('reason')->getData());
             $entityManager->flush();
