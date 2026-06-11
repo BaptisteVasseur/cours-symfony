@@ -1,0 +1,71 @@
+<div class="calendar-widget">
+    {# Month navigation #}
+    <div class="flex items-center justify-between mb-4">
+        <button type="button" data-action="calendar#prevMonth"
+                class="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 hover:border-brand hover:text-brand transition text-gray-600 text-sm">
+            <i class="fa-solid fa-chevron-left"></i>
+        </button>
+        <span class="font-semibold text-sm text-gray-900" data-calendar-target="monthLabel"></span>
+        <button type="button" data-action="calendar#nextMonth"
+                class="w-8 h-8 flex items-center justify-center rounded-full border border-gray-200 hover:border-brand hover:text-brand transition text-gray-600 text-sm">
+            <i class="fa-solid fa-chevron-right"></i>
+        </button>
+    </div>
+
+    {# Day names #}
+    <table class="w-full text-xs">
+        <thead>
+            <tr>
+                <th class="text-gray-400 font-medium pb-2 text-center">Lun</th>
+                <th class="text-gray-400 font-medium pb-2 text-center">Mar</th>
+                <th class="text-gray-400 font-medium pb-2 text-center">Mer</th>
+                <th class="text-gray-400 font-medium pb-2 text-center">Jeu</th>
+                <th class="text-gray-400 font-medium pb-2 text-center">Ven</th>
+                <th class="text-gray-400 font-medium pb-2 text-center">Sam</th>
+                <th class="text-gray-400 font-medium pb-2 text-center">Dim</th>
+            </tr>
+        </thead>
+        <tbody data-calendar-target="grid"></tbody>
+    </table>
+
+    {# Legend #}
+    <div class="flex flex-wrap items-center gap-4 mt-4 text-xs text-gray-500">
+        <span class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-sm bg-green-100 border border-green-300"></span> Dispo
+        </span>
+        <span class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-sm bg-red-100 border border-red-300"></span> Indispo
+        </span>
+        <span class="flex items-center gap-1.5">
+            <span class="w-3 h-3 rounded-sm bg-brand/10 border border-brand/40"></span> Sélection
+        </span>
+    </div>
+
+    {# Price preview #}
+    <div data-calendar-target="pricePreview" style="display:none" class="mt-4 pt-4 border-t border-gray-100 space-y-1 text-sm text-gray-600">
+        <div class="flex justify-between">
+            <span data-calendar-target="nights"></span>
+            <span data-calendar-target="subtotal"></span>
+        </div>
+        {% if property.cleaningFee %}
+        <div class="flex justify-between">
+            <span>Frais de ménage</span>
+            <span>{{ property.cleaningFee|number_format(0, ',', ' ') }} €</span>
+        </div>
+        {% endif %}
+        <div class="flex justify-between">
+            <span>Frais de service (12 %)</span>
+            <span data-calendar-target="service"></span>
+        </div>
+        <div class="flex justify-between font-bold text-gray-900 pt-2 border-t border-gray-100">
+            <span>Total</span>
+            <span data-calendar-target="total"></span>
+        </div>
+    </div>
+
+    <p data-calendar-target="rangeError" style="display:none"
+       class="mt-3 text-xs text-red-600 font-medium">
+        <i class="fa-solid fa-circle-xmark mr-1"></i>
+        Cette période contient des dates déjà réservées. Veuillez choisir d'autres dates.
+    </p>
+</div>

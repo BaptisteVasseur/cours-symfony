@@ -188,7 +188,13 @@
 
             {# Booking sidebar   #}
             <aside class="lg:col-span-1">
-                <div class="sticky top-24 bg-white border border-gray-200 rounded-3xl shadow-card-hover p-6 space-y-5">
+                <div class="sticky top-24 bg-white border border-gray-200 rounded-3xl shadow-card-hover p-6 space-y-5"
+                     data-controller="calendar"
+                     data-calendar-booked-value="{{ bookedRanges|default([])|json_encode|e('html_attr') }}"
+                     data-calendar-blocked-value="{{ blockedDates|default([])|json_encode|e('html_attr') }}"
+                     data-calendar-price-value="{{ property.pricePerNight }}"
+                     data-calendar-cleaning-value="{{ property.cleaningFee ?? 0 }}"
+                     data-calendar-property-id-value="{{ property.id }}">
 
                     <div class="flex items-baseline gap-2">
                         <span class="text-2xl font-extrabold text-gray-900">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span>
@@ -201,26 +207,14 @@
                         {% endif %}
                     </div>
 
-                    {# Dates & guests quick view   #}
-                    <div class="border border-gray-200 rounded-2xl overflow-hidden text-sm">
-                        <div class="grid grid-cols-2 divide-x divide-gray-200">
-                            <div class="p-3.5">
-                                <p class="text-[10px] font-bold uppercase text-gray-500 mb-1">Arrivée</p>
-                                <p class="font-semibold text-gray-800">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
-                            </div>
-                            <div class="p-3.5">
-                                <p class="text-[10px] font-bold uppercase text-gray-500 mb-1">Départ</p>
-                                <p class="font-semibold text-gray-800">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
-                            </div>
-                        </div>
-                        <div class="p-3.5 border-t border-gray-200">
-                            <p class="text-[10px] font-bold uppercase text-gray-500 mb-1">Voyageurs max</p>
-                            <p class="font-semibold text-gray-800">{{ property.maxGuests }} personne{{ property.maxGuests > 1 ? 's' : '' }}</p>
-                        </div>
-                    </div>
+                    {# Calendrier des disponibilités #}
+                    {% include 'components/calendar.html.twig' with {
+                        property: property,
+                    } %}
 
                     <a href="{{ path('app_booking_checkout', { id: property.id }) }}"
-                       class="block w-full bg-brand hover:bg-brandHover text-white font-bold py-4 rounded-2xl text-center transition text-sm shadow-sm">
+                       class="block w-full bg-brand hover:bg-brandHover text-white font-bold py-4 rounded-2xl text-center transition text-sm shadow-sm"
+                       data-calendar-target="bookBtn">
                         {% if property.instantBooking %}
                             <i class="fa-solid fa-bolt mr-2"></i>Réserver instantanément
                         {% else %}
@@ -229,15 +223,6 @@
                     </a>
 
                     <p class="text-center text-xs text-gray-400">Aucun frais ne vous sera débité pour l'instant</p>
-
-                    {% if property.cleaningFee %}
-                        <div class="pt-2 border-t border-gray-100 space-y-2 text-sm">
-                            <div class="flex justify-between text-gray-600">
-                                <span>Frais de ménage</span>
-                                <span>{{ property.cleaningFee|number_format(0, ',', ' ') }} €</span>
-                            </div>
-                        </div>
-                    {% endif %}
 
                 </div>
             </aside>

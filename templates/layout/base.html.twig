@@ -112,6 +112,50 @@
             ::-webkit-scrollbar-track { background: #F5F3EE; }
             ::-webkit-scrollbar-thumb { background: #E63946; border-radius: 99px; }
         </style>
+        <style>
+            .calendar-day {
+                text-align: center;
+                padding: 6px 4px;
+                border-radius: 999px;
+                font-size: 0.8125rem;
+                cursor: default;
+                transition: background .15s, color .15s;
+                line-height: 1.4;
+            }
+            .calendar-day.available {
+                cursor: pointer;
+                color: #111827;
+            }
+            .calendar-day.available:hover {
+                background: #FEE2E2;
+            }
+            .calendar-day.past {
+                color: #D1D5DB;
+            }
+            .calendar-day.blocked {
+                color: #9CA3AF;
+                text-decoration: line-through;
+            }
+            .calendar-day.today {
+                font-weight: 700;
+                text-decoration: underline;
+                text-underline-offset: 3px;
+            }
+            .calendar-day.checkin,
+            .calendar-day.checkout {
+                background: #E63946;
+                color: #fff;
+                font-weight: 700;
+            }
+            .calendar-day.in-range {
+                background: #FEE2E2;
+                color: #111827;
+            }
+            .calendar-day.checkin:hover,
+            .calendar-day.checkout:hover {
+                background: #C1121F;
+            }
+        </style>
         {% block stylesheets %}{% endblock %}
         {% block javascripts %}
             {{ importmap('app') }}

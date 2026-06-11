@@ -66,7 +66,11 @@ final class BookingController extends AbstractController
             $availabilityRepository->findBlockedDates($property),
         );
 
-        $form = $this->createForm(BookingType::class);
+        $formData = [
+            'checkinDate'  => $this->parseDateQuery($request->query->get('checkin')),
+            'checkoutDate' => $this->parseDateQuery($request->query->get('checkout')),
+        ];
+        $form = $this->createForm(BookingType::class, $formData);
         $form->handleRequest($request);
 
         $renderBooking = fn () => $this->render('front/property/booking.html.twig', [
@@ -141,5 +145,16 @@ final class BookingController extends AbstractController
         }
 
         return $renderBooking();
+    }
+
+    private function parseDateQuery(?string $value): ?\DateTimeImmutable
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
+
+        return $date !== false ? $date : null;
     }
 }
