@@ -8,13 +8,16 @@ use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
+use App\Message\ReservationCreatedMessage;
 use App\Repository\PropertyRepository;
+use App\Service\AvailabilityChecker;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\PropertyVoter;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
@@ -27,6 +30,8 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
+        AvailabilityChecker $availabilityChecker,
+        MessageBusInterface $messageBus,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -62,8 +67,16 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            if ($guestsCount > $property->getMaxGuests()) {
-                $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
+            // Use AvailabilityChecker for validation
+            $availabilityDetails = $availabilityChecker->getAvailabilityDetails(
+                $property,
+                $checkin,
+                $checkout,
+                $guestsCount
+            );
+
+            if (!$availabilityDetails['isAvailable']) {
+                $this->addFlash('error', implode(' ', $availabilityDetails['reasons']));
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
@@ -93,6 +106,14 @@ final class BookingController extends AbstractController
 
             $entityManager->persist($reservation);
             $entityManager->flush();
+
+            // Dispatch async notification
+            $messageBus->dispatch(
+                new ReservationCreatedMessage(
+                    $reservation->getId(),
+                    $reservation->getStatus() === 'pending'
+                )
+            );
 
             $this->addFlash('success', 'Votre réservation a été enregistrée.');
 

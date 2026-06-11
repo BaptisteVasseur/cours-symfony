@@ -1,0 +1,73 @@
+I- Modélisation temporelle : Le jour de check-out est-il réservable par un nouveau voyageur ?
+
+Afin de faciliter les services de nettoyage et les actions mises en place lors du départ des voyageurs, 
+il est préférable que les dates de checkout ne soient pas réservables, d'autant plus qu'il peut y avoir 
+des imprévus ponctuels qui peuvent nécessiter le prolongement non voulu du séjour de voyageurs. Ce serait 
+donc un temps (à partir du moment de départ enregistré) qui servirait à rendre le logement habitable pour 
+un nouveau voyage.
+
+Comment gérez-vous la superposition d'un départ à 11h et d'une arrivée à 15h dans votre schéma
+de données ?
+
+Dans le cas où il faille gérer cette superposition, l'idéal ce serait par exemple de prévenir les deux 
+parties (le premier hôte et le deuxième hôte) de la présence future du prochain et de la présence actuelle 
+du précédent (par mail) afin que chacun d'entre soit au courant du fait que le logement soit demandé.
+
+Dans le code, il faudrait donc enregistrer ces heures et définir une différence minimum entre les heures 
+de départ et d'arrivée - par exemple 4h - (pour permettre aux services qui s'occupent de la transition d'avoir lieu)
+
+
+
+II- Gestion des états : Une demande 
+Pending bloque-t-elle les dates ? Analysez les risques liés à
+ce choix (blocage abusif vs overbooking).
+
+Le mieux ce serait justement que les horaires ne soient pas bloqués jusqu'à ce que le propriétaire viennent 
+valider une réservation. Il aurait par exemple la possibilité de voir les réservations qui seront bloquées 
+du fait de superpositions de dates due à la validation de la réservation avant de la valider et pourra faire 
+le choix des réservations à accepter si par exemple son objectif est d'avoir un maximum de réservations ou 
+peu avec des longs séjours.
+
+
+
+III- Concurrence : Comment votre base de données réagit-elle si deux utilisateurs valident un paiement
+à la milliseconde près pour le même logement et les mêmes dates ?
+Il faudrait dans ce cas accepter les deux paiements et attendre l'intervention du propriétaire / hôte pour 
+qu'il décide de la réservation qu'il souhaite garder, ainsi l'autre auteur de réservation recevrait un remboursement
+ par rapport à la réservation qu'il a effectuée mais qui serait rejetée.
+ 
+Dans le cas où ce serait automatique, l'un des paiements seraient automatiquement rejeté parce que les dates coincident
+et qu'on ne peut pas réserver un logement s'il y a superposition des dates sur les périodes définies par les voyageurs.
+Le second recevra donc une notification qui lui indiquerait que sa réservation n'est pas conservée pour cause de 
+superposition et il sera remboursé.
+
+IV- Performance : Comment valider la disponibilité d'un logement sur 20 nuits consécutives sans
+saturer la base de requêtes SQL itératives ?
+Le plus simple est de réaliser une requête qui va prendre en compte les réservations dont le checkout_date 
+est supérieur ou égal au checkin_date de la nouvelle réservation et dont le checkout_date est inférieur ou égal 
+au checkin_date de la nouvelle réservation (s'il y a des occurences, la réservation ne peut être acceptée). 
+Si on peut réserver le même jour, dans ce cas on ferait en sorte de comparer 
+le temps minimal (s'il est défini) entre un checkin et un checkout et la différence checkout précent - checkin actuel et 
+checkin suivant - checkout actuel pour voir s'il y a un chevauchement de date, auquel cas la réservation ne sera pas acceptée.
+
+
+
+V- Asynchronisme : Pourquoi l'envoi d'email doit-il préférentiellement intervenir après le flush() de
+l'ORM ? Quelle est la stratégie si RabbitMQ tombe en panne ?
+Vu que les modifications sont effectivement intégrées en base de données à ce moment-là, les réservations 
+sont donc définitives si elles ont été acceptée dans la base de données (requête effectuée avec succès).
+Il faudrait donc suivre ces évènements d'une autre façon et ne pas dépendre uniquement de RabbitMQ.
+Une approche robuste consiste à stocker l'évènement dans la même transaction que les données métier, 
+puis le publier vers RabbitMQ par un processus séparé avec mécanisme de qui permettra de relancer l'opération 
+s'il y a échec et de l'envoyer dans un autre système. Ainsi, aucune information n'est perdue même si RabbitMQ 
+est temporairement indisponible.
+
+
+
+VI- Structure SQL : Justifiez votre choix d'architecture pour le calendrier : table de jours individuels
+(PropertyAvailability ) ou table de périodes (
+date_start , date_end)
+
+Le mieux et le plus simple est de stocker dans la base de données les dates de début et de fin (donc un stockage 
+par période) ce qui permettra de gérer plus efficacement les réservations parce qu'on les évalueraient avec des plages, 
+en une seule requête et sans avoir de calculs compliqués à réaliser.
