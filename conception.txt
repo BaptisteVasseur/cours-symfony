@@ -1,0 +1,184 @@
+CONCEPTION TECHNIQUE — Moteur de Réservation & Calendrier iCal
+Projet : Clone Airbnb — Symfony
+Auteur  : Adlan
+Date    : Juin 2026
+======================================================================
+
+1. MODÉLISATION TEMPORELLE
+──────────────────────────
+Convention des dates (demi-intervalle) :
+La nuitée est la plage [checkinDate ; checkoutDate[. Le jour de checkout
+N'EST PAS une nuit occupée : c'est le premier jour libre. Un nouveau
+voyageur peut donc arriver le jour où un autre repart.
+
+Schéma de données :
+Les champs checkinDate et checkoutDate sont tous les deux de type
+DATE_IMMUTABLE (date pure, sans heure). L'entité Property stocke
+séparément checkinTime (ex. 15h00) et checkoutTime (ex. 11h00). Ainsi,
+le modèle de données n'exprime pas les heures dans la réservation elle-
+même, ce qui évite les problèmes de fuseaux horaires et simplifie les
+requêtes d'overlap.
+
+Gestion du créneau 11h départ / 15h arrivée :
+Le modèle date pure suffit : les deux réservations ont le même
+checkoutDate / checkinDate, l'overlap n'existe pas car la condition
+d'occupation est checkinDate <= date < checkoutDate. La fenêtre physique
+de 4h (ménage, remise des clés) est gérée uniquement au niveau
+applicatif via les propriétés checkinTime/checkoutTime de Property,
+affichées à titre informatif pour l'hôte et le voyageur.
+
+
+2. GESTION DES ÉTATS — PENDING BLOQUE-T-IL LES DATES ?
+────────────────────────────────────────────────────────
+Choix retenu : oui, une demande Pending bloque temporairement les dates.
+
+Lors de la vérification de disponibilité, la requête écarte toutes les
+réservations ayant le statut 'confirmed' OU 'pending'. Concrètement :
+
+    WHERE property_id = :id
+      AND status IN ('confirmed', 'pending')
+      AND checkin_date  < :checkout
+      AND checkout_date > :checkin
+
+Analyse des risques :
+  ● Blocage abusif : un voyageur peu scrupuleux pourrait multiplier les
+    demandes Pending pour saturer le calendrier d'un hôte. Mitigation :
+    limiter les demandes Pending actives par utilisateur (ex. 2 max) et
+    implémenter l'expiration automatique à 24h (bonus G.1, worker
+    Messenger).
+  ● Overbooking (si on ne bloque pas) : si deux demandes Pending
+    co-existent pour les mêmes dates et que l'hôte accepte la première,
+    la seconde reste ouverte et peut être validée par erreur. Ce risque
+    est plus grave qu'un blocage temporaire.
+
+Conclusion : le blocage Pending est le choix le plus sûr. L'expiration
+automatique à 24h en est le complément indispensable.
+
+
+3. CONCURRENCE — DOUBLE RÉSERVATION À LA MILLISECONDE
+──────────────────────────────────────────────────────
+Problème : deux utilisateurs soumettent simultanément une réservation
+pour les mêmes dates sur le même logement. Entre le moment où chacun
+vérifie la disponibilité et celui où il persiste sa réservation, l'autre
+peut avoir fait pareil — race condition classique.
+
+Solution retenue : verrouillage pessimiste (SELECT … FOR UPDATE).
+
+Au sein d'une transaction explicite, avant de créer la réservation, le
+service effectue une requête de vérification avec un verrou exclusif :
+
+    $em->beginTransaction();
+    // Doctrine PESSIMISTIC_WRITE bloque les lignes lues
+    $conflits = $repo->findOverlappingLocked($propertyId, $checkin, $checkout);
+    if ($conflits) { $em->rollback(); throw new UnavailableException(); }
+    // Sinon on persiste et commit
+    $em->persist($reservation);
+    $em->flush();
+    $em->commit();
+
+Le SGBD (MySQL/PostgreSQL) garantit que la deuxième transaction attend
+que la première ait libéré son verrou. Elle trouvera alors le conflit et
+sera rejetée. Aucune double réservation ne peut passer.
+
+Alternative complémentaire : ajouter une contrainte d'unicité en base
+sur (property_id, checkin_date) ou utiliser un token idempotent côté
+formulaire pour éviter les doubles soumissions.
+
+
+4. PERFORMANCE — DISPONIBILITÉ SUR 20 NUITS CONSÉCUTIVES
+──────────────────────────────────────────────────────────
+Approche naïve à éviter : boucler jour par jour et exécuter une requête
+SQL par nuit → 20 allers-retours base, inacceptable.
+
+Solution en 2 requêtes maximum :
+
+  a) Chevauchement avec une réservation existante (table reservations) :
+     Requête d'overlap en intervalle sur la plage entière :
+
+         SELECT COUNT(r.id)
+         FROM reservations r
+         WHERE r.property_id = :id
+           AND r.status IN ('confirmed', 'pending')
+           AND r.checkin_date  < :checkout
+           AND r.checkout_date > :checkin
+
+     Si COUNT > 0 → indisponible. Une seule requête, index sur
+     (property_id, checkin_date, checkout_date).
+
+  b) Jours bloqués manuellement par l'hôte (table property_availability) :
+
+         SELECT COUNT(pa.id)
+         FROM property_availability pa
+         WHERE pa.property_id = :id
+           AND pa.available_date >= :checkin
+           AND pa.available_date <  :checkout
+           AND pa.is_available = false
+
+     Si COUNT > 0 → un ou plusieurs jours sont bloqués.
+
+Total : 2 requêtes pour valider n'importe quelle durée, avec des index
+sur les colonnes de date. Le service AvailabilityChecker encapsule
+cette logique et est appelé dans le ReservationService.
+
+
+5. ASYNCHRONISME — POURQUOI APRÈS LE FLUSH ?
+─────────────────────────────────────────────
+Ordre impératif : flush() d'abord, dispatch du message Messenger ensuite.
+
+Justification : flush() est l'opération qui valide la transaction en base.
+Si l'email est dispatché avant le flush() et que celui-ci échoue (erreur
+réseau, violation de contrainte, timeout), le voyageur reçoit une
+confirmation pour une réservation qui n'existe pas en base. C'est une
+incohérence grave impossible à corriger sans intervention manuelle.
+
+En dispatchant après le flush(), on garantit que la réservation est
+persistée de manière durable avant qu'une notification soit envoyée.
+Même si le worker Messenger crashe immédiatement après, le message sera
+dans la file et retraité.
+
+Stratégie de fallback si RabbitMQ est indisponible :
+Utiliser le transport Doctrine de Symfony Messenger en fallback :
+
+    MESSENGER_TRANSPORT_DSN=doctrine://default?auto_setup=true
+
+Les messages sont alors stockés dans la table messenger_messages en base
+de données. Dès que RabbitMQ revient en ligne (ou en mode purement
+Doctrine), le worker récupère et traite les messages en attente. Aucun
+email n'est perdu, juste retardé. On peut monitorer la table pour
+alerter si des messages s'accumulent.
+
+
+6. STRUCTURE SQL DU CALENDRIER — TABLE DE JOURS vs TABLE DE PÉRIODES
+──────────────────────────────────────────────────────────────────────
+Choix retenu : table de jours individuels (PropertyAvailability).
+Déjà implémentée avec les champs : property_id, available_date, is_available,
+price_override, minimum_stay.
+
+Justification :
+
+  ● Granularité tarifaire : le champ price_override permet de définir un
+    prix spécifique jour par jour (week-end plus cher, haute saison…).
+    Avec une table de périodes, calculer le prix exact d'un séjour à
+    cheval sur plusieurs périodes nécessite une logique d'intersection
+    de plages bien plus complexe.
+
+  ● Simplicité des requêtes de disponibilité : vérifier si tous les jours
+    d'une plage sont disponibles revient à un COUNT avec available_date
+    BETWEEN et is_available = false. Aucune gestion d'overlap d'intervalles.
+
+  ● Flexibilité de blocage : bloquer un mercredi isolé sans toucher aux
+    jours adjacents est trivial (UPDATE WHERE available_date = '...').
+    Avec des périodes, il faudrait découper la période existante en deux.
+
+  ● Inconvénient accepté : plus de lignes en base (1 ligne/jour/logement).
+    Pour 100 logements et 365 jours = 36 500 lignes, parfaitement
+    gérable. On génère ces lignes à la création du logement ou à la
+    demande (lazy generation).
+
+  ● Alternative (table de périodes) écartée car : requête d'overlap SQL
+    plus complexe, tarification par période difficile, et modification
+    d'un seul jour implique de fragmenter la période en base.
+
+Conclusion : la table de jours individuels offre le meilleur rapport
+simplicité/flexibilité pour ce cas d'usage, au prix d'un volume de données
+légèrement supérieur, acceptable en pratique.
