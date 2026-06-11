@@ -1,8 +1,9 @@
 Gestion des dates et des disponibilités 
-Pour faire fonctionner la gestion des disponibilités, le système de réservations se repose sur un les dates et pas seulement les horaires, la date de départ n'est pas considérée comme une nuit réservée. donc par exemple une réservation commence le le 10 juillet et le départ est le 15 juillet Le voyageur occupe donc les nuits du 10 au 14 inclus. 
+Pour faire fonctionner la gestion des disponibilités, le système de réservations se repose sur les dates, la date de départ n'est pas considérée comme une nuit réservée. donc par exemple une réservation commence le le 10 juillet et le départ est le 15 juillet Le voyageur occupe donc les nuits du 10 au 14 inclus. 
 par conséquent, le système proposé exclus le 15 juillet qui lui est libre pour une autre réservation. 
 c'est du fait que généralement les gens ne vont pas rester implicitement jusqu'au 15 mais ils vont être en déplacement ce jour. C'est ce qui permet d'autoriser un check-out le matin et un check-in le même jour sans créer de conflit. 
 Pour détecter les chevauchements des réservations, on vérifie simplement qu'une réservation existante recoupe la période demandée. Toute réservation qui partage au moins une nuit avec une autre est refusée. Ducoup si un client prend le 10 au 12 et qu'un autre veux prendre du 11 au 14, cet utilisateur va être refusé sur cette réservation s'il la tente. en autre cas la date sera indiqué qu'elle est indisponible dans un calendrier. 
+Pour gerer les horaires l'hote définira les horaires d'arrivé et de départ, elle seront a respecter par les clients qui vont venir au logement
 Pour les blocages manuels, on est parti sur une granularité fine :
  un jour bloqué = une ligne en base. 
 Cela permet de :
