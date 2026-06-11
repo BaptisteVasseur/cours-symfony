@@ -24,6 +24,18 @@
         <a href="{{ path('app_reservation_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
             <i class="fa-solid fa-arrow-left"></i> Retour aux réservations
         </a>
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+        {% if paymentDeadline is defined and paymentDeadline %}
+            <div id="payment-countdown" data-deadline="{{ paymentDeadline|date('c') }}"
+                 class="mb-4 px-4 py-3 rounded-xl text-sm bg-amber-50 text-amber-800 flex items-center gap-2">
+                <i class="fa-regular fa-clock"></i>
+                <span>Votre réservation est en attente de paiement : il vous reste <strong id="countdown-value">15:00</strong> avant l'annulation automatique et la libération des dates.</span>
+            </div>
+        {% endif %}
         <div class="mb-8">
             <div class="flex flex-wrap items-center gap-3 mb-2">
                 <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Confirmation de réservation</h1>
@@ -56,13 +68,62 @@
                         <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
                     </dl>
                 </section>
+                {% if reservation.status == 'cancelled' and reservation.cancellationReason %}
+                    <section class="border border-red-100 bg-red-50 rounded-xl p-6">
+                        <h2 class="text-lg font-semibold mb-2 text-red-800">Motif de l'annulation</h2>
+                        <p class="text-sm text-red-800">{{ reservation.cancellationReason }}</p>
+                    </section>
+                {% endif %}
             </div>
             <aside>
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
                     <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
-                    <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                    {% set nights = reservation.checkinDate.diff(reservation.checkoutDate).days %}
+                    <dl class="space-y-2 text-sm mb-4">
+                        <div class="flex justify-between"><dt class="text-gray-600">{{ nights }} nuit{{ nights > 1 ? 's' }}</dt><dd></dd></div>
+                        {% if reservation.cleaningFee %}
+                            <div class="flex justify-between"><dt class="text-gray-600">Frais de ménage</dt><dd>{{ reservation.cleaningFee|number_format(2, ',', ' ') }} €</dd></div>
+                        {% endif %}
+                        {% if reservation.serviceFee %}
+                            <div class="flex justify-between"><dt class="text-gray-600">Frais de service</dt><dd>{{ reservation.serviceFee|number_format(2, ',', ' ') }} €</dd></div>
+                        {% endif %}
+                    </dl>
+                    <p class="text-xl font-bold border-t border-gray-100 pt-3">Total : {{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                    {% if reservation.status == 'pending' and app.user is same as(reservation.guest) %}
+                        <button type="button"
+                                class="mt-4 w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">
+                            <i class="fa-regular fa-credit-card mr-1.5"></i>Procéder au paiement
+                        </button>
+                        <p class="text-xs text-gray-400 text-center mt-2">Paiement sécurisé — bientôt disponible.</p>
+                    {% endif %}
                 </div>
             </aside>
         </div>
     </main>
+
+    {% if paymentDeadline is defined and paymentDeadline %}
+        <script>
+            (function () {
+                'use strict';
+                const banner = document.getElementById('payment-countdown');
+                const value = document.getElementById('countdown-value');
+                const deadline = new Date(banner.dataset.deadline).getTime();
+
+                function tick() {
+                    const remaining = Math.floor((deadline - Date.now()) / 1000);
+                    if (remaining <= 0) {
+                        // Le rechargement déclenche l'annulation automatique côté serveur
+                        window.location.reload();
+                        return;
+                    }
+                    const m = Math.floor(remaining / 60);
+                    const s = remaining % 60;
+                    value.textContent = m + ':' + String(s).padStart(2, '0');
+                    setTimeout(tick, 1000);
+                }
+
+                tick();
+            })();
+        </script>
+    {% endif %}
 {% endblock %}
