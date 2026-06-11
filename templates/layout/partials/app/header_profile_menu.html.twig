@@ -16,7 +16,7 @@
             <p class="text-xs text-gray-500 truncate">{{ app.user.email }}</p>
         </div>
 
-        {% if is_granted('ROLE_HOST') %}
+        {% if is_granted('ROLE_HOST') and not is_granted('ROLE_ADMIN') %}
             <div class="border-b border-gray-100 py-1 bg-gray-50/50">
                 <a href="{{ path('app_host_dashboard') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-brand hover:bg-gray-100 transition">
                     <i class="fa-solid fa-chart-line w-4 text-center text-brand"></i>
@@ -27,7 +27,7 @@
                     Réservations reçues
                 </a>
             </div>
-        {% else %}
+        {% elseif not is_granted('ROLE_ADMIN') %}
             <div class="border-b border-gray-100 py-1 bg-brand/5">
                 <a href="{{ path('app_become_host') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-semibold text-brand hover:bg-brand/10 transition">
                     <i class="fa-solid fa-rocket w-4 text-center text-brand"></i>

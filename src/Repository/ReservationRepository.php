@@ -92,4 +92,58 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findByHostForListing(User $host, ?string $status = null): array
+    {
+        $qb = $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->setParameter('host', $host);
+
+        if ($status !== null && $status !== '') {
+            $qb->andWhere('r.status = :status')
+               ->setParameter('status', $status);
+        }
+
+        return $qb->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function sumConfirmedRevenueByHost(User $host): float
+    {
+        $result = $this->createQueryBuilder('r')
+            ->select('SUM(r.totalPrice)')
+            ->leftJoin('r.property', 'p')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('host', $host)
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $result !== null ? (float) $result : 0.0;
+    }
+
+    public function countPendingReservationsByHost(User $host): int
+    {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->leftJoin('r.property', 'p')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }
+
