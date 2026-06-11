@@ -1,0 +1,32 @@
+# Configuration file for Symfony Messenger
+# Add this content to config/packages/messenger.yaml
+
+framework:
+  messenger:
+    # Failure transport for messages that failed
+    failure_transport: failed
+
+    transports:
+      # Async transport using database as backend
+      async:
+        dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+        # Options for reliability
+        options:
+          queue_name: 'messenger_tasks'
+          
+      # Failed messages transport
+      failed: 'doctrine://default?queue_name=failed'
+
+    # Route messages to specific transports
+    routing:
+      # Reservation messages route to async transport
+      'App\Message\ReservationCreatedMessage': async
+      'App\Message\ReservationConfirmedMessage': async
+      'App\Message\ReservationRejectedMessage': async
+      'App\Message\ReservationCancelledMessage': async
+
+# If using RabbitMQ instead of database:
+# transports:
+#   async:
+#     dsn: '%env(MESSENGER_TRANSPORT_DSN)%'  # amqp://guest:guest@localhost:5672/%2f/messages
+#   failed: 'doctrine://default?queue_name=failed'

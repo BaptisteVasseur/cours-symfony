@@ -159,6 +159,14 @@ class Property
     #[ORM\OneToMany(targetEntity: PropertyICalSync::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $iCalSyncs;
 
+    /** @var Collection<int, PropertyUnavailability> */
+    #[ORM\OneToMany(targetEntity: PropertyUnavailability::class, mappedBy: 'property', orphanRemoval: true)]
+    private Collection $unavailabilities;
+
+    /** @var Collection<int, PropertyICalToken> */
+    #[ORM\OneToMany(targetEntity: PropertyICalToken::class, mappedBy: 'property', orphanRemoval: true)]
+    private Collection $iCalTokens;
+
     /** @var Collection<int, Reservation> */
     #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'property')]
     private Collection $reservations;
@@ -173,6 +181,8 @@ class Property
         $this->media = new ArrayCollection();
         $this->availabilities = new ArrayCollection();
         $this->iCalSyncs = new ArrayCollection();
+        $this->unavailabilities = new ArrayCollection();
+        $this->iCalTokens = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
@@ -512,6 +522,52 @@ class Property
     public function removeICalSync(PropertyICalSync $iCalSync): static
     {
         $this->iCalSyncs->removeElement($iCalSync);
+
+        return $this;
+    }
+
+    /** @return Collection<int, PropertyUnavailability> */
+    public function getUnavailabilities(): Collection
+    {
+        return $this->unavailabilities;
+    }
+
+    public function addUnavailability(PropertyUnavailability $unavailability): static
+    {
+        if (!$this->unavailabilities->contains($unavailability)) {
+            $this->unavailabilities->add($unavailability);
+            $unavailability->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeUnavailability(PropertyUnavailability $unavailability): static
+    {
+        $this->unavailabilities->removeElement($unavailability);
+
+        return $this;
+    }
+
+    /** @return Collection<int, PropertyICalToken> */
+    public function getICalTokens(): Collection
+    {
+        return $this->iCalTokens;
+    }
+
+    public function addICalToken(PropertyICalToken $iCalToken): static
+    {
+        if (!$this->iCalTokens->contains($iCalToken)) {
+            $this->iCalTokens->add($iCalToken);
+            $iCalToken->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeICalToken(PropertyICalToken $iCalToken): static
+    {
+        $this->iCalTokens->removeElement($iCalToken);
 
         return $this;
     }
