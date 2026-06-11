@@ -64,8 +64,6 @@ final class BookingController extends AbstractController
         try {
             $bookingService->confirm($booking, $user);
             $this->addFlash('success', 'La réservation a été acceptée avec succès.');
-        } catch (BookingConflictException $exception) {
-            $this->addFlash('error', $exception->getMessage());
         } catch (\LogicException $exception) {
             $this->addFlash('error', $exception->getMessage());
         }
