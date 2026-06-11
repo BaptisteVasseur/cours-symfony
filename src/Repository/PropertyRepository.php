@@ -144,7 +144,13 @@ class PropertyRepository extends ServiceEntityRepository
         }
 
         if ($destination !== null && trim($destination) !== '') {
-            $qb->andWhere('(LOWER(addr.city) LIKE :dest OR LOWER(addr.country) LIKE :dest OR LOWER(p.title) LIKE :dest)')
+            $qb->andWhere('(
+                    LOWER(addr.city) LIKE :dest
+                    OR LOWER(addr.country) LIKE :dest
+                    OR LOWER(addr.postalCode) LIKE :dest
+                    OR LOWER(addr.addressLine1) LIKE :dest
+                    OR LOWER(addr.addressLine2) LIKE :dest
+                )')
                 ->setParameter('dest', '%' . mb_strtolower(trim($destination)) . '%');
         }
 
