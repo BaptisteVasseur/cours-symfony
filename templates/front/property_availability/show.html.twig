@@ -1,0 +1,341 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Disponibilites - {{ property.title }}{% endblock %}
+
+{% set location = property.address ? property.address.city ~ (property.address.country ? ', ' ~ property.address.country : '') : null %}
+{% set weekdayLabels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] %}
+{% set monthLabels = {
+    '1': 'janvier',
+    '2': 'fevrier',
+    '3': 'mars',
+    '4': 'avril',
+    '5': 'mai',
+    '6': 'juin',
+    '7': 'juillet',
+    '8': 'aout',
+    '9': 'septembre',
+    '10': 'octobre',
+    '11': 'novembre',
+    '12': 'decembre',
+} %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-7xl mx-auto w-full">
+        <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Retour a mes proprietes
+        </a>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="flex flex-col xl:flex-row xl:items-end xl:justify-between gap-4 mb-8">
+            <div>
+                <p class="text-sm font-semibold text-brand mb-2">Calendrier hote</p>
+                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">{{ property.title }}</h1>
+                {% if location %}
+                    <p class="text-gray-500 mt-2">{{ location }}</p>
+                {% endif %}
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
+                    <i class="fa-solid fa-eye"></i>
+                    Voir l'annonce
+                </a>
+                <a href="{{ path('app_host_reservation_index') }}" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-gray-50 transition">
+                    <i class="fa-solid fa-calendar-check"></i>
+                    Demandes en attente
+                </a>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4 mb-8">
+            <div class="bg-white border border-gray-200 rounded-2xl p-5">
+                <p class="text-sm text-gray-500 mb-1">Nuits reservees</p>
+                <p class="text-2xl font-semibold text-gray-900">{{ summary.booked }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-2xl p-5">
+                <p class="text-sm text-gray-500 mb-1">Nuits bloquees</p>
+                <p class="text-2xl font-semibold text-gray-900">{{ summary.blocked }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-2xl p-5">
+                <p class="text-sm text-gray-500 mb-1">Nuits disponibles</p>
+                <p class="text-2xl font-semibold text-gray-900">{{ summary.available }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-2xl p-5">
+                <p class="text-sm text-gray-500 mb-1">Prix personnalises</p>
+                <p class="text-2xl font-semibold text-gray-900">{{ summary.customPrice }}</p>
+            </div>
+            <div class="bg-white border border-gray-200 rounded-2xl p-5">
+                <p class="text-sm text-gray-500 mb-1">Jours avec minimum</p>
+                <p class="text-2xl font-semibold text-gray-900">{{ summary.minimumStay }}</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,2fr)_minmax(320px,1fr)] gap-8">
+            <section class="space-y-6">
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+                        <a href="{{ path('app_host_property_availability_show', { id: property.id, month: previousMonth|date('Y-m') }) }}" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900">
+                            <i class="fa-solid fa-chevron-left text-xs"></i>
+                            Mois precedent
+                        </a>
+                        <div class="text-center">
+                            <p class="text-sm text-gray-500">Vue mensuelle</p>
+                            <h2 class="text-xl font-semibold text-gray-900">{{ monthLabels[monthStart|date('n')] }} {{ monthStart|date('Y') }}</h2>
+                        </div>
+                        <a href="{{ path('app_host_property_availability_show', { id: property.id, month: nextMonth|date('Y-m') }) }}" class="inline-flex items-center gap-2 justify-end text-sm font-semibold text-gray-700 hover:text-gray-900">
+                            Mois suivant
+                            <i class="fa-solid fa-chevron-right text-xs"></i>
+                        </a>
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-2 mb-2">
+                        {% for weekdayLabel in weekdayLabels %}
+                            <div class="px-2 py-3 text-xs font-semibold uppercase tracking-wide text-gray-500 text-center">{{ weekdayLabel }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="space-y-2">
+                        {% for week in weeks %}
+                            <div class="grid grid-cols-7 gap-2">
+                                {% for day in week %}
+                                    {% set dayClasses = 'min-h-28 rounded-2xl border p-3 flex flex-col gap-2 transition ' %}
+                                    {% if day.state == 'booked' %}
+                                        {% set dayClasses = dayClasses ~ 'border-emerald-200 bg-emerald-50' %}
+                                    {% elseif day.state == 'blocked' %}
+                                        {% set dayClasses = dayClasses ~ 'border-red-200 bg-red-50' %}
+                                    {% elseif day.state == 'imported' %}
+                                        {% set dayClasses = dayClasses ~ 'border-amber-200 bg-amber-50' %}
+                                    {% else %}
+                                        {% set dayClasses = dayClasses ~ 'border-gray-200 bg-white' %}
+                                    {% endif %}
+                                    {% if not day.isCurrentMonth %}
+                                        {% set dayClasses = dayClasses ~ ' opacity-45' %}
+                                    {% endif %}
+                                    {% if day.isToday %}
+                                        {% set dayClasses = dayClasses ~ ' ring-2 ring-gray-900/10' %}
+                                    {% endif %}
+
+                                    <article class="{{ dayClasses }}">
+                                        <div class="flex items-start justify-between gap-2">
+                                            <span class="text-sm font-semibold text-gray-900">{{ day.date|date('j') }}</span>
+                                            {% if day.state == 'booked' %}
+                                                <span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-emerald-100 text-emerald-700">Reserve</span>
+                                            {% elseif day.state == 'blocked' %}
+                                                <span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-red-100 text-red-700">Bloque</span>
+                                            {% elseif day.state == 'imported' %}
+                                                <span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-amber-100 text-amber-700">iCal</span>
+                                            {% else %}
+                                                <span class="text-[11px] font-semibold px-2 py-1 rounded-full bg-gray-100 text-gray-600">Libre</span>
+                                            {% endif %}
+                                        </div>
+
+                                        <div class="space-y-1 text-xs text-gray-600">
+                                            {% if day.hasPriceOverride %}
+                                                <p>{{ day.price|number_format(0, ',', ' ') }} EUR / nuit</p>
+                                            {% endif %}
+
+                                            {% if day.minimumStay %}
+                                                <p>Minimum {{ day.minimumStay }} nuit{{ day.minimumStay > 1 ? 's' : '' }}</p>
+                                            {% endif %}
+
+                                            {% if day.state == 'booked' %}
+                                                {% for booking in day.bookings|slice(0, 2) %}
+                                                    <p class="truncate">{{ booking.checkinDate|date('d/m') }} - {{ booking.checkoutDate|date('d/m') }}</p>
+                                                {% endfor %}
+                                                {% if day.bookings|length > 2 %}
+                                                    <p>+ {{ day.bookings|length - 2 }} autre{{ day.bookings|length - 2 > 1 ? 's' : '' }}</p>
+                                                {% endif %}
+                                            {% elseif day.state == 'imported' %}
+                                                <p class="text-amber-700">Blocage importe</p>
+                                            {% elseif not day.hasPriceOverride and not day.minimumStay %}
+                                                <p class="text-gray-400">Tarif standard</p>
+                                            {% endif %}
+                                        </div>
+                                    </article>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Reservations confirmees du mois</h2>
+
+                    {% if confirmedReservations|length > 0 %}
+                        <div class="space-y-3">
+                            {% for reservation in confirmedReservations %}
+                                {% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
+                                <article class="border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ reservation.checkinDate|date('d/m/Y') }} - {{ reservation.checkoutDate|date('d/m/Y') }}</p>
+                                        <p class="text-sm text-gray-500">
+                                            {% if guestProfile and (guestProfile.firstName or guestProfile.lastName) %}
+                                                {{ guestProfile.firstName }} {{ guestProfile.lastName }}
+                                            {% else %}
+                                                {{ reservation.guest ? reservation.guest.email : 'Voyageur' }}
+                                            {% endif %}
+                                            - {{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' : '' }}
+                                        </p>
+                                    </div>
+                                    <a href="{{ path('app_reservation_show', { id: reservation.id }) }}" class="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:underline">
+                                        Voir la reservation
+                                        <i class="fa-solid fa-arrow-right text-xs"></i>
+                                    </a>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-gray-500">Aucune reservation confirmee sur cette periode.</p>
+                    {% endif %}
+                </div>
+            </section>
+
+            <aside class="space-y-6">
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-2">Export iCal</h2>
+                    <p class="text-sm text-gray-500 mb-5">Utilisez ce lien pour synchroniser ce logement avec un calendrier externe compatible iCal.</p>
+
+                    <div class="space-y-3">
+                        <div>
+                            <label for="ical-export-url" class="block text-sm font-medium text-gray-700 mb-2">Lien du flux</label>
+                            <input id="ical-export-url" type="text" value="{{ icalExportUrl }}" readonly onclick="this.select()" class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-gray-700 bg-gray-50">
+                        </div>
+
+                        <a href="{{ icalExportUrl }}" target="_blank" rel="noreferrer noopener" class="inline-flex items-center gap-2 text-sm font-semibold text-brand hover:underline">
+                            <i class="fa-solid fa-arrow-up-right-from-square text-xs"></i>
+                            Ouvrir le flux iCal
+                        </a>
+
+                        <form method="post" action="{{ path('app_host_property_ical_regenerate', { id: property.id }) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('property_ical_regenerate_' ~ property.id) }}">
+                            <input type="hidden" name="month" value="{{ monthStart|date('Y-m') }}">
+                            <button type="submit" class="w-full border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-3 rounded-xl transition">
+                                Regenerer le lien
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-2">Import iCal</h2>
+                    <p class="text-sm text-gray-500 mb-5">Ajoutez un calendrier externe pour bloquer automatiquement les dates provenant d'une autre plateforme.</p>
+
+                    {{ form_start(icalSyncForm, { attr: { class: 'space-y-4' } }) }}
+                        {% if icalSyncForm.vars.errors|length > 0 %}
+                            <div class="px-4 py-3 rounded-xl text-sm bg-red-50 text-red-800">
+                                {{ form_errors(icalSyncForm) }}
+                            </div>
+                        {% endif %}
+
+                        {{ form_row(icalSyncForm.providerName, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                        {{ form_row(icalSyncForm.iCalUrl, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+
+                        <button type="submit" class="w-full bg-gray-900 hover:bg-black text-white font-semibold py-3 rounded-xl transition">
+                            Ajouter et synchroniser
+                        </button>
+                    {{ form_end(icalSyncForm) }}
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-2">Modifier une plage</h2>
+                    <p class="text-sm text-gray-500 mb-5">Bloquez des dates, reouvrez-les ou appliquez un prix et un minimum de sejour sur une plage.</p>
+
+                    {{ form_start(form, { attr: { class: 'space-y-4' } }) }}
+                        {% if form.vars.errors|length > 0 %}
+                            <div class="px-4 py-3 rounded-xl text-sm bg-red-50 text-red-800">
+                                {{ form_errors(form) }}
+                            </div>
+                        {% endif %}
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            {{ form_row(form.startDate, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                            {{ form_row(form.endDate, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                        </div>
+
+                        {{ form_row(form.mode, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                        {{ form_row(form.minimumStay, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1 } }) }}
+                        {{ form_row(form.priceOverride, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 0, step: '0.01' } }) }}
+
+                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl transition">
+                            Enregistrer la plage
+                        </button>
+                    {{ form_end(form) }}
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Legende</h2>
+                    <div class="space-y-3 text-sm text-gray-600">
+                        <div class="flex items-center gap-3">
+                            <span class="w-4 h-4 rounded-full bg-emerald-100 border border-emerald-200"></span>
+                            Reservation confirmee
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-4 h-4 rounded-full bg-red-100 border border-red-200"></span>
+                            Blocage manuel
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-4 h-4 rounded-full bg-amber-100 border border-amber-200"></span>
+                            Blocage importe depuis iCal
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="w-4 h-4 rounded-full bg-white border border-gray-200"></span>
+                            Date ouverte a la reservation
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-50 border border-gray-200 rounded-2xl p-6">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-3">Base de calcul</h2>
+                    <p class="text-sm text-gray-600">Le tarif standard du logement est de {{ property.pricePerNight|number_format(0, ',', ' ') }} EUR par nuit.</p>
+                    {% if property.cleaningFee %}
+                        <p class="text-sm text-gray-600 mt-2">Frais de menage actuels : {{ property.cleaningFee|number_format(0, ',', ' ') }} EUR.</p>
+                    {% endif %}
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Calendriers externes relies</h2>
+
+                    {% if property.iCalSyncs|length > 0 %}
+                        <div class="space-y-3">
+                            {% for sync in property.iCalSyncs %}
+                                <article class="border border-gray-200 rounded-xl p-4 space-y-3">
+                                    <div>
+                                        <p class="font-semibold text-gray-900">{{ sync.providerName }}</p>
+                                        <p class="text-xs text-gray-500 break-all mt-1">{{ sync.iCalUrl }}</p>
+                                        {% if sync.lastSyncAt %}
+                                            <p class="text-xs text-gray-400 mt-2">Derniere synchro : {{ sync.lastSyncAt|date('d/m/Y H:i') }}</p>
+                                        {% endif %}
+                                    </div>
+
+                                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                        <form method="post" action="{{ path('app_host_property_ical_sync_now', { id: property.id, sync: sync.id }) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('property_ical_sync_now_' ~ sync.id) }}">
+                                            <input type="hidden" name="month" value="{{ monthStart|date('Y-m') }}">
+                                            <button type="submit" class="w-full border border-gray-200 hover:bg-gray-50 text-gray-700 font-semibold py-3 rounded-xl transition">
+                                                Synchroniser maintenant
+                                            </button>
+                                        </form>
+
+                                        <form method="post" action="{{ path('app_host_property_ical_sync_delete', { id: property.id, sync: sync.id }) }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('property_ical_sync_delete_' ~ sync.id) }}">
+                                            <input type="hidden" name="month" value="{{ monthStart|date('Y-m') }}">
+                                            <button type="submit" class="w-full border border-red-200 hover:bg-red-50 text-red-700 font-semibold py-3 rounded-xl transition">
+                                                Supprimer
+                                            </button>
+                                        </form>
+                                    </div>
+                                </article>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-gray-500">Aucun calendrier externe n'est relie a ce logement.</p>
+                    {% endif %}
+                </div>
+            </aside>
+        </div>
+    </main>
+{% endblock %}

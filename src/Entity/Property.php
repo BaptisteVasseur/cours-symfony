@@ -131,6 +131,9 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[ORM\Column(name: 'ical_export_token', length: 64, unique: true)]
+    private ?string $iCalExportToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -175,6 +178,7 @@ class Property
         $this->iCalSyncs = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
+        $this->regenerateICalExportToken();
         $this->createdAt = new \DateTimeImmutable();
     }
 
@@ -366,6 +370,18 @@ class Property
     public function setInstantBooking(bool $instantBooking): static
     {
         $this->instantBooking = $instantBooking;
+
+        return $this;
+    }
+
+    public function getICalExportToken(): ?string
+    {
+        return $this->iCalExportToken;
+    }
+
+    public function regenerateICalExportToken(): static
+    {
+        $this->iCalExportToken = bin2hex(random_bytes(32));
 
         return $this;
     }

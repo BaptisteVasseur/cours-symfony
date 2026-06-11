@@ -6,8 +6,11 @@ namespace App\Controller\Front;
 
 use App\Entity\Reservation;
 use App\Entity\User;
+use App\Exception\ReservationActionException;
 use App\Repository\ReservationRepository;
+use App\Service\Booking\ReservationStatusManager;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\ReservationVoter;
@@ -44,5 +47,31 @@ final class ReservationController extends AbstractController
         return $this->render('front/reservation/show.html.twig', [
             'reservation' => $reservation,
         ]);
+    }
+
+    #[Route('/{id}/cancel', name: 'app_reservation_cancel', methods: ['POST'])]
+    #[IsGranted(ReservationVoter::CANCEL, subject: 'reservation')]
+    public function cancel(
+        Request $request,
+        Reservation $reservation,
+        ReservationStatusManager $reservationStatusManager,
+    ): Response {
+        if (!$this->isCsrfTokenValid('reservation_cancel_' . $reservation->getId(), $request->request->getString('_token'))) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        try {
+            $reservationStatusManager->cancel($reservation, $user, $request->request->getString('reason'));
+            $this->addFlash('success', 'La reservation a ete annulee.');
+        } catch (ReservationActionException $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
     }
 }

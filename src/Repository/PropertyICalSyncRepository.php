@@ -17,4 +17,19 @@ class PropertyICalSyncRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, PropertyICalSync::class);
     }
+
+    /**
+     * @return list<PropertyICalSync>
+     */
+    public function findByPropertyId(string $propertyId): array
+    {
+        return $this->createQueryBuilder('s')
+            ->leftJoin('s.property', 'p')
+            ->addSelect('p')
+            ->andWhere('p.id = :propertyId')
+            ->setParameter('propertyId', $propertyId)
+            ->orderBy('s.providerName', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
 }

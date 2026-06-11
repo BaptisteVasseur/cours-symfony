@@ -6,6 +6,8 @@ namespace App\Entity;
 
 use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PropertyICalSyncRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 
@@ -27,6 +29,15 @@ class PropertyICalSync
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $lastSyncAt = null;
+
+    /** @var Collection<int, PropertyAvailability> */
+    #[ORM\OneToMany(targetEntity: PropertyAvailability::class, mappedBy: 'propertyICalSync')]
+    private Collection $importedAvailabilities;
+
+    public function __construct()
+    {
+        $this->importedAvailabilities = new ArrayCollection();
+    }
 
     public function getProperty(): ?Property
     {
@@ -74,5 +85,11 @@ class PropertyICalSync
         $this->lastSyncAt = $lastSyncAt;
 
         return $this;
+    }
+
+    /** @return Collection<int, PropertyAvailability> */
+    public function getImportedAvailabilities(): Collection
+    {
+        return $this->importedAvailabilities;
     }
 }

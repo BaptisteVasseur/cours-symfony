@@ -58,10 +58,14 @@ services:
       MESSENGER_TRANSPORT_DSN: doctrine://default
       MAILER_DSN: smtp://mailer:1025
     depends_on:
+      php:
+        condition: service_started
       database:
         condition: service_healthy
-    command: >
-      sh -c "php bin/console messenger:consume async -vv --time-limit=3600"
+      mailer:
+        condition: service_started
+    restart: unless-stopped
+    command: ["sh", "/var/www/html/docker/messenger-worker.sh"]
 
 
 #  nginx:

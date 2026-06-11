@@ -48,6 +48,35 @@ class PropertyRepository extends ServiceEntityRepository
     /**
      * @return list<Property>
      */
+    public function findPublishedForSearch(?string $destination, int $guests): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->andWhere('p.maxGuests >= :guests')
+            ->setParameter('status', 'published')
+            ->setParameter('guests', $guests)
+            ->orderBy('p.createdAt', 'DESC');
+
+        $normalizedDestination = trim((string) $destination);
+
+        if ($normalizedDestination !== '') {
+            $qb
+                ->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.country) LIKE :destination OR LOWER(a.addressLine1) LIKE :destination')
+                ->setParameter('destination', '%' . mb_strtolower($normalizedDestination) . '%');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
     public function findPendingForModeration(int $limit = 10): array
     {
         return $this->createQueryBuilder('p')
