@@ -26,7 +26,7 @@ class ReservationStatusHistory
     private ?string $newStatus = null;
 
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     private ?User $changedBy = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]

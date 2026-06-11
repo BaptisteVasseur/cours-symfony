@@ -154,6 +154,19 @@
                                     </form>
                                 </div>
                             {% endif %}
+                        {% elseif reservation.status in ['pending', 'confirmed'] %}
+                            <button type="button" onclick="toggleForm('cancel-guest-form-show')" class="w-full py-2.5 px-4 bg-red-50 hover:bg-red-100 text-red-600 font-semibold rounded-xl text-xs transition border border-red-100">
+                                Annuler ma réservation
+                            </button>
+
+                            <div id="cancel-guest-form-show" class="hidden p-4 bg-gray-50 border border-gray-200 rounded-xl mt-4">
+                                <form action="{{ path('app_reservation_cancel', { id: reservation.id }) }}" method="POST">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('cancel_guest' ~ reservation.id) }}">
+                                    <label for="cancel_guest_reason_show" class="block text-xs font-semibold text-gray-700 mb-2">Motif d'annulation :</label>
+                                    <textarea id="cancel_guest_reason_show" name="cancellation_reason" rows="2" required placeholder="Veuillez renseigner un motif d'annulation..." class="w-full text-xs p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-brand focus:border-brand bg-white mb-3"></textarea>
+                                    <button type="submit" class="w-full py-2 bg-red-600 hover:bg-red-700 text-white font-semibold text-xs rounded-lg transition shadow-sm">Confirmer l'annulation</button>
+                                </form>
+                            </div>
                         {% endif %}
                     </div>
                 </div>
