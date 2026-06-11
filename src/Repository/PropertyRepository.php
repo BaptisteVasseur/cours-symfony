@@ -132,4 +132,51 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<Property>
+     */
+    public function findSearch(
+        ?string $destination = null,
+        ?\DateTimeInterface $checkin = null,
+        ?\DateTimeInterface $checkout = null,
+        ?int $guests = null
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published');
+
+        if ($destination) {
+            $qb->andWhere('a.city LIKE :dest OR a.country LIKE :dest')
+                ->setParameter('dest', '%' . $destination . '%');
+        }
+
+        if ($guests) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        // Logic for dates (simplified: check if not already booked)
+        if ($checkin && $checkout) {
+            $qb->andWhere('NOT EXISTS (
+                SELECT res.id FROM App\Entity\Reservation res
+                WHERE res.property = p
+                AND res.status != :cancelled
+                AND (
+                    (res.checkinDate < :checkout AND res.checkoutDate > :checkin)
+                )
+            )')
+            ->setParameter('cancelled', 'cancelled')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->orderBy('p.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }

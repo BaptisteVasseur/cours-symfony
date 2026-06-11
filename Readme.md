@@ -56,7 +56,7 @@ Le projet a été enrichi avec une attention particulière portée au design :
 3.  **Charger les données de test** : `make fixtures`
 4.  **Lancer le worker email** : `make worker`
 
-## 📸 Galerie Aperçu
+## Galerie Aperçu
 
-![Accueil du site](assets/img.png)
+![Email une fois validé par le hote](assets/img.png)
 ![Tableau de bord Hôte](assets/img_1.png)
