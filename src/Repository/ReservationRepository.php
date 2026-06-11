@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -72,6 +73,31 @@ class ReservationRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
 
         return $result !== null ? (float) $result : 0.0;
+    }
+
+    public function hasConfirmedOverlap(
+        Property $property,
+        \DateTimeImmutable $checkinDate,
+        \DateTimeImmutable $checkoutDate,
+        ?Reservation $exclude = null,
+    ): bool {
+        $qb = $this->createQueryBuilder('r')
+            ->select('r.id')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :confirmed')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('confirmed', 'confirmed')
+            ->setParameter('checkin', $checkinDate)
+            ->setParameter('checkout', $checkoutDate)
+            ->setMaxResults(1);
+
+        if ($exclude !== null) {
+            $qb->andWhere('r != :exclude')->setParameter('exclude', $exclude);
+        }
+
+        return $qb->getQuery()->getOneOrNullResult() !== null;
     }
 
     /**
