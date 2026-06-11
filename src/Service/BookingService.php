@@ -8,6 +8,7 @@ use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Enum\BookingStatus;
 use App\Exception\BookingConflictException;
 use App\Exception\UnavailableDatesException;
 use App\Message\BookingCancelledMessage;
@@ -51,7 +52,7 @@ final class BookingService
             $reservation->setCheckinDate($checkin);
             $reservation->setCheckoutDate($checkout);
             $reservation->setGuestsCount($guestsCount);
-            $reservation->setStatus('pending');
+            $reservation->setBookingStatus(BookingStatus::PENDING);
             $reservation->setTotalPrice($breakdown['totalPrice']);
             $reservation->setCleaningFee($breakdown['cleaningFee'] !== '0.00' ? $breakdown['cleaningFee'] : null);
             $reservation->setServiceFee($breakdown['serviceFee']);
@@ -59,7 +60,7 @@ final class BookingService
             $reservation->setCurrency('EUR');
 
             $this->entityManager->persist($reservation);
-            $this->appendHistory($reservation, null, 'pending', $guest);
+            $this->appendHistory($reservation, null, BookingStatus::PENDING, $guest);
             $this->entityManager->flush();
 
             if ($property->isInstantBooking()) {
@@ -69,7 +70,7 @@ final class BookingService
             return $reservation;
         });
 
-        if ($reservation->getStatus() === 'confirmed') {
+        if ($reservation->getBookingStatus() === BookingStatus::CONFIRMED) {
             $this->messageBus->dispatch(new BookingConfirmedMessage($this->reservationId($reservation)));
             $this->realtimePublisher->publishReservationChanged($reservation, 'reservation.confirmed');
             $this->realtimePublisher->publishAvailabilityChanged($reservation);
@@ -97,12 +98,12 @@ final class BookingService
         $this->assertReasonIsProvided($reason, 'Un motif de refus est obligatoire.');
 
         $reservation = $this->entityManager->wrapInTransaction(function () use ($reservation, $actor, $reason): Reservation {
-            if ($reservation->getStatus() !== 'pending') {
+            if ($reservation->getBookingStatus() !== BookingStatus::PENDING) {
                 throw new \LogicException('Cette réservation ne peut plus être refusée.');
             }
 
             $reservation->setCancellationReason($reason);
-            $this->transitionTo($reservation, 'cancelled', $actor);
+            $this->transitionTo($reservation, BookingStatus::CANCELLED, $actor);
             $this->entityManager->flush();
 
             return $reservation;
@@ -118,7 +119,7 @@ final class BookingService
     {
         $this->assertReasonIsProvided($reason, 'Un motif d\'annulation est obligatoire.');
 
-        $wasConfirmed = $reservation->getStatus() === 'confirmed';
+        $wasConfirmed = $reservation->getBookingStatus() === BookingStatus::CONFIRMED;
         $reservation = $this->cancelWithStatusMessage($reservation, $actor, $reason, 'Transition invalide');
 
         $this->messageBus->dispatch(new BookingCancelledMessage($this->reservationId($reservation)));
@@ -138,7 +139,7 @@ final class BookingService
     public function markCompleted(Reservation $reservation): Reservation
     {
         $reservation = $this->entityManager->wrapInTransaction(function () use ($reservation): Reservation {
-            if ($reservation->getStatus() !== 'confirmed') {
+            if ($reservation->getBookingStatus() !== BookingStatus::CONFIRMED) {
                 throw new \LogicException('Transition invalide');
             }
 
@@ -147,7 +148,7 @@ final class BookingService
                 throw new \LogicException('Transition invalide');
             }
 
-            $this->transitionTo($reservation, 'completed', null);
+            $this->transitionTo($reservation, BookingStatus::COMPLETED, null);
             $this->entityManager->flush();
 
             return $reservation;
@@ -160,7 +161,7 @@ final class BookingService
 
     private function confirmInsideTransaction(Reservation $reservation, ?User $actor): Reservation
     {
-        if ($reservation->getStatus() !== 'pending') {
+        if ($reservation->getBookingStatus() !== BookingStatus::PENDING) {
             throw new \LogicException('Transition invalide');
         }
 
@@ -179,7 +180,7 @@ final class BookingService
             throw new BookingConflictException('Les dates sont déjà prises par une réservation confirmée.');
         }
 
-        $this->transitionTo($reservation, 'confirmed', $actor);
+        $this->transitionTo($reservation, BookingStatus::CONFIRMED, $actor);
         $this->entityManager->flush();
 
         return $reservation;
@@ -188,35 +189,35 @@ final class BookingService
     private function cancelWithStatusMessage(Reservation $reservation, ?User $actor, string $reason, string $invalidMessage): Reservation
     {
         return $this->entityManager->wrapInTransaction(function () use ($reservation, $actor, $reason, $invalidMessage): Reservation {
-            if (!in_array($reservation->getStatus(), ['pending', 'confirmed'], true)) {
+            if (!in_array($reservation->getBookingStatus(), [BookingStatus::PENDING, BookingStatus::CONFIRMED], true)) {
                 throw new \LogicException($invalidMessage);
             }
 
             $reservation->setCancellationReason($reason);
-            $this->transitionTo($reservation, 'cancelled', $actor);
+            $this->transitionTo($reservation, BookingStatus::CANCELLED, $actor);
             $this->entityManager->flush();
 
             return $reservation;
         });
     }
 
-    private function transitionTo(Reservation $reservation, string $newStatus, ?User $actor): void
+    private function transitionTo(Reservation $reservation, BookingStatus $newStatus, ?User $actor): void
     {
-        $oldStatus = $reservation->getStatus();
+        $oldStatus = $reservation->getBookingStatus();
         if ($oldStatus === $newStatus) {
             throw new \LogicException('Transition invalide');
         }
 
-        $reservation->setStatus($newStatus);
+        $reservation->setBookingStatus($newStatus);
         $this->appendHistory($reservation, $oldStatus, $newStatus, $actor);
     }
 
-    private function appendHistory(Reservation $reservation, ?string $oldStatus, string $newStatus, ?User $actor): void
+    private function appendHistory(Reservation $reservation, ?BookingStatus $oldStatus, BookingStatus $newStatus, ?User $actor): void
     {
         $history = new ReservationStatusHistory();
         $history->setReservation($reservation);
-        $history->setOldStatus($oldStatus);
-        $history->setNewStatus($newStatus);
+        $history->setOldStatus($oldStatus?->value);
+        $history->setNewStatus($newStatus->value);
         $history->setChangedBy($actor);
 
         $this->entityManager->persist($history);

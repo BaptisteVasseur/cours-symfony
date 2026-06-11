@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Message\CheckinReminderMessage;
-use App\Repository\ReservationRepository;
+use App\Repository\BookingRepository;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -17,7 +17,7 @@ use Symfony\Component\Messenger\MessageBusInterface;
 final class SendCheckInRemindersCommand extends Command
 {
     public function __construct(
-        private readonly ReservationRepository $reservationRepository,
+        private readonly BookingRepository $bookingRepository,
         private readonly MessageBusInterface $messageBus,
     ) {
         parent::__construct();
@@ -27,7 +27,7 @@ final class SendCheckInRemindersCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $tomorrow = (new \DateTimeImmutable('tomorrow'))->setTime(0, 0, 0);
-        $reservations = $this->reservationRepository->findConfirmedStartingOn($tomorrow);
+        $reservations = $this->bookingRepository->findConfirmedStartingOn($tomorrow);
 
         if ($reservations === []) {
             $io->success('Aucun rappel à envoyer.');

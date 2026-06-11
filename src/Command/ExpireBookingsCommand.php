@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
-use App\Repository\ReservationRepository;
+use App\Repository\BookingRepository;
 use App\Service\BookingService;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
@@ -16,7 +16,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 final class ExpireBookingsCommand extends Command
 {
     public function __construct(
-        private readonly ReservationRepository $reservationRepository,
+        private readonly BookingRepository $bookingRepository,
         private readonly BookingService $bookingService,
     ) {
         parent::__construct();
@@ -26,7 +26,7 @@ final class ExpireBookingsCommand extends Command
     {
         $io = new SymfonyStyle($input, $output);
         $threshold = new \DateTimeImmutable('-24 hours');
-        $reservations = $this->reservationRepository->findExpiredPending($threshold);
+        $reservations = $this->bookingRepository->findExpiredPending($threshold);
 
         if ($reservations === []) {
             $io->success('Aucune demande de reservation expiree.');

@@ -8,7 +8,7 @@ use App\Entity\AvailabilityBlock;
 use App\Entity\Property;
 use App\Enum\BlockReason;
 use App\Repository\AvailabilityBlockRepository;
-use App\Repository\ReservationRepository;
+use App\Repository\BookingRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 
@@ -17,7 +17,7 @@ final class ICalImportService
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly AvailabilityBlockRepository $availabilityBlockRepository,
-        private readonly ReservationRepository $reservationRepository,
+        private readonly BookingRepository $bookingRepository,
         private readonly LoggerInterface $logger,
         private readonly RealtimePublisher $realtimePublisher,
     ) {
@@ -49,7 +49,7 @@ final class ICalImportService
                 continue;
             }
 
-            if ($this->reservationRepository->countOverlappingConfirmed($property, $start, $end) > 0) {
+            if ($this->bookingRepository->countOverlappingConfirmed($property, $start, $end) > 0) {
                 $this->logger->warning('Bloc iCal ignore car il chevauche une reservation confirmee.', [
                     'property' => (string) $property->getId(),
                     'uid' => $uid,

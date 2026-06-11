@@ -8,13 +8,13 @@ use App\Entity\AvailabilityBlock;
 use App\Entity\Property;
 use App\Enum\BlockReason;
 use App\Repository\AvailabilityBlockRepository;
-use App\Repository\ReservationRepository;
+use App\Repository\BookingRepository;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class AvailabilityService
 {
     public function __construct(
-        private readonly ReservationRepository $reservationRepository,
+        private readonly BookingRepository $bookingRepository,
         private readonly AvailabilityBlockRepository $availabilityBlockRepository,
         private readonly EntityManagerInterface $entityManager,
         private readonly RealtimePublisher $realtimePublisher,
@@ -35,7 +35,7 @@ final class AvailabilityService
             return false;
         }
 
-        if ($this->reservationRepository->countOverlappingConfirmed($property, $checkin, $checkout) > 0) {
+        if ($this->bookingRepository->countOverlappingConfirmed($property, $checkin, $checkout) > 0) {
             return false;
         }
 
@@ -52,7 +52,7 @@ final class AvailabilityService
             throw new \LogicException('La date de fin doit être postérieure à la date de début.');
         }
 
-        if ($this->reservationRepository->countOverlappingConfirmed($property, $start, $end) > 0) {
+        if ($this->bookingRepository->countOverlappingConfirmed($property, $start, $end) > 0) {
             throw new \LogicException('Cette période contient déjà une réservation confirmée.');
         }
 
@@ -95,7 +95,7 @@ final class AvailabilityService
     {
         $monthStart = $month->modify('first day of this month')->setTime(0, 0);
         $monthEnd = $monthStart->modify('first day of next month');
-        $reservations = $this->reservationRepository->findOverlappingConfirmed($property, $monthStart, $monthEnd);
+        $reservations = $this->bookingRepository->findOverlappingConfirmed($property, $monthStart, $monthEnd);
         $blocks = $this->availabilityBlockRepository->findOverlapping($property, $monthStart, $monthEnd);
         $days = [];
 

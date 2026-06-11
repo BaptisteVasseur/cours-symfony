@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\MessageHandler;
 
 use App\Message\CheckinReminderMessage;
-use App\Repository\ReservationRepository;
+use App\Repository\BookingRepository;
 use App\Service\MailService;
 use App\Service\NotificationService;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
@@ -15,7 +15,7 @@ use Symfony\Component\Uid\Uuid;
 final readonly class CheckinReminderHandler
 {
     public function __construct(
-        private ReservationRepository $reservationRepository,
+        private BookingRepository $bookingRepository,
         private MailService $mailService,
         private NotificationService $notificationService,
     ) {
@@ -23,7 +23,7 @@ final readonly class CheckinReminderHandler
 
     public function __invoke(CheckinReminderMessage $message): void
     {
-        $reservation = $this->reservationRepository->find(Uuid::fromString($message->reservationId));
+        $reservation = $this->bookingRepository->find(Uuid::fromString($message->reservationId));
         if ($reservation === null) {
             return;
         }

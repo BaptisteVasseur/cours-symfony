@@ -12,7 +12,8 @@ use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Entity\Trait\UuidEntityTrait;
-use App\Repository\ReservationRepository;
+use App\Enum\BookingStatus;
+use App\Repository\BookingRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
@@ -36,7 +37,7 @@ use Symfony\Component\Validator\Constraints as Assert;
     expression: "this.getStatus() != 'cancelled' or (this.getCancellationReason() !== null and this.getCancellationReason() !== '')",
     message: 'Le motif d\'annulation est obligatoire pour une réservation annulée.',
 )]
-#[ORM\Entity(repositoryClass: ReservationRepository::class)]
+#[ORM\Entity(repositoryClass: BookingRepository::class)]
 #[ORM\Table(name: 'reservations')]
 class Reservation
 {
@@ -68,11 +69,11 @@ class Reservation
 
     #[Assert\NotBlank(message: 'Le statut est obligatoire.')]
     #[Assert\Choice(
-        choices: ['pending', 'confirmed', 'completed', 'cancelled'],
+        choices: [BookingStatus::PENDING, BookingStatus::CONFIRMED, BookingStatus::COMPLETED, BookingStatus::CANCELLED],
         message: 'Le statut sélectionné n\'est pas valide.',
     )]
-    #[ORM\Column(length: 50)]
-    private ?string $status = null;
+    #[ORM\Column(length: 50, enumType: BookingStatus::class)]
+    private ?BookingStatus $status = BookingStatus::PENDING;
 
     #[Assert\NotBlank(message: 'Le prix total est obligatoire.')]
     #[Assert\Type(type: 'numeric', message: 'Le prix total doit être un nombre.')]
@@ -211,10 +212,22 @@ class Reservation
 
     public function getStatus(): ?string
     {
+        return $this->status?->value;
+    }
+
+    public function getBookingStatus(): ?BookingStatus
+    {
         return $this->status;
     }
 
-    public function setStatus(string $status): static
+    public function setStatus(string|BookingStatus $status): static
+    {
+        $this->status = $status instanceof BookingStatus ? $status : BookingStatus::from($status);
+
+        return $this;
+    }
+
+    public function setBookingStatus(BookingStatus $status): static
     {
         $this->status = $status;
 

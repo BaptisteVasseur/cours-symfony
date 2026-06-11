@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\MessageHandler;
 
 use App\Message\BookingCancelledMessage;
-use App\Repository\ReservationRepository;
+use App\Enum\BookingStatus;
+use App\Repository\BookingRepository;
 use App\Service\MailService;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
 use Symfony\Component\Uid\Uuid;
@@ -14,7 +15,7 @@ use Symfony\Component\Uid\Uuid;
 final readonly class BookingCancelledHandler
 {
     public function __construct(
-        private ReservationRepository $reservationRepository,
+        private BookingRepository $bookingRepository,
         private MailService $mailService,
         private \App\Service\NotificationService $notificationService,
     ) {
@@ -22,7 +23,7 @@ final readonly class BookingCancelledHandler
 
     public function __invoke(BookingCancelledMessage $message): void
     {
-        $reservation = $this->reservationRepository->find(Uuid::fromString($message->reservationId));
+        $reservation = $this->bookingRepository->find(Uuid::fromString($message->reservationId));
         if ($reservation === null) {
             return;
         }
@@ -36,7 +37,7 @@ final readonly class BookingCancelledHandler
         // Determine who cancelled
         $actor = null;
         foreach ($reservation->getStatusHistory() as $history) {
-            if ($history->getNewStatus() === 'cancelled') {
+            if ($history->getNewStatus() === BookingStatus::CANCELLED->value) {
                 $actor = $history->getChangedBy();
             }
         }

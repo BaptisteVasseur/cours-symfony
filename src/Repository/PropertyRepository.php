@@ -8,6 +8,7 @@ use App\Entity\AvailabilityBlock;
 use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
+use App\Enum\BookingStatus;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\ORM\QueryBuilder;
 use Doctrine\Persistence\ManagerRegistry;
@@ -136,7 +137,7 @@ class PropertyRepository extends ServiceEntityRepository
                     )',
                     $blockClass,
                 ))
-                ->setParameter('confirmedStatus', 'confirmed')
+                ->setParameter('confirmedStatus', BookingStatus::CONFIRMED)
                 ->setParameter('checkin', $checkin)
                 ->setParameter('checkout', $checkout);
         }

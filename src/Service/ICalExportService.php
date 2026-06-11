@@ -7,12 +7,12 @@ namespace App\Service;
 use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
-use App\Repository\ReservationRepository;
+use App\Repository\BookingRepository;
 
 final class ICalExportService
 {
     public function __construct(
-        private readonly ReservationRepository $reservationRepository,
+        private readonly BookingRepository $bookingRepository,
     ) {
     }
 
@@ -27,7 +27,7 @@ final class ICalExportService
 
         $dtstamp = (new \DateTimeImmutable('now', new \DateTimeZone('UTC')))->format('Ymd\THis\Z');
 
-        foreach ($this->reservationRepository->findConfirmedForIcal($property) as $reservation) {
+        foreach ($this->bookingRepository->findConfirmedForIcal($property) as $reservation) {
             $checkin = $reservation->getCheckinDate();
             $checkout = $reservation->getCheckoutDate();
             $guest = $reservation->getGuest();
