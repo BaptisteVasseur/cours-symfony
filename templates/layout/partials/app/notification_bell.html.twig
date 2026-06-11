@@ -1,0 +1,67 @@
+<div class="relative" data-notification-bell>
+    <a href="{{ path('app_notifications_index') }}" class="relative p-2 text-gray-600 hover:bg-gray-50 rounded-full inline-flex" aria-label="Notifications">
+        <i class="fa-solid fa-bell text-lg"></i>
+        {% if unreadCount > 0 %}
+            <span class="absolute top-0.5 right-0.5 min-w-[1.1rem] h-[1.1rem] px-1 bg-brand text-white text-[10px] font-bold rounded-full flex items-center justify-center">
+                {{ unreadCount > 9 ? '9+' : unreadCount }}
+            </span>
+        {% endif %}
+    </a>
+
+    {% if notifications|length > 0 %}
+        <div class="hidden absolute right-0 top-full mt-2 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 z-50 overflow-hidden" data-notification-dropdown>
+            <div class="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                <p class="text-sm font-semibold text-gray-900">Notifications</p>
+                {% if unreadCount > 0 %}
+                    <form method="post" action="{{ path('app_notifications_read_all') }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('read_all_notifications') }}">
+                        <button type="submit" class="text-xs text-brand font-semibold hover:underline">Tout marquer lu</button>
+                    </form>
+                {% endif %}
+            </div>
+            <ul class="max-h-72 overflow-y-auto">
+                {% for notification in notifications %}
+                    <li class="border-b border-gray-50 last:border-0 {{ not notification.isRead ? 'bg-blue-50/40' : '' }}">
+                        <div class="px-4 py-3">
+                            <p class="text-sm font-semibold text-gray-900">{{ notification.title }}</p>
+                            {% if notification.content %}
+                                <p class="text-xs text-gray-500 mt-1 line-clamp-2">{{ notification.content }}</p>
+                            {% endif %}
+                            <p class="text-[10px] text-gray-400 mt-1">{{ notification.createdAt|date('d/m/Y H:i') }}</p>
+                            {% if not notification.isRead %}
+                                <form method="post" action="{{ path('app_notifications_read', { id: notification.id }) }}" class="mt-2">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('read_notification_' ~ notification.id) }}">
+                                    <button type="submit" class="text-xs text-brand font-semibold hover:underline">Marquer comme lu</button>
+                                </form>
+                            {% endif %}
+                        </div>
+                    </li>
+                {% endfor %}
+            </ul>
+            <div class="px-4 py-2 border-t border-gray-100 text-center">
+                <a href="{{ path('app_notifications_index') }}" class="text-xs font-semibold text-brand hover:underline">Voir tout</a>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    document.querySelectorAll('[data-notification-bell]').forEach((bell) => {
+        const link = bell.querySelector('a');
+        const dropdown = bell.querySelector('[data-notification-dropdown]');
+        if (!dropdown || !link) return;
+
+        link.addEventListener('click', (e) => {
+            if (window.innerWidth >= 640) {
+                e.preventDefault();
+                dropdown.classList.toggle('hidden');
+            }
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!bell.contains(e.target)) {
+                dropdown.classList.add('hidden');
+            }
+        });
+    });
+</script>

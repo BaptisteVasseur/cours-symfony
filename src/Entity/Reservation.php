@@ -38,9 +38,14 @@ use Symfony\Component\Validator\Constraints as Assert;
 )]
 #[ORM\Entity(repositoryClass: ReservationRepository::class)]
 #[ORM\Table(name: 'reservations')]
+#[ORM\Index(columns: ['property_id', 'status', 'checkin_date', 'checkout_date'], name: 'idx_reservation_availability')]
 class Reservation
 {
     use UuidEntityTrait;
+
+    #[ORM\Version]
+    #[ORM\Column(type: 'integer')]
+    private int $version = 1;
 
     #[Assert\NotNull(message: 'Le logement est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'reservations')]
@@ -146,6 +151,11 @@ class Reservation
         $this->conversations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
+    }
+
+    public function getVersion(): int
+    {
+        return $this->version;
     }
 
     public function getProperty(): ?Property

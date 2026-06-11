@@ -1,0 +1,53 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+        <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Retour à mes propriétés
+        </a>
+
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Calendrier — {{ property.title }}</h1>
+        <p class="text-gray-500 mb-8">Réservations confirmées et périodes bloquées</p>
+
+        <section class="border border-gray-200 rounded-xl p-6 mb-8">
+            <h2 class="text-lg font-semibold mb-4">Périodes occupées / bloquées</h2>
+            {% if blockedRanges|length > 0 %}
+                <ul class="space-y-3">
+                    {% for range in blockedRanges %}
+                        <li class="flex items-center justify-between text-sm border-b border-gray-100 pb-2">
+                            <span class="font-medium {{ range.type == 'reservation' ? 'text-green-700' : 'text-red-700' }}">
+                                {{ range.label }}
+                            </span>
+                            <span>{{ range.start|date('d/m/Y') }} → {{ range.end|date('d/m/Y') }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-gray-500 text-sm">Aucune période bloquée pour le moment.</p>
+            {% endif %}
+        </section>
+
+        <section class="border border-gray-200 rounded-xl p-6">
+            <h2 class="text-lg font-semibold mb-4">Bloquer des dates</h2>
+            {{ form_start(blockForm, { action: path('app_host_calendar_block', { id: property.id }), method: 'POST' }) }}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    {{ form_row(blockForm.startDate) }}
+                    {{ form_row(blockForm.endDate) }}
+                </div>
+                {{ form_row(blockForm.reason) }}
+                <button type="submit" class="mt-4 px-4 py-2 bg-gray-900 text-white rounded-lg font-semibold hover:bg-gray-800">
+                    Bloquer cette période
+                </button>
+            {{ form_end(blockForm) }}
+
+            {% if property.icalToken %}
+                <div class="mt-8 pt-6 border-t border-gray-100">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-2">Export iCal</h3>
+                    <p class="text-xs text-gray-500 break-all">
+                        {{ url('app_ical_export', { id: property.id }) }}?token={{ property.icalToken }}
+                    </p>
+                </div>
+            {% endif %}
+        </section>
+    </main>
+{% endblock %}

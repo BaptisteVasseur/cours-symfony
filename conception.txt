@@ -1,0 +1,359 @@
+CONCEPTION — Plateforme de réservation (type Airbnb)
+====================================================
+
+Q1 — Modélisation temporelle
+-----------------------------
+Le jour de checkout est-il réservable ?
+→ Oui. Départ à 11h, arrivée à 15h : la même date peut servir de fin d'une
+  réservation et de début d'une autre.
+En BDD on stocke :
+  - date_start : inclusif (premier jour d'occupation)
+  - date_end   : exclusif (jour du départ, donc réservable par un autre voyageur)
+Convention identique à iCal. Cela simplifie les calculs de chevauchement :
+deux réservations se chevauchent ssi (start_a < end_b) AND (start_b < end_a).
+
+Q2 — Pending bloque-t-il les dates ?
+-------------------------------------
+Choix : Pending ne bloque PAS les dates.
+Seul le statut « Confirmed » verrouille la période.
+Justification :
+  - Évite le blocage abusif (un utilisateur qui ne finalise jamais son paiement).
+  - On affiche un avertissement côté hôte/voyageur si une réservation pending
+    existe sur les mêmes dates.
+  - Timeout configurable (ex. 15 min) pour expirer automatiquement les pending
+    non finalisées.
+
+Q3 — Concurrence (double réservation)
+--------------------------------------
+Deux paiements simultanés sur les mêmes dates → risque d'overbooking.
+Solution retenue : contrainte UNIQUE en BDD + verrou optimiste Doctrine.
+  1. Contrainte UNIQUE sur (property_id, date_start, date_end) pour les
+     réservations confirmées — empêche tout doublon au niveau PostgreSQL.
+  2. Colonne @Version (ORM\Version) sur l'entité Reservation pour détecter
+     les modifications concurrentes (OptimisticLockException).
+  3. Côté service : vérifier la disponibilité juste avant le flush, dans une
+     transaction. Si conflit → lever une exception métier, rembourser si
+     paiement déjà capturé.
+
+Q4 — Performance sur 20 nuits
+------------------------------
+Ne pas faire 20 requêtes (une par nuit).
+Solution : une seule requête SQL avec condition d'overlap sur la table de
+périodes :
+  SELECT * FROM reservation
+  WHERE property_id = :id
+    AND status = 'confirmed'
+    AND date_start < :requested_end
+    AND date_end > :requested_start
+Si le résultat est vide → les dates sont disponibles.
+Complexité : O(1) requête quelle que soit la durée du séjour.
+Index recommandé : (property_id, status, date_start, date_end).
+
+Q5 — Asynchronisme email
+-------------------------
+Envoyer l'email APRÈS le flush() réussi, jamais avant.
+  - Si la transaction échoue, aucun email n'est envoyé.
+  - Utiliser Symfony Messenger : dispatch du message après flush.
+  - Transport principal : AMQP (RabbitMQ).
+  - Fallback : transport doctrine (messenger_messages en BDD) si RabbitMQ
+    est indisponible → configuration failed_transport dans messenger.yaml.
+  - Le worker consomme les messages de manière asynchrone ; en cas d'échec
+    d'envoi, retry avec backoff exponentiel (3 tentatives max).
+
+Q6 — Architecture calendrier
+-----------------------------
+Choix : table de PÉRIODES (date_start / date_end) et non pas une ligne par jour.
+Avantages :
+  - Stockage minimal : 1 ligne par réservation au lieu de N lignes (N = nuits).
+  - Requêtes simples et rapides (overlap check, voir Q4).
+  - Scalable : pas d'explosion de lignes pour les longs séjours.
+  - Compatible avec les blocked periods (maintenance, fermeture saisonnière)
+    stockés dans la même logique (table PropertyAvailability).
+Inconvénient mineur : afficher un calendrier jour par jour nécessite un
+calcul côté applicatif (generate_series ou itération PHP), mais c'est
+négligeable face aux gains en écriture et en intégrité.
+
+
+LE PROMPTE :
+
+
+read    before make the implementation of this code 
+
+Context 
+Le TP demande de construire un **moteur de réservation** (style Airbnb) dans un projet Symfony existant. Voici l'ordre logique d'attaque :
+
+je suis a l'etape 3 pour resaudre le sujet   
+
+ Créer les entités Doctrine
+
+### Entité `Booking`
+```php
+// src/Entity/Booking.php
+#[ORM\Entity]
+class Booking {
+    #[ORM\Id, ORM\GeneratedValue, ORM\Column]
+    private int $id;
+
+    #[ORM\ManyToOne(targetEntity: Property::class)]
+    private Property $property;
+
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    private User $traveler;
+
+    #[ORM\Column(type: 'date')]
+    private \DateTimeInterface $checkIn;
+
+    #[ORM\Column(type: 'date')]
+    private \DateTimeInterface $checkOut;
+
+    #[ORM\Column(length: 20)]
+    private string $status; // pending, confirmed, cancelled, completed
+
+    #[ORM\Column(type: 'decimal', scale: 2)]
+    private float $totalPrice;
+
+    #[ORM\Column(type: 'text', nullable: true)]
+    private ?string $cancellationReason = null;
+
+    #[ORM\Column]
+    private \DateTimeImmutable $createdAt;
+}
+```
+
+### Entité `PropertyUnavailability` (blocages manuels hôte)
+```php
+#[ORM\Entity]
+class PropertyUnavailability {
+    #[ORM\ManyToOne(targetEntity: Property::class)]
+    private Property $property;
+
+    #[ORM\Column(type: 'date')]
+    private \DateTimeInterface $startDate;
+
+    #[ORM\Column(type: 'date')]
+    private \DateTimeInterface $endDate;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $reason = null;
+}
+```
+
+Puis migre :
+```bash
+php bin/console make:migration
+php bin/console doctrine:migrations:migrate
+```
+
+---
+
+Le Service de disponibilité
+
+C'est le **cœur du moteur**. Crée `src/Service/AvailabilityService.php` :
+
+```php
+class AvailabilityService {
+    public function isAvailable(
+        Property $property,
+        \DateTimeInterface $checkIn,
+        \DateTimeInterface $checkOut,
+        int $guests
+    ): bool {
+        // 1. Logement publié ?
+        if (!$property->isPublished()) return false;
+
+        // 2. Capacité suffisante ?
+        if ($property->getMaxGuests() < $guests) return false;
+
+        // 3. Pas de blocage manuel sur ces dates
+        $blocked = $this->unavailabilityRepo->findOverlapping(
+            $property, $checkIn, $checkOut
+        );
+        if (count($blocked) > 0) return false;
+
+        // 4. Pas de réservation Confirmed qui chevauche
+        $conflicts = $this->bookingRepo->findConfirmedOverlapping(
+            $property, $checkIn, $checkOut
+        );
+        return count($conflicts) === 0;
+    }
+}
+```
+
+Dans le `BookingRepository`, la requête clé :
+```php
+public function findConfirmedOverlapping(Property $p, $start, $end): array {
+    return $this->createQueryBuilder('b')
+        ->where('b.property = :p')
+        ->andWhere('b.status = :status')
+        ->andWhere('b.checkIn < :end AND b.checkOut > :start') // chevauchement
+        ->setParameters([
+            'p' => $p,
+            'status' => 'confirmed',
+            'start' => $start,
+            'end' => $end,
+        ])
+        ->getQuery()->getResult();
+}
+```
+
+---
+
+ Les Contrôleurs
+
+### `BookingController` (voyageur)
+```
+GET  /properties/{id}/book      → formulaire checkout
+POST /properties/{id}/book      → valide dispo + crée réservation
+GET  /bookings                  → espace suivi voyageur
+POST /bookings/{id}/cancel      → annulation
+```
+
+### `HostBookingController` (hôte)
+```
+GET  /host/bookings             → tableau de bord demandes Pending
+POST /host/bookings/{id}/accept → accepte → status = confirmed
+POST /host/bookings/{id}/refuse → refuse → status = cancelled
+```
+
+### `CalendarController` (hôte)
+```
+GET  /host/properties/{id}/calendar          → vue calendrier
+POST /host/properties/{id}/block             → bloquer des dates
+```
+
+### Logique de création de réservation
+```php
+// Dans BookingController::create()
+if (!$availabilityService->isAvailable(...)) {
+    $this->addFlash('error', 'Ces dates ne sont plus disponibles.');
+    return $this->redirectToRoute(...);
+}
+
+$booking->setStatus(
+    $property->isInstantBooking() ? 'confirmed' : 'pending'
+);
+$em->persist($booking);
+$em->flush();
+
+// APRÈS le flush → dispatch message async
+$bus->dispatch(new BookingCreatedMessage($booking->getId()));
+
+$this->addFlash('success', 'Réservation créée !');
+```
+
+---
+
+Étape 6 — Notifications Email (Messenger)
+
+### Créer le Message et le Handler
+```php
+// src/Message/BookingCreatedMessage.php
+class BookingCreatedMessage {
+    public function __construct(public readonly int $bookingId) {}
+}
+
+// src/MessageHandler/BookingCreatedHandler.php
+class BookingCreatedHandler implements MessageHandlerInterface {
+    public function __invoke(BookingCreatedMessage $message): void {
+        $booking = $this->bookingRepo->find($message->bookingId);
+        // Envoyer email à l'hôte ou au voyageur selon le statut
+        $this->mailer->send(...);
+    }
+}
+```
+
+Config `messenger.yaml`
+```yaml
+framework:
+    messenger:
+        transports:
+            async: '%env(MESSENGER_TRANSPORT_DSN)%'
+        routing:
+            'App\Message\BookingCreatedMessage': async
+```
+
+Dans `.env.local` : `MESSENGER_TRANSPORT_DSN=doctrine://default` (file en BDD, pas besoin de RabbitMQ).
+
+Lancer le worker :
+```bash
+php bin/console messenger:consume async
+```
+
+---
+
+Étape 7 — Export iCal (Partie E)
+
+```php
+// src/Controller/ICalController.php
+#[Route('/api/properties/{id}/calendar.ics')]
+public function export(Property $property, Request $request): Response {
+    // Vérifier le token
+    if ($request->query->get('token') !== $property->getIcalToken()) {
+        throw new AccessDeniedException();
+    }
+
+    $bookings = $this->bookingRepo->findConfirmedByProperty($property);
+
+    $ical = "BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Clone Airbnb//FR\r\n";
+    foreach ($bookings as $booking) {
+        $ical .= "BEGIN:VEVENT\r\n";
+        $ical .= "UID:res-{$booking->getId()}@clone-airbnb.local\r\n";
+        $ical .= "DTSTART;VALUE=DATE:{$booking->getCheckIn()->format('Ymd')}\r\n";
+        $ical .= "DTEND;VALUE=DATE:{$booking->getCheckOut()->format('Ymd')}\r\n";
+        $ical .= "SUMMARY:{$property->getTitle()}\r\n";
+        $ical .= "END:VEVENT\r\n";
+    }
+    $ical .= "END:VCALENDAR";
+
+    return new Response($ical, 200, [
+        'Content-Type' => 'text/calendar; charset=utf-8',
+        'Content-Disposition' => 'attachment; filename="calendar.ics"',
+    ]);
+}
+```
+
+Pense à ajouter un champ `icalToken` sur l'entité `Property` et à générer un token unique à la création.
+
+---
+
+Moteur de recherche `/search`
+
+```php
+#[Route('/search')]
+public function search(Request $request): Response {
+    $destination = $request->query->get('destination');
+    $checkIn     = new \DateTime($request->query->get('checkin'));
+    $checkOut    = new \DateTime($request->query->get('checkout'));
+    $guests      = (int) $request->query->get('guests', 1);
+
+    $results = $this->propertyRepo
+        ->findAvailable($destination, $checkIn, $checkOut, $guests);
+
+    return $this->render('search/index.html.twig', compact('results'));
+}
+```
+
+Dans `PropertyRepository::findAvailable()`, faire une requête avec sous-requête ou `NOT EXISTS` pour exclure les logements avec conflits de dates.
+
+---
+
+Bonus (si temps restant)
+
+| Priorité | Bonus | Effort |
+|----------|-------|--------|
+| ⭐⭐⭐ | **G.6 Tarification dynamique** | JS simple sur la page checkout |
+| ⭐⭐ | **G.1 Expiration Pending** | Commande Symfony + Cron |
+| ⭐⭐ | **F Import iCal** | HttpClient + commande `app:ical:sync` |
+| ⭐ | **G.8 Notifications in-app** | Entité `Notification` + icône cloche |
+
+---
+
+Étape 10 — Livraison GitHub
+
+```bash
+git checkout -b tp/reservation-calendrier
+git add .
+git commit -m "feat: add booking engine with ical export"
+git push origin tp/reservation-calendrier
+# → Ouvrir une Pull Request sur GitHub
+```

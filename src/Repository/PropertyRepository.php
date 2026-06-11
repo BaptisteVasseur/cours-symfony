@@ -132,4 +132,53 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<Property>
+     */
+    public function findAvailable(
+        ?string $destination,
+        ?\DateTimeImmutable $checkIn,
+        ?\DateTimeImmutable $checkOut,
+        int $guests = 1,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->andWhere('p.maxGuests >= :guests')
+            ->setParameter('status', 'published')
+            ->setParameter('guests', max(1, $guests))
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.country) LIKE :destination')
+                ->setParameter('destination', '%'.mb_strtolower($destination).'%');
+        }
+
+        if ($checkIn !== null && $checkOut !== null) {
+            $qb->andWhere('NOT EXISTS (
+                SELECT 1 FROM App\Entity\Reservation res
+                WHERE res.property = p
+                AND res.status = :confirmedStatus
+                AND res.checkinDate < :checkout
+                AND res.checkoutDate > :checkin
+            )')
+            ->andWhere('NOT EXISTS (
+                SELECT 1 FROM App\Entity\PropertyUnavailability unav
+                WHERE unav.property = p
+                AND unav.startDate < :checkout
+                AND unav.endDate > :checkin
+            )')
+            ->setParameter('confirmedStatus', 'confirmed')
+            ->setParameter('checkin', $checkIn)
+            ->setParameter('checkout', $checkOut);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }
