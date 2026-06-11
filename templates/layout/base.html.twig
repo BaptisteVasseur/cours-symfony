@@ -46,4 +46,68 @@
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     {% block importmap %}{{ importmap('app') }}{% endblock %}
     {% block extra_scripts %}{% endblock %}
+
+    {% if app.user %}
+    <script>
+    (function () {
+        const feedUrl     = '{{ path('notification_feed') }}';
+        const markAllUrl  = '{{ path('notification_mark_all_read') }}';
+        const csrfToken   = '{{ csrf_token('mark_all_read') }}';
+        const markReadBase = '{{ path('notification_mark_read', {id: 0}) }}'.replace('/0', '/');
+
+        function renderNotifications(data) {
+            const badge = document.getElementById('notif-badge');
+            const list  = document.getElementById('notif-list');
+            if (!badge || !list) return;
+
+            if (data.unread > 0) {
+                badge.textContent = data.unread > 9 ? '9+' : data.unread;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+
+            if (data.notifications.length === 0) {
+                list.innerHTML = '<p class="text-xs text-gray-400 text-center py-6">Aucune notification</p>';
+                return;
+            }
+
+            list.innerHTML = data.notifications.map(n => `
+                <a href="${n.link || '#'}"
+                   onclick="markRead(event, ${n.id}, '${n.link || ''}')"
+                   class="flex flex-col px-4 py-3 hover:bg-gray-50 transition-colors cursor-pointer ${n.isRead ? '' : 'bg-red-50'}">
+                    <span class="text-xs font-semibold text-gray-900">${n.title}</span>
+                    <span class="text-xs text-gray-500 mt-0.5 leading-snug">${n.content}</span>
+                    <span class="text-[10px] text-gray-400 mt-1">${n.createdAt}</span>
+                </a>
+            `).join('');
+        }
+
+        function loadNotifications() {
+            fetch(feedUrl, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(r => r.json())
+                .then(renderNotifications)
+                .catch(() => {});
+        }
+
+        window.markAllRead = function () {
+            fetch(markAllUrl, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: '_token=' + encodeURIComponent(csrfToken),
+            }).then(() => loadNotifications()).catch(() => {});
+        };
+
+        window.markRead = function (e, id, link) {
+            e.preventDefault();
+            fetch(markReadBase + id, { method: 'POST', headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                .then(() => { if (link) window.location.href = link; })
+                .catch(() => { if (link) window.location.href = link; });
+        };
+
+        loadNotifications();
+        setInterval(loadNotifications, 30000);
+    })();
+    </script>
+    {% endif %}
 {% endblock %}
