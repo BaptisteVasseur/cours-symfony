@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -89,6 +90,45 @@ class ReservationRepository extends ServiceEntityRepository
             ->andWhere('r.guest = :guest')
             ->setParameter('guest', $guest)
             ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedForMonth(Property $property, int $year, int $month): array
+    {
+        $start = new \DateTimeImmutable(sprintf('%04d-%02d-01', $year, $month));
+        $end = $start->modify('first day of next month');
+
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate < :end')
+            ->andWhere('r.checkoutDate > :start')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('start', $start)
+            ->setParameter('end', $end)
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findConfirmedOrPendingOverlapping(
+        Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+    ): array {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['confirmed', 'pending'])
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout)
             ->getQuery()
             ->getResult();
     }
