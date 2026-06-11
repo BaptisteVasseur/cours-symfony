@@ -90,6 +90,7 @@ class PropertyRepository extends ServiceEntityRepository
         if ($destination !== '') {
             $qb->andWhere(
                 $qb->expr()->orX(
+                    'LOWER(p.title) LIKE :destination',
                     'LOWER(a.city) LIKE :destination',
                     'LOWER(a.addressLine1) LIKE :destination',
                     'LOWER(a.addressLine2) LIKE :destination',
