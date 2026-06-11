@@ -23,6 +23,7 @@ final readonly class ReservationWorkflow
         private EntityManagerInterface $entityManager,
         private MessageBusInterface $messageBus,
         private BookingService $bookingService,
+        private NotificationService $notificationService,
     ) {
     }
 
@@ -123,6 +124,8 @@ final readonly class ReservationWorkflow
             return;
         }
 
+        // In-app (synchrone, visible immédiatement) + e-mail (asynchrone).
+        $this->notificationService->notifyReservation($reservation, $event);
         $this->messageBus->dispatch(new ReservationNotification((string) $id, $event));
     }
 }

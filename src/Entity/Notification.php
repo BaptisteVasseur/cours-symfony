@@ -31,6 +31,10 @@ class Notification
     #[ORM\Column(length: 50)]
     private ?string $channel = null;
 
+    /** Lien profond ouvert au clic sur la notification (cloche in-app). */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $linkUrl = null;
+
     #[ORM\Column]
     private bool $isRead = false;
 
@@ -98,6 +102,18 @@ class Notification
     public function setChannel(string $channel): static
     {
         $this->channel = $channel;
+
+        return $this;
+    }
+
+    public function getLinkUrl(): ?string
+    {
+        return $this->linkUrl;
+    }
+
+    public function setLinkUrl(?string $linkUrl): static
+    {
+        $this->linkUrl = $linkUrl;
 
         return $this;
     }

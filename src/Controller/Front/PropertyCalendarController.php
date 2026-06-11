@@ -6,6 +6,7 @@ namespace App\Controller\Front;
 
 use App\Entity\Property;
 use App\Entity\PropertyBlockedPeriod;
+use App\Entity\PropertyICalSync;
 use App\Form\UnavailabilityType;
 use App\Security\Voter\PropertyVoter;
 use App\Service\HostCalendar;
@@ -60,6 +61,7 @@ final class PropertyCalendarController extends AbstractController
             'calendar' => $calendar,
             'form' => $form,
             'blockedPeriods' => $this->hostCalendar->upcomingBlockedPeriods($property),
+            'icalSyncs' => $property->getICalSyncs(),
         ]);
     }
 
@@ -80,6 +82,86 @@ final class PropertyCalendarController extends AbstractController
         $this->entityManager->flush();
 
         $this->addFlash('success', 'La période a été libérée : les dates sont de nouveau réservables.');
+
+        return $this->redirectToCalendar($property, $request);
+    }
+
+    /**
+     * Génère, régénère ou révoque le token du flux iCal d'export (Partie E).
+     */
+    #[Route('/ical/token', name: 'app_account_property_ical_token', methods: ['POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function icalToken(Request $request, Property $property): Response
+    {
+        if (!$this->isCsrfTokenValid('ical-token-' . $property->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Jeton CSRF invalide.');
+        }
+
+        if ($request->request->get('ical_action') === 'revoke') {
+            $property->setIcalExportToken(null);
+            $this->addFlash('success', 'Le lien de synchronisation a été révoqué : le flux iCal n\'est plus accessible.');
+        } else {
+            $property->setIcalExportToken(bin2hex(random_bytes(24)));
+            $this->addFlash('success', 'Nouveau lien de synchronisation généré. L\'ancien lien, le cas échéant, est révoqué.');
+        }
+
+        $this->entityManager->flush();
+
+        return $this->redirectToCalendar($property, $request);
+    }
+
+    /**
+     * Ajoute un flux iCal externe à importer (Partie F).
+     */
+    #[Route('/ical/import', name: 'app_account_property_ical_add', methods: ['POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function icalAdd(Request $request, Property $property): Response
+    {
+        if (!$this->isCsrfTokenValid('ical-add-' . $property->getId(), (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Jeton CSRF invalide.');
+        }
+
+        $provider = trim((string) $request->request->get('provider'));
+        $url = trim((string) $request->request->get('url'));
+
+        if ($provider === '' || filter_var($url, FILTER_VALIDATE_URL) === false || !str_starts_with($url, 'http')) {
+            $this->addFlash('error', 'Renseignez un nom de fournisseur et une URL iCal valide (http ou https).');
+
+            return $this->redirectToCalendar($property, $request);
+        }
+
+        $sync = new PropertyICalSync();
+        $sync->setProperty($property);
+        $sync->setProviderName($provider);
+        $sync->setICalUrl($url);
+        $this->entityManager->persist($sync);
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'Flux iCal ajouté. Les nuitées seront bloquées à la prochaine synchronisation (app:ical:sync).');
+
+        return $this->redirectToCalendar($property, $request);
+    }
+
+    /**
+     * Supprime un flux importé ; ses périodes bloquées sont libérées (cascade).
+     */
+    #[Route('/ical/import/{syncId}/supprimer', name: 'app_account_property_ical_remove', methods: ['POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function icalRemove(Request $request, Property $property, string $syncId): Response
+    {
+        if (!$this->isCsrfTokenValid('ical-remove-' . $syncId, (string) $request->request->get('_token'))) {
+            throw $this->createAccessDeniedException('Jeton CSRF invalide.');
+        }
+
+        $sync = $this->entityManager->getRepository(PropertyICalSync::class)->find($syncId);
+        if ($sync === null || $sync->getProperty()?->getId()?->equals($property->getId()) !== true) {
+            throw $this->createNotFoundException('Flux introuvable.');
+        }
+
+        $this->entityManager->remove($sync);
+        $this->entityManager->flush();
+
+        $this->addFlash('success', 'Flux iCal supprimé : les nuitées importées de ce flux sont libérées.');
 
         return $this->redirectToCalendar($property, $request);
     }

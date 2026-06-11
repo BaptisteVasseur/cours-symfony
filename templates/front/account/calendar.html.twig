@@ -188,6 +188,82 @@
                         <p class="text-sm text-gray-500">Aucune indisponibilité à venir.</p>
                     {% endif %}
                 </div>
+
+                {# ----- Synchronisation iCal : export (Partie E) ----- #}
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="font-semibold text-gray-900 mb-1">Exporter ce calendrier (iCal)</h2>
+                    <p class="text-sm text-gray-500 mb-4">Synchronisez les séjours confirmés vers Google Calendar ou Outlook via un lien secret.</p>
+                    {% if property.icalExportToken %}
+                        <input type="text" readonly onclick="this.select()"
+                               value="{{ url('api_property_calendar_ics', { id: property.id, token: property.icalExportToken }) }}"
+                               class="w-full border border-gray-300 rounded-xl px-3 py-2 text-xs text-gray-600 bg-gray-50 mb-3">
+                        <div class="flex gap-2">
+                            <form method="post" action="{{ path('app_account_property_ical_token', { id: property.id }) }}" class="flex-1">
+                                <input type="hidden" name="_token" value="{{ csrf_token('ical-token-' ~ property.id) }}">
+                                <input type="hidden" name="ical_action" value="generate">
+                                <button type="submit" class="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                                    <i class="fa-solid fa-rotate mr-1"></i>Régénérer
+                                </button>
+                            </form>
+                            <form method="post" action="{{ path('app_account_property_ical_token', { id: property.id }) }}" class="flex-1"
+                                  onsubmit="return confirm('Révoquer le lien ? Les agendas qui l\'utilisent ne seront plus synchronisés.');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('ical-token-' ~ property.id) }}">
+                                <input type="hidden" name="ical_action" value="revoke">
+                                <button type="submit" class="w-full px-3 py-2 rounded-xl border border-red-300 text-sm font-medium text-red-700 hover:bg-red-50">
+                                    <i class="fa-solid fa-link-slash mr-1"></i>Révoquer
+                                </button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <form method="post" action="{{ path('app_account_property_ical_token', { id: property.id }) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('ical-token-' ~ property.id) }}">
+                            <input type="hidden" name="ical_action" value="generate">
+                            <button type="submit" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2.5 rounded-xl text-sm">
+                                <i class="fa-solid fa-link mr-1.5"></i>Générer le lien de synchronisation
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
+
+                {# ----- Synchronisation iCal : import (Partie F) ----- #}
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="font-semibold text-gray-900 mb-1">Importer un calendrier externe</h2>
+                    <p class="text-sm text-gray-500 mb-4">Les nuitées occupées dans ce calendrier (ex. Airbnb) seront bloquées ici automatiquement.</p>
+
+                    {% if icalSyncs|length > 0 %}
+                        <ul class="space-y-2 mb-4">
+                            {% for sync in icalSyncs %}
+                                <li class="flex items-center justify-between gap-3 text-sm border border-gray-100 rounded-xl px-3 py-2.5">
+                                    <div class="min-w-0">
+                                        <p class="font-medium text-gray-800">{{ sync.providerName }}</p>
+                                        <p class="text-xs text-gray-500 truncate" title="{{ sync.iCalUrl }}">{{ sync.iCalUrl }}</p>
+                                        <p class="text-xs text-gray-400">
+                                            {{ sync.lastSyncAt ? 'Dernière synchro : ' ~ sync.lastSyncAt|date('d/m/Y H:i') : 'Jamais synchronisé' }}
+                                        </p>
+                                    </div>
+                                    <form method="post" action="{{ path('app_account_property_ical_remove', { id: property.id, syncId: sync.id }) }}"
+                                          onsubmit="return confirm('Supprimer ce flux ? Les nuitées importées seront libérées.');">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('ical-remove-' ~ sync.id) }}">
+                                        <button type="submit" class="text-gray-400 hover:text-red-600 p-1.5" title="Supprimer le flux" aria-label="Supprimer le flux">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+
+                    <form method="post" action="{{ path('app_account_property_ical_add', { id: property.id }) }}" class="space-y-2">
+                        <input type="hidden" name="_token" value="{{ csrf_token('ical-add-' ~ property.id) }}">
+                        <input type="text" name="provider" required placeholder="Fournisseur (ex. Airbnb)"
+                               class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
+                        <input type="url" name="url" required placeholder="https://... (URL du flux .ics)"
+                               class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm">
+                        <button type="submit" class="w-full px-3 py-2 rounded-xl border border-gray-300 text-sm font-medium text-gray-700 hover:bg-gray-50">
+                            <i class="fa-solid fa-plus mr-1"></i>Ajouter le flux
+                        </button>
+                    </form>
+                </div>
             </aside>
         </div>
     </main>

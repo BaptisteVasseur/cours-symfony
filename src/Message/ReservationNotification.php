@@ -11,10 +11,11 @@ namespace App\Message;
  */
 final readonly class ReservationNotification
 {
-    public const EVENT_REQUESTED = 'requested';   // nouvelle demande -> hôte
-    public const EVENT_CONFIRMED = 'confirmed';   // validée -> voyageur + hôte
-    public const EVENT_REFUSED = 'refused';       // refus -> voyageur
-    public const EVENT_CANCELLED = 'cancelled';   // annulation -> les deux parties
+    public const EVENT_REQUESTED = 'requested';              // nouvelle demande -> hôte
+    public const EVENT_CONFIRMED = 'confirmed';              // validée -> voyageur + hôte
+    public const EVENT_REFUSED = 'refused';                  // refus -> voyageur
+    public const EVENT_CANCELLED = 'cancelled';              // annulation -> les deux parties
+    public const EVENT_CHECKIN_REMINDER = 'checkin_reminder'; // rappel J-1 -> voyageur
 
     public function __construct(
         public string $reservationId,

@@ -39,6 +39,9 @@ security:
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
         - { path: ^/api/contexts, roles: PUBLIC_ACCESS }
         - { path: ^/api/validation_errors, roles: PUBLIC_ACCESS }
+        # Flux iCal consommé par les agendas externes : anonyme, mais protégé
+        # par le token secret vérifié dans le contrôleur (Partie E).
+        - { path: '^/api/properties/[0-9a-fA-F-]+/calendar\.ics$', roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }
         - { path: ^/(login|register|aide)$, roles: PUBLIC_ACCESS }
         - { path: ^/$, roles: PUBLIC_ACCESS }

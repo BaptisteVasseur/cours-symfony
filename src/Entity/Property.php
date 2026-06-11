@@ -131,6 +131,13 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    /**
+     * Token secret du flux iCal d'export ; null = flux désactivé. Révocable
+     * par l'hôte (régénération ou suppression).
+     */
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalExportToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -359,6 +366,18 @@ class Property
     public function setCheckoutTime(?\DateTimeImmutable $checkoutTime): static
     {
         $this->checkoutTime = $checkoutTime;
+
+        return $this;
+    }
+
+    public function getIcalExportToken(): ?string
+    {
+        return $this->icalExportToken;
+    }
+
+    public function setIcalExportToken(?string $icalExportToken): static
+    {
+        $this->icalExportToken = $icalExportToken;
 
         return $this;
     }

@@ -26,7 +26,10 @@ C.1 Moteur de recherche
     - En tant qu'utilisateur, sur la page de recherche (/search), je veux pouvoir avoir un filtre qui filtre sur la destination via la barre de recherche, avoir un filtre sur la période souhaitée, via un input avec une date de checkin et checkout, qui va filtrer sur les logements libre pendant cette période de temps, et un autre input qui va récupérer le nombre de voyageur, qui va filtrer les logements qui accepte ce nombre.
 
 D.1 Notifications Transactionnelles
-    - 
+    - Envoyer un mail à l'hôte quand il a une nouvelle demande en status "pending", avec les données : Logement, dates, infos voyageur, total, CTA d'action.
+    - Envoyer un mail à l'utilisateur et à l'hôte quand une réservation est validé, avec les données : Logement, dates, infos voyageur, total, CTA d'action.
+    - Envoyer un mail à l'utilisateur en cas de refus de sa réservation en status "pending".
+    - Envoyer un mail à l'utilisateur ou à l'hôte si un des deux annule la réservation en status "confirmed".
 
 E.1 Synchronisation iCal : Export
     - 

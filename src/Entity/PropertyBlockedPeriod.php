@@ -43,6 +43,19 @@ class PropertyBlockedPeriod
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $reason = null;
 
+    /**
+     * Flux iCal d'origine quand la période provient d'un import (Partie F) ;
+     * null pour un blocage manuel de l'hôte. La suppression du flux supprime
+     * ses périodes importées (ON DELETE CASCADE).
+     */
+    #[ORM\ManyToOne]
+    #[ORM\JoinColumn(name: 'sync_source_id', nullable: true, onDelete: 'CASCADE')]
+    private ?PropertyICalSync $syncSource = null;
+
+    /** UID de l'événement dans le flux distant, pour la réconciliation. */
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $externalUid = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -95,6 +108,30 @@ class PropertyBlockedPeriod
     public function setReason(?string $reason): static
     {
         $this->reason = $reason;
+
+        return $this;
+    }
+
+    public function getSyncSource(): ?PropertyICalSync
+    {
+        return $this->syncSource;
+    }
+
+    public function setSyncSource(?PropertyICalSync $syncSource): static
+    {
+        $this->syncSource = $syncSource;
+
+        return $this;
+    }
+
+    public function getExternalUid(): ?string
+    {
+        return $this->externalUid;
+    }
+
+    public function setExternalUid(?string $externalUid): static
+    {
+        $this->externalUid = $externalUid;
 
         return $this;
     }
