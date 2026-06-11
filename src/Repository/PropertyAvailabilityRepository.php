@@ -78,4 +78,32 @@ class PropertyAvailabilityRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<PropertyAvailability>
+     */
+    public function findImportedForProperty(Property $property): array
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.property = :property')
+            ->andWhere('a.source = :source')
+            ->setParameter('property', $property)
+            ->setParameter('source', 'ical_import')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<PropertyAvailability>
+     */
+    public function findBySourceUid(Property $property, string $sourceUid): array
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.property = :property')
+            ->andWhere('a.sourceUid = :uid')
+            ->setParameter('property', $property)
+            ->setParameter('uid', $sourceUid)
+            ->getQuery()
+            ->getResult();
+    }
 }
