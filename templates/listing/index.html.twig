@@ -1,0 +1,50 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Gestion des logements — HomeStay{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex items-center justify-between mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">{{ is_granted('ROLE_ADMIN') ? 'Tous les logements' : 'Mes annonces' }}</h1>
+        <a href="{{ path('app_listing_new') }}" class="px-4 py-2 bg-[#FF385C] text-white font-semibold rounded-lg hover:bg-[#E11D48] transition">+ Nouveau logement</a>
+    </div>
+
+    <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+        <table class="w-full text-sm">
+            <thead class="bg-gray-50 text-left text-gray-500">
+                <tr>
+                    <th class="px-4 py-3 font-medium">Titre</th>
+                    <th class="px-4 py-3 font-medium">Hôte</th>
+                    <th class="px-4 py-3 font-medium">Prix/nuit</th>
+                    <th class="px-4 py-3 font-medium">Statut</th>
+                    <th class="px-4 py-3 font-medium text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-100">
+                {% for listing in listings %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-3 font-medium text-gray-900">{{ listing.title }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ listing.host ? listing.host.firstName ~ ' ' ~ listing.host.lastName : '—' }}</td>
+                        <td class="px-4 py-3 text-gray-600">{{ listing.pricePerNight }} {{ listing.currency ?? 'EUR' }}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 rounded-full text-xs {{ listing.status == 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600' }}">{{ listing.status ?? 'draft' }}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <div class="flex justify-end gap-2">
+                                <a href="{{ path('app_listing_show', {id: listing.id}) }}" class="text-gray-500 hover:text-[#FF385C]">Voir</a>
+                                <a href="{{ path('app_listing_edit', {id: listing.id}) }}" class="text-gray-500 hover:text-[#FF385C]">Éditer</a>
+                                <form method="post" action="{{ path('app_listing_delete', {id: listing.id}) }}" onsubmit="return confirm('Supprimer ce logement ?');">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ listing.id) }}">
+                                    <button class="text-gray-500 hover:text-red-600">Suppr.</button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="5" class="px-4 py-8 text-center text-gray-400">Aucun logement.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

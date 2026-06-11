@@ -1,0 +1,12 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Modifier la réservation — HomeStay{% endblock %}
+
+{% block body %}
+<div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Modifier la réservation</h1>
+    <div class="bg-white border border-gray-200 rounded-2xl p-6">
+        {{ include('booking/_form.html.twig', {button_label: 'Enregistrer les modifications'}) }}
+    </div>
+</div>
+{% endblock %}

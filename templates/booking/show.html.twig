@@ -1,0 +1,40 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Détail réservation — HomeStay{% endblock %}
+
+{% block body %}
+<div class="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <a href="{{ path('app_my_bookings') }}" class="text-sm text-gray-500 hover:text-[#FF385C]">← Mes réservations</a>
+    <h1 class="text-2xl font-bold text-gray-900 mt-2 mb-6">{{ booking.listing ? booking.listing.title : 'Réservation' }}</h1>
+
+    <div class="bg-white border border-gray-200 rounded-2xl divide-y divide-gray-100">
+        {% set rows = {
+            'Voyageur': booking.guest ? booking.guest.firstName ~ ' ' ~ booking.guest.lastName : '—',
+            'Arrivée': booking.checkIn ? booking.checkIn|date('d/m/Y') : '—',
+            'Départ': booking.checkOut ? booking.checkOut|date('d/m/Y') : '—',
+            'Nuits': booking.nightsCount ?? '—',
+            'Voyageurs': booking.guestsCount ?? '—',
+            'Montant de base': booking.baseAmount ~ ' ' ~ (booking.currency ?? 'EUR'),
+            'Frais de ménage': (booking.cleaningFee ?? '0') ~ ' ' ~ (booking.currency ?? 'EUR'),
+            'Frais de service': (booking.serviceFee ?? '0') ~ ' ' ~ (booking.currency ?? 'EUR'),
+            'Taxes': (booking.taxesAmount ?? '0') ~ ' ' ~ (booking.currency ?? 'EUR'),
+            'Total': booking.totalAmount ~ ' ' ~ (booking.currency ?? 'EUR'),
+            'Statut': booking.bookingStatus,
+        } %}
+        {% for label, value in rows %}
+            <div class="flex justify-between px-5 py-3 text-sm">
+                <span class="text-gray-500">{{ label }}</span>
+                <span class="text-gray-900 font-medium">{{ value }}</span>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="mt-6 flex gap-3">
+        <a href="{{ path('app_booking_edit', {id: booking.id}) }}" class="px-5 py-2.5 bg-[#FF385C] text-white font-semibold rounded-lg hover:bg-[#E11D48] transition">Modifier</a>
+        <form method="post" action="{{ path('app_booking_delete', {id: booking.id}) }}" onsubmit="return confirm('Supprimer cette réservation ?');">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ booking.id) }}">
+            <button class="px-5 py-2.5 border border-red-300 text-red-600 font-medium rounded-lg hover:bg-red-50 transition">Supprimer</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

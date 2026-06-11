@@ -1,0 +1,36 @@
+<header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16">
+            <a href="{{ path('app_home') }}" class="flex items-center gap-2 text-[#FF385C] font-bold text-xl">
+                <svg class="w-8 h-8" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C8 2 5 6 5 10c0 5 7 12 7 12s7-7 7-12c0-4-3-8-7-8z"/></svg>
+                HomeStay
+            </a>
+
+            <nav class="flex items-center gap-2 sm:gap-4">
+                <a href="{{ path('app_home') }}" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-[#FF385C] transition">Logements</a>
+
+                {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+                    <a href="{{ path('app_listing_index') }}" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-[#FF385C] transition">Mes annonces</a>
+                    <a href="{{ path('app_my_bookings') }}" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-[#FF385C] transition">Mes réservations</a>
+
+                    {% if is_granted('ROLE_ADMIN') %}
+                        <a href="{{ path('app_admin_dashboard') }}" class="px-4 py-2 text-sm font-semibold text-white bg-gray-900 rounded-full hover:bg-gray-700 transition">
+                            ⚙️ Admin
+                        </a>
+                    {% endif %}
+
+                    <span class="hidden sm:inline text-sm text-gray-500">{{ app.user.firstName }}</span>
+
+                    <a href="{{ path('app_logout') }}" class="px-4 py-2 text-sm font-semibold text-[#FF385C] border border-[#FF385C] rounded-full hover:bg-[#FF385C] hover:text-white transition">
+                        Se déconnecter
+                    </a>
+                {% else %}
+                    <a href="{{ path('app_register') }}" class="px-3 py-2 text-sm font-medium text-gray-700 hover:text-[#FF385C] transition">S'inscrire</a>
+                    <a href="{{ path('app_login') }}" class="px-4 py-2 text-sm font-semibold text-white bg-[#FF385C] rounded-full hover:bg-[#E11D48] transition">
+                        Se connecter
+                    </a>
+                {% endif %}
+            </nav>
+        </div>
+    </div>
+</header>

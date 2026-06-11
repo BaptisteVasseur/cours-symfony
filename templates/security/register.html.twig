@@ -1,0 +1,30 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Inscription — HomeStay{% endblock %}
+
+{% block body %}
+<div class="max-w-md mx-auto px-4 py-12">
+    <div class="bg-white border border-gray-200 rounded-2xl shadow-sm p-8">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">Créer un compte</h1>
+
+        {{ form_start(registrationForm) }}
+            <div class="space-y-4">
+                <div>{{ form_label(registrationForm.firstName, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700 mb-1'}}) }}{{ form_widget(registrationForm.firstName, {'attr': {'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg'}}) }}{{ form_errors(registrationForm.firstName) }}</div>
+                <div>{{ form_label(registrationForm.lastName, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700 mb-1'}}) }}{{ form_widget(registrationForm.lastName, {'attr': {'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg'}}) }}{{ form_errors(registrationForm.lastName) }}</div>
+                <div>{{ form_label(registrationForm.email, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700 mb-1'}}) }}{{ form_widget(registrationForm.email, {'attr': {'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg'}}) }}{{ form_errors(registrationForm.email) }}</div>
+                <div>{{ form_label(registrationForm.plainPassword.first, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700 mb-1'}}) }}{{ form_widget(registrationForm.plainPassword.first, {'attr': {'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg'}}) }}{{ form_errors(registrationForm.plainPassword.first) }}</div>
+                <div>{{ form_label(registrationForm.plainPassword.second, null, {'label_attr': {'class': 'block text-sm font-medium text-gray-700 mb-1'}}) }}{{ form_widget(registrationForm.plainPassword.second, {'attr': {'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg'}}) }}{{ form_errors(registrationForm.plainPassword.second) }}</div>
+            </div>
+
+            <button type="submit" class="w-full mt-6 py-2.5 bg-[#FF385C] text-white font-semibold rounded-lg hover:bg-[#E11D48] transition">
+                S'inscrire
+            </button>
+        {{ form_end(registrationForm) }}
+
+        <p class="mt-6 text-sm text-center text-gray-500">
+            Déjà un compte ?
+            <a href="{{ path('app_login') }}" class="text-[#FF385C] font-medium hover:underline">Se connecter</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

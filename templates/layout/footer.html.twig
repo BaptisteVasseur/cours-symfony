@@ -1,0 +1,13 @@
+<footer class="mt-16 border-t border-gray-200 bg-gray-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <p class="text-sm text-gray-500">© {{ "now"|date('Y') }} HomeStay Clone — Projet Symfony 8</p>
+        <div class="flex gap-4 text-sm text-gray-500">
+            <a href="{{ path('app_home') }}" class="hover:text-[#FF385C]">Accueil</a>
+            {% if is_granted('IS_AUTHENTICATED_FULLY') %}
+                <a href="{{ path('app_my_bookings') }}" class="hover:text-[#FF385C]">Mes réservations</a>
+            {% else %}
+                <a href="{{ path('app_login') }}" class="hover:text-[#FF385C]">Connexion</a>
+            {% endif %}
+        </div>
+    </div>
+</footer>

@@ -1,0 +1,52 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}HomeStay — Trouvez votre prochain logement{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900">Logements disponibles</h1>
+        <p class="text-gray-500 mt-1">Découvrez nos {{ listings|length }} logement(s) publié(s).</p>
+    </div>
+
+    {% if listings is empty %}
+        <div class="text-center py-16 text-gray-500">Aucun logement publié pour le moment.</div>
+    {% else %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for listing in listings %}
+                <div class="property-card bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                    <div class="h-48 bg-gray-100 overflow-hidden">
+                        {% set cover = null %}
+                        {% for photo in listing.photos %}
+                            {% if cover is null and photo.isCover %}{% set cover = photo %}{% endif %}
+                        {% endfor %}
+                        {% if cover %}
+                            <img src="{{ cover.imageUrl }}" alt="{{ listing.title }}" class="w-full h-full object-cover">
+                        {% else %}
+                            <div class="w-full h-full flex items-center justify-center text-gray-300 text-5xl">🏠</div>
+                        {% endif %}
+                    </div>
+                    <div class="p-4">
+                        <div class="flex items-start justify-between gap-2">
+                            <h2 class="font-semibold text-gray-900 leading-tight">{{ listing.title }}</h2>
+                            {% if listing.location %}
+                                <span class="text-xs text-gray-400 whitespace-nowrap">{{ listing.location.city }}</span>
+                            {% endif %}
+                        </div>
+                        <p class="text-sm text-gray-500 mt-1 line-clamp-2">{{ listing.description ? (listing.description|length > 90 ? listing.description|slice(0, 90) ~ '…' : listing.description) : 'Pas de description.' }}</p>
+                        <div class="mt-3 flex items-center justify-between">
+                            <p class="text-gray-900"><span class="font-bold">{{ listing.pricePerNight }} {{ listing.currency ?? 'EUR' }}</span> <span class="text-sm text-gray-500">/ nuit</span></p>
+                            <a href="{{ path('app_listing_show', {id: listing.id}) }}" class="text-sm font-medium text-[#FF385C] hover:underline">Voir le détail →</a>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        {% if not is_granted('IS_AUTHENTICATED_FULLY') %}
+            <p class="mt-8 text-center text-sm text-gray-500">
+                 <a href="{{ path('app_login') }}" class="text-[#FF385C] font-medium hover:underline">Connectez-vous</a> pour consulter le détail des logements et réserver.
+            </p>
+        {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

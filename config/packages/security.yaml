@@ -1,7 +1,7 @@
 security:
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
-        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
+        Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: "auto"
 
     # https://symfony.com/doc/current/security.html#loading-the-user-the-user-provider
     providers:
@@ -44,14 +44,25 @@ security:
         ROLE_CLIENT: ROLE_USER
         ROLE_BANNI: ROLE_USER
         ROLE_VIP: ROLE_USER
-        ROLE_ADMIN: [ROLE_PRESTATAIRE, ROLE_SERVICE_CLIENT, ROLE_PREPARATEUR_COMMANDE, ROLE_CLIENT, ROLE_BANNI, ROLE_VIP]
+        ROLE_ADMIN:
+            [
+                ROLE_PRESTATAIRE,
+                ROLE_SERVICE_CLIENT,
+                ROLE_PREPARATEUR_COMMANDE,
+                ROLE_CLIENT,
+                ROLE_BANNI,
+                ROLE_VIP,
+            ]
         ROLE_SUPER_ADMIN: ROLE_ADMIN
 
     # Note: Only the *first* matching rule is applied
     access_control:
-#         - { path: ^/admin, roles: ROLE_ADMIN }
-#        - { path: ^/(login|register), roles: PUBLIC_ACCESS }
-#        - { path: ^/, roles: ROLE_USER }
+        - { path: ^/login, roles: PUBLIC_ACCESS }
+        - { path: ^/register, roles: PUBLIC_ACCESS }
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/my-bookings, roles: ROLE_USER }
+        - { path: ^/booking, roles: ROLE_USER }
+        - { path: ^/listing, roles: ROLE_USER }
 
 when@test:
     security:

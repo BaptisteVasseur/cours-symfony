@@ -1,0 +1,74 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ listing.title }} — HomeStay{% endblock %}
+
+{% block body %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <a href="{{ path('app_home') }}" class="text-sm text-gray-500 hover:text-[#FF385C]">← Retour aux logements</a>
+
+    <h1 class="text-3xl font-bold text-gray-900 mt-3">{{ listing.title }}</h1>
+    {% if listing.location %}
+        <p class="text-gray-500 mt-1">{{ listing.location.city }}, {{ listing.location.country }}</p>
+    {% endif %}
+
+    {% if listing.photos|length > 0 %}
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-5">
+            {% for photo in listing.photos %}
+                <img src="{{ photo.imageUrl }}" alt="{{ listing.title }}" class="w-full h-64 object-cover rounded-xl">
+            {% endfor %}
+        </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-8">
+        <div class="lg:col-span-2">
+            <h2 class="text-lg font-semibold text-gray-900">À propos de ce logement</h2>
+            <p class="text-gray-600 mt-2 whitespace-pre-line">{{ listing.description ?? 'Aucune description.' }}</p>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mt-6">
+                <div class="bg-gray-50 rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-gray-900">{{ listing.maxGuests ?? '—' }}</div>
+                    <div class="text-xs text-gray-500">Voyageurs</div>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-gray-900">{{ listing.bedrooms ?? '—' }}</div>
+                    <div class="text-xs text-gray-500">Chambres</div>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-gray-900">{{ listing.beds ?? '—' }}</div>
+                    <div class="text-xs text-gray-500">Lits</div>
+                </div>
+                <div class="bg-gray-50 rounded-xl p-4 text-center">
+                    <div class="text-2xl font-bold text-gray-900">{{ listing.bathrooms ?? '—' }}</div>
+                    <div class="text-xs text-gray-500">Salles de bain</div>
+                </div>
+            </div>
+
+            {% if listing.amenities|length > 0 %}
+                <h2 class="text-lg font-semibold text-gray-900 mt-8">Équipements</h2>
+                <div class="flex flex-wrap gap-2 mt-3">
+                    {% for amenity in listing.amenities %}
+                        <span class="px-3 py-1.5 bg-gray-100 text-gray-700 rounded-full text-sm">{{ amenity.name }}</span>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        </div>
+
+        <div>
+            <div class="sticky top-24 bg-white border border-gray-200 rounded-2xl shadow-sm p-6">
+                <p class="text-2xl font-bold text-gray-900">{{ listing.pricePerNight }} {{ listing.currency ?? 'EUR' }}
+                    <span class="text-base font-normal text-gray-500">/ nuit</span></p>
+                <ul class="mt-4 space-y-1 text-sm text-gray-600">
+                    {% if listing.cleaningFee %}<li class="flex justify-between"><span>Frais de ménage</span><span>{{ listing.cleaningFee }} €</span></li>{% endif %}
+                    {% if listing.serviceFee %}<li class="flex justify-between"><span>Frais de service</span><span>{{ listing.serviceFee }} €</span></li>{% endif %}
+                    <li class="flex justify-between"><span>Réservation instantanée</span><span>{{ listing.instantBooking ? 'Oui' : 'Non' }}</span></li>
+                </ul>
+                <a href="{{ path('app_booking_new') }}" class="mt-5 block text-center py-2.5 bg-[#FF385C] text-white font-semibold rounded-lg hover:bg-[#E11D48] transition">Réserver</a>
+
+                {% if is_granted('ROLE_ADMIN') or (listing.host is not null and listing.host == app.user) %}
+                    <a href="{{ path('app_listing_edit', {id: listing.id}) }}" class="mt-2 block text-center py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">Modifier ce logement</a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

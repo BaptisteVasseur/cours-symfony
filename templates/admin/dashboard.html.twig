@@ -1,0 +1,62 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Tableau de bord — Admin{% endblock %}
+
+{% block body %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="text-2xl font-bold text-gray-900 mb-1">Tableau de bord</h1>
+    <p class="text-gray-500 mb-8">Espace d'administration — réservé au rôle ADMIN.</p>
+
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+        {% set stats = [
+            {'label': 'Utilisateurs', 'value': usersCount, 'icon': '👤', 'link': path('app_user_index')},
+            {'label': 'Logements', 'value': listingsCount, 'icon': '🏠', 'link': path('app_listing_index')},
+            {'label': 'Réservations', 'value': bookingsCount, 'icon': '📅', 'link': path('app_booking_index')},
+            {'label': 'Signalements', 'value': reportsCount, 'icon': '🚩', 'link': null},
+        ] %}
+        {% for stat in stats %}
+            <a href="{{ stat.link ?? '#' }}" class="bg-white border border-gray-200 rounded-2xl p-5 hover:shadow-md transition">
+                <div class="text-2xl">{{ stat.icon }}</div>
+                <div class="text-3xl font-bold text-gray-900 mt-2">{{ stat.value }}</div>
+                <div class="text-sm text-gray-500">{{ stat.label }}</div>
+            </a>
+        {% endfor %}
+    </div>
+
+    <div class="flex flex-wrap gap-3 mb-8">
+        <a href="{{ path('app_user_index') }}" class="px-4 py-2 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-gray-700 transition">Gérer les utilisateurs</a>
+        <a href="{{ path('app_listing_index') }}" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 transition">Gérer les logements</a>
+        <a href="{{ path('app_booking_index') }}" class="px-4 py-2 border border-gray-300 text-sm font-medium rounded-lg hover:bg-gray-50 transition">Gérer les réservations</a>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="bg-white border border-gray-200 rounded-2xl p-5">
+            <h2 class="font-semibold text-gray-900 mb-4">Réservations récentes</h2>
+            <div class="space-y-3">
+                {% for booking in recentBookings %}
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-700">{{ booking.listing ? booking.listing.title : '—' }}</span>
+                        <span class="text-gray-400">{{ booking.totalAmount }} € · {{ booking.bookingStatus }}</span>
+                    </div>
+                {% else %}
+                    <p class="text-sm text-gray-400">Aucune réservation.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-2xl p-5">
+            <h2 class="font-semibold text-gray-900 mb-4">Derniers inscrits</h2>
+            <div class="space-y-3">
+                {% for user in recentUsers %}
+                    <div class="flex items-center justify-between text-sm">
+                        <span class="text-gray-700">{{ user.firstName }} {{ user.lastName }}</span>
+                        <span class="text-gray-400">{{ user.role ?? 'guest' }}</span>
+                    </div>
+                {% else %}
+                    <p class="text-sm text-gray-400">Aucun utilisateur.</p>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

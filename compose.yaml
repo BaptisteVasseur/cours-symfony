@@ -44,6 +44,7 @@ services:
     ports:
       - "8089:8000"
     entrypoint: ["sh", "/var/www/html/docker/entrypoint.sh"]
+    command: ["php", "-S", "0.0.0.0:8000", "-t", "public"]
 
   messenger-worker:
     build:
@@ -60,8 +61,8 @@ services:
     depends_on:
       database:
         condition: service_healthy
-    command: >
-      sh -c "php bin/console messenger:consume async -vv --time-limit=3600"
+    entrypoint: ["sh", "/var/www/html/docker/entrypoint.sh"]
+    command: ["php", "bin/console", "messenger:consume", "async", "-vv", "--time-limit=3600"]
 
 #  nginx:
 #    image: nginx:alpine
