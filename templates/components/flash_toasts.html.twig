@@ -1,0 +1,42 @@
+{# Toasts globaux : affichent les messages flash et disparaissent automatiquement.
+   Styles inline pour garantir l'affichage indépendamment de la compilation CSS. #}
+{% set flashes = app.flashes %}
+{% if flashes is not empty %}
+    <div id="flash-toasts" aria-live="polite" style="position:fixed;top:1rem;right:1rem;z-index:9999;display:flex;flex-direction:column;gap:.6rem;max-width:380px;width:calc(100% - 2rem);">
+        {% for label, messages in flashes %}
+            {% for message in messages %}
+                {% set isError = label != 'success' %}
+                <div class="flash-toast" role="alert"
+                     style="display:flex;align-items:flex-start;gap:.6rem;padding:.85rem 1rem;border-radius:.65rem;box-shadow:0 8px 24px rgba(0,0,0,.16);
+                            background:{{ isError ? '#fef2f2' : '#ecfdf5' }};border-left:4px solid {{ isError ? '#ef4444' : '#10b981' }};
+                            color:{{ isError ? '#991b1b' : '#065f46' }};opacity:0;transform:translateX(24px);transition:opacity .35s ease,transform .35s ease;">
+                    <i class="fa-solid {{ isError ? 'fa-circle-exclamation' : 'fa-circle-check' }}" style="margin-top:.15rem;font-size:1.05rem;"></i>
+                    <div style="flex:1;">
+                        <p style="font-weight:600;margin:0;">{{ isError ? 'Action impossible' : 'Succès' }}</p>
+                        <p style="font-size:.875rem;margin:.15rem 0 0;line-height:1.35;">{{ message }}</p>
+                    </div>
+                    <button type="button" aria-label="Fermer" onclick="this.closest('.flash-toast').remove()"
+                            style="background:none;border:0;color:inherit;cursor:pointer;font-size:1.1rem;line-height:1;padding:0;">&times;</button>
+                </div>
+            {% endfor %}
+        {% endfor %}
+    </div>
+    <script>
+        (function () {
+            var toasts = document.querySelectorAll('#flash-toasts .flash-toast');
+            toasts.forEach(function (el) {
+                // Entrée animée
+                requestAnimationFrame(function () {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateX(0)';
+                });
+                // Disparition automatique après 5 s
+                setTimeout(function () {
+                    el.style.opacity = '0';
+                    el.style.transform = 'translateX(24px)';
+                    setTimeout(function () { el.remove(); }, 400);
+                }, 5000);
+            });
+        })();
+    </script>
+{% endif %}
