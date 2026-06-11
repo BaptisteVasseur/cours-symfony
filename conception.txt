@@ -1,0 +1,192 @@
+================================================================
+CONCEPTION TECHNIQUE — Moteur de Réservation & Calendrier iCal
+Florian — StayNest (Clone Airbnb — Symfony 7)
+================================================================
+
+----------------------------------------------------------------
+SCHÉMA DE FLUX — CYCLE DE VIE D'UNE RÉSERVATION
+----------------------------------------------------------------
+
+  [Voyageur soumet une demande]
+              |
+              v
+    instantBooking = true ?
+       /            \
+     OUI            NON
+      |              |
+      v              v
+  CONFIRMED       PENDING
+      |              |
+      |         [Hôte modère]
+      |           /     \
+      |        Accepte  Refuse
+      |          |        |
+      |          v        v
+      |      CONFIRMED  CANCELLED
+      |          |
+      +----------+
+              |
+     [Date de départ passée]
+              |
+              v
+          COMPLETED
+
+  À tout moment (Confirmed ou Pending) :
+  Voyageur ou Hôte annule → CANCELLED (avec motif obligatoire)
+
+----------------------------------------------------------------
+1. MODÉLISATION TEMPORELLE
+   Le jour de check-out est-il réservable par un autre voyageur ?
+----------------------------------------------------------------
+
+Oui, le jour de check-out est réservable par un nouveau voyageur.
+Si une personne part le 15 juillet, une autre peut arriver le même jour
+sans que ça pose de problème. Dans mon modèle, je stocke uniquement des
+jours entiers sur la réservation, pas des heures. Les horaires de
+check-in et check-out sur le logement sont juste des informations
+indicatives pour le voyageur, ils n'entrent pas dans le calcul de
+disponibilité. Deux réservations adjacentes sur le même jour ne sont
+donc pas en conflit.
+
+----------------------------------------------------------------
+2. GESTION DES ÉTATS
+   Une demande Pending bloque-t-elle les dates ?
+----------------------------------------------------------------
+
+Non, une demande Pending ne bloque pas les dates. Un utilisateur mal
+intentionné pourrait sinon bloquer plusieurs logements en même temps
+et empêcher les autres voyageurs de réserver, sans jamais confirmer
+ses demandes.
+
+En contrepartie, si l'hôte accepte deux demandes Pending qui se
+chevauchent pour les mêmes dates, le système vérifie une dernière fois
+au moment de la confirmation si les dates sont toujours libres. Si une
+autre réservation a déjà été confirmée entre temps, la confirmation est
+bloquée et l'hôte est prévenu. Seules les réservations confirmées
+verrouillent les dates dans le calendrier.
+
+----------------------------------------------------------------
+3. CONCURRENCE
+   Deux utilisateurs valident en même temps pour les mêmes dates
+----------------------------------------------------------------
+
+Deux personnes qui réservent à la même milliseconde exacte est un cas
+très rare mais possible. Pour le gérer, on s'appuie sur le verrouillage
+en base de données. Quand la première transaction arrive, elle pose un
+verrou sur les données. La deuxième est mise en attente. Quand le verrou
+est libéré, la deuxième transaction voit que les dates sont déjà prises
+et reçoit une erreur "dates non disponibles" plutôt qu'une double
+confirmation.
+
+----------------------------------------------------------------
+4. PERFORMANCE
+   Valider la disponibilité sur 20 nuits sans requêtes itératives
+----------------------------------------------------------------
+
+L'idée est de faire une seule requête qui récupère toutes les
+réservations qui se chevauchent avec la période demandée. Si un créneau
+existant se trouve dans les 20 nuits demandées, on refuse l'ensemble de
+la période. Si la requête ne retourne aucun résultat, les 20 nuits sont
+libres et on confirme. On évite ainsi de faire une requête par nuit ce
+qui serait très coûteux en base.
+
+----------------------------------------------------------------
+5. ASYNCHRONISME
+   Pourquoi envoyer les emails après flush() ? Stratégie si RabbitMQ tombe
+----------------------------------------------------------------
+
+L'email doit être envoyé après le flush car si quelque chose se passe
+mal pendant la transaction, le voyageur recevrait un email de
+confirmation alors que la réservation n'a pas été correctement
+enregistrée en base. On attend donc que la réservation soit bien
+persistée avant de déclencher l'envoi.
+
+Si RabbitMQ tombe en panne, les messages qui n'ont pas pu être envoyés
+sont stockés en base de données en attendant que le service redémarre.
+Quand il revient, les messages sont traités et les emails partent. On
+ne perd donc aucun email.
+
+----------------------------------------------------------------
+6. STRUCTURE SQL DU CALENDRIER
+   Table de jours individuels vs table de périodes
+----------------------------------------------------------------
+
+J'ai choisi la table de périodes, c'est-à-dire une seule ligne avec une
+date de début et une date de fin plutôt qu'une ligne par jour. Si on
+stocke une ligne par jour et qu'on demande beaucoup de nuits, la base
+va vite saturer avec des centaines voire des milliers de lignes pour
+représenter une simple période de blocage. Avec une ligne par période,
+bloquer un mois entier ne représente qu'un seul enregistrement en base,
+quelle que soit la durée.
+
+----------------------------------------------------------------
+ALGORITHME DE DISPONIBILITÉ
+----------------------------------------------------------------
+
+Pour qu'une réservation soit possible, quatre conditions doivent être
+remplies simultanément :
+
+- Le logement doit être en statut actif. Un logement inactif ou en
+  attente de publication n'est pas réservable.
+- Les dates demandées ne doivent pas se chevaucher avec une réservation
+  déjà confirmée sur ce logement.
+- Les dates ne doivent pas être bloquées manuellement par l'hôte.
+- Le nombre de voyageurs renseigné ne doit pas dépasser la capacité
+  maximale du logement.
+
+----------------------------------------------------------------
+EXPORT ICAL — SÉCURISATION
+----------------------------------------------------------------
+
+Chaque logement expose une URL sécurisée permettant de synchroniser
+le calendrier des réservations confirmées avec des agendas externes
+comme Google Calendar ou Outlook.
+
+L'accès à ce flux est protégé par un token unique par logement, stocké
+en base de données. Sans ce token dans l'URL, aucune donnée n'est
+exposée. Si l'hôte pense que son token a été compromis, il peut le
+régénérer à tout moment ce qui invalide l'ancien lien de synchronisation.
+
+----------------------------------------------------------------
+MOTEUR DE RECHERCHE
+----------------------------------------------------------------
+
+La route de recherche filtre les logements selon trois paramètres :
+
+- destination : recherche sur la ville ou l'adresse du logement.
+- dates : vérifie que le logement est disponible sur toute la période
+  demandée, sans réservation confirmée qui chevauche.
+- guests : exclut les logements dont la capacité maximale est inférieure
+  au nombre de voyageurs renseigné.
+
+----------------------------------------------------------------
+NOTIFICATIONS TRANSACTIONNELLES
+----------------------------------------------------------------
+
+Les emails sont envoyés de manière asynchrone via Symfony Messenger
+pour ne pas bloquer l'interface utilisateur. Trois déclencheurs sont
+prévus :
+
+- Nouvelle demande de réservation : l'hôte est notifié avec les
+  informations du logement, les dates et les coordonnées du voyageur.
+- Réservation confirmée : le voyageur est notifié avec le récapitulatif
+  complet de sa réservation.
+- Annulation : si c'est l'hôte qui annule, le voyageur est notifié.
+  Si c'est le voyageur qui annule, l'hôte est notifié. Dans les deux
+  cas, le motif d'annulation est inclus dans l'email.
+
+----------------------------------------------------------------
+UTILISATION DE L'INTELLIGENCE ARTIFICIELLE
+----------------------------------------------------------------
+
+J'ai utilisé Claude (Anthropic) comme outil d'assistance durant ce TP.
+
+Conformément au cadre défini, la conception est issue de ma réflexion
+personnelle. Claude m'a servi d'interlocuteur pour structurer et
+formuler mes idées, en me posant des questions auxquelles j'ai répondu
+par moi-même. Je n'ai pas délégué la réflexion, j'ai rédigé mes réponses
+et Claude les a mises en forme.
+
+Pour le code, Claude a été utilisé pour générer des templates Twig,
+des fixtures et des squelettes de contrôleurs. Je suis capable
+d'expliquer le fonctionnement de chaque partie soumise.
