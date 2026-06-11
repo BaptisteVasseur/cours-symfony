@@ -102,7 +102,8 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
                 $lng,
                 $amenityRefs,
                 $manager,
-                $index === 0
+                $index === 0,
+                $status === 'published' && $index !== 2,
             );
             $manager->persist($property);
             $this->addReference($reference, $property);
@@ -133,7 +134,8 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
                 2.3522 + ($i * 0.1),
                 $amenityRefs,
                 $manager,
-                false
+                false,
+                $status === 'published' && $i % 2 === 0,
             );
             $manager->persist($property);
         }
@@ -165,6 +167,7 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         array $amenityRefs,
         ObjectManager $manager,
         bool $withICal,
+        bool $instantBooking,
     ): Property {
         $property = new Property();
         $property->setHost($host);
@@ -182,7 +185,8 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         $property->setSecurityDeposit('200.00');
         $property->setCheckinTime(new \DateTimeImmutable('15:00'));
         $property->setCheckoutTime(new \DateTimeImmutable('11:00'));
-        $property->setInstantBooking($status === 'published');
+        $property->setInstantBooking($instantBooking);
+        $property->regenerateIcalExportToken();
 
         $address = new PropertyAddress();
         $address->setCountry($country);

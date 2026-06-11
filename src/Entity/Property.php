@@ -131,6 +131,9 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalExportToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -366,6 +369,29 @@ class Property
     public function setInstantBooking(bool $instantBooking): static
     {
         $this->instantBooking = $instantBooking;
+
+        return $this;
+    }
+
+    public function getIcalExportToken(): ?string
+    {
+        return $this->icalExportToken;
+    }
+
+    public function setIcalExportToken(?string $icalExportToken): static
+    {
+        $this->icalExportToken = $icalExportToken;
+
+        return $this;
+    }
+
+    /**
+     * (Re)génère le jeton d'export iCal. Appelé à la création du logement et
+     * à chaque révocation par l'hôte (l'ancienne URL devient alors invalide).
+     */
+    public function regenerateIcalExportToken(): static
+    {
+        $this->icalExportToken = bin2hex(random_bytes(24));
 
         return $this;
     }

@@ -36,9 +36,8 @@ class ReservationStatusHistory
     #[ORM\Column(length: 50)]
     private ?string $newStatus = null;
 
-    #[Assert\NotNull(message: 'L\'auteur du changement est obligatoire.')]
     #[ORM\ManyToOne]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     private ?User $changedBy = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
