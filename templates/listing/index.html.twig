@@ -1,0 +1,143 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block page_title %}Logements{% endblock %}
+{% block page_title_display %}Gestion des logements{% endblock %}
+
+{% block breadcrumb %}
+    <p class="text-sm text-gray-400 mt-0.5">{{ listings|length }} logement{{ listings|length > 1 ? 's' : '' }} au total</p>
+{% endblock %}
+
+{% block body %}
+
+{# ── Stats cards ── #}
+{% set active = listings|filter(l => l.isActive)|length %}
+{% set inactive = listings|length - active %}
+
+<div class="grid grid-cols-1 sm:grid-cols-3 gap-5 mb-8">
+    <div class="bg-white rounded-xl border border-gray-200 px-6 py-5">
+        <p class="text-sm text-gray-500 font-medium">Total</p>
+        <p class="text-3xl font-bold text-gray-900 mt-1">{{ listings|length }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 px-6 py-5">
+        <p class="text-sm text-gray-500 font-medium">Actifs</p>
+        <p class="text-3xl font-bold text-green-600 mt-1">{{ active }}</p>
+    </div>
+    <div class="bg-white rounded-xl border border-gray-200 px-6 py-5">
+        <p class="text-sm text-gray-500 font-medium">Inactifs</p>
+        <p class="text-3xl font-bold text-red-500 mt-1">{{ inactive }}</p>
+    </div>
+</div>
+
+{# ── Table ── #}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+
+    {# Toolbar #}
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <h2 class="text-sm font-semibold text-gray-700">Liste des logements</h2>
+        <a href="{{ path('app_listing_new') }}"
+           class="flex items-center gap-2 bg-[#FF385C] hover:bg-[#E0324F] text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+            </svg>
+            Nouveau logement
+        </a>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-sm">
+            <thead>
+                <tr class="bg-gray-50 border-b border-gray-100">
+                    <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">#</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Titre</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Localisation</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Type</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Prix / nuit</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Hôte</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Statut</th>
+                    <th class="text-left px-6 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Créé le</th>
+                    <th class="px-6 py-3"></th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-50">
+            {% for listing in listings %}
+                <tr class="hover:bg-gray-50 transition-colors">
+                    <td class="px-6 py-4 text-gray-400 font-mono text-xs">{{ listing.id }}</td>
+                    <td class="px-6 py-4">
+                        <p class="font-medium text-gray-900 max-w-xs truncate">{{ listing.title }}</p>
+                        <p class="text-xs text-gray-400 mt-0.5">{{ listing.maxGuests }} voy. · {{ listing.bedrooms }} ch. · {{ listing.bathrooms }} sdb</p>
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">
+                        {{ listing.city }}, {{ listing.country }}
+                    </td>
+                    <td class="px-6 py-4">
+                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-700">
+                            {{ listing.propertyType }}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 font-semibold text-gray-900">
+                        {{ listing.pricePerNight|number_format(0, ',', ' ') }} €
+                    </td>
+                    <td class="px-6 py-4 text-gray-600">
+                        {% if listing.host.profile %}
+                            {{ listing.host.profile.firstName }} {{ listing.host.profile.lastName }}
+                        {% else %}
+                            <span class="text-gray-400">–</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4">
+                        {% if listing.isActive %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">
+                                <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span>
+                                Actif
+                            </span>
+                        {% else %}
+                            <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700">
+                                <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                                Inactif
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td class="px-6 py-4 text-gray-400 text-xs">
+                        {{ listing.createdAt ? listing.createdAt|date('d/m/Y') : '–' }}
+                    </td>
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-2 justify-end">
+                            <a href="{{ path('app_listing_show', {'id': listing.id}) }}"
+                               class="p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors" title="Voir">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                            </a>
+                            <a href="{{ path('app_listing_edit', {'id': listing.id}) }}"
+                               class="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors" title="Modifier">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                </svg>
+                            </a>
+                            <form method="post" action="{{ path('app_listing_delete', {'id': listing.id}) }}"
+                                  onsubmit="return confirm('Supprimer ce logement ?');" class="inline">
+                                <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ listing.id) }}">
+                                <button type="submit" class="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors" title="Supprimer">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                    </svg>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+            {% else %}
+                <tr>
+                    <td colspan="9" class="px-6 py-16 text-center text-gray-400">
+                        <p class="text-lg">Aucun logement trouvé</p>
+                        <a href="{{ path('app_listing_new') }}" class="mt-3 inline-block text-sm text-[#FF385C] hover:underline">Créer le premier</a>
+                    </td>
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

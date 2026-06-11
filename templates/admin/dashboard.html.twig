@@ -1,0 +1,94 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block page_title %}Dashboard{% endblock %}
+{% block page_title_display %}Dashboard{% endblock %}
+
+{% block breadcrumb %}
+    <p class="text-sm text-gray-400 mt-0.5">Vue d'ensemble de la plateforme</p>
+{% endblock %}
+
+{% block body %}
+
+{# ── Stats cards ── #}
+<div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 mb-8">
+
+    <div class="bg-white rounded-xl border border-gray-200 px-6 py-5 flex items-center gap-4">
+        <div class="h-12 w-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0">
+            <span class="text-2xl">🏠</span>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500">Logements</p>
+            <p class="text-2xl font-bold text-gray-900">{{ totalListings }}</p>
+            <p class="text-xs text-green-600 mt-0.5">{{ activeListings }} actifs</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 px-6 py-5 flex items-center gap-4">
+        <div class="h-12 w-12 rounded-xl bg-purple-50 flex items-center justify-center shrink-0">
+            <span class="text-2xl">👥</span>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500">Utilisateurs</p>
+            <p class="text-2xl font-bold text-gray-900">{{ totalUsers }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 px-6 py-5 flex items-center gap-4">
+        <div class="h-12 w-12 rounded-xl bg-green-50 flex items-center justify-center shrink-0">
+            <span class="text-2xl">📅</span>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500">Réservations</p>
+            <p class="text-2xl font-bold text-gray-900">{{ totalBookings }}</p>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 px-6 py-5 flex items-center gap-4">
+        <div class="h-12 w-12 rounded-xl bg-yellow-50 flex items-center justify-center shrink-0">
+            <span class="text-2xl">⭐</span>
+        </div>
+        <div>
+            <p class="text-sm text-gray-500">Avis</p>
+            <p class="text-2xl font-bold text-gray-900">{{ totalReviews }}</p>
+        </div>
+    </div>
+
+</div>
+
+{# ── Derniers logements ── #}
+<div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <h2 class="text-sm font-semibold text-gray-700">Derniers logements ajoutés</h2>
+        <a href="{{ path('app_listing_index') }}" class="text-sm text-[#FF385C] hover:underline">Voir tout →</a>
+    </div>
+    <div class="divide-y divide-gray-50">
+        {% for listing in recentListings %}
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center gap-4 min-w-0">
+                    <div class="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center shrink-0 text-lg">🏠</div>
+                    <div class="min-w-0">
+                        <p class="text-sm font-medium text-gray-900 truncate">{{ listing.title }}</p>
+                        <p class="text-xs text-gray-400">{{ listing.city }}, {{ listing.country }} · {{ listing.pricePerNight|number_format(0, ',', ' ') }} € / nuit</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-3 shrink-0 ml-4">
+                    {% if listing.isActive %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-50 text-green-700">
+                            <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Actif
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-red-50 text-red-700">
+                            <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Inactif
+                        </span>
+                    {% endif %}
+                    <a href="{{ path('app_listing_show', {id: listing.id}) }}"
+                       class="text-xs text-gray-400 hover:text-gray-700 transition-colors">Voir →</a>
+                </div>
+            </div>
+        {% else %}
+            <p class="px-6 py-8 text-sm text-gray-400 text-center">Aucun logement</p>
+        {% endfor %}
+    </div>
+</div>
+
+{% endblock %}

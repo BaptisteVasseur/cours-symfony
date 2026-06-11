@@ -1,0 +1,222 @@
+{% extends 'admin/base.html.twig' %}
+
+{% block page_title %}Logement #{{ listing.id }}{% endblock %}
+{% block page_title_display %}Détail du logement{% endblock %}
+
+{% block breadcrumb %}
+    <nav class="flex items-center gap-1.5 text-xs text-gray-400 mt-0.5">
+        <a href="{{ path('app_listing_index') }}" class="hover:text-gray-600">Logements</a>
+        <span>›</span>
+        <span class="text-gray-600 truncate max-w-xs">{{ listing.title }}</span>
+    </nav>
+{% endblock %}
+
+{% block body %}
+
+<div class="flex items-center justify-between mb-6">
+    <a href="{{ path('app_listing_index') }}" class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+        </svg>
+        Retour à la liste
+    </a>
+    <div class="flex items-center gap-2">
+        <a href="{{ path('app_listing_edit', {'id': listing.id}) }}"
+           class="flex items-center gap-2 border border-gray-300 text-gray-700 text-sm font-medium px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+            </svg>
+            Modifier
+        </a>
+        <form method="post" action="{{ path('app_listing_delete', {'id': listing.id}) }}"
+              onsubmit="return confirm('Supprimer ce logement définitivement ?');">
+            <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ listing.id) }}">
+            <button type="submit"
+                    class="flex items-center gap-2 bg-red-50 text-red-600 border border-red-200 text-sm font-medium px-4 py-2 rounded-lg hover:bg-red-100 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+                Supprimer
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    {# ── Infos principales ── #}
+    <div class="lg:col-span-2 space-y-6">
+
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+                <h2 class="text-sm font-semibold text-gray-700">Informations générales</h2>
+                {% if listing.isActive %}
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-50 text-green-700">
+                        <span class="w-1.5 h-1.5 rounded-full bg-green-500"></span> Actif
+                    </span>
+                {% else %}
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700">
+                        <span class="w-1.5 h-1.5 rounded-full bg-red-400"></span> Inactif
+                    </span>
+                {% endif %}
+            </div>
+            <div class="px-6 py-5 space-y-4">
+                <div>
+                    <p class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Titre</p>
+                    <p class="text-gray-900 font-semibold text-lg">{{ listing.title }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 uppercase tracking-wide font-medium mb-1">Description</p>
+                    <p class="text-gray-700 text-sm leading-relaxed whitespace-pre-line">{{ listing.description }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-700">Équipements</h2>
+            </div>
+            <div class="px-6 py-5">
+                {% if listing.amenities|length > 0 %}
+                    <div class="flex flex-wrap gap-2">
+                        {% for amenity in listing.amenities %}
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 text-gray-700 text-xs font-medium rounded-full">
+                                {% if amenity.icon %}{{ amenity.icon }}{% endif %}
+                                {{ amenity.name }}
+                            </span>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-sm text-gray-400">Aucun équipement renseigné</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-700">Avis ({{ listing.reviews|length }})</h2>
+            </div>
+            <div class="divide-y divide-gray-50">
+                {% for review in listing.reviews %}
+                    <div class="px-6 py-4 flex items-start gap-4">
+                        <div class="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 text-xs font-bold shrink-0">
+                            {{ review.reviewer.profile ? review.reviewer.profile.firstName|slice(0,1)|upper : '?' }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="text-sm font-medium text-gray-900">
+                                    {{ review.reviewer.profile ? review.reviewer.profile.firstName : review.reviewer.userIdentifier }}
+                                </span>
+                                <div class="flex items-center gap-0.5">
+                                    {% for s in 1..5 %}
+                                        <svg class="h-3 w-3 {{ s <= review.rating ? 'fill-yellow-400' : 'fill-gray-200' }}" viewBox="0 0 20 20">
+                                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                                        </svg>
+                                    {% endfor %}
+                                </div>
+                                <span class="text-xs text-gray-400">{{ review.createdAt|date('d/m/Y') }}</span>
+                            </div>
+                            <p class="text-sm text-gray-600">{{ review.comment ?? '–' }}</p>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="px-6 py-6 text-sm text-gray-400 text-center">Aucun avis</div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    {# ── Sidebar ── #}
+    <div class="space-y-6">
+
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-700">Tarification & capacité</h2>
+            </div>
+            <div class="px-6 py-5 space-y-3 text-sm">
+                {% set rows = [
+                    ['Prix / nuit', listing.pricePerNight|number_format(2, ',', ' ') ~ ' €'],
+                    ['Voyageurs max', listing.maxGuests],
+                    ['Chambres', listing.bedrooms],
+                    ['Salles de bain', listing.bathrooms],
+                    ['Type', listing.propertyType],
+                ] %}
+                {% for row in rows %}
+                    <div class="flex items-center justify-between">
+                        <span class="text-gray-500">{{ row[0] }}</span>
+                        <span class="font-medium text-gray-900">{{ row[1] }}</span>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-700">Localisation</h2>
+            </div>
+            <div class="px-6 py-5 space-y-3 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Ville</span>
+                    <span class="font-medium text-gray-900">{{ listing.city }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Pays</span>
+                    <span class="font-medium text-gray-900">{{ listing.country }}</span>
+                </div>
+                {% if listing.latitude and listing.longitude %}
+                    <div class="flex justify-between">
+                        <span class="text-gray-500">Coordonnées</span>
+                        <span class="font-mono text-xs text-gray-600">{{ listing.latitude|round(4) }}, {{ listing.longitude|round(4) }}</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-700">Hôte</h2>
+            </div>
+            <div class="px-6 py-5">
+                <div class="flex items-center gap-3">
+                    <div class="h-10 w-10 rounded-full bg-gray-200 flex items-center justify-center text-gray-600 font-bold shrink-0">
+                        {{ listing.host.profile ? listing.host.profile.firstName|slice(0,1)|upper : 'H' }}
+                    </div>
+                    <div>
+                        <p class="text-sm font-medium text-gray-900">
+                            {{ listing.host.profile ? listing.host.profile.firstName ~ ' ' ~ listing.host.profile.lastName : '–' }}
+                        </p>
+                        <p class="text-xs text-gray-400">{{ listing.host.userIdentifier }}</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+            <div class="px-6 py-4 border-b border-gray-100">
+                <h2 class="text-sm font-semibold text-gray-700">Métadonnées</h2>
+            </div>
+            <div class="px-6 py-5 space-y-3 text-sm">
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Créé le</span>
+                    <span class="text-gray-900">{{ listing.createdAt ? listing.createdAt|date('d/m/Y à H:i') : '–' }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Modifié le</span>
+                    <span class="text-gray-900">{{ listing.updatedAt ? listing.updatedAt|date('d/m/Y à H:i') : '–' }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Réservations</span>
+                    <span class="font-medium text-gray-900">{{ listing.bookings|length }}</span>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-gray-500">Politique annulation</span>
+                    <span class="text-gray-900">{{ listing.cancellationPolicy ? listing.cancellationPolicy.name : '–' }}</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+{% endblock %}

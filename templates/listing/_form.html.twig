@@ -1,0 +1,123 @@
+{{ form_start(form, {attr: {class: 'space-y-6', novalidate: true}}) }}
+
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+
+    {# Titre #}
+    <div class="sm:col-span-2">
+        {{ form_label(form.title, 'Titre', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.title, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent'}}) }}
+        {{ form_errors(form.title) }}
+    </div>
+
+    {# Description #}
+    <div class="sm:col-span-2">
+        {{ form_label(form.description, 'Description', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.description, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent', rows: 5}}) }}
+        {{ form_errors(form.description) }}
+    </div>
+
+    {# Prix #}
+    <div>
+        {{ form_label(form.pricePerNight, 'Prix par nuit (€)', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.pricePerNight, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent'}}) }}
+        {{ form_errors(form.pricePerNight) }}
+    </div>
+
+    {# Type de propriété #}
+    <div>
+        {{ form_label(form.propertyType, 'Type de logement', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.propertyType, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent bg-white'}}) }}
+        {{ form_errors(form.propertyType) }}
+    </div>
+
+    {# Voyageurs max #}
+    <div>
+        {{ form_label(form.maxGuests, 'Voyageurs max', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.maxGuests, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent'}}) }}
+        {{ form_errors(form.maxGuests) }}
+    </div>
+
+    {# Chambres #}
+    <div>
+        {{ form_label(form.bedrooms, 'Chambres', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.bedrooms, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent'}}) }}
+        {{ form_errors(form.bedrooms) }}
+    </div>
+
+    {# Salles de bain #}
+    <div>
+        {{ form_label(form.bathrooms, 'Salles de bain', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.bathrooms, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent'}}) }}
+        {{ form_errors(form.bathrooms) }}
+    </div>
+
+    {# Ville #}
+    <div>
+        {{ form_label(form.city, 'Ville', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.city, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent'}}) }}
+        {{ form_errors(form.city) }}
+    </div>
+
+    {# Pays #}
+    <div>
+        {{ form_label(form.country, 'Pays', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.country, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent'}}) }}
+        {{ form_errors(form.country) }}
+    </div>
+
+    {# Latitude #}
+    <div>
+        {{ form_label(form.latitude, 'Latitude', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.latitude, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent'}}) }}
+        {{ form_errors(form.latitude) }}
+    </div>
+
+    {# Longitude #}
+    <div>
+        {{ form_label(form.longitude, 'Longitude', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.longitude, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent'}}) }}
+        {{ form_errors(form.longitude) }}
+    </div>
+
+    {# Hôte #}
+    {% if form.host is defined %}
+    <div class="sm:col-span-2">
+        {{ form_label(form.host, 'Hôte', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.host, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent bg-white'}}) }}
+        {{ form_errors(form.host) }}
+    </div>
+    {% endif %}
+
+    {# Politique d'annulation #}
+    {% if form.cancellationPolicy is defined %}
+    <div class="sm:col-span-2">
+        {{ form_label(form.cancellationPolicy, "Politique d'annulation", {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+        {{ form_widget(form.cancellationPolicy, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#FF385C] focus:border-transparent bg-white'}}) }}
+        {{ form_errors(form.cancellationPolicy) }}
+    </div>
+    {% endif %}
+
+    {# Actif #}
+    {% if form.isActive is defined %}
+    <div class="sm:col-span-2 flex items-center gap-3">
+        {{ form_widget(form.isActive, {attr: {class: 'h-4 w-4 rounded border-gray-300 text-[#FF385C] focus:ring-[#FF385C]'}}) }}
+        {{ form_label(form.isActive, 'Logement actif (visible sur le site)', {label_attr: {class: 'text-sm font-medium text-gray-700'}}) }}
+    </div>
+    {% endif %}
+
+</div>
+
+{# Champs restants non listés explicitement #}
+{{ form_rest(form) }}
+
+<div class="flex items-center gap-3 pt-4 border-t border-gray-100 mt-6">
+    <button type="submit"
+            class="bg-[#FF385C] hover:bg-[#E0324F] text-white text-sm font-semibold px-6 py-2.5 rounded-lg transition-colors">
+        {{ button_label|default('Enregistrer') }}
+    </button>
+    <a href="{{ path('app_listing_index') }}" class="text-sm text-gray-500 hover:text-gray-900 transition-colors">
+        Annuler
+    </a>
+</div>
+
+{{ form_end(form) }}
