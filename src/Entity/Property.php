@@ -167,6 +167,9 @@ class Property
     #[ORM\OneToMany(targetEntity: Review::class, mappedBy: 'property')]
     private Collection $reviews;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalExportToken = null;
+
     public function __construct()
     {
         $this->propertyAmenities = new ArrayCollection();
@@ -574,6 +577,25 @@ class Property
         usort($sorted, static fn (PropertyMedia $a, PropertyMedia $b): int => $a->getSortOrder() <=> $b->getSortOrder());
 
         return $sorted[0] ?? null;
+    }
+
+    public function getIcalExportToken(): ?string
+    {
+        return $this->icalExportToken;
+    }
+
+    public function setIcalExportToken(?string $icalExportToken): static
+    {
+        $this->icalExportToken = $icalExportToken;
+
+        return $this;
+    }
+
+    public function generateIcalExportToken(): static
+    {
+        $this->icalExportToken = bin2hex(random_bytes(32));
+
+        return $this;
     }
 
     public function getAverageRating(): ?float

@@ -151,5 +151,36 @@
                 </form>
             </div>
         </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-6 mt-6">
+            <h3 class="font-semibold text-gray-900 mb-4"><i class="fa-solid fa-calendar-days mr-1"></i> Export iCal</h3>
+            {% if property.icalExportToken %}
+                <p class="text-sm text-gray-600 mb-3">Partagez ce lien pour synchroniser votre calendrier avec des applications externes (Google Agenda, Airbnb, etc.) :</p>
+                <div class="flex items-center gap-2 mb-4">
+                    <input type="text" readonly value="{{ url('app_ical_export', {id: property.id}) }}?token={{ property.icalExportToken }}"
+                           class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm bg-gray-50 text-gray-700 select-all"
+                           id="ical-url">
+                    <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('ical-url').value); this.textContent='Copié !'; setTimeout(() => this.textContent='Copier', 2000)"
+                            class="px-4 py-2 bg-brand text-white text-sm font-medium rounded-lg hover:bg-brandHover transition">
+                        Copier
+                    </button>
+                </div>
+                <form action="{{ path('app_host_calendar_ical_revoke', {id: property.id}) }}" method="post" class="inline">
+                    <input type="hidden" name="_token" value="{{ csrf_token('ical_revoke' ~ property.id) }}">
+                    <button type="submit" class="text-sm text-red-600 hover:underline"
+                            onclick="return confirm('Révoquer ce lien ? Les applications externes ne pourront plus synchroniser.')">
+                        <i class="fa-solid fa-xmark mr-1"></i> Révoquer le lien
+                    </button>
+                </form>
+            {% else %}
+                <p class="text-sm text-gray-600 mb-3">Générez un lien iCal pour synchroniser votre calendrier avec des applications externes.</p>
+                <form action="{{ path('app_host_calendar_ical_generate', {id: property.id}) }}" method="post">
+                    <input type="hidden" name="_token" value="{{ csrf_token('ical_generate' ~ property.id) }}">
+                    <button type="submit" class="px-4 py-2 bg-brand text-white text-sm font-medium rounded-lg hover:bg-brandHover transition">
+                        <i class="fa-solid fa-link mr-1"></i> Générer un lien iCal
+                    </button>
+                </form>
+            {% endif %}
+        </div>
     </main>
 {% endblock %}

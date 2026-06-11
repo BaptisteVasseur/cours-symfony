@@ -154,6 +154,24 @@ class ReservationRepository extends ServiceEntityRepository
     /**
      * @return list<Reservation>
      */
+    public function findForICalExport(\App\Entity\Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
     public function findConfirmedForPropertyAndMonth(
         \App\Entity\Property $property,
         \DateTimeImmutable $monthStart,

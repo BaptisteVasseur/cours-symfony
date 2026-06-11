@@ -163,4 +163,42 @@ final class HostCalendarController extends AbstractController
             'month' => (int) $start->format('m'),
         ]);
     }
+
+    #[Route('/ical/generate', name: 'app_host_calendar_ical_generate', methods: ['POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function generateIcalToken(
+        Request $request,
+        Property $property,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        if (!$this->isCsrfTokenValid('ical_generate' . $property->getId(), $request->getPayload()->getString('_token'))) {
+            return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
+        }
+
+        $property->generateIcalExportToken();
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Lien iCal généré avec succès.');
+
+        return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
+    }
+
+    #[Route('/ical/revoke', name: 'app_host_calendar_ical_revoke', methods: ['POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function revokeIcalToken(
+        Request $request,
+        Property $property,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        if (!$this->isCsrfTokenValid('ical_revoke' . $property->getId(), $request->getPayload()->getString('_token'))) {
+            return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
+        }
+
+        $property->setIcalExportToken(null);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Lien iCal révoqué.');
+
+        return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
+    }
 }
