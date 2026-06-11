@@ -1,0 +1,235 @@
+# Jeu de données démo déterministe : comptes loggables, logements localisés,
+# calendrier (jours bloqués) et réservations confirmées/en attente pour le visuel.
+# Comptes : hote@test.io / voyageur@test.io  (mot de passe : password)
+
+App\Entity\User:
+  demo_host:
+    email: 'hote@test.io'
+    passwordHash: '<hashedPassword("password")>'
+    phone: '0600000001'
+    status: 'active'
+    isEmailVerified: true
+    is2faEnabled: false
+    preferredLanguage: 'fr'
+    preferredCurrency: 'EUR'
+  demo_guest:
+    email: 'voyageur@test.io'
+    passwordHash: '<hashedPassword("password")>'
+    phone: '0600000002'
+    status: 'active'
+    isEmailVerified: true
+    is2faEnabled: false
+    preferredLanguage: 'fr'
+    preferredCurrency: 'EUR'
+
+App\Entity\UserProfile:
+  demo_profile_host:
+    user: '@demo_host'
+    firstName: 'Hélène'
+    lastName: 'Hôte'
+    birthDate: '<immutableDate("1985-04-12")>'
+    bio: 'Hôte passionnée, je loue mes logements depuis 5 ans.'
+    identityStatus: 'verified'
+  demo_profile_guest:
+    user: '@demo_guest'
+    firstName: 'Victor'
+    lastName: 'Voyageur'
+    birthDate: '<immutableDate("1992-09-30")>'
+    bio: 'Voyageur curieux à la recherche de beaux endroits.'
+    identityStatus: 'verified'
+
+App\Entity\UserRole:
+  demo_role_host_h:
+    user: '@demo_host'
+    role: '@role_host'
+  demo_role_host_g:
+    user: '@demo_host'
+    role: '@role_guest'
+  demo_role_guest:
+    user: '@demo_guest'
+    role: '@role_guest'
+
+App\Entity\Property:
+  demo_prop_paris:
+    host: '@demo_host'
+    cancellationPolicy: '@policy_flexible'
+    title: 'Studio cosy au cœur de Paris'
+    description: "Charmant studio rénové à deux pas de Montmartre. Idéal pour un séjour en amoureux ou un déplacement professionnel."
+    propertyType: 'studio'
+    status: 'published'
+    maxGuests: 4
+    bedrooms: 1
+    beds: 2
+    bathrooms: 1
+    pricePerNight: '120.00'
+    cleaningFee: '35.00'
+    securityDeposit: '200.00'
+    checkinTime: '<immutableTime(15, 15)>'
+    checkoutTime: '<immutableTime(11, 11)>'
+    instantBooking: true
+  demo_prop_lyon:
+    host: '@demo_host'
+    cancellationPolicy: '@policy_moderate'
+    title: 'Loft lumineux à Lyon Presqu''île'
+    description: "Grand loft industriel avec mezzanine, en plein centre de Lyon. Commerces et restaurants à proximité immédiate."
+    propertyType: 'loft'
+    status: 'published'
+    maxGuests: 6
+    bedrooms: 2
+    beds: 3
+    bathrooms: 2
+    pricePerNight: '95.00'
+    cleaningFee: '40.00'
+    securityDeposit: '250.00'
+    checkinTime: '<immutableTime(16, 16)>'
+    checkoutTime: '<immutableTime(10, 10)>'
+    instantBooking: false
+  demo_prop_nice:
+    host: '@demo_host'
+    cancellationPolicy: '@policy_strict'
+    title: 'Villa avec piscine à Nice'
+    description: "Superbe villa avec vue mer et piscine privée sur les hauteurs de Nice. Parfaite pour des vacances en famille."
+    propertyType: 'villa'
+    status: 'published'
+    maxGuests: 8
+    bedrooms: 4
+    beds: 5
+    bathrooms: 3
+    pricePerNight: '250.00'
+    cleaningFee: '80.00'
+    securityDeposit: '500.00'
+    checkinTime: '<immutableTime(15, 15)>'
+    checkoutTime: '<immutableTime(11, 11)>'
+    instantBooking: true
+
+App\Entity\PropertyAddress:
+  demo_addr_paris:
+    property: '@demo_prop_paris'
+    country: 'France'
+    city: 'Paris'
+    postalCode: '75018'
+    addressLine1: '12 rue des Abbesses'
+    latitude: '48.8845'
+    longitude: '2.3380'
+  demo_addr_lyon:
+    property: '@demo_prop_lyon'
+    country: 'France'
+    city: 'Lyon'
+    postalCode: '69002'
+    addressLine1: '5 rue de la République'
+    latitude: '45.7640'
+    longitude: '4.8357'
+  demo_addr_nice:
+    property: '@demo_prop_nice'
+    country: 'France'
+    city: 'Nice'
+    postalCode: '06000'
+    addressLine1: '8 chemin des Collines'
+    latitude: '43.7102'
+    longitude: '7.2620'
+
+App\Entity\PropertyMedia:
+  demo_cover_paris:
+    property: '@demo_prop_paris'
+    mediaType: 'image'
+    fileUrl: '<propertyImage()>'
+    sortOrder: 0
+    isCover: true
+  demo_cover_lyon:
+    property: '@demo_prop_lyon'
+    mediaType: 'image'
+    fileUrl: '<propertyImage()>'
+    sortOrder: 0
+    isCover: true
+  demo_cover_nice:
+    property: '@demo_prop_nice'
+    mediaType: 'image'
+    fileUrl: '<propertyImage()>'
+    sortOrder: 0
+    isCover: true
+
+App\Entity\PropertyAmenity:
+  demo_amenity_paris_wifi:
+    property: '@demo_prop_paris'
+    amenity: '@amenity_wifi'
+  demo_amenity_paris_kitchen:
+    property: '@demo_prop_paris'
+    amenity: '@amenity_kitchen'
+  demo_amenity_paris_heating:
+    property: '@demo_prop_paris'
+    amenity: '@amenity_heating'
+  demo_amenity_nice_pool:
+    property: '@demo_prop_nice'
+    amenity: '@amenity_pool'
+  demo_amenity_nice_wifi:
+    property: '@demo_prop_nice'
+    amenity: '@amenity_wifi'
+  demo_amenity_nice_ac:
+    property: '@demo_prop_nice'
+    amenity: '@amenity_ac'
+
+# Calendrier : nuits bloquées manuellement par l'hôte sur le studio de Paris
+App\Entity\PropertyAvailability:
+  demo_block_paris_1:
+    property: '@demo_prop_paris'
+    availableDate: '<immutableDate("2026-07-10")>'
+    isAvailable: false
+  demo_block_paris_2:
+    property: '@demo_prop_paris'
+    availableDate: '<immutableDate("2026-07-11")>'
+    isAvailable: false
+  demo_block_paris_3:
+    property: '@demo_prop_paris'
+    availableDate: '<immutableDate("2026-07-12")>'
+    isAvailable: false
+  demo_block_paris_4:
+    property: '@demo_prop_paris'
+    availableDate: '<immutableDate("2026-07-13")>'
+    isAvailable: false
+  # tarif spécifique (haute saison) sur une nuit dispo
+  demo_price_paris:
+    property: '@demo_prop_paris'
+    availableDate: '<immutableDate("2026-08-15")>'
+    isAvailable: true
+    priceOverride: '180.00'
+    minimumStay: 2
+
+App\Entity\Reservation:
+  # Réservation confirmée : occupe le calendrier de la villa de Nice
+  demo_res_nice_confirmed:
+    property: '@demo_prop_nice'
+    guest: '@demo_guest'
+    checkinDate: '<immutableDate("2026-07-05")>'
+    checkoutDate: '<immutableDate("2026-07-10")>'
+    guestsCount: 4
+    status: 'confirmed'
+    totalPrice: '1410.00'
+    cleaningFee: '80.00'
+    serviceFee: '150.00'
+    securityDeposit: '500.00'
+    currency: 'EUR'
+  # Demande en attente : visible dans le tableau de modération de l'hôte
+  demo_res_lyon_pending:
+    property: '@demo_prop_lyon'
+    guest: '@demo_guest'
+    checkinDate: '<immutableDate("2026-08-01")>'
+    checkoutDate: '<immutableDate("2026-08-05")>'
+    guestsCount: 3
+    status: 'pending'
+    totalPrice: '460.00'
+    cleaningFee: '40.00'
+    serviceFee: '45.00'
+    securityDeposit: '250.00'
+    currency: 'EUR'
+
+App\Entity\ReservationStatusHistory:
+  demo_history_nice:
+    reservation: '@demo_res_nice_confirmed'
+    oldStatus: 'pending'
+    newStatus: 'confirmed'
+    changedBy: '@demo_host'
+  demo_history_lyon:
+    reservation: '@demo_res_lyon_pending'
+    oldStatus: null
+    newStatus: 'pending'
+    changedBy: '@demo_guest'

@@ -26,4 +26,12 @@ final class ImmutableDateProvider
     {
         return (new \DateTimeImmutable())->setTime(random_int($hour, $maxHour), 0);
     }
+
+    /**
+     * Date fixe et déterministe (ex: "2026-07-10", "+10 days").
+     */
+    public function immutableDate(string $date): \DateTimeImmutable
+    {
+        return (new \DateTimeImmutable($date))->setTime(0, 0);
+    }
 }
