@@ -174,6 +174,26 @@ final class MailService
         }
     }
 
+    public function sendCheckinReminderEmail(Reservation $reservation): void
+    {
+        $guest = $reservation->getGuest();
+        if ($guest === null) {
+            return;
+        }
+
+        $reservationUrl = $this->urlGenerator->generate('app_reservation_show', ['id' => $reservation->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
+
+        $this->sendReservationEmail(
+            $reservation,
+            $guest,
+            'Rappel : Votre séjour commence demain !',
+            'emails/booking_checkin_reminder.html.twig',
+            [
+                'reservationUrl' => $reservationUrl,
+            ],
+        );
+    }
+
     private function sendReservationEmail(
         Reservation $reservation,
         User $recipient,

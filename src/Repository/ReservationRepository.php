@@ -223,4 +223,19 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedStartingOn(\DateTimeImmutable $date): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate = :date')
+            ->setParameter('status', 'confirmed')
+            ->setParameter('date', $date)
+            ->getQuery()
+            ->getResult();
+    }
 }
+

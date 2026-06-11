@@ -25,6 +25,9 @@ class Schedule implements ScheduleProviderInterface
             ->add(
                 RecurringMessage::every('15 minutes', new RunCommandMessage('app:booking:expire'))
             )
+            ->add(
+                RecurringMessage::cron('0 8 * * *', new RunCommandMessage('app:booking:send-reminders'))
+            )
         ;
     }
 }
