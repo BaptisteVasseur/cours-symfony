@@ -69,8 +69,8 @@ final class CalendarController extends AbstractController
         Request $request,
         AvailabilityService $availabilityService,
         EntityManagerInterface $entityManager,
-        ?int $blockId = null,
-        ?int $id = null,
+        ?string $blockId = null,
+        ?string $id = null,
     ): Response {
         $actualId = $blockId ?? $id;
         if ($actualId === null) {
