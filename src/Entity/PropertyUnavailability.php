@@ -35,6 +35,9 @@ class PropertyUnavailability
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $reason = null;
 
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $source = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -87,6 +90,18 @@ class PropertyUnavailability
     public function setReason(?string $reason): static
     {
         $this->reason = $reason;
+
+        return $this;
+    }
+
+    public function getSource(): ?string
+    {
+        return $this->source;
+    }
+
+    public function setSource(?string $source): static
+    {
+        $this->source = $source;
 
         return $this;
     }

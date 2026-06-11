@@ -52,6 +52,7 @@ security:
         - { path: ^/reservations, roles: ROLE_USER }
         - { path: ^/compte, roles: ROLE_USER }
         - { path: ^/messages, roles: ROLE_USER }
+        - { path: ^/notifications, roles: ROLE_USER }
 
 when@test:
     security:

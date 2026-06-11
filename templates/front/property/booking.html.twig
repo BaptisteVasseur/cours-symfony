@@ -4,6 +4,7 @@
 
 {% set cover = property.coverMedia %}
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
+{% set cleaningFeeAmount = property.cleaningFee ? property.cleaningFee|number_format(2, '.', '') : 0 %}
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
@@ -15,7 +16,11 @@
                 <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
             {% endfor %}
         {% endfor %}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8"
+             data-controller="booking-pricing"
+             data-booking-pricing-price-per-night-value="{{ property.pricePerNight }}"
+             data-booking-pricing-cleaning-fee-value="{{ cleaningFeeAmount }}"
+             data-booking-pricing-service-fee-rate-value="0.12">
             <div class="lg:col-span-2">
                 <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm"
@@ -24,11 +29,11 @@
                     <div data-booking-availability-target="blockedList" class="hidden mb-5 p-4 bg-red-50 border border-red-100 rounded-xl"></div>
                     {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', 'data-booking-availability-target': 'checkin', 'data-action': 'change->booking-availability#checkDates' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', 'data-booking-availability-target': 'checkout', 'data-action': 'change->booking-availability#checkDates' } }) }}
+                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', 'data-booking-availability-target': 'checkin', 'data-booking-pricing-target': 'checkin', 'data-action': 'change->booking-availability#checkDates change->booking-pricing#update' } }) }}
+                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', 'data-booking-availability-target': 'checkout', 'data-booking-pricing-target': 'checkout', 'data-action': 'change->booking-availability#checkDates change->booking-pricing#update' } }) }}
                         </div>
                         <div data-booking-availability-target="warning" class="hidden px-4 py-3 rounded-xl text-sm bg-amber-50 text-amber-800 border border-amber-200"></div>
-                        {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
+                        {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests, 'data-booking-pricing-target': 'guests', 'data-action': 'change->booking-pricing#update' } }) }}
                         <button type="submit" data-booking-availability-target="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
                     {{ form_end(form) }}
                 </div>
@@ -38,7 +43,27 @@
                     <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
                     <div class="p-5">
                         <h2 class="font-semibold">{{ property.title }}</h2>
-                        <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+                        <p class="text-sm text-gray-500 mt-1">{{ property.pricePerNight|number_format(0, ',', ' ') }} € / nuit</p>
+                        <div data-booking-pricing-target="breakdown" class="hidden mt-4 pt-4 border-t border-gray-100 space-y-2 text-sm">
+                            <div class="flex justify-between text-gray-600">
+                                <span><span data-booking-pricing-target="nights">0</span> nuit(s)</span>
+                                <span data-booking-pricing-target="subtotal">0 €</span>
+                            </div>
+                            {% if property.cleaningFee %}
+                                <div class="flex justify-between text-gray-600">
+                                    <span>Frais de ménage</span>
+                                    <span data-booking-pricing-target="cleaningFee">0 €</span>
+                                </div>
+                            {% endif %}
+                            <div class="flex justify-between text-gray-600">
+                                <span>Frais de service (12 %)</span>
+                                <span data-booking-pricing-target="serviceFee">0 €</span>
+                            </div>
+                            <div class="flex justify-between font-bold text-gray-900 pt-2 border-t border-gray-100">
+                                <span>Total</span>
+                                <span data-booking-pricing-target="total">0 €</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </aside>

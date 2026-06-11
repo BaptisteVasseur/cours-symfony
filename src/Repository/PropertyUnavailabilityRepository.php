@@ -47,4 +47,16 @@ class PropertyUnavailabilityRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function deleteBySource(Property $property, string $source): void
+    {
+        $this->createQueryBuilder('u')
+            ->delete()
+            ->andWhere('u.property = :property')
+            ->andWhere('u.source = :source')
+            ->setParameter('property', $property)
+            ->setParameter('source', $source)
+            ->getQuery()
+            ->execute();
+    }
 }

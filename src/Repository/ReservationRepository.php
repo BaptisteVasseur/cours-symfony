@@ -154,4 +154,18 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findExpiredPending(\DateTimeImmutable $before): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.createdAt < :before')
+            ->setParameter('status', 'pending')
+            ->setParameter('before', $before)
+            ->getQuery()
+            ->getResult();
+    }
 }
