@@ -56,10 +56,8 @@ class AvailabilityService
         $daysInMonth = (int) $firstDay->format('t');
 
         $confirmedBookings = $this->bookingRepo->findConfirmedForProperty($property);
-        $blockedPeriods = $this->availabilityRepo->findFutureForProperty($property);
-
-        // Also fetch pending bookings for the calendar display
-        $pendingBookings = $this->bookingRepo->findPendingForHost($property->getHost() ?? new \App\Entity\User());
+        $blockedPeriods    = $this->availabilityRepo->findFutureForProperty($property);
+        $pendingBookings   = $this->bookingRepo->findPendingForProperty($property);
 
         for ($d = 1; $d <= $daysInMonth; $d++) {
             $date = new \DateTimeImmutable(sprintf('%04d-%02d-%02d', $year, $month, $d));
@@ -75,9 +73,7 @@ class AvailabilityService
 
             if ($state === 'available') {
                 foreach ($pendingBookings as $booking) {
-                    if ($booking->getProperty() === $property
-                        && $date >= $booking->getCheckIn()
-                        && $date < $booking->getCheckOut()) {
+                    if ($date >= $booking->getCheckIn() && $date < $booking->getCheckOut()) {
                         $state = 'pending';
                         break;
                     }

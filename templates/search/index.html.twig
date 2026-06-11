@@ -1,7 +1,7 @@
 {% extends 'layout/base.html.twig' %}
 
 {% block title %}
-    {% if destination %}Logements à {{ destination }}{% else %}Recherche de logements{% endif %} — Airbnb
+    {% if criteria.destination %}Logements à {{ criteria.destination }}{% else %}Recherche de logements{% endif %} — Airbnb
 {% endblock %}
 
 {% block body %}
@@ -12,25 +12,27 @@
         <form method="GET" action="{{ path('app_search') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <div>
                 <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Destination</label>
-                <input type="text" name="destination" value="{{ destination }}"
+                <input type="text" name="destination" value="{{ criteria.destination }}"
                        placeholder="Ville, adresse…"
                        class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-rose-400 focus:outline-none">
             </div>
             <div>
                 <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Arrivée</label>
-                <input type="date" name="checkin" value="{{ checkInRaw }}"
+                <input type="date" name="checkin"
+                       value="{{ criteria.checkIn ? criteria.checkIn|date('Y-m-d') : '' }}"
                        min="{{ 'today'|date('Y-m-d') }}"
                        class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-rose-400 focus:outline-none">
             </div>
             <div>
                 <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Départ</label>
-                <input type="date" name="checkout" value="{{ checkOutRaw }}"
+                <input type="date" name="checkout"
+                       value="{{ criteria.checkOut ? criteria.checkOut|date('Y-m-d') : '' }}"
                        class="w-full border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-rose-400 focus:outline-none">
             </div>
             <div>
                 <label class="block text-xs font-semibold text-gray-500 uppercase mb-1">Voyageurs</label>
                 <div class="flex gap-2">
-                    <input type="number" name="guests" value="{{ guests }}" min="1" placeholder="1"
+                    <input type="number" name="guests" value="{{ criteria.guests }}" min="1" placeholder="1"
                            class="flex-1 border border-gray-300 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-rose-400 focus:outline-none">
                     <button type="submit"
                             class="bg-rose-500 hover:bg-rose-600 text-white rounded-xl px-4 py-2 text-sm font-medium transition">
@@ -44,15 +46,15 @@
     {# ── Résultats ── #}
     <div class="flex items-center justify-between mb-6">
         <h1 class="text-xl font-bold text-gray-900">
-            {% if destination %}
-                Logements à <span class="text-rose-500">{{ destination }}</span>
+            {% if criteria.destination %}
+                Logements à <span class="text-rose-500">{{ criteria.destination }}</span>
             {% else %}
                 Tous les logements disponibles
             {% endif %}
-            {% if checkIn and checkOut %}
-                · {{ checkIn|date('d/m') }} → {{ checkOut|date('d/m') }}
-                {% if nights %}
-                    ({{ nights }} nuit{% if nights > 1 %}s{% endif %})
+            {% if criteria.hasDateRange %}
+                · {{ criteria.checkIn|date('d/m') }} → {{ criteria.checkOut|date('d/m') }}
+                {% if criteria.nights %}
+                    ({{ criteria.nights }} nuit{% if criteria.nights > 1 %}s{% endif %})
                 {% endif %}
             {% endif %}
         </h1>
@@ -90,13 +92,15 @@
                                     ★ {{ property.averageRating }} · {{ property.reviews|length }} avis
                                 </p>
                             {% endif %}
-                            {% if nights %}
+                            {% if criteria.nights %}
                                 <p class="text-sm font-semibold text-gray-900 mt-1">
-                                    {{ (nights * property.pricePerNight)|number_format(0, ',', ' ') }} € total
+                                    {{ (criteria.nights * property.pricePerNight)|number_format(0, ',', ' ') }} € total
                                     <span class="text-xs font-normal text-gray-500">({{ property.pricePerNight }} €/nuit)</span>
                                 </p>
                             {% else %}
-                                <p class="text-sm font-semibold text-gray-900 mt-1">{{ property.pricePerNight }} € <span class="font-normal text-gray-500">/ nuit</span></p>
+                                <p class="text-sm font-semibold text-gray-900 mt-1">
+                                    {{ property.pricePerNight }} € <span class="font-normal text-gray-500">/ nuit</span>
+                                </p>
                             {% endif %}
                         </div>
                         {% if property.instantBooking %}

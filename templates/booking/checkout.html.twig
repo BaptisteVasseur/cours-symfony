@@ -37,28 +37,28 @@
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <p class="text-xs text-gray-400 uppercase tracking-wide">Arrivée</p>
-                    <p class="font-semibold text-gray-900 mt-0.5">{{ checkIn|date('D d M Y') }}</p>
+                    <p class="font-semibold text-gray-900 mt-0.5">{{ booking.checkIn|date('D d M Y') }}</p>
                 </div>
                 <div>
                     <p class="text-xs text-gray-400 uppercase tracking-wide">Départ</p>
-                    <p class="font-semibold text-gray-900 mt-0.5">{{ checkOut|date('D d M Y') }}</p>
+                    <p class="font-semibold text-gray-900 mt-0.5">{{ booking.checkOut|date('D d M Y') }}</p>
                 </div>
             </div>
 
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <p class="text-xs text-gray-400 uppercase tracking-wide">Voyageurs</p>
-                    <p class="font-semibold text-gray-900 mt-0.5">{{ guests }}</p>
+                    <p class="font-semibold text-gray-900 mt-0.5">{{ booking.guestsCount }}</p>
                 </div>
                 <div>
                     <p class="text-xs text-gray-400 uppercase tracking-wide">Durée</p>
-                    <p class="font-semibold text-gray-900 mt-0.5">{{ nights }} nuit(s)</p>
+                    <p class="font-semibold text-gray-900 mt-0.5">{{ booking.nights }} nuit(s)</p>
                 </div>
             </div>
 
             <div class="pt-4 border-t border-gray-100 space-y-2">
                 <div class="flex justify-between text-sm text-gray-600">
-                    <span>{{ property.pricePerNight }} € × {{ nights }} nuits</span>
+                    <span>{{ property.pricePerNight }} € × {{ booking.nights }} nuits</span>
                     <span>{{ totalPrice|number_format(2, ',', ' ') }} €</span>
                 </div>
                 <div class="flex justify-between font-bold text-gray-900">
@@ -72,9 +72,9 @@
     {# Bouton de confirmation #}
     <div class="mt-6">
         <form method="POST" action="{{ path('app_booking_confirm', {id: property.id}) }}">
-            <input type="hidden" name="checkIn" value="{{ checkIn|date('Y-m-d') }}">
-            <input type="hidden" name="checkOut" value="{{ checkOut|date('Y-m-d') }}">
-            <input type="hidden" name="guests" value="{{ guests }}">
+            <input type="hidden" name="checkIn"  value="{{ booking.checkIn|date('Y-m-d') }}">
+            <input type="hidden" name="checkOut" value="{{ booking.checkOut|date('Y-m-d') }}">
+            <input type="hidden" name="guests"   value="{{ booking.guestsCount }}">
             <button type="submit"
                     class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 rounded-2xl text-lg transition">
                 {% if property.instantBooking %}

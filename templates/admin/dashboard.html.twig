@@ -10,26 +10,26 @@
     <div class="grid grid-cols-2 lg:grid-cols-3 gap-4">
         <div class="bg-white border border-gray-200 rounded-2xl p-5">
             <p class="text-sm text-gray-500">Réservations totales</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.total_bookings }}</p>
+            <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.totalBookings }}</p>
             <div class="flex gap-2 mt-2 text-xs">
-                <span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">{{ stats.pending_bookings }} en attente</span>
-                <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{{ stats.confirmed_bookings }} confirmées</span>
+                <span class="bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full">{{ stats.pendingBookings }} en attente</span>
+                <span class="bg-green-100 text-green-700 px-2 py-0.5 rounded-full">{{ stats.confirmedBookings }} confirmées</span>
             </div>
         </div>
 
         <div class="bg-white border border-gray-200 rounded-2xl p-5">
             <p class="text-sm text-gray-500">Chiffre d'affaires</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.total_revenue|number_format(0, ',', ' ') }} €</p>
+            <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.totalRevenue|number_format(0, ',', ' ') }} €</p>
         </div>
 
         <div class="bg-white border border-gray-200 rounded-2xl p-5">
             <p class="text-sm text-gray-500">Utilisateurs</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.total_users }}</p>
+            <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.totalUsers }}</p>
         </div>
 
         <div class="bg-white border border-gray-200 rounded-2xl p-5">
             <p class="text-sm text-gray-500">Logements</p>
-            <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.total_properties }}</p>
+            <p class="text-3xl font-bold text-gray-900 mt-1">{{ stats.totalProperties }}</p>
         </div>
     </div>
 

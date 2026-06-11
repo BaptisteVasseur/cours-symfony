@@ -64,23 +64,6 @@ class BookingRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function hasConflict(\DateTimeImmutable $checkIn, \DateTimeImmutable $checkOut, string $propertyId): bool
-    {
-        $count = $this->createQueryBuilder('b')
-            ->select('COUNT(b.id)')
-            ->where('b.property = :propertyId')
-            ->andWhere('b.status != :cancelled')
-            ->andWhere('b.checkIn < :checkOut AND b.checkOut > :checkIn')
-            ->setParameter('propertyId', $propertyId)
-            ->setParameter('cancelled', BookingStatus::CANCELLED)
-            ->setParameter('checkIn', $checkIn)
-            ->setParameter('checkOut', $checkOut)
-            ->getQuery()
-            ->getSingleScalarResult();
-
-        return $count > 0;
-    }
-
     public function hasConfirmedConflict(\DateTimeImmutable $checkIn, \DateTimeImmutable $checkOut, \App\Entity\Property $property): bool
     {
         $count = $this->createQueryBuilder('b')
@@ -138,6 +121,28 @@ class BookingRepository extends ServiceEntityRepository
             ->orderBy('b.checkIn', 'ASC')
             ->getQuery()
             ->getResult();
+    }
+
+    /** @return Booking[] pending bookings for a specific property (for calendar display) */
+    public function findPendingForProperty(\App\Entity\Property $property): array
+    {
+        return $this->createQueryBuilder('b')
+            ->leftJoin('b.traveler', 't')->addSelect('t')
+            ->where('b.property = :property')
+            ->andWhere('b.status = :pending')
+            ->setParameter('property', $property)
+            ->setParameter('pending', BookingStatus::PENDING)
+            ->orderBy('b.checkIn', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function getTotalRevenue(): float
+    {
+        return (float) ($this->createQueryBuilder('b')
+            ->select('SUM(b.totalPrice)')
+            ->getQuery()
+            ->getSingleScalarResult() ?? 0.0);
     }
 
     /** @return Booking[] pending bookings older than 24h (for auto-expiration) */

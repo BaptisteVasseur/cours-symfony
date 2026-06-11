@@ -85,9 +85,8 @@
                         <span class="text-yellow-600 font-medium">Sur demande</span> — vous validez chaque demande manuellement.
                     {% endif %}
                 </p>
-                <form method="POST" action="{{ path('host_property_calendar', {id: property.id, month: year ~ '-' ~ month}) }}">
-                    <input type="hidden" name="toggle_instant" value="1">
-                    <input type="hidden" name="_token_instant" value="{{ csrf_token('toggle_instant_' ~ property.id) }}">
+                <form method="POST" action="{{ path('host_instant_booking_toggle', {id: property.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('toggle_instant_' ~ property.id) }}">
                     <button type="submit"
                             class="w-full text-sm border rounded-xl py-2 font-medium transition
                                    {{ property.instantBooking ? 'border-yellow-300 text-yellow-600 hover:bg-yellow-50' : 'border-green-300 text-green-600 hover:bg-green-50' }}">
@@ -129,17 +128,15 @@
                     <code class="block bg-gray-50 border border-gray-200 rounded-lg p-2 text-xs text-gray-700 break-all mb-3">
                         {{ app.request.schemeAndHttpHost ~ path('app_ical_export', {id: property.id}) }}?token={{ property.calendarToken }}
                     </code>
-                    <form method="POST" action="{{ path('host_property_calendar', {id: property.id}) }}"
+                    <form method="POST" action="{{ path('host_calendar_token_revoke', {id: property.id}) }}"
                           onsubmit="return confirm('Révoquer le token ? Les liens existants ne fonctionneront plus.')">
-                        <input type="hidden" name="revoke_token" value="1">
-                        <input type="hidden" name="_token_rev" value="{{ csrf_token('revoke_token_' ~ property.id) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('revoke_token_' ~ property.id) }}">
                         <button type="submit" class="text-xs text-red-500 hover:underline">Révoquer le token</button>
                     </form>
                 {% else %}
                     <p class="text-sm text-gray-500 mb-3">Aucun token généré.</p>
-                    <form method="POST" action="{{ path('host_property_calendar', {id: property.id}) }}">
-                        <input type="hidden" name="gen_token" value="1">
-                        <input type="hidden" name="_token_cal" value="{{ csrf_token('gen_token_' ~ property.id) }}">
+                    <form method="POST" action="{{ path('host_calendar_token_generate', {id: property.id}) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('gen_token_' ~ property.id) }}">
                         <button type="submit"
                                 class="w-full border border-gray-300 text-sm text-gray-700 hover:bg-gray-50 py-2 rounded-xl transition">
                             Générer un lien iCal

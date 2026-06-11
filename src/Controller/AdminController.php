@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Dto\AdminStatsDto;
 use App\Entity\Booking;
 use App\Entity\Property;
 use App\Entity\User;
@@ -30,16 +31,14 @@ class AdminController extends AbstractController
         PropertyRepository $propertyRepo,
         UserRepository $userRepo,
     ): Response {
-        $allBookings = $bookingRepo->findAll();
-
-        $stats = [
-            'total_bookings'     => count($allBookings),
-            'pending_bookings'   => count(array_filter($allBookings, fn(Booking $b) => $b->getStatus() === BookingStatus::PENDING)),
-            'confirmed_bookings' => count(array_filter($allBookings, fn(Booking $b) => $b->getStatus() === BookingStatus::CONFIRMED)),
-            'total_revenue'      => array_sum(array_map(fn(Booking $b) => (float) $b->getTotalPrice(), $allBookings)),
-            'total_users'        => count($userRepo->findAll()),
-            'total_properties'   => count($propertyRepo->findAll()),
-        ];
+        $stats = new AdminStatsDto(
+            totalBookings:     $bookingRepo->count([]),
+            pendingBookings:   $bookingRepo->count(['status' => BookingStatus::PENDING]),
+            confirmedBookings: $bookingRepo->count(['status' => BookingStatus::CONFIRMED]),
+            totalRevenue:      $bookingRepo->getTotalRevenue(),
+            totalUsers:        $userRepo->count([]),
+            totalProperties:   $propertyRepo->count([]),
+        );
 
         return $this->render('admin/dashboard.html.twig', [
             'stats'          => $stats,

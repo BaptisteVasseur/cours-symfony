@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Dto\SearchCriteriaDto;
 use App\Repository\PropertyRepository;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -14,36 +15,31 @@ class SearchController extends AbstractController
     public function index(Request $request, PropertyRepository $propertyRepo): Response
     {
         $destination = $request->query->get('destination') ?: null;
-        $checkInRaw  = $request->query->get('checkin') ?: null;
-        $checkOutRaw = $request->query->get('checkout') ?: null;
         $guests      = $request->query->getInt('guests') ?: null;
 
-        $checkIn = $checkInRaw
-            ? \DateTimeImmutable::createFromFormat('Y-m-d', $checkInRaw) ?: null
-            : null;
-        $checkOut = $checkOutRaw
-            ? \DateTimeImmutable::createFromFormat('Y-m-d', $checkOutRaw) ?: null
-            : null;
+        $checkInRaw  = $request->query->get('checkin') ?: null;
+        $checkOutRaw = $request->query->get('checkout') ?: null;
 
-        // Validate date range
+        $checkIn  = $checkInRaw  ? (\DateTimeImmutable::createFromFormat('Y-m-d', $checkInRaw)  ?: null) : null;
+        $checkOut = $checkOutRaw ? (\DateTimeImmutable::createFromFormat('Y-m-d', $checkOutRaw) ?: null) : null;
+
         if ($checkIn && $checkOut && $checkOut <= $checkIn) {
             $this->addFlash('error', 'La date de départ doit être après la date d\'arrivée.');
             $checkIn = $checkOut = null;
         }
 
-        $properties = $propertyRepo->findForSearch($destination, $checkIn, $checkOut, $guests);
+        $criteria = new SearchCriteriaDto($destination, $checkIn, $checkOut, $guests);
 
-        $nights = ($checkIn && $checkOut) ? $checkIn->diff($checkOut)->days : null;
+        $properties = $propertyRepo->findForSearch(
+            $criteria->destination,
+            $criteria->checkIn,
+            $criteria->checkOut,
+            $criteria->guests,
+        );
 
         return $this->render('search/index.html.twig', [
-            'properties'  => $properties,
-            'destination' => $destination,
-            'checkIn'     => $checkIn,
-            'checkOut'    => $checkOut,
-            'guests'      => $guests,
-            'nights'      => $nights,
-            'checkInRaw'  => $checkInRaw,
-            'checkOutRaw' => $checkOutRaw,
+            'properties' => $properties,
+            'criteria'   => $criteria,
         ]);
     }
 }

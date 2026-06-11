@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Dto\BookingRequestDto;
 use App\Entity\Booking;
 use App\Entity\Property;
 use App\Form\BookingType;
@@ -27,12 +28,12 @@ class BookingController extends AbstractController
     }
 
     /**
-     * Step 1 — validate form data from the property page, then show checkout recap.
+     * Step 1 — validate form data from the property page, then redirect to checkout recap.
      */
     #[Route('/new/{id}', name: 'app_booking_new', methods: ['POST'])]
     public function new(Property $property, Request $request): Response
     {
-        $booking = new \App\Entity\Booking();
+        $booking = new Booking();
         $form = $this->createForm(BookingType::class, $booking);
         $form->handleRequest($request);
 
@@ -55,33 +56,29 @@ class BookingController extends AbstractController
     #[Route('/checkout/{id}', name: 'app_booking_checkout', methods: ['GET'])]
     public function checkout(Property $property, Request $request): Response
     {
-        $checkInRaw  = $request->query->get('checkIn', '');
-        $checkOutRaw = $request->query->get('checkOut', '');
-        $guests      = $request->query->getInt('guests', 1);
+        $dto = BookingRequestDto::fromRawValues(
+            $request->query->get('checkIn', ''),
+            $request->query->get('checkOut', ''),
+            $request->query->getInt('guests', 1),
+        );
 
-        $checkIn  = \DateTimeImmutable::createFromFormat('Y-m-d', $checkInRaw) ?: null;
-        $checkOut = \DateTimeImmutable::createFromFormat('Y-m-d', $checkOutRaw) ?: null;
-
-        if (!$checkIn || !$checkOut || $checkOut <= $checkIn) {
-            $this->addFlash('error', 'Dates invalides.');
+        if (!$dto) {
+            $this->addFlash('error', 'Dates ou nombre de voyageurs invalides.');
             return $this->redirectToRoute('app_property_show', ['id' => $property->getId()]);
         }
 
-        if ($guests < 1 || $guests > $property->getMaxGuests()) {
-            $this->addFlash('error', 'Nombre de voyageurs invalide.');
+        if ($dto->guestsCount > $property->getMaxGuests()) {
+            $this->addFlash('error', sprintf(
+                'Ce logement accueille au maximum %d voyageur(s).',
+                $property->getMaxGuests()
+            ));
             return $this->redirectToRoute('app_property_show', ['id' => $property->getId()]);
         }
-
-        $nights     = $checkIn->diff($checkOut)->days;
-        $totalPrice = $nights * (float) $property->getPricePerNight();
 
         return $this->render('booking/checkout.html.twig', [
             'property'   => $property,
-            'checkIn'    => $checkIn,
-            'checkOut'   => $checkOut,
-            'guests'     => $guests,
-            'nights'     => $nights,
-            'totalPrice' => $totalPrice,
+            'booking'    => $dto,
+            'totalPrice' => $dto->computeTotal($property->getPricePerNight()),
         ]);
     }
 
@@ -91,30 +88,29 @@ class BookingController extends AbstractController
     #[Route('/confirm/{id}', name: 'app_booking_confirm', methods: ['POST'])]
     public function confirm(Property $property, Request $request, BookingService $bookingService): Response
     {
-        $checkInRaw  = $request->request->get('checkIn', '');
-        $checkOutRaw = $request->request->get('checkOut', '');
-        $guests      = (int) $request->request->get('guests', 1);
+        $dto = BookingRequestDto::fromRawValues(
+            $request->request->get('checkIn', ''),
+            $request->request->get('checkOut', ''),
+            (int) $request->request->get('guests', 1),
+        );
 
-        $checkIn  = \DateTimeImmutable::createFromFormat('Y-m-d', $checkInRaw) ?: null;
-        $checkOut = \DateTimeImmutable::createFromFormat('Y-m-d', $checkOutRaw) ?: null;
-
-        if (!$checkIn || !$checkOut) {
+        if (!$dto) {
             $this->addFlash('error', 'Données de réservation invalides.');
             return $this->redirectToRoute('app_property_show', ['id' => $property->getId()]);
         }
 
         try {
-            $booking = $bookingService->create($property, $this->getUser(), $checkIn, $checkOut, $guests);
+            $booking = $bookingService->create($property, $this->getUser(), $dto->checkIn, $dto->checkOut, $dto->guestsCount);
         } catch (\RuntimeException $e) {
             $this->addFlash('error', $e->getMessage());
             return $this->redirectToRoute('app_property_show', ['id' => $property->getId()]);
         }
 
-        $status = $booking->getStatus()->value === 'CONFIRMED'
+        $message = $booking->getStatus()->value === 'CONFIRMED'
             ? 'Votre réservation est confirmée !'
             : 'Votre demande a été envoyée à l\'hôte. Vous serez notifié par email.';
 
-        $this->addFlash('success', $status);
+        $this->addFlash('success', $message);
 
         return $this->redirectToRoute('app_booking_confirmation', ['id' => $booking->getId()]);
     }
@@ -142,8 +138,8 @@ class BookingController extends AbstractController
         ]);
 
         return $this->render('booking/show.html.twig', [
-            'booking'     => $booking,
-            'cancelForm'  => $cancelForm,
+            'booking'    => $booking,
+            'cancelForm' => $cancelForm,
         ]);
     }
 
@@ -162,10 +158,8 @@ class BookingController extends AbstractController
             return $this->redirectToRoute('app_booking_show', ['id' => $booking->getId()]);
         }
 
-        $reason = $form->get('reason')->getData();
-
         try {
-            $bookingService->cancel($booking, $this->getUser(), $reason);
+            $bookingService->cancel($booking, $this->getUser(), $form->get('reason')->getData());
             $this->addFlash('success', 'Réservation annulée. Les deux parties ont été notifiées.');
         } catch (\RuntimeException $e) {
             $this->addFlash('error', $e->getMessage());
