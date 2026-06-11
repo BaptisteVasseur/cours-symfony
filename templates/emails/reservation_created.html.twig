@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+    <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #FF385C;">
+        <h1 style="color: #FF385C; margin: 0; font-size: 24px;">Nouvelle demande de réservation</h1>
+    </div>
+
+    <div style="padding: 20px 0;">
+        <p>Bonjour {{ host.profile ? host.profile.firstName : 'Cher hôte' }},</p>
+
+        <p>Vous avez reçu une nouvelle demande de réservation pour votre logement <strong>{{ property.title }}</strong>.</p>
+
+        <div style="background: #f7f7f7; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 6px 0; font-weight: bold;">Voyageur</td>
+                    <td style="padding: 6px 0;">{{ guest.profile ? guest.profile.firstName ~ ' ' ~ guest.profile.lastName : guest.email }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px 0; font-weight: bold;">Arrivée</td>
+                    <td style="padding: 6px 0;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px 0; font-weight: bold;">Départ</td>
+                    <td style="padding: 6px 0;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px 0; font-weight: bold;">Voyageurs</td>
+                    <td style="padding: 6px 0;">{{ reservation.guestsCount }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px 0; font-weight: bold;">Total</td>
+                    <td style="padding: 6px 0; font-size: 18px; color: #FF385C;">{{ reservation.totalPrice }} €</td>
+                </tr>
+            </table>
+        </div>
+
+        {% if reservation.status == 'pending' %}
+            <p>Connectez-vous à votre espace hôte pour <strong>accepter ou refuser</strong> cette demande.</p>
+        {% else %}
+            <p>Cette réservation a été <strong>confirmée automatiquement</strong> (réservation instantanée).</p>
+        {% endif %}
+    </div>
+
+    <div style="text-align: center; padding: 16px 0; border-top: 1px solid #eee; color: #999; font-size: 12px;">
+        Clone Airbnb — Email automatique
+    </div>
+</body>
+</html>

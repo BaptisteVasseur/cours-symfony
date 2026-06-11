@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; color: #333;">
+    <div style="text-align: center; padding: 20px 0; border-bottom: 2px solid #c13515;">
+        <h1 style="color: #c13515; margin: 0; font-size: 24px;">Réservation annulée</h1>
+    </div>
+
+    <div style="padding: 20px 0;">
+        <p>Bonjour,</p>
+
+        <p>La réservation pour le logement <strong>{{ property.title }}</strong> a été annulée.</p>
+
+        <div style="background: #f7f7f7; border-radius: 8px; padding: 16px; margin: 16px 0;">
+            <table style="width: 100%; border-collapse: collapse;">
+                <tr>
+                    <td style="padding: 6px 0; font-weight: bold;">Logement</td>
+                    <td style="padding: 6px 0;">{{ property.title }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px 0; font-weight: bold;">Arrivée</td>
+                    <td style="padding: 6px 0;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+                </tr>
+                <tr>
+                    <td style="padding: 6px 0; font-weight: bold;">Départ</td>
+                    <td style="padding: 6px 0;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+                </tr>
+                {% if reason %}
+                    <tr>
+                        <td style="padding: 6px 0; font-weight: bold;">Motif</td>
+                        <td style="padding: 6px 0;">{{ reason }}</td>
+                    </tr>
+                {% endif %}
+            </table>
+        </div>
+
+        <p>Les dates du logement sont désormais libérées.</p>
+    </div>
+
+    <div style="text-align: center; padding: 16px 0; border-top: 1px solid #eee; color: #999; font-size: 12px;">
+        Clone Airbnb — Email automatique
+    </div>
+</body>
+</html>

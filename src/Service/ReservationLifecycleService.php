@@ -7,8 +7,11 @@ namespace App\Service;
 use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Message\ReservationCancelledMessage;
+use App\Message\ReservationConfirmedMessage;
 use App\Repository\ReservationRepository;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 final class ReservationLifecycleService
 {
@@ -20,6 +23,7 @@ final class ReservationLifecycleService
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
         private readonly ReservationRepository $reservationRepository,
+        private readonly MessageBusInterface $messageBus,
     ) {
     }
 
@@ -36,6 +40,7 @@ final class ReservationLifecycleService
         }
 
         $this->transition($reservation, 'confirmed', $changedBy);
+        $this->messageBus->dispatch(new ReservationConfirmedMessage((string) $reservation->getId()));
     }
 
     public function cancel(Reservation $reservation, User $changedBy, ?string $reason = null): void
@@ -45,6 +50,7 @@ final class ReservationLifecycleService
         }
 
         $this->transition($reservation, 'cancelled', $changedBy);
+        $this->messageBus->dispatch(new ReservationCancelledMessage((string) $reservation->getId(), $reason));
     }
 
     public function complete(Reservation $reservation, User $changedBy): void
