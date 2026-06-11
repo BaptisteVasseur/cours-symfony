@@ -1,0 +1,93 @@
+<header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16 md:h-20">
+
+            {# Logo #}
+            <a href="/" class="flex items-center gap-1 shrink-0">
+                <svg class="w-8 h-8 text-[#FF385C]" viewBox="0 0 32 32" fill="currentColor">
+                    <path d="M16 1C10.5 1 5 7.2 5 13.6c0 8.1 9.2 17 11 18.6.5.4 1.3.4 1.8 0C19.8 30.6 29 21.7 29 13.6 29 7.2 23.5 1 16 1zm0 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10z"/>
+                </svg>
+                <span class="text-[#FF385C] font-bold text-xl tracking-tight hidden sm:block">airbnb</span>
+            </a>
+
+            {# Search bar (desktop) #}
+            <div class="hidden md:flex items-center border border-gray-300 rounded-full shadow-sm hover:shadow-md transition-shadow cursor-pointer divide-x divide-gray-300">
+                <button class="px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50 rounded-l-full">Destination</button>
+                <button class="px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50">Arrivée</button>
+                <button class="px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50">Départ</button>
+                <button class="flex items-center gap-2 px-4 py-2 text-sm text-gray-500 hover:bg-gray-50 rounded-r-full">
+                    <span>Voyageurs</span>
+                    <span class="bg-[#FF385C] text-white rounded-full p-1.5">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    </span>
+                </button>
+            </div>
+
+            {# Right nav #}
+            <div class="flex items-center gap-2">
+                <a href="#" class="hidden md:block text-sm font-medium text-gray-700 hover:bg-gray-100 px-4 py-2 rounded-full transition">
+                    Devenez hôte
+                </a>
+                <button class="text-gray-700 hover:bg-gray-100 p-2 rounded-full transition" title="Langue">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/></svg>
+                </button>
+
+                {# User menu #}
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open" class="flex items-center gap-2 border border-gray-300 rounded-full px-3 py-1.5 hover:shadow-md transition-shadow bg-white">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+                        <div class="w-8 h-8 bg-gray-500 rounded-full flex items-center justify-center text-white text-sm font-medium overflow-hidden">
+                            {% if app.user and app.user.profile and app.user.profile.avatarUrl %}
+                                <img src="{{ app.user.profile.avatarUrl }}" alt="avatar" class="w-full h-full object-cover">
+                            {% else %}
+                                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.7 0 4.8-2.1 4.8-4.8S14.7 2.4 12 2.4 7.2 4.5 7.2 7.2 9.3 12 12 12zm0 2.4c-3.2 0-9.6 1.6-9.6 4.8v2.4h19.2v-2.4c0-3.2-6.4-4.8-9.6-4.8z"/></svg>
+                            {% endif %}
+                        </div>
+                    </button>
+
+                    <div x-show="open" @click.away="open = false" x-cloak
+                         class="absolute right-0 mt-2 w-56 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50">
+                        {% if app.user %}
+                            <div class="px-4 py-2 text-sm font-semibold text-gray-800 border-b border-gray-100 mb-1">
+                                {{ app.user.profile ? app.user.profile.firstName ~ ' ' ~ app.user.profile.lastName : app.user.email }}
+                            </div>
+                            {% if is_granted('ROLE_ADMIN')%}
+                                <a href="{{ path('app_admin_dashboard')}}">Panel Admin</a>
+                            {% endif %}
+                            <a href="{{ path('app_reservation_index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Mes réservations</a>
+                            <a href="{{ path('app_property_index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Mes annonces</a>
+                            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Mon compte</a>
+                            <div class="border-t border-gray-100 my-1"></div>
+                            <a href="/logout" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Déconnexion</a>
+                        {% else %}
+                            <a href="/login" class="block px-4 py-2 text-sm font-medium text-gray-800 hover:bg-gray-50">Connexion</a>
+                            <a href="/register" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Inscription</a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {# Category filters #}
+        <div class="flex items-center gap-6 overflow-x-auto pb-3 scrollbar-hide">
+            {% set categories = [
+                {icon: '🏝️', label: 'Îles'},
+                {icon: '🏔️', label: 'Montagne'},
+                {icon: '🌊', label: 'Bord de mer'},
+                {icon: '🏡', label: 'Campagne'},
+                {icon: '🏙️', label: 'Ville'},
+                {icon: '🏕️', label: 'Camping'},
+                {icon: '🏰', label: 'Châteaux'},
+                {icon: '🛖', label: 'Cabanes'},
+                {icon: '🌴', label: 'Tropical'},
+                {icon: '❄️', label: 'Hiver'},
+            ] %}
+            {% for cat in categories %}
+            <button class="flex flex-col items-center gap-1 min-w-fit text-gray-500 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-900 pb-2 transition group">
+                <span class="text-2xl">{{ cat.icon }}</span>
+                <span class="text-xs font-medium whitespace-nowrap">{{ cat.label }}</span>
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+</header>

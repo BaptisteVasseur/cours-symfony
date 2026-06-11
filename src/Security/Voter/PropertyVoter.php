@@ -22,14 +22,20 @@ final class PropertyVoter extends Voter
 
     protected function voteOnAttribute(string $attribute, mixed $subject, TokenInterface $token, ?\Symfony\Component\Security\Core\Authorization\Voter\Vote $vote = null): bool
     {
+        /** @var Property $property */
+        $property = $subject;
+
+        // Published properties are viewable by everyone (including anonymous)
+        if ($attribute === self::VIEW && $property->getStatus() === 'published') {
+            return true;
+        }
+
         $user = $token->getUser();
         if (!$user instanceof User) {
             return false;
         }
 
-        /** @var Property $property */
-        $property = $subject;
-
+        // Admins can do everything
         if (in_array('ROLE_ADMIN', $user->getRoles(), true)) {
             return true;
         }
@@ -37,7 +43,7 @@ final class PropertyVoter extends Voter
         $isOwner = $property->getHost()?->getId() === $user->getId();
 
         return match ($attribute) {
-            self::VIEW => $property->getStatus() === 'published' || $isOwner,
+            self::VIEW => $isOwner,
             self::EDIT => $isOwner,
             default => false,
         };

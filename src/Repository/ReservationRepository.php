@@ -92,4 +92,34 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Find overlapping reservations for a property in the given date range.
+     * Excludes cancelled reservations and optionally a specific reservation (for updates).
+     *
+     * @return list<Reservation>
+     */
+    public function findOverlapping(
+        \App\Entity\Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+        ?Reservation $exclude = null,
+    ): array {
+        $qb = $this->createQueryBuilder('r')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status NOT IN (:cancelledStatuses)')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('cancelledStatuses', ['cancelled'])
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+
+        if ($exclude !== null) {
+            $qb->andWhere('r != :exclude')
+                ->setParameter('exclude', $exclude);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

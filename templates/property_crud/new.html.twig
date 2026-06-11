@@ -1,0 +1,11 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block title %}New Property{% endblock %}
+
+{% block content %}
+    <h1>Create new Property</h1>
+
+    {{ include('property_crud/_form.html.twig') }}
+
+    <a href="{{ path('app_property_crud_index') }}">back to list</a>
+{% endblock %}

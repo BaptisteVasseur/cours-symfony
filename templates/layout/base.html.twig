@@ -1,28 +1,50 @@
 <!DOCTYPE html>
 <html lang="fr">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Airbnb Clone - Vacances & Hébergements</title>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Airbnb - Locations de vacances, maisons, appartements{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 128 128%22><text y=%221.2em%22 font-size=%22100%22>🏠</text></svg>">
+    {% block stylesheets %}
         <script src="https://cdn.tailwindcss.com"></script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <script>
             tailwind.config = {
                 theme: {
                     extend: {
                         colors: {
-                            brand: '#FF385C',
-                            brandHover: '#E61E4D'
+                            'brand': '#FF385C',
+                            'brandHover': '#E00B41',
                         }
                     }
                 }
             }
         </script>
-        {% block javascripts %}
-            {{ importmap('app') }}
-        {% endblock %}
-    </head>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+        <style>
+            [x-cloak] { display: none !important; }
+            .property-card { transition: all 0.3s ease; }
+            .property-card:hover { transform: translateY(-4px); box-shadow: 0 10px 25px rgba(0,0,0,.1); }
+            .heart-icon:hover { fill: #FF385C; stroke: #FF385C; transform: scale(1.2); }
+            .no-scrollbar::-webkit-scrollbar { display: none; }
+            .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        </style>
+    {% endblock %}
+    {% block head %}{% endblock %}
+</head>
+<body class="text-gray-800 font-sans antialiased bg-white">
 
-    {% block body %}{% endblock %}
+{% for label, messages in app.flashes %}
+    {% for message in messages %}
+        <div class="fixed top-4 right-4 z-50 px-5 py-3 rounded-xl shadow-lg text-sm font-medium {{ label == 'success' ? 'bg-green-100 text-green-800 border border-green-200' : (label == 'error' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-yellow-100 text-yellow-800 border border-yellow-200') }}">
+            {{ message }}
+        </div>
+    {% endfor %}
+{% endfor %}
 
+{% block body %}{% endblock %}
+
+{% block javascripts %}
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+{% endblock %}
+</body>
 </html>
