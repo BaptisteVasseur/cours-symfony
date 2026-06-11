@@ -19,22 +19,32 @@
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
-        <div class="mb-6">
-            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">{{ property.title }}</h1>
-            <div class="flex flex-wrap items-center gap-2 mt-2 text-sm text-gray-600">
-                {% if averageRating %}
-                    <span class="flex items-center gap-1 font-semibold text-gray-900">
-                        <i class="fa-solid fa-star text-xs"></i>
-                        {{ averageRating|number_format(2, ',') }}
-                    </span>
-                    <span>·</span>
-                    <span>{{ totalReviews|default(property.reviews|length) }} avis</span>
-                    <span>·</span>
-                {% endif %}
-                {% if property.address %}
-                    <span>{{ property.address.city }}, {{ property.address.country }}</span>
-                {% endif %}
+        <div class="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">{{ property.title }}</h1>
+                <div class="flex flex-wrap items-center gap-2 mt-2 text-sm text-gray-600">
+                    {% if averageRating %}
+                        <span class="flex items-center gap-1 font-semibold text-gray-900">
+                            <i class="fa-solid fa-star text-xs"></i>
+                            {{ averageRating|number_format(2, ',') }}
+                        </span>
+                        <span>·</span>
+                        <span>{{ totalReviews|default(property.reviews|length) }} avis</span>
+                        <span>·</span>
+                    {% endif %}
+                    {% if property.address %}
+                        <span>{{ property.address.city }}, {{ property.address.country }}</span>
+                    {% endif %}
+                </div>
             </div>
+            {% if is_granted('PROPERTY_EDIT', property) %}
+                <div class="shrink-0">
+                    <a href="{{ path('app_host_property_edit', { id: property.id }) }}" class="inline-flex items-center gap-2 bg-white hover:bg-gray-50 text-gray-700 font-semibold px-4 py-2 border border-gray-300 rounded-lg shadow-sm transition text-sm">
+                        <i class="fa-solid fa-pen text-xs"></i>
+                        Modifier l'annonce
+                    </a>
+                </div>
+            {% endif %}
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-2 rounded-xl overflow-hidden mb-10 h-[300px] md:h-[480px]">
@@ -159,9 +169,15 @@
                             <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
                         </div>
                     </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
-                        Réserver
-                    </a>
+                    {% if is_granted('PROPERTY_EDIT', property) %}
+                        <a href="{{ path('app_host_property_edit', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                            Modifier l'annonce
+                        </a>
+                    {% else %}
+                        <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
+                            Réserver
+                        </a>
+                    {% endif %}
                     {% if property.instantBooking %}
                         <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
                     {% endif %}

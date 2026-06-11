@@ -102,4 +102,73 @@ final class NewFeaturesTest extends WebTestCase
         $responseContent = json_decode($client->getResponse()->getContent() ?: '{}', true);
         $this->assertArrayHasKey('favorited', $responseContent);
     }
+
+    public function testHostCanAccessEditPropertyPage(): void
+    {
+        $client = static::createClient();
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        $host = $userRepository->findOneBy(['email' => 'jeanmarc.dupont@email.com']);
+        $this->assertNotNull($host);
+
+        $propertyRepository = static::getContainer()->get(PropertyRepository::class);
+        $property = $propertyRepository->findOneBy(['host' => $host]);
+        $this->assertNotNull($property);
+
+        $client->loginUser($host);
+        $client->request('GET', sprintf('/compte/hote/proprietes/%s/modifier', $property->getId()));
+
+        $this->assertResponseIsSuccessful();
+        $this->assertSelectorTextContains('h1', 'Modifier l\'annonce');
+    }
+
+    public function testHostCanEditProperty(): void
+    {
+        $client = static::createClient();
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        $host = $userRepository->findOneBy(['email' => 'jeanmarc.dupont@email.com']);
+        $this->assertNotNull($host);
+
+        $propertyRepository = static::getContainer()->get(PropertyRepository::class);
+        $property = $propertyRepository->findOneBy(['host' => $host]);
+        $this->assertNotNull($property);
+
+        $client->loginUser($host);
+        $crawler = $client->request('GET', sprintf('/compte/hote/proprietes/%s/modifier', $property->getId()));
+        $this->assertResponseIsSuccessful();
+
+        $form = $crawler->selectButton('Enregistrer les modifications')->form();
+        $form['host_property[title]'] = 'Titre Modifie';
+        $client->submit($form);
+
+        $this->assertResponseRedirects('/compte/proprietes');
+        
+        $entityManager = static::getContainer()->get(\Doctrine\ORM\EntityManagerInterface::class);
+        $entityManager->clear();
+        $updatedProperty = $propertyRepository->find($property->getId());
+        $this->assertEquals('Titre Modifie', $updatedProperty->getTitle());
+    }
+
+    public function testNonHostCannotEditProperty(): void
+    {
+        $client = static::createClient();
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        
+        $host = $userRepository->findOneBy(['email' => 'jeanmarc.dupont@email.com']);
+        $this->assertNotNull($host);
+        
+        $propertyRepository = static::getContainer()->get(PropertyRepository::class);
+        $qb = $propertyRepository->createQueryBuilder('p');
+        $otherProperty = $qb->andWhere('p.host != :host')
+            ->setParameter('host', $host)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+            
+        if ($otherProperty !== null) {
+            $client->loginUser($host);
+            $client->request('GET', sprintf('/compte/hote/proprietes/%s/modifier', $otherProperty->getId()));
+            $this->assertResponseStatusCodeSame(Response::HTTP_FORBIDDEN);
+        }
+    }
 }
+

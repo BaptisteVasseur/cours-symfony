@@ -14,6 +14,8 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
+use App\Security\Voter\PropertyVoter;
+
 #[Route('/compte/hote/proprietes')]
 #[IsGranted('ROLE_HOST')]
 final class HostPropertyController extends AbstractController
@@ -49,4 +51,29 @@ final class HostPropertyController extends AbstractController
             status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
         ));
     }
+
+    #[Route('/{id}/modifier', name: 'app_host_property_edit', methods: ['GET', 'POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function edit(Request $request, Property $property, EntityManagerInterface $entityManager): Response
+    {
+        $form = $this->createForm(HostPropertyType::class, $property);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $property->setUpdatedAt(new \DateTimeImmutable());
+            $entityManager->flush();
+
+            $this->addFlash('success', 'Votre annonce a été mise à jour.');
+
+            return $this->redirectToRoute('app_account_properties');
+        }
+
+        return $this->render('front/host_property/edit.html.twig', [
+            'property' => $property,
+            'form' => $form,
+        ], new Response(
+            status: $form->isSubmitted() ? Response::HTTP_UNPROCESSABLE_ENTITY : Response::HTTP_OK
+        ));
+    }
 }
+
