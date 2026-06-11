@@ -19,6 +19,34 @@ class PropertyAvailabilityRepository extends ServiceEntityRepository
         parent::__construct($registry, PropertyAvailability::class);
     }
 
+    /**
+     * @return list<PropertyAvailability>
+     */
+    public function findBlockedForProperty(Property $property): array
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.property = :property')
+            ->andWhere('a.isAvailable = false')
+            ->andWhere('a.availableDate >= :today')
+            ->setParameter('property', $property)
+            ->setParameter('today', new \DateTimeImmutable('today'))
+            ->orderBy('a.availableDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findOneByPropertyAndDate(Property $property, \DateTimeImmutable $date): ?PropertyAvailability
+    {
+        return $this->createQueryBuilder('a')
+            ->andWhere('a.property = :property')
+            ->andWhere('a.availableDate = :date')
+            ->setParameter('property', $property)
+            ->setParameter('date', $date)
+            ->setMaxResults(1)
+            ->getQuery()
+            ->getOneOrNullResult();
+    }
+
     public function hasBlockedDay(
         Property $property,
         \DateTimeImmutable $checkinDate,

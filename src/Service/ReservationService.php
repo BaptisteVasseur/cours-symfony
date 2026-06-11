@@ -9,8 +9,10 @@ use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Exception\UnavailableDatesException;
+use App\Message\ReservationNotification;
 use Doctrine\DBAL\Exception\DriverException;
 use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Component\Messenger\MessageBusInterface;
 
 final class ReservationService
 {
@@ -20,6 +22,7 @@ final class ReservationService
     public function __construct(
         private readonly EntityManagerInterface $em,
         private readonly AvailabilityService $availability,
+        private readonly MessageBusInterface $bus,
     ) {
     }
 
@@ -59,7 +62,77 @@ final class ReservationService
             throw $exception;
         }
 
+        $event = $status === 'confirmed'
+            ? ReservationNotification::CONFIRMED
+            : ReservationNotification::PENDING_REQUEST;
+        $this->bus->dispatch(new ReservationNotification((string) $reservation->getId(), $event));
+
         return $reservation;
+    }
+
+    public function confirm(Reservation $reservation, User $actor): void
+    {
+        if ($reservation->getStatus() !== 'pending') {
+            throw new \DomainException('Seule une demande en attente peut être confirmée.');
+        }
+
+        if (!$this->availability->isAvailable(
+            $reservation->getProperty(),
+            $reservation->getCheckinDate(),
+            $reservation->getCheckoutDate(),
+            $reservation->getGuestsCount() ?? 1,
+            $reservation,
+        )) {
+            throw new UnavailableDatesException();
+        }
+
+        $this->transition($reservation, 'confirmed', $actor, null, ReservationNotification::CONFIRMED);
+    }
+
+    public function refuse(Reservation $reservation, User $actor, string $reason): void
+    {
+        if ($reservation->getStatus() !== 'pending') {
+            throw new \DomainException('Seule une demande en attente peut être refusée.');
+        }
+
+        $this->transition($reservation, 'cancelled', $actor, $reason, ReservationNotification::REFUSED);
+    }
+
+    public function cancel(Reservation $reservation, User $actor, string $reason): void
+    {
+        if (!\in_array($reservation->getStatus(), ['pending', 'confirmed'], true)) {
+            throw new \DomainException('Cette réservation ne peut plus être annulée.');
+        }
+
+        $this->transition($reservation, 'cancelled', $actor, $reason, ReservationNotification::CANCELLED);
+    }
+
+    private function transition(
+        Reservation $reservation,
+        string $newStatus,
+        User $actor,
+        ?string $reason,
+        string $event,
+    ): void {
+        $oldStatus = $reservation->getStatus();
+
+        try {
+            $this->em->wrapInTransaction(function () use ($reservation, $newStatus, $oldStatus, $actor, $reason): void {
+                $reservation->setStatus($newStatus);
+                if ($reason !== null) {
+                    $reservation->setCancellationReason($reason);
+                }
+                $this->logStatus($reservation, $oldStatus, $newStatus, $actor);
+            });
+        } catch (DriverException $exception) {
+            if ($exception->getSQLState() === self::EXCLUSION_VIOLATION_SQLSTATE) {
+                throw new UnavailableDatesException(previous: $exception);
+            }
+
+            throw $exception;
+        }
+
+        $this->bus->dispatch(new ReservationNotification((string) $reservation->getId(), $event));
     }
 
     private function applyPricing(Reservation $reservation, Property $property): void

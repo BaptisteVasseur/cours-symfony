@@ -61,6 +61,21 @@
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
                     <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
                     <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+
+                    {% if reservation.status in ['pending', 'confirmed'] %}
+                        <form method="post" action="{{ path('app_reservation_cancel', { id: reservation.id }) }}" class="mt-6 space-y-2">
+                            <input type="hidden" name="_token" value="{{ csrf_token('cancel_reservation_' ~ reservation.id) }}">
+                            <input type="text" name="reason" placeholder="Motif d'annulation" required
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <button class="w-full px-4 py-2 rounded-lg border border-red-300 text-red-700 text-sm font-medium hover:bg-red-50">
+                                Annuler la réservation
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if reservation.cancellationReason %}
+                        <p class="mt-4 text-sm text-gray-500">Motif : {{ reservation.cancellationReason }}</p>
+                    {% endif %}
                 </div>
             </aside>
         </div>
