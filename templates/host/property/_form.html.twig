@@ -1,0 +1,46 @@
+{% set inputClass = 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mt-1' %}
+
+{{ form_start(form) }}
+    <div class="space-y-5">
+        {{ form_row(form.title, { attr: { class: inputClass } }) }}
+        {{ form_row(form.description, { attr: { class: inputClass, rows: 4 } }) }}
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {{ form_row(form.propertyType, { attr: { class: inputClass } }) }}
+            {{ form_row(form.cancellationPolicy, { attr: { class: inputClass } }) }}
+        </div>
+
+        <fieldset class="border border-gray-200 rounded-xl p-4">
+            <legend class="text-sm font-semibold px-1">Adresse</legend>
+            {{ form_row(form.address.addressLine1, { attr: { class: inputClass } }) }}
+            {{ form_row(form.address.addressLine2, { attr: { class: inputClass } }) }}
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {{ form_row(form.address.postalCode, { attr: { class: inputClass } }) }}
+                {{ form_row(form.address.city, { attr: { class: inputClass } }) }}
+                {{ form_row(form.address.country, { attr: { class: inputClass } }) }}
+            </div>
+        </fieldset>
+
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {{ form_row(form.maxGuests, { attr: { class: inputClass } }) }}
+            {{ form_row(form.bedrooms, { attr: { class: inputClass } }) }}
+            {{ form_row(form.beds, { attr: { class: inputClass } }) }}
+            {{ form_row(form.bathrooms, { attr: { class: inputClass } }) }}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {{ form_row(form.pricePerNight, { attr: { class: inputClass } }) }}
+            {{ form_row(form.cleaningFee, { attr: { class: inputClass } }) }}
+            {{ form_row(form.securityDeposit, { attr: { class: inputClass } }) }}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {{ form_row(form.checkinTime, { attr: { class: inputClass } }) }}
+            {{ form_row(form.checkoutTime, { attr: { class: inputClass } }) }}
+        </div>
+
+        {{ form_row(form.instantBooking) }}
+
+        <button type="submit" class="bg-brand hover:bg-brandHover text-white font-semibold py-3 px-6 rounded-xl">{{ button_label }}</button>
+    </div>
+{{ form_end(form) }}

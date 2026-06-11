@@ -1,0 +1,16 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Modifier — {{ property.title }}{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-3xl mx-auto w-full">
+        <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Retour à mes propriétés
+        </a>
+        <h1 class="text-2xl font-semibold text-gray-900 mb-1">Modifier l'annonce</h1>
+        <p class="text-gray-500 mb-6">{{ property.title }}</p>
+        <div class="border border-gray-200 rounded-2xl p-6">
+            {{ include('host/property/_form.html.twig', { button_label: 'Enregistrer' }) }}
+        </div>
+    </main>
+{% endblock %}
