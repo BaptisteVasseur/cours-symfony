@@ -132,4 +132,76 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * Search with destination text, date range availability, and guest count.
+     * Uses a subquery to exclude properties with overlapping confirmed reservations
+     * and a subquery to exclude properties with manually blocked dates.
+     *
+     * @return list<Property>
+     */
+    public function findForSearch(
+        ?string $destination = null,
+        ?\DateTimeImmutable $checkin = null,
+        ?\DateTimeImmutable $checkout = null,
+        ?int $guests = null,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.addressLine1) LIKE :destination')
+                ->setParameter('destination', '%' . strtolower($destination) . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            // Exclude properties that have overlapping confirmed reservations
+            $qb->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        $this->getEntityManager()->createQueryBuilder()
+                            ->select('1')
+                            ->from(\App\Entity\Reservation::class, 'r2')
+                            ->where('r2.property = p')
+                            ->andWhere('r2.status = :confirmed')
+                            ->andWhere('r2.checkinDate < :checkout')
+                            ->andWhere('r2.checkoutDate > :checkin')
+                            ->getDQL()
+                    )
+                )
+            )
+            ->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        $this->getEntityManager()->createQueryBuilder()
+                            ->select('1')
+                            ->from(\App\Entity\PropertyAvailability::class, 'pa')
+                            ->where('pa.property = p')
+                            ->andWhere('pa.isAvailable = false')
+                            ->andWhere('pa.availableDate >= :checkin')
+                            ->andWhere('pa.availableDate < :checkout')
+                            ->getDQL()
+                    )
+                )
+            )
+            ->setParameter('confirmed', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }
