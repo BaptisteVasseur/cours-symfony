@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Reservation;
 use App\Entity\User;
+use App\Entity\Property;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -91,5 +92,48 @@ class ReservationRepository extends ServiceEntityRepository
             ->orderBy('r.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Retourne les réservations 'pending' pour les propriétés de cet hôte
+     *
+     * @return list<Reservation>
+     */
+    public function findPendingByHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    // Check if there is any confirmed reservation that overlaps with the given dates for the specified property
+    public function hasConfirmedReservationOverlap(
+        Property $property,
+        \DateTimeImmutable $checkinDate,
+        \DateTimeImmutable $checkoutDate
+    ): bool {
+        $count = (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate <= :checkoutDate')
+            ->andWhere('r.checkoutDate >= :checkinDate')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('checkinDate', $checkinDate)
+            ->setParameter('checkoutDate', $checkoutDate)
+            ->getQuery()
+            ->getSingleScalarResult();
+
+        return $count > 0;
     }
 }
