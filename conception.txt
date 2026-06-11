@@ -9,8 +9,11 @@ Le but de cette partie du projet est de realiser le coeur fonctionnel d'une plat
 - calculer un prix coherent
 - creer une reservation
 - permettre a l'hote de confirmer ou refuser une demande
+- permettre au voyageur ou a l'hote d'annuler une reservation
 - gerer le calendrier du logement
 - exporter et importer un calendrier iCal
+- envoyer les notifications transactionnelles de facon asynchrone
+- expirer automatiquement une demande pending apres 24h
 
 La logique metier ne doit pas etre dispersee dans les controleurs. Les controleurs doivent surtout gerer la requete HTTP, les formulaires et la redirection. Les decisions metier importantes doivent etre centralisees dans des services dedies.
 
@@ -64,6 +67,13 @@ Les statuts actuellement utilises dans le projet sont :
 - confirmed
 - completed
 - cancelled
+
+Le statut cancelled couvre plusieurs cas metier :
+
+- refus de l'hote
+- annulation par le voyageur
+- annulation par l'hote
+- expiration automatique d'une demande pending
 
 ReservationStatusHistory
 
@@ -197,7 +207,30 @@ Lors d'un refus :
 
 Cette conception protege le systeme contre le cas suivant : une demande etait valide au moment de sa creation, mais les dates ont ete prises entre temps.
 
-10. Gestion du calendrier par l'hote
+10. Annulation d'une reservation
+
+Le sujet demande aussi qu'une reservation puisse etre annulee par l'hote ou par le voyageur, avec motif obligatoire.
+
+Nous avons donc retenu la regle suivante :
+
+- une reservation pending peut etre annulee
+- une reservation confirmed peut etre annulee
+- une reservation completed ne peut plus etre annulee par ce flux
+- un motif d'annulation est toujours stocke
+
+La logique est centralisee dans ReservationStatusManager, afin d'eviter des comportements differents selon la page utilisee.
+
+Lors d'une annulation :
+
+- le statut passe a cancelled
+- le motif est enregistre
+- une ligne d'historique est ajoutee
+- les dates sont liberees immediatement puisque seules les reservations confirmed bloquent reellement la disponibilite
+- une notification asynchrone est envoyee aux parties concernees
+
+Ce point est important : il n'est pas necessaire de supprimer la reservation pour liberer le calendrier. Il suffit de sortir la reservation de l'etat confirmed.
+
+11. Gestion du calendrier par l'hote
 
 La gestion manuelle du calendrier est prise en charge par PropertyAvailabilityManager.
 
@@ -216,7 +249,7 @@ Le choix de modeliser ces regles jour par jour dans PropertyAvailability est per
 
 Quand l'hote remet une plage en disponible sans autre regle, les lignes manuelles inutiles sont supprimees. Cela evite de surcharger la base avec des entrees sans valeur metier.
 
-11. Construction du calendrier visuel
+12. Construction du calendrier visuel
 
 L'affichage mensuel du calendrier repose sur PropertyAvailabilityCalendarBuilder.
 
@@ -243,7 +276,7 @@ Ce choix de conception est utile pour l'interface hote, car il permet de disting
 - un jour bloque manuellement
 - un jour bloque par import iCal
 
-12. Conception de la recherche
+13. Conception de la recherche
 
 La recherche frontale est centralisee dans PropertySearchService.
 
@@ -261,7 +294,7 @@ Le point important est que la recherche ne repose pas sur une logique simplifiee
 - le formulaire de reservation
 - la confirmation par l'hote
 
-13. Conception de l'export iCal
+14. Conception de l'export iCal
 
 L'export iCal a ete pense comme un flux securise par token.
 
@@ -282,7 +315,7 @@ Les evenements iCal contiennent les informations minimales utiles :
 - DESCRIPTION
 - STATUS
 
-14. Conception de l'import iCal
+15. Conception de l'import iCal
 
 L'import iCal permet de bloquer localement des dates venant d'une autre plateforme.
 
@@ -308,18 +341,137 @@ La synchronisation est actuellement declenchee :
 
 Donc la mise a jour n'est pas automatique en continu. Si plus tard on veut une synchronisation reguliere, il suffira d'executer cette commande via cron ou scheduler.
 
-15. Priorite des sources de blocage
+16. Concurrence et prevention du double booking
+
+Le cas le plus sensible est celui de deux utilisateurs qui tentent de finaliser en meme temps la meme periode pour le meme logement.
+
+Sans protection supplementaire, le risque est le suivant :
+
+1. les deux requetes lisent un etat encore disponible
+2. les deux pensent pouvoir confirmer
+3. les deux ecrivent presque en meme temps
+4. on obtient un double booking
+
+La bonne reponse de conception est donc la suivante :
+
+- la validation finale ne doit pas reposer uniquement sur une verification faite avant paiement
+- il faut refaire une verification juste au moment critique
+- cette verification finale doit idealement etre executee dans une transaction base de donnees
+
+Le scenario cible est :
+
+1. ouvrir une transaction
+2. relire le logement et les reservations concernees avec verrouillage d'ecriture
+3. reexecuter la verification de chevauchement
+4. si un conflit apparait, annuler la transaction
+5. sinon, enregistrer la reservation ou la confirmation puis valider la transaction
+
+Dans l'etat actuel du projet, nous avons deja une reverification metier au moment de la confirmation d'une demande pending par l'hote. Cela reduit le risque fonctionnel. En revanche, pour gerer de facon totalement robuste deux validations simultanees a la milliseconde pres, l'evolution naturelle est d'ajouter une transaction Doctrine avec verrouillage pessimiste lors de la phase finale de confirmation/paiement.
+
+17. Performance de la verification de disponibilite
+
+Verifier 20 nuits consecutives ne doit pas produire 20 requetes SQL.
+
+Le choix retenu est de travailler par plage de dates avec un nombre fixe de requetes, independant du nombre de nuits :
+
+- une requete pour savoir s'il existe deja une reservation confirmed qui chevauche la periode
+- une requete pour charger les overrides de PropertyAvailability sur toute la plage
+- puis un traitement en memoire pour analyser les jours bloques, les tarifs personnalises et la duree minimale de sejour
+
+Autrement dit, on ne demande pas a la base :
+
+- "le 10 est-il libre ?"
+- puis "le 11 est-il libre ?"
+- puis "le 12 est-il libre ?"
+
+On lui demande plutot :
+
+- "donne-moi tous les conflits de reservation sur cette plage"
+- "donne-moi toutes les exceptions de calendrier sur cette plage"
+
+Cette approche est bien plus efficace car :
+
+- le nombre de requetes reste stable
+- la base filtre les donnees utiles
+- le PHP ne traite que les lignes pertinentes
+
+Le calcul du prix suit la meme logique : on charge les overrides de la plage une seule fois, puis on calcule les nuits en memoire.
+
+Pour tenir la charge sur un vrai volume de donnees, il est egalement pertinent d'avoir des index adaptes sur les champs de recherche temporelle, notamment :
+
+- reservations : logement + dates
+- property_availability : logement + available_date
+
+18. Asynchronisme et notifications
+
+L'envoi d'email doit preferentiellement intervenir apres le flush() de l'ORM.
+
+La raison est simple : avant le flush, l'etat metier n'est pas encore garanti en base. Si on envoie un email trop tot, on peut envoyer :
+
+- une confirmation pour une reservation qui sera finalement rollback
+- une notification avec un identifiant non encore persiste
+- un message incoherent par rapport a l'etat reel de la base
+
+Le bon enchainement conceptuel est donc :
+
+1. creer ou modifier la reservation
+2. flush les donnees
+3. seulement apres cela, declencher la notification asynchrone
+
+Concernant la panne de RabbitMQ, la strategie doit toujours prevoir un filet de securite. Dans ce projet, la configuration Messenger actuelle utilise deja un transport Doctrine, avec retries et failure transport. C'est une bonne base de resilience car :
+
+- les messages peuvent rester stockes en base
+- les echecs temporaires peuvent etre retentes
+- les messages en echec peuvent etre isoles puis retraites
+
+Donc la reponse attendue est la suivante :
+
+- si RabbitMQ etait utilise et tombait en panne, il ne faudrait pas perdre les notifications
+- il faut prevoir un transport de secours ou un stockage persistant
+- les handlers doivent rester rejouables
+- les messages definitivement en echec doivent aller dans une file failed
+
+Dans l'etat actuel du projet, le choix du transport Doctrine repond deja bien a cette exigence de robustesse pour l'environnement de developpement et pour une premiere version du sujet.
+
+Concretement, nous avons separe deux responsabilites :
+
+- ReservationNotificationDispatcher decide quel message asynchrone envoyer apres une creation, une confirmation, un refus, une annulation ou une expiration
+- les handlers Messenger envoient ensuite les emails vers Mailpit
+
+Cette separation est saine car la logique metier n'envoie pas directement les emails. Elle se contente de decrire l'evenement metier survenu.
+
+19. Expiration automatique des demandes pending
+
+Le bonus G.1 demande qu'une reservation pending expire automatiquement apres 24h si elle n'est pas confirmee.
+
+Le mecanisme retenu est le suivant :
+
+1. a la creation d'une reservation pending, on envoie immediatement un message de notification a l'hote
+2. dans le meme temps, on planifie un message ExpirePendingReservationMessage avec un delai de 24h
+3. lorsque ce message est consomme par le worker, on reverifie que la reservation est toujours pending
+4. on reverifie aussi que son createdAt est bien plus ancien que 24h
+5. si ces conditions sont toujours vraies, la reservation passe a cancelled avec un motif systeme
+6. une ligne d'historique est ajoutee avec changedBy a null
+7. une notification est envoyee aux deux parties
+
+Ce schema est robuste car :
+
+- si l'hote confirme avant les 24h, le handler ne fera rien
+- si le voyageur annule avant les 24h, le handler ne fera rien
+- le worker ne depend pas d'un cron externe pour savoir quoi faire reservation par reservation
+
+20. Priorite des sources de blocage
 
 L'ordre metier retenu est le suivant :
 
 - une reservation confirmed prime comme indisponibilite reelle
-- un blocage manual bloque la date
+- un blocage manuel bloque la date
 - un blocage iCal importe bloque aussi la date
 - une reservation pending ne bloque pas la date
 
 Cette hierarchie est coherente avec le besoin du sujet : ne pas autoriser de double reservation, tout en conservant de la souplesse pour les demandes non encore validees.
 
-16. Coherence globale du systeme
+21. Coherence globale du systeme
 
 Le coeur de la conception repose sur une idee simple : une seule verite metier pour la disponibilite.
 
@@ -333,7 +485,7 @@ Cette verite est ensuite reutilisee partout :
 
 Ce choix rend le module plus fiable, plus facile a maintenir et plus proche d'un comportement attendu sur une vraie plateforme de location.
 
-17. Conclusion
+22. Conclusion
 
 Pour cette partie du projet, nous avons retenu une conception volontairement propre et evolutive :
 
@@ -341,6 +493,9 @@ Pour cette partie du projet, nous avons retenu une conception volontairement pro
 - les exceptions de calendrier sont stockees jour par jour
 - la verification de disponibilite est centralisee
 - la moderation hote recontrole la disponibilite avant confirmation
+- l'annulation voyageur ou hote conserve un motif et libere immediatement les dates
+- les emails transactionnels passent par Messenger puis Mailpit
+- les demandes pending peuvent expirer automatiquement apres 24h
 - l'iCal exporte les sejours confirmes
 - l'iCal importe des blocages externes reutilisables par tout le systeme
 

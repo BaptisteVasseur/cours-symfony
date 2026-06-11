@@ -1,0 +1,33 @@
+<html lang="fr">
+    <body style="font-family: Arial, sans-serif; color: #1f2937; line-height: 1.6; margin: 0; padding: 24px; background: #f9fafb;">
+        <div style="max-width: 640px; margin: 0 auto; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 16px; padding: 32px;">
+            <p style="margin: 0 0 8px; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; color: #6b7280;">Airbnb Clone</p>
+            <h1 style="margin: 0 0 16px; font-size: 28px; line-height: 1.2;">{{ title }}</h1>
+            <p style="margin: 0 0 24px; color: #4b5563;">{{ intro }}</p>
+
+            <div style="border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; margin-bottom: 24px; background: #f9fafb;">
+                <p style="margin: 0 0 8px;"><strong>Logement :</strong> {{ property.title }}</p>
+                <p style="margin: 0 0 8px;"><strong>Sejour :</strong> {{ reservation.checkinDate|date('d/m/Y') }} au {{ reservation.checkoutDate|date('d/m/Y') }}</p>
+                <p style="margin: 0 0 8px;"><strong>Voyageurs :</strong> {{ reservation.guestsCount }}</p>
+                <p style="margin: 0 0 8px;"><strong>Montant :</strong> {{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                <p style="margin: 0;"><strong>{{ counterpartLabel }} :</strong> {{ counterpartEmail }}</p>
+            </div>
+
+            {% if reason %}
+                <div style="margin-bottom: 20px; padding: 16px; border-radius: 12px; background: #fef2f2; color: #991b1b;">
+                    <strong>Motif :</strong> {{ reason }}
+                </div>
+            {% endif %}
+
+            {% if initiatorLabel %}
+                <p style="margin: 0 0 20px; color: #6b7280;">{{ initiatorLabel }}</p>
+            {% endif %}
+
+            <p style="margin: 0 0 24px;">
+                <a href="{{ actionUrl }}" style="display: inline-block; background: #e11d48; color: #ffffff; text-decoration: none; padding: 12px 18px; border-radius: 999px; font-weight: 700;">{{ actionLabel }}</a>
+            </p>
+
+            <p style="margin: 0; font-size: 14px; color: #6b7280;">Cet email a ete envoye automatiquement depuis la plateforme.</p>
+        </div>
+    </body>
+</html>

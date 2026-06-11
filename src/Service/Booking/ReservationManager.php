@@ -9,6 +9,7 @@ use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Exception\BookingException;
+use App\Service\ReservationNotificationDispatcher;
 use Doctrine\ORM\EntityManagerInterface;
 
 final class ReservationManager
@@ -17,6 +18,7 @@ final class ReservationManager
         private EntityManagerInterface $entityManager,
         private PropertyAvailabilityService $propertyAvailabilityService,
         private BookingPricingService $bookingPricingService,
+        private ReservationNotificationDispatcher $reservationNotificationDispatcher,
     ) {
     }
 
@@ -56,6 +58,7 @@ final class ReservationManager
         $this->entityManager->persist($reservation);
         $this->entityManager->persist($history);
         $this->entityManager->flush();
+        $this->reservationNotificationDispatcher->dispatchReservationCreated($reservation);
 
         return $reservation;
     }
