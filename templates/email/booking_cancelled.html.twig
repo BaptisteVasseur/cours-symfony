@@ -1,0 +1,13 @@
+{% extends 'email/_layout.html.twig' %}
+
+{% block heading %}Réservation annulée{% endblock %}
+
+{% block intro %}
+    <p>La réservation a été annulée. Les dates ont été libérées dans le calendrier du logement.</p>
+{% endblock %}
+
+{% block extra %}
+    {% if reservation.cancellationReason %}
+        <p style="font-size: 14px;"><strong>Motif :</strong> {{ reservation.cancellationReason }}</p>
+    {% endif %}
+{% endblock %}

@@ -23,4 +23,7 @@ framework:
 #            Symfony\Component\Notifier\Message\SmsMessage: async
 
             # Route your messages to the transports
-            # 'App\Message\YourMessage': async
+            App\Message\BookingRequestedNotification: async
+            App\Message\BookingConfirmedNotification: async
+            App\Message\BookingRejectedNotification: async
+            App\Message\BookingCancelledNotification: async

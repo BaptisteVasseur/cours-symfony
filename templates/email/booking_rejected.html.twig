@@ -1,0 +1,13 @@
+{% extends 'email/_layout.html.twig' %}
+
+{% block heading %}Demande refusée{% endblock %}
+
+{% block intro %}
+    <p>Votre demande de réservation n'a pas pu être acceptée par l'hôte.</p>
+{% endblock %}
+
+{% block extra %}
+    {% if reservation.cancellationReason %}
+        <p style="font-size: 14px;"><strong>Motif :</strong> {{ reservation.cancellationReason }}</p>
+    {% endif %}
+{% endblock %}
