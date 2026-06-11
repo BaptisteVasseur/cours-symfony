@@ -125,7 +125,7 @@ class BookingRepository extends ServiceEntityRepository
             ->getOneOrNullResult();
     }
 
-    public function sumCompletedRevenue(): float
+    public function sumCompletedRevenue(): string
     {
         $result = $this->createQueryBuilder('r')
             ->select('SUM(r.totalPrice)')
@@ -134,7 +134,7 @@ class BookingRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
 
-        return $result !== null ? (float) $result : 0.0;
+        return $result !== null ? (string) $result : '0.00';
     }
 
     /**
@@ -186,7 +186,7 @@ class BookingRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function sumConfirmedRevenueByHost(User $host): float
+    public function sumConfirmedRevenueByHost(User $host): string
     {
         $result = $this->createQueryBuilder('r')
             ->select('SUM(r.totalPrice)')
@@ -198,7 +198,7 @@ class BookingRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
 
-        return $result !== null ? (float) $result : 0.0;
+        return $result !== null ? (string) $result : '0.00';
     }
 
     public function countPendingReservationsByHost(User $host): int

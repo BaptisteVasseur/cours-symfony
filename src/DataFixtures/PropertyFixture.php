@@ -231,7 +231,17 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
             $availability->setProperty($property);
             $availability->setAvailableDate(new \DateTimeImmutable(sprintf('+%d days', $day)));
             $availability->setIsAvailable($day % 7 !== 0);
-            $availability->setPriceOverride($day % 5 === 0 ? (string) ((float) $price * 1.2) : null);
+            $priceOverride = null;
+            if ($day % 5 === 0) {
+                $normalized = str_replace(',', '.', trim($price));
+                $parts = explode('.', $normalized, 2);
+                $major = preg_replace('/\D/', '', $parts[0]) ?: '0';
+                $minor = isset($parts[1]) ? substr(str_pad(preg_replace('/\D/', '', $parts[1]) ?: '0', 2, '0'), 0, 2) : '00';
+                $cents = ((int) $major * 100) + (int) $minor;
+                $newCents = intdiv($cents * 120, 100);
+                $priceOverride = sprintf('%d.%02d', intdiv($newCents, 100), $newCents % 100);
+            }
+            $availability->setPriceOverride($priceOverride);
             $availability->setMinimumStay($day % 10 === 0 ? 3 : 1);
             $manager->persist($availability);
         }

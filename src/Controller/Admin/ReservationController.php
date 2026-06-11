@@ -24,12 +24,20 @@ final class ReservationController extends AbstractController
     {
         $reservations = $reservationRepository->findAllForListing();
 
-        $revenue = 0.0;
+        $revenueCents = 0;
         foreach ($reservations as $reservation) {
             if (in_array($reservation->getStatus(), ['confirmed', 'completed'], true)) {
-                $revenue += (float) $reservation->getTotalPrice();
+                $totalPrice = $reservation->getTotalPrice();
+                $normalized = str_replace(',', '.', trim($totalPrice));
+                if ($normalized !== '') {
+                    $parts = explode('.', $normalized, 2);
+                    $major = preg_replace('/\D/', '', $parts[0]) ?: '0';
+                    $minor = isset($parts[1]) ? substr(str_pad(preg_replace('/\D/', '', $parts[1]) ?: '0', 2, '0'), 0, 2) : '00';
+                    $revenueCents += ((int) $major * 100) + (int) $minor;
+                }
             }
         }
+        $revenue = sprintf('%d.%02d', intdiv($revenueCents, 100), $revenueCents % 100);
 
         return $this->render('admin/reservation/index.html.twig', [
             'reservations' => $reservations,
