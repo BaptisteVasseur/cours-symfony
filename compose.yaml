@@ -61,7 +61,12 @@ services:
       database:
         condition: service_healthy
     command: >
-      sh -c "php bin/console messenger:consume async -vv --time-limit=3600"
+      sh -c "while true; do
+        php bin/console app:reservation:expire-pending --no-interaction;
+        php bin/console app:reservation:complete-past --no-interaction;
+        php bin/console app:ical:sync --no-interaction;
+        php bin/console messenger:consume async -vv --time-limit=3600;
+      done"
 
 
 #  nginx:

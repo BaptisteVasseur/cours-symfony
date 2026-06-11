@@ -132,4 +132,57 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @return list<Property>
+     */
+    public function searchAvailable(
+        ?string $destination = null,
+        ?\DateTimeImmutable $checkin = null,
+        ?\DateTimeImmutable $checkout = null,
+        ?int $guests = null,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :published')
+            ->setParameter('published', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere(
+                'LOWER(a.city) LIKE :destination OR LOWER(a.country) LIKE :destination OR LOWER(a.addressLine1) LIKE :destination OR LOWER(p.title) LIKE :destination',
+            )->setParameter('destination', '%' . mb_strtolower($destination) . '%');
+        }
+
+        if ($checkin !== null && $checkout !== null && $checkin < $checkout) {
+            $qb->andWhere('NOT EXISTS (
+                SELECT 1 FROM App\Entity\PropertyAvailability av
+                WHERE av.property = p
+                AND av.isAvailable = false
+                AND av.availableDate >= :checkin
+                AND av.availableDate < :checkout
+            )')
+                ->andWhere('NOT EXISTS (
+                SELECT 1 FROM App\Entity\Reservation r
+                WHERE r.property = p
+                AND r.status = :confirmed
+                AND r.checkinDate < :checkout
+                AND r.checkoutDate > :checkin
+            )')
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout)
+                ->setParameter('confirmed', 'confirmed');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }

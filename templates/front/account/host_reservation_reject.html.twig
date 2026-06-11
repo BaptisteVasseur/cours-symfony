@@ -1,0 +1,18 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-lg mx-auto w-full">
+        <h1 class="text-2xl font-semibold mb-6">Refuser la demande</h1>
+        {{ form_start(form) }}
+            {{ form_row(form.reason) }}
+            <div class="flex gap-3 mt-6">
+                <button type="submit" class="px-4 py-2 bg-red-600 text-white rounded-lg font-semibold hover:bg-red-700 transition">
+                    Confirmer le refus
+                </button>
+                <a href="{{ path('app_host_reservation_index') }}" class="px-4 py-2 border border-gray-300 rounded-lg font-semibold hover:bg-gray-50 transition">
+                    Annuler
+                </a>
+            </div>
+        {{ form_end(form) }}
+    </main>
+{% endblock %}

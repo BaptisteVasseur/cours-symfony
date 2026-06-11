@@ -1,0 +1,43 @@
+{% use "form_div_layout.html.twig" %}
+
+{%- block form_errors -%}
+    {%- if errors|length > 0 -%}
+        <ul class="mt-1 space-y-1">
+            {%- for error in errors -%}
+                <li class="text-sm text-red-600">{{ error.message }}</li>
+            {%- endfor -%}
+        </ul>
+    {%- endif -%}
+{%- endblock form_errors -%}
+
+{%- block form_label -%}
+    {%- if label is not same as(false) -%}
+        {%- set label_attr = label_attr|merge({ class: (label_attr.class|default('') ~ ' block text-sm font-semibold text-gray-900')|trim }) -%}
+    {%- endif -%}
+    {{- parent() -}}
+{%- endblock form_label -%}
+
+{%- block form_widget_simple -%}
+    {%- set attr = attr|merge({ class: (attr.class|default('') ~ ' w-full border border-gray-300 rounded-xl px-4 py-3 text-sm')|trim }) -%}
+    {{- parent() -}}
+{%- endblock form_widget_simple -%}
+
+{%- block textarea_widget -%}
+    {%- set attr = attr|merge({ class: (attr.class|default('') ~ ' w-full border border-gray-300 rounded-xl px-4 py-3 text-sm')|trim }) -%}
+    {{- parent() -}}
+{%- endblock textarea_widget -%}
+
+{%- block choice_widget_collapsed -%}
+    {%- set attr = attr|merge({ class: (attr.class|default('') ~ ' w-full border border-gray-300 rounded-xl px-4 py-3 text-sm bg-white')|trim }) -%}
+    {{- parent() -}}
+{%- endblock choice_widget_collapsed -%}
+
+{%- block checkbox_widget -%}
+    {%- set attr = attr|merge({ class: (attr.class|default('') ~ ' rounded border-gray-300 text-brand focus:ring-brand')|trim }) -%}
+    {{- parent() -}}
+{%- endblock checkbox_widget -%}
+
+{%- block form_row -%}
+    {%- set row_attr = row_attr|merge({ class: (row_attr.class|default('') ~ ' space-y-2')|trim }) -%}
+    {{- parent() -}}
+{%- endblock form_row -%}

@@ -1,0 +1,81 @@
+{% extends 'layout/app.html.twig' %}
+
+{% form_theme form 'form/front_theme.html.twig' %}
+
+{% block title %}{{ pageTitle }}{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-3xl mx-auto w-full">
+        <div class="mb-8">
+            <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 transition mb-4">
+                <i class="fa-solid fa-arrow-left text-xs"></i>
+                Retour à mes propriétés
+            </a>
+            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">{{ pageTitle }}</h1>
+            <p class="text-gray-500">{{ pageDescription }}</p>
+        </div>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium {% if label == 'error' %}bg-red-50 text-red-800 border border-red-200{% else %}bg-emerald-50 text-emerald-800 border border-emerald-200{% endif %}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {% if form.vars.submitted and not form.vars.valid %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium bg-red-50 text-red-800 border border-red-200">
+                Le formulaire contient des erreurs. Vérifiez les champs signalés ci-dessous.
+            </div>
+        {% endif %}
+
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+            {{ form_start(form, { attr: { class: 'space-y-6', novalidate: 'novalidate' } }) }}
+                {{ form_errors(form) }}
+
+                <div class="space-y-5">
+                    <h2 class="text-sm font-bold text-gray-900 pb-2 border-b border-gray-100">Informations générales</h2>
+                    {{ form_row(form.title) }}
+                    {{ form_row(form.description) }}
+                    {{ form_row(form.propertyType) }}
+                    {{ form_row(form.cancellationPolicy) }}
+                </div>
+
+                <div class="space-y-5">
+                    <h2 class="text-sm font-bold text-gray-900 pb-2 border-b border-gray-100">Capacité</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        {{ form_row(form.maxGuests) }}
+                        {{ form_row(form.bedrooms) }}
+                        {{ form_row(form.beds) }}
+                        {{ form_row(form.bathrooms) }}
+                    </div>
+                </div>
+
+                <div class="space-y-5">
+                    <h2 class="text-sm font-bold text-gray-900 pb-2 border-b border-gray-100">Tarifs</h2>
+                    {{ form_row(form.pricePerNight) }}
+                    <div class="grid grid-cols-2 gap-4">
+                        {{ form_row(form.cleaningFee) }}
+                        {{ form_row(form.securityDeposit) }}
+                    </div>
+                </div>
+
+                <div class="space-y-5">
+                    <h2 class="text-sm font-bold text-gray-900 pb-2 border-b border-gray-100">Arrivée & départ</h2>
+                    <div class="grid grid-cols-2 gap-4">
+                        {{ form_row(form.checkinTime) }}
+                        {{ form_row(form.checkoutTime) }}
+                    </div>
+                    {{ form_row(form.instantBooking, { row_attr: { class: 'flex items-center gap-3 space-y-0' } }) }}
+                </div>
+
+                <div class="flex items-center gap-3 pt-4 border-t border-gray-100">
+                    <button type="submit" class="bg-brand hover:bg-brandHover text-white font-semibold px-6 py-3 rounded-xl transition">
+                        {{ submitLabel }}
+                    </button>
+                    <a href="{{ path('app_account_properties') }}" class="text-sm font-semibold text-gray-600 hover:text-gray-900 px-4 py-3 rounded-xl hover:bg-gray-100 transition">
+                        Annuler
+                    </a>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </main>
+{% endblock %}

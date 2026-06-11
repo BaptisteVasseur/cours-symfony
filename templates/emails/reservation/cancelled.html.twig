@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html lang="fr">
+<body style="font-family: sans-serif; color: #222;">
+    <h1>Réservation annulée</h1>
+    <p>La réservation pour <strong>{{ property.title }}</strong> a été annulée.</p>
+    {% if reservation.cancellationReason %}
+        <p><strong>Motif :</strong> {{ reservation.cancellationReason }}</p>
+    {% endif %}
+    <p><a href="{{ reservationUrl }}">Voir le détail</a></p>
+</body>
+</html>
