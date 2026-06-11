@@ -1,0 +1,89 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Disponibilités — {{ property.title }}{% endblock %}
+
+{% block content %}
+    {% set frMonths = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'] %}
+    <style>
+        .calendar { border-collapse: collapse; width: 100%; max-width: 640px; }
+        .calendar th, .calendar td { border: 1px solid #ddd; text-align: center; padding: .5rem; height: 2.4rem; }
+        .calendar td.free { background: #f3fbf4; }
+        .calendar td.reserved { background: #fde8e8; color: #9b1c1c; }
+        .calendar td.blocked { background: #fef3c7; color: #92400e; }
+        .calendar td.empty { background: #fafafa; }
+        .legend span { display: inline-block; padding: .15rem .5rem; margin-right: .5rem; border-radius: .25rem; }
+        .legend .reserved { background: #fde8e8; color: #9b1c1c; }
+        .legend .blocked { background: #fef3c7; color: #92400e; }
+        .legend .free { background: #f3fbf4; }
+        .cal-nav { display: flex; align-items: center; gap: 1rem; margin-bottom: .75rem; }
+    </style>
+
+    <h1>Disponibilités — {{ property.title }}</h1>
+
+    <section>
+        <div class="cal-nav">
+            <a href="{{ path('app_host_availability_index', { id: property.id, month: prevMonth }) }}">← Mois précédent</a>
+            <strong>{{ frMonths[month|date('n')] }} {{ month|date('Y') }}</strong>
+            <a href="{{ path('app_host_availability_index', { id: property.id, month: nextMonth }) }}">Mois suivant →</a>
+        </div>
+
+        <table class="calendar">
+            <thead>
+                <tr>
+                    <th>Lun</th><th>Mar</th><th>Mer</th><th>Jeu</th><th>Ven</th><th>Sam</th><th>Dim</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for week in weeks %}
+                    <tr>
+                        {% for cell in week %}
+                            {% if cell is null %}
+                                <td class="empty"></td>
+                            {% else %}
+                                <td class="{{ cell.state }}">{{ cell.day }}</td>
+                            {% endif %}
+                        {% endfor %}
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <p class="legend">
+            <span class="free">Libre</span>
+            <span class="reserved">Réservé (confirmé)</span>
+            <span class="blocked">Bloqué par l'hôte</span>
+        </p>
+    </section>
+
+    <section>
+        <h2>Déclarer une période d'indisponibilité</h2>
+        {{ form_start(form) }}
+            {{ form_row(form.startDate) }}
+            {{ form_row(form.endDate) }}
+            {{ form_row(form.reason) }}
+            {{ form_row(form.note) }}
+            <button type="submit">Bloquer la période</button>
+        {{ form_end(form) }}
+    </section>
+
+    <section>
+        <h2>Périodes bloquées ce mois-ci</h2>
+        {% if unavailabilities is empty %}
+            <p>Aucune période bloquée sur ce mois.</p>
+        {% else %}
+            <ul>
+                {% for u in unavailabilities %}
+                    <li>
+                        Du {{ u.startDate|date('d/m/Y') }} au {{ u.endDate|date('d/m/Y') }} (exclu)
+                        — {{ u.reason.label }}
+                        {% if u.note %}— {{ u.note }}{% endif %}
+                        <form method="post" action="{{ path('app_host_availability_delete', { id: property.id, unavailabilityId: u.id }) }}" style="display:inline">
+                            <input type="hidden" name="_token" value="{{ csrf_token('delete_unavailability_' ~ u.id) }}">
+                            <button type="submit">Supprimer</button>
+                        </form>
+                    </li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    </section>
+{% endblock %}

@@ -10,7 +10,14 @@
         {% if properties|length > 0 %}
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for property in properties %}
-                    {% include 'components/card.html.twig' with { property: property } %}
+                    <div class="flex flex-col gap-3">
+                        {% include 'components/card.html.twig' with { property: property } %}
+                        <a href="{{ path('app_host_availability_index', { id: property.id }) }}"
+                           class="inline-flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition">
+                            <i class="fa-regular fa-calendar"></i>
+                            Gérer les disponibilités
+                        </a>
+                    </div>
                 {% endfor %}
             </div>
         {% else %}
