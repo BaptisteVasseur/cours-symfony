@@ -14,6 +14,7 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use Symfony\Component\Routing\Generator\UrlGeneratorInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/hote/logement/{id}')]
@@ -130,6 +131,46 @@ final class HostCalendarController extends AbstractController
         }
 
         return $this->redirectToCalendar($property, $date);
+    }
+
+    #[Route('/ical/generer', name: 'app_host_ical_generate', methods: ['POST'])]
+    public function generateIcalToken(
+        Property $property,
+        Request $request,
+        EntityManagerInterface $em,
+    ): Response {
+        $this->denyAccessUnlessGranted('PROPERTY_EDIT', $property);
+
+        if (!$this->isCsrfTokenValid('ical_token_' . $property->getId(), $request->request->getString('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF invalide.');
+        }
+
+        $property->setIcalToken(bin2hex(random_bytes(32)));
+        $em->flush();
+
+        $this->addFlash('success', 'Lien iCal généré.');
+
+        return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
+    }
+
+    #[Route('/ical/revoquer', name: 'app_host_ical_revoke', methods: ['POST'])]
+    public function revokeIcalToken(
+        Property $property,
+        Request $request,
+        EntityManagerInterface $em,
+    ): Response {
+        $this->denyAccessUnlessGranted('PROPERTY_EDIT', $property);
+
+        if (!$this->isCsrfTokenValid('ical_token_' . $property->getId(), $request->request->getString('_token'))) {
+            throw $this->createAccessDeniedException('Token CSRF invalide.');
+        }
+
+        $property->setIcalToken(null);
+        $em->flush();
+
+        $this->addFlash('success', 'Lien iCal révoqué.');
+
+        return $this->redirectToRoute('app_host_calendar', ['id' => $property->getId()]);
     }
 
     private function denyAccessUnlessGrantedCsrf(Request $request): void

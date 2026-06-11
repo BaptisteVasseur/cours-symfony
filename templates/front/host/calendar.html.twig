@@ -80,7 +80,7 @@
         </div>
 
         {# Formulaire bloquer une période #}
-        <div class="border border-gray-200 rounded-xl p-6">
+        <div class="border border-gray-200 rounded-xl p-6 mb-6">
             <h2 class="text-lg font-semibold mb-4">Bloquer une période</h2>
             <form method="post" action="{{ path('app_host_calendar_block', {id: property.id}) }}" class="flex flex-wrap gap-4 items-end">
                 <input type="hidden" name="_token" value="{{ csrf_token('host_calendar') }}">
@@ -96,6 +96,41 @@
                     Bloquer
                 </button>
             </form>
+        </div>
+
+        {# Synchronisation iCal #}
+        <div class="border border-gray-200 rounded-xl p-6">
+            <h2 class="text-lg font-semibold mb-1">Synchronisation iCal</h2>
+            <p class="text-sm text-gray-500 mb-4">Exportez votre calendrier vers Google Calendar, Outlook ou tout autre agenda compatible iCal.</p>
+
+            {% if property.icalToken %}
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-4">
+                    <p class="text-xs text-gray-500 mb-2 font-medium">URL de synchronisation</p>
+                    <div class="flex items-center gap-2">
+                        <code class="text-xs bg-white border border-gray-200 rounded px-3 py-2 flex-1 break-all select-all">{{ url('app_property_ical_export', {id: property.id}) }}?token={{ property.icalToken }}</code>
+                        <button
+                            onclick="navigator.clipboard.writeText('{{ url('app_property_ical_export', {id: property.id}) }}?token={{ property.icalToken }}')"
+                            class="shrink-0 border border-gray-300 rounded-lg px-3 py-2 text-sm hover:bg-gray-100 transition"
+                            title="Copier"
+                        >
+                            <i class="fa-regular fa-copy"></i>
+                        </button>
+                    </div>
+                </div>
+                <form method="post" action="{{ path('app_host_ical_revoke', {id: property.id}) }}" onsubmit="return confirm('Révoquer le lien iCal ? Les agendas déjà connectés ne se synchroniseront plus.')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('ical_token_' ~ property.id) }}">
+                    <button type="submit" class="text-sm text-red-600 hover:underline">
+                        <i class="fa-solid fa-ban mr-1"></i>Révoquer le lien
+                    </button>
+                </form>
+            {% else %}
+                <form method="post" action="{{ path('app_host_ical_generate', {id: property.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('ical_token_' ~ property.id) }}">
+                    <button type="submit" class="bg-brand text-white px-5 py-2 rounded-lg text-sm font-semibold hover:bg-brandHover transition">
+                        <i class="fa-solid fa-link mr-2"></i>Générer le lien iCal
+                    </button>
+                </form>
+            {% endif %}
         </div>
 
     </main>
