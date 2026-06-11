@@ -20,8 +20,19 @@ final class Version20260611105300 extends AbstractMigration
         $this->addSql('CREATE INDEX idx_avail_block_external_uid ON availability_block (property_id, external_uid)');
         $this->addSql('ALTER TABLE properties ADD ical_token VARCHAR(64) DEFAULT NULL');
         $this->addSql('ALTER TABLE properties ADD external_ical_url VARCHAR(500) DEFAULT NULL');
-        $this->addSql("UPDATE properties SET ical_token = md5(id::text) || md5(id::text || '-ical') WHERE ical_token IS NULL");
         $this->addSql('CREATE UNIQUE INDEX UNIQ_87C331C79F0C901D ON properties (ical_token)');
+    }
+
+    public function postUp(Schema $schema): void
+    {
+        $properties = $this->connection->fetchAllAssociative('SELECT id FROM properties WHERE ical_token IS NULL');
+        foreach ($properties as $property) {
+            $token = bin2hex(random_bytes(32));
+            $this->connection->executeStatement(
+                'UPDATE properties SET ical_token = :token WHERE id = :id',
+                ['token' => $token, 'id' => $property['id']]
+            );
+        }
     }
 
     public function down(Schema $schema): void
