@@ -2,15 +2,17 @@
 
 namespace App\Service;
 
-use App\Entity\Disponibilite;
 use App\Entity\Logement;
 use App\Entity\User;
-use App\Enum\DisponibiliteStatut;
 use App\Enum\LogementStatut;
 use App\Enum\UserStatut;
 
 class DemandeReservationValidator
 {
+    public function __construct(private readonly DisponibiliteService $disponibilites)
+    {
+    }
+
     /**
      * @return list<string>
      */
@@ -55,9 +57,9 @@ class DemandeReservationValidator
             $motifs[] = 'Le nombre de voyageurs depasse la capacite du logement.';
         }
 
-        if ($this->normaliserDate($dateArrivee) >= $this->normaliserDate($dateDepart)) {
+        if (!$this->disponibilites->plageValide($dateArrivee, $dateDepart)) {
             $motifs[] = 'La date de depart doit etre apres la date d arrivee.';
-        } elseif (!$this->datesDisponibles($logement, $dateArrivee, $dateDepart)) {
+        } elseif (!$this->disponibilites->estDisponible($logement, $dateArrivee, $dateDepart)) {
             $motifs[] = 'Le logement n est pas disponible sur toute la periode demandee.';
         }
 
@@ -92,39 +94,4 @@ class DemandeReservationValidator
         return $a === $b;
     }
 
-    private function datesDisponibles(
-        Logement $logement,
-        \DateTimeInterface $dateArrivee,
-        \DateTimeInterface $dateDepart,
-    ): bool {
-        $disponibilites = [];
-
-        foreach ($logement->disponibilites as $disponibilite) {
-            \assert($disponibilite instanceof Disponibilite);
-
-            if ($disponibilite->statut !== DisponibiliteStatut::DISPONIBLE) {
-                continue;
-            }
-
-            $disponibilites[$this->normaliserDate($disponibilite->date)->format('Y-m-d')] = true;
-        }
-
-        $date = $this->normaliserDate($dateArrivee);
-        $depart = $this->normaliserDate($dateDepart);
-
-        while ($date < $depart) {
-            if (!isset($disponibilites[$date->format('Y-m-d')])) {
-                return false;
-            }
-
-            $date = $date->modify('+1 day');
-        }
-
-        return true;
-    }
-
-    private function normaliserDate(\DateTimeInterface $date): \DateTimeImmutable
-    {
-        return \DateTimeImmutable::createFromInterface($date)->setTime(0, 0);
-    }
 }

@@ -2,8 +2,10 @@
 
 namespace App\Repository;
 
+use App\Entity\Logement;
 use App\Entity\Reservation;
 use App\Entity\User;
+use App\Enum\ReservationStatut;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -52,4 +54,30 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+    public function existeChevauchementConfirme(
+        Logement $logement,
+        \DateTimeInterface $dateArrivee,
+        \DateTimeInterface $dateDepart,
+        ?Reservation $reservationIgnoree = null,
+    ): bool {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.logement = :logement')
+            ->andWhere('r.statut = :statut')
+            ->andWhere('r.dateArrivee < :dateDepart')
+            ->andWhere('r.dateDepart > :dateArrivee')
+            ->setParameter('logement', $logement)
+            ->setParameter('statut', ReservationStatut::CONFIRMEE)
+            ->setParameter('dateArrivee', \DateTimeImmutable::createFromInterface($dateArrivee)->setTime(0, 0))
+            ->setParameter('dateDepart', \DateTimeImmutable::createFromInterface($dateDepart)->setTime(0, 0));
+
+        if ($reservationIgnoree?->id !== null) {
+            $qb
+                ->andWhere('r.id != :reservationIgnoree')
+                ->setParameter('reservationIgnoree', $reservationIgnoree->id);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult() > 0;
+    }
+
 }

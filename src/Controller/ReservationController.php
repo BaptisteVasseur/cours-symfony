@@ -6,11 +6,11 @@ use App\Entity\Logement;
 use App\Entity\Paiement;
 use App\Entity\Reservation;
 use App\Entity\User;
-use App\Enum\DisponibiliteStatut;
 use App\Enum\PaiementStatut;
 use App\Enum\ReservationStatut;
 use App\Repository\ReservationRepository;
 use App\Service\DemandeReservationValidator;
+use App\Service\DisponibiliteService;
 use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -67,7 +67,7 @@ class ReservationController extends AbstractController
     }
 
     #[Route('/mes-reservations/{id}/paiement/confirmer', name: 'app_reservation_payment_confirm', requirements: ['id' => '\d+'], methods: ['POST'])]
-    public function confirmPayment(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, NotificationService $notificationService): RedirectResponse
+    public function confirmPayment(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, NotificationService $notificationService, DisponibiliteService $disponibilites): RedirectResponse
     {
         $this->verifierAccesVoyageur($reservation);
 
@@ -99,12 +99,7 @@ class ReservationController extends AbstractController
         $reservation->statut = ReservationStatut::CONFIRMEE;
         $reservation->dateConfirmation = new \DateTimeImmutable();
 
-        foreach ($reservation->logement->disponibilites as $disponibilite) {
-            if ($disponibilite->date >= $reservation->dateArrivee && $disponibilite->date < $reservation->dateDepart) {
-                $disponibilite->statut = DisponibiliteStatut::RESERVEE;
-                $disponibilite->dateMiseAJour = new \DateTimeImmutable();
-            }
-        }
+        $disponibilites->reserverPeriode($reservation);
 
         $entityManager->persist($paiement);
         $notificationService->creer(
