@@ -27,19 +27,20 @@ final class AvailabilityManager
         }
 
         $count = 0;
-        foreach ($this->eachDay($from, $to) as $day) {
-            $key = $day->format('Y-m-d');
-            if (isset($existing[$key])) {
-                continue;
+        $cursor = $from;
+        while ($cursor <= $to) {
+            $key = $cursor->format('Y-m-d');
+            if (!isset($existing[$key])) {
+                $availability = new PropertyAvailability();
+                $availability->setProperty($property);
+                $availability->setAvailableDate($cursor);
+                $availability->setIsAvailable(false);
+                $availability->setSource('manual');
+                $this->em->persist($availability);
+                ++$count;
             }
 
-            $availability = new PropertyAvailability();
-            $availability->setProperty($property);
-            $availability->setAvailableDate($day);
-            $availability->setIsAvailable(false);
-            $availability->setSource('manual');
-            $this->em->persist($availability);
-            ++$count;
+            $cursor = $cursor->modify('+1 day');
         }
 
         $this->em->flush();
@@ -75,17 +76,5 @@ final class AvailabilityManager
         }
 
         return [$from, $to];
-    }
-
-    /**
-     * @return iterable<\DateTimeImmutable>
-     */
-    private function eachDay(\DateTimeImmutable $from, \DateTimeImmutable $to): iterable
-    {
-        $period = new \DatePeriod($from, new \DateInterval('P1D'), $to->modify('+1 day'));
-
-        foreach ($period as $day) {
-            yield \DateTimeImmutable::createFromInterface($day);
-        }
     }
 }

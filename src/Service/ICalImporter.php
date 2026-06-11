@@ -34,6 +34,7 @@ final class ICalImporter
 
         $content = $this->fetch($sync->getICalUrl());
         $events = $this->parse($content);
+        $confirmedReservations = $this->reservations->findConfirmedForProperty($property);
 
         $existing = [];
         foreach ($this->availabilities->findImportedForProperty($property) as $row) {
@@ -48,7 +49,7 @@ final class ICalImporter
             $uid = $event['uid'];
             $seenUids[$uid] = true;
 
-            foreach ($this->reservations->findConfirmedForProperty($property) as $reservation) {
+            foreach ($confirmedReservations as $reservation) {
                 if ($reservation->getCheckinDate() < $event['end'] && $reservation->getCheckoutDate() > $event['start']) {
                     $conflicts[] = sprintf(
                         'Conflit: événement distant %s (%s → %s) chevauche la réservation confirmée %s.',
@@ -61,7 +62,7 @@ final class ICalImporter
                 }
             }
 
-            $this->applyEvent($property, $event, $existing[$uid] ?? null);
+            $this->applyEvent($property, $event);
             ++$imported;
         }
 
@@ -159,7 +160,7 @@ final class ICalImporter
     /**
      * @param array{uid: string, start: \DateTimeImmutable, end: \DateTimeImmutable} $event
      */
-    private function applyEvent(Property $property, array $event, ?PropertyAvailability $sample): void
+    private function applyEvent(Property $property, array $event): void
     {
         $this->removeImportedDays($property, $event['uid']);
 
