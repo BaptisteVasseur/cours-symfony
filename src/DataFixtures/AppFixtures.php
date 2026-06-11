@@ -5,7 +5,10 @@ namespace App\DataFixtures;
 use App\Entity\AdminAction;
 use App\Entity\Amenity;
 use App\Entity\AuthProvider;
+use App\Entity\AvailabilityBlock;
 use App\Entity\Booking;
+use App\Entity\BookingHistory;
+use App\Enum\BookingStatus;
 use App\Entity\Conversation;
 use App\Entity\EmailVerification;
 use App\Entity\Listing;
@@ -304,6 +307,8 @@ class AppFixtures extends Fixture
 
         $bookings = [];
         foreach ($bookingsData as $data) {
+            $status = BookingStatus::from($data['status']);
+
             $b = (new Booking())
                 ->setListing($data['listing'])
                 ->setGuest($data['guest'])
@@ -317,15 +322,48 @@ class AppFixtures extends Fixture
                 ->setTaxesAmount($data['taxes'])
                 ->setTotalAmount($data['total'])
                 ->setCurrency('EUR')
-                ->setBookingStatus($data['status'])
+                ->setBookingStatus($status)
                 ->setCreatedAt($now);
-            if (in_array($data['status'], ['confirmed', 'completed'])) {
+            if (in_array($data['status'], ['confirmed', 'completed'], true)) {
                 $b->setConfirmedAt($now->modify('-1 day'));
             }
             $manager->persist($b);
+
+            $createdHistory = (new BookingHistory())
+                ->setStatus(BookingStatus::Pending)
+                ->setAuthor($data['guest'])
+                ->setComment('Demande de réservation envoyée.')
+                ->setCreatedAt($data['checkIn']->modify('-30 days'));
+            $b->addHistory($createdHistory);
+            $manager->persist($createdHistory);
+
+            if ($status !== BookingStatus::Pending) {
+                $confirmedHistory = (new BookingHistory())
+                    ->setStatus(BookingStatus::Confirmed)
+                    ->setAuthor($data['listing']->getHost())
+                    ->setComment('Demande acceptée par l\'hôte.')
+                    ->setCreatedAt($data['checkIn']->modify('-29 days'));
+                $b->addHistory($confirmedHistory);
+                $manager->persist($confirmedHistory);
+            }
+
             $bookings[] = $b;
         }
         [$bookingParis, $bookingNice, $bookingChamonix, $bookingBordeaux] = $bookings;
+
+        $blocksData = [
+            [$nice, $now->modify('+3 days'), $now->modify('+6 days'), 'Travaux de peinture'],
+            [$chamonix, $now->modify('+40 days'), $now->modify('+45 days'), 'Usage personnel'],
+        ];
+        foreach ($blocksData as [$listing, $start, $end, $reason]) {
+            $block = (new AvailabilityBlock())
+                ->setListing($listing)
+                ->setStartDate($start)
+                ->setEndDate($end)
+                ->setReason($reason)
+                ->setSource(AvailabilityBlock::SOURCE_MANUAL);
+            $manager->persist($block);
+        }
 
         $paymentsData = [
             [$bookingParis,  $carol, '385.00', '19.25', '346.50', 'succeeded', $now->modify('-20 days')],
