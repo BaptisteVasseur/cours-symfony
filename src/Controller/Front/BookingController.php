@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Property;
+use App\Entity\PropertyAvailability;
 use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
@@ -14,7 +15,9 @@ use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
+use App\Message\ReservationCreatedMessage;
 use App\Security\Voter\PropertyVoter;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[IsGranted('ROLE_USER')]
@@ -27,6 +30,7 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
+        MessageBusInterface $bus,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -44,13 +48,21 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_logement_detail', ['id' => $property->getId()]);
         }
 
-        $form = $this->createForm(BookingType::class);
+        $checkin  = $this->parseDate($request->query->get('checkin'));
+        $checkout = $this->parseDate($request->query->get('checkout'));
+        $guests   = max(1, min($property->getMaxGuests(), (int) ($request->query->get('guests') ?: 1)));
+
+        $form = $this->createForm(BookingType::class, [
+            'checkinDate'  => $checkin,
+            'checkoutDate' => $checkout,
+            'guestsCount'  => $guests,
+        ]);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
-            $data = $form->getData();
-            $checkin = $data['checkinDate'];
-            $checkout = $data['checkoutDate'];
+            $data        = $form->getData();
+            $checkin     = $data['checkinDate'];
+            $checkout    = $data['checkoutDate'];
             $guestsCount = (int) $data['guestsCount'];
 
             if ($checkin >= $checkout) {
@@ -58,7 +70,8 @@ final class BookingController extends AbstractController
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
-                    'form' => $form,
+                    'form'     => $form,
+                    'pricing'  => null,
                 ]);
             }
 
@@ -67,16 +80,12 @@ final class BookingController extends AbstractController
 
                 return $this->render('front/property/booking.html.twig', [
                     'property' => $property,
-                    'form' => $form,
+                    'form'     => $form,
+                    'pricing'  => null,
                 ]);
             }
 
-            $nights = (int) $checkin->diff($checkout)->days;
-            $nightlyRate = (float) $property->getPricePerNight();
-            $subtotal = $nightlyRate * $nights;
-            $cleaningFee = (float) ($property->getCleaningFee() ?? 0);
-            $serviceFee = round($subtotal * 0.12, 2);
-            $totalPrice = round($subtotal + $cleaningFee + $serviceFee, 2);
+            $pricing = $this->computePricing($property, $checkin, $checkout);
 
             $reservation = new Reservation();
             $reservation->setProperty($property);
@@ -85,23 +94,69 @@ final class BookingController extends AbstractController
             $reservation->setCheckoutDate($checkout);
             $reservation->setGuestsCount($guestsCount);
             $reservation->setStatus($property->isInstantBooking() ? 'confirmed' : 'pending');
-            $reservation->setTotalPrice((string) $totalPrice);
-            $reservation->setCleaningFee($cleaningFee > 0 ? (string) $cleaningFee : null);
-            $reservation->setServiceFee((string) $serviceFee);
+            $reservation->setTotalPrice((string) $pricing['total']);
+            $reservation->setCleaningFee($pricing['cleaningFee'] > 0 ? (string) $pricing['cleaningFee'] : null);
+            $reservation->setServiceFee((string) $pricing['serviceFee']);
             $reservation->setSecurityDeposit($property->getSecurityDeposit());
             $reservation->setCurrency('EUR');
 
             $entityManager->persist($reservation);
+
+            $cursor = $checkin;
+            while ($cursor < $checkout) {
+                $availability = new PropertyAvailability();
+                $availability->setProperty($property);
+                $availability->setReservation($reservation);
+                $availability->setOccupiedDate($cursor);
+                $entityManager->persist($availability);
+                $cursor = $cursor->modify('+1 day');
+            }
+
             $entityManager->flush();
 
-            $this->addFlash('success', 'Votre réservation a été enregistrée.');
+            $bus->dispatch(new ReservationCreatedMessage((string) $reservation->getId()));
 
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }
 
+        $pricing = ($checkin && $checkout && $checkout > $checkin)
+            ? $this->computePricing($property, $checkin, $checkout)
+            : null;
+
         return $this->render('front/property/booking.html.twig', [
             'property' => $property,
-            'form' => $form,
+            'form'     => $form,
+            'pricing'  => $pricing,
         ]);
+    }
+
+    private function computePricing(Property $property, \DateTimeImmutable $checkin, \DateTimeImmutable $checkout): array
+    {
+        $nights      = (int) $checkin->diff($checkout)->days;
+        $nightlyRate = (float) $property->getPricePerNight();
+        $subtotal    = $nightlyRate * $nights;
+        $cleaningFee = (float) ($property->getCleaningFee() ?? 0);
+        $serviceFee  = round($subtotal * 0.12, 2);
+        $total       = round($subtotal + $cleaningFee + $serviceFee, 2);
+
+        return [
+            'nights'      => $nights,
+            'nightlyRate' => $nightlyRate,
+            'subtotal'    => $subtotal,
+            'cleaningFee' => $cleaningFee,
+            'serviceFee'  => $serviceFee,
+            'total'       => $total,
+        ];
+    }
+
+    private function parseDate(?string $value): ?\DateTimeImmutable
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        $date = \DateTimeImmutable::createFromFormat('Y-m-d', $value);
+
+        return $date !== false ? $date : null;
     }
 }

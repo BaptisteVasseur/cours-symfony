@@ -6,6 +6,7 @@ namespace App\DataFixtures;
 
 use App\Entity\Invoice;
 use App\Entity\Property;
+use App\Entity\PropertyAvailability;
 use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
@@ -90,6 +91,19 @@ class ReservationFixture extends Fixture implements DependentFixtureInterface
             $reservation->setCurrency('EUR');
             $reservation->setCancellationReason($cancellationReason);
             $manager->persist($reservation);
+
+            if ($status !== 'cancelled') {
+                $current = new \DateTimeImmutable($checkin);
+                $end = new \DateTimeImmutable($checkout);
+                while ($current < $end) {
+                    $availability = new PropertyAvailability();
+                    $availability->setProperty($property);
+                    $availability->setReservation($reservation);
+                    $availability->setOccupiedDate($current);
+                    $manager->persist($availability);
+                    $current = $current->modify('+1 day');
+                }
+            }
 
             $history = new ReservationStatusHistory();
             $history->setReservation($reservation);

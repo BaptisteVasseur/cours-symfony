@@ -3,41 +3,182 @@
 {% block title %}Réserver — {{ property.title }}{% endblock %}
 
 {% set cover = property.coverMedia %}
+{% set averageRating = property.averageRating %}
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
-            <i class="fa-solid fa-arrow-left"></i> Retour au logement
+
+        <a href="{{ path('app_logement_detail', { id: property.id }) }}"
+           class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-8 transition-colors">
+            <i class="fa-solid fa-arrow-left text-xs"></i> Retour au logement
         </a>
+
         {% for label, messages in app.flashes %}
             {% for message in messages %}
-                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+                <div class="mb-6 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                    {{ message }}
+                </div>
             {% endfor %}
         {% endfor %}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2">
-                <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
-                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                    {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-12">
+
+            {# ── Formulaire ──────────────────────────────────────────────── #}
+            <div class="lg:col-span-3 space-y-8">
+                <h1 class="text-2xl font-bold text-gray-900">Finaliser votre réservation</h1>
+
+                {{ form_start(form, { attr: { novalidate: 'novalidate' } }) }}
+
+                {# Votre séjour #}
+                <section>
+                    <h2 class="text-lg font-semibold text-gray-900 mb-4">Votre séjour</h2>
+                    <div class="border border-gray-200 rounded-2xl divide-y divide-gray-100">
+                        <div class="grid grid-cols-2 divide-x divide-gray-100">
+                            <div class="p-4">
+                                <p class="text-[10px] font-bold uppercase text-gray-500 mb-1">Arrivée</p>
+                                {{ form_widget(form.checkinDate, { attr: {
+                                    class: 'w-full text-sm font-semibold text-gray-900 bg-transparent border-0 p-0 focus:ring-0 focus:outline-none'
+                                }}) }}
+                                {{ form_errors(form.checkinDate) }}
+                            </div>
+                            <div class="p-4">
+                                <p class="text-[10px] font-bold uppercase text-gray-500 mb-1">Départ</p>
+                                {{ form_widget(form.checkoutDate, { attr: {
+                                    class: 'w-full text-sm font-semibold text-gray-900 bg-transparent border-0 p-0 focus:ring-0 focus:outline-none'
+                                }}) }}
+                                {{ form_errors(form.checkoutDate) }}
+                            </div>
                         </div>
-                        {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
-                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
-                    {{ form_end(form) }}
-                </div>
+                        <div class="p-4">
+                            <p class="text-[10px] font-bold uppercase text-gray-500 mb-1">Voyageurs</p>
+                            {{ form_widget(form.guestsCount, { attr: {
+                                class: 'w-full text-sm font-semibold text-gray-900 bg-transparent border-0 p-0 focus:ring-0 focus:outline-none',
+                                min: 1,
+                                max: property.maxGuests
+                            }}) }}
+                            {{ form_errors(form.guestsCount) }}
+                        </div>
+                    </div>
+                </section>
+
+                {# Paiement #}
+                <section class="mt-4">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-1">Paiement</h2>
+                    <p class="text-sm text-gray-500 mb-4">Vos informations sont sécurisées et chiffrées.</p>
+
+                    <div class="border border-gray-200 rounded-2xl p-6 space-y-5">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-gray-500 mb-1.5">
+                                Titulaire de la carte
+                            </label>
+                            {{ form_widget(form.cardHolder, { attr: {
+                                class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition',
+                                placeholder: 'Jean Dupont'
+                            }}) }}
+                            {{ form_errors(form.cardHolder) }}
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-gray-500 mb-1.5">
+                                Numéro de carte
+                            </label>
+                            <div class="relative">
+                                <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                                    <i class="fa-regular fa-credit-card"></i>
+                                </span>
+                                {{ form_widget(form.cardNumber, { attr: {
+                                    class: 'w-full border border-gray-300 rounded-xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
+                                }}) }}
+                            </div>
+                            {{ form_errors(form.cardNumber) }}
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-gray-500 mb-1.5">
+                                    Date d'expiration
+                                </label>
+                                {{ form_widget(form.cardExpiry, { attr: {
+                                    class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
+                                }}) }}
+                                {{ form_errors(form.cardExpiry) }}
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold uppercase text-gray-500 mb-1.5">
+                                    CVV
+                                </label>
+                                {{ form_widget(form.cardCvv, { attr: {
+                                    class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition'
+                                }}) }}
+                                {{ form_errors(form.cardCvv) }}
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <button type="submit"
+                        class="mt-4 w-full bg-brand hover:bg-brandHover text-white font-semibold py-3.5 rounded-xl transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-lock text-sm"></i>
+                    Confirmer et payer
+                </button>
+
+                {{ form_end(form) }}
             </div>
-            <aside>
-                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
-                    <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
+
+            {# ── Sidebar ─────────────────────────────────────────────────── #}
+            <aside class="lg:col-span-2">
+                <div class="sticky top-28 border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                    <div class="relative h-44 overflow-hidden">
+                        <img src="{{ cover ? cover.fileUrl : placeholderImage }}"
+                             alt="{{ property.title }}"
+                             class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-5 border-b border-gray-100">
+                        <h2 class="font-semibold text-gray-900 leading-tight">{{ property.title }}</h2>
+                        {% if averageRating %}
+                            <p class="text-sm text-gray-500 mt-1">
+                                <i class="fa-solid fa-star text-xs text-gray-800"></i>
+                                <span class="font-semibold text-gray-800">{{ averageRating|number_format(2, ',') }}</span>
+                                · {{ property.reviews|length }} avis
+                            </p>
+                        {% endif %}
+                    </div>
+
                     <div class="p-5">
-                        <h2 class="font-semibold">{{ property.title }}</h2>
-                        <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+                        <h3 class="text-sm font-semibold text-gray-800 mb-4">Détail du prix</h3>
+
+                        {% if pricing %}
+                            <div class="space-y-3 text-sm">
+                                <div class="flex justify-between text-gray-700">
+                                    <span>{{ pricing.nightlyRate|number_format(0, ',', ' ') }} € × {{ pricing.nights }} nuit{{ pricing.nights > 1 ? 's' : '' }}</span>
+                                    <span>{{ pricing.subtotal|number_format(0, ',', ' ') }} €</span>
+                                </div>
+                                {% if pricing.cleaningFee > 0 %}
+                                    <div class="flex justify-between text-gray-700">
+                                        <span>Frais de ménage</span>
+                                        <span>{{ pricing.cleaningFee|number_format(0, ',', ' ') }} €</span>
+                                    </div>
+                                {% endif %}
+                                <div class="flex justify-between text-gray-700">
+                                    <span>Frais de service</span>
+                                    <span>{{ pricing.serviceFee|number_format(2, ',', ' ') }} €</span>
+                                </div>
+                                <div class="flex justify-between font-bold text-gray-900 pt-3 border-t border-gray-200 text-base">
+                                    <span>Total</span>
+                                    <span>{{ pricing.total|number_format(2, ',', ' ') }} €</span>
+                                </div>
+                            </div>
+                        {% else %}
+                            <p class="text-sm text-gray-400">Sélectionnez vos dates pour voir le prix total.</p>
+                            <div class="mt-3 text-sm text-gray-700">
+                                <span class="font-semibold text-gray-900">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span> / nuit
+                            </div>
+                        {% endif %}
                     </div>
                 </div>
             </aside>
+
         </div>
     </main>
 {% endblock %}

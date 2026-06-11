@@ -107,11 +107,22 @@ class Reservation
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $cancellationReason = null;
 
+    #[Assert\Choice(choices: ['booking', 'block'], message: 'Type de réservation invalide.')]
+    #[ORM\Column(length: 50)]
+    private string $type = 'booking';
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $blockReason = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
     #[ORM\OneToOne(mappedBy: 'reservation', targetEntity: Invoice::class, cascade: ['persist', 'remove'])]
     private ?Invoice $invoice = null;
+
+    /** @var Collection<int, PropertyAvailability> */
+    #[ORM\OneToMany(targetEntity: PropertyAvailability::class, mappedBy: 'reservation', orphanRemoval: true)]
+    private Collection $availabilities;
 
     /** @var Collection<int, ReservationStatusHistory> */
     #[ORM\OneToMany(targetEntity: ReservationStatusHistory::class, mappedBy: 'reservation', orphanRemoval: true)]
@@ -139,6 +150,7 @@ class Reservation
 
     public function __construct()
     {
+        $this->availabilities = new ArrayCollection();
         $this->statusHistory = new ArrayCollection();
         $this->payments = new ArrayCollection();
         $this->payouts = new ArrayCollection();
@@ -292,6 +304,35 @@ class Reservation
         return $this;
     }
 
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    public function setType(string $type): static
+    {
+        $this->type = $type;
+
+        return $this;
+    }
+
+    public function isBlock(): bool
+    {
+        return $this->type === 'block';
+    }
+
+    public function getBlockReason(): ?string
+    {
+        return $this->blockReason;
+    }
+
+    public function setBlockReason(?string $blockReason): static
+    {
+        $this->blockReason = $blockReason;
+
+        return $this;
+    }
+
     public function getCreatedAt(): ?\DateTimeImmutable
     {
         return $this->createdAt;
@@ -315,6 +356,29 @@ class Reservation
             $invoice->setReservation($this);
         }
         $this->invoice = $invoice;
+
+        return $this;
+    }
+
+    /** @return Collection<int, PropertyAvailability> */
+    public function getAvailabilities(): Collection
+    {
+        return $this->availabilities;
+    }
+
+    public function addAvailability(PropertyAvailability $availability): static
+    {
+        if (!$this->availabilities->contains($availability)) {
+            $this->availabilities->add($availability);
+            $availability->setReservation($this);
+        }
+
+        return $this;
+    }
+
+    public function removeAvailability(PropertyAvailability $availability): static
+    {
+        $this->availabilities->removeElement($availability);
 
         return $this;
     }

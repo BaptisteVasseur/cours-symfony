@@ -5,10 +5,15 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Reservation;
+use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Message\ReservationStatusChangedMessage;
 use App\Repository\ReservationRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\ReservationVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -41,8 +46,75 @@ final class ReservationController extends AbstractController
 
         $reservation = $reservationRepository->findOneForDetail($reservation) ?? $reservation;
 
+        $nights      = (int) $reservation->getCheckinDate()->diff($reservation->getCheckoutDate())->days;
+        $nightlyRate = (float) ($reservation->getProperty()?->getPricePerNight() ?? 0);
+
+        $canCancel = in_array($reservation->getStatus(), ['pending', 'confirmed'], true)
+            && $reservation->getType() === 'booking'
+            && $reservation->getGuest()?->getId() === $user->getId();
+
         return $this->render('front/reservation/show.html.twig', [
             'reservation' => $reservation,
+            'nights'      => $nights,
+            'nightlyRate' => $nightlyRate,
+            'subtotal'    => $nightlyRate * $nights,
+            'canCancel'   => $canCancel,
         ]);
+    }
+
+    #[Route('/{id}/annuler', name: 'app_reservation_cancel', methods: ['POST'])]
+    #[IsGranted(ReservationVoter::CANCEL, subject: 'reservation')]
+    public function cancel(
+        Reservation $reservation,
+        Request $request,
+        EntityManagerInterface $em,
+        MessageBusInterface $bus,
+    ): Response {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        if (!$this->isCsrfTokenValid('cancel_' . $reservation->getId(), $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token de sécurité invalide.');
+
+            return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
+        }
+
+        if (!in_array($reservation->getStatus(), ['pending', 'confirmed'], true)) {
+            $this->addFlash('error', 'Cette réservation ne peut pas être annulée.');
+
+            return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
+        }
+
+        $reason = trim((string) $request->request->get('reason', ''));
+        if ($reason === '') {
+            $this->addFlash('error', 'Le motif d\'annulation est obligatoire.');
+
+            return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
+        }
+
+        $oldStatus = $reservation->getStatus();
+        $reservation->setStatus('cancelled');
+        $reservation->setCancellationReason($reason);
+
+        $history = new ReservationStatusHistory();
+        $history->setReservation($reservation);
+        $history->setOldStatus($oldStatus);
+        $history->setNewStatus('cancelled');
+        $history->setChangedBy($user);
+        $em->persist($history);
+
+        $em->createQuery('DELETE FROM App\Entity\PropertyAvailability a WHERE a.reservation = :reservation')
+            ->setParameter('reservation', $reservation)
+            ->execute();
+
+        $em->flush();
+
+        $bus->dispatch(new ReservationStatusChangedMessage((string) $reservation->getId(), 'cancelled_by_guest'));
+
+        $this->addFlash('success', 'Votre réservation a été annulée.');
+
+        return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
     }
 }

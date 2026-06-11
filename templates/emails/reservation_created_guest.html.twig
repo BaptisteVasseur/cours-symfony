@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Votre réservation a bien été reçue</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+    <h1 style="color: #e74c3c;">Demande de réservation reçue</h1>
+
+    <p>Bonjour {% if reservation.guest.profile %}{{ reservation.guest.profile.firstName }}{% else %}{{ reservation.guest.email }}{% endif %},</p>
+
+    <p>Votre demande de réservation pour le logement <strong>{{ reservation.property.title }}</strong> a bien été reçue.</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Arrivée</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Départ</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Voyageurs</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.guestsCount }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Montant total</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">{{ reservation.totalPrice }} {{ reservation.currency }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border: 1px solid #ddd; background: #f9f9f9;"><strong>Statut</strong></td>
+            <td style="padding: 8px; border: 1px solid #ddd;">
+                {% if reservation.status == 'confirmed' %}
+                    Confirmée (réservation instantanée)
+                {% else %}
+                    En attente de confirmation de l'hôte
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+
+    {% if reservation.status == 'pending' %}
+        <p style="background: #fff3cd; padding: 12px; border-left: 4px solid #ffc107;">
+            L'hôte dispose de 24h pour accepter ou refuser votre demande. Vous recevrez un email dès qu'une décision sera prise.
+        </p>
+    {% endif %}
+
+    <p>Merci de votre confiance.</p>
+</body>
+</html>
