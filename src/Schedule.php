@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App;
 
 use Symfony\Component\Console\Messenger\RunCommandMessage;
@@ -27,6 +29,9 @@ class Schedule implements ScheduleProviderInterface
             )
             ->add(
                 RecurringMessage::cron('0 8 * * *', new RunCommandMessage('app:booking:send-reminders'))
+            )
+            ->add(
+                RecurringMessage::cron('5 0 * * *', new RunCommandMessage('app:booking:complete'))
             )
         ;
     }
