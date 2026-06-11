@@ -57,11 +57,25 @@
                     </dl>
                 </section>
             </div>
-            <aside>
+            <aside class="space-y-6">
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
                     <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
                     <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
                 </div>
+
+                {% if reservation.cancellationReason %}
+                    <div class="border border-red-200 bg-red-50 rounded-xl p-6">
+                        <h2 class="text-sm font-semibold text-red-800 mb-1">Motif d'annulation</h2>
+                        <p class="text-sm text-red-700">{{ reservation.cancellationReason }}</p>
+                    </div>
+                {% elseif reservation.status in ['pending', 'confirmed'] %}
+                    <form method="post" action="{{ path('app_reservation_cancel', { id: reservation.id }) }}" class="border border-gray-200 rounded-xl p-6 space-y-3">
+                        <input type="hidden" name="_token" value="{{ csrf_token('cancel_reservation_' ~ reservation.id) }}">
+                        <h2 class="text-lg font-semibold">Annuler la réservation</h2>
+                        <textarea name="reason" rows="3" required maxlength="2000" placeholder="Motif de l'annulation" class="w-full text-sm border border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-brand"></textarea>
+                        <button type="submit" class="w-full bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg py-2.5">Annuler la réservation</button>
+                    </form>
+                {% endif %}
             </aside>
         </div>
     </main>
