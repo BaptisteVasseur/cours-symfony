@@ -83,6 +83,12 @@ class ReservationController extends AbstractController
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->id]);
         }
 
+        if (!$disponibilites->estDisponible($reservation->logement, $reservation->dateArrivee, $reservation->dateDepart, $reservation)) {
+            $this->addFlash('error', 'Ces dates ne sont plus disponibles. Contactez l hote avant de payer.');
+
+            return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->id]);
+        }
+
         $paiement = new Paiement();
         $paiement->reservation = $reservation;
         $paiement->utilisateur = $reservation->voyageur;
@@ -123,6 +129,7 @@ class ReservationController extends AbstractController
         DemandeReservationValidator $validator,
         EntityManagerInterface $entityManager,
         NotificationService $notificationService,
+        DisponibiliteService $disponibilites,
     ): RedirectResponse {
         $user = $this->getUser();
         \assert($user instanceof User);
@@ -161,24 +168,95 @@ class ReservationController extends AbstractController
         $reservation->dateDepart = $dateDepart;
         $reservation->nombreNuits = max(1, (int) $dateArrivee->diff($dateDepart)->days);
         $reservation->nombreVoyageurs = $voyageurs;
-        $reservation->statut = ReservationStatut::EN_ATTENTE_HOTE;
+        $reservation->statut = $logement->instantBooking ? ReservationStatut::CONFIRMEE : ReservationStatut::EN_ATTENTE_HOTE;
         $reservation->messageVoyageur = $message !== '' ? $message : null;
+
+        if ($logement->instantBooking) {
+            $reservation->dateConfirmation = new \DateTimeImmutable();
+        }
 
         $this->calculerMontants($reservation);
 
         $entityManager->persist($reservation);
+
+        if ($logement->instantBooking) {
+            $disponibilites->reserverPeriode($reservation);
+        }
+
         $entityManager->flush();
+
+        if ($logement->instantBooking) {
+            $notificationService->creer(
+                $reservation->hote,
+                'reservation_instantanee',
+                'Reservation instantanee',
+                sprintf('%s a reserve automatiquement %s du %s au %s.', $user->prenom, $logement->titre, $dateArrivee->format('d/m/Y'), $dateDepart->format('d/m/Y')),
+                $this->generateUrl('app_host_reservation_show', ['id' => $reservation->id]),
+            );
+            $this->addFlash('success', 'Reservation instantanee confirmee.');
+        } else {
+            $notificationService->creer(
+                $reservation->hote,
+                'reservation_demande',
+                'Nouvelle demande de reservation',
+                sprintf('%s souhaite reserver %s du %s au %s.', $user->prenom, $logement->titre, $dateArrivee->format('d/m/Y'), $dateDepart->format('d/m/Y')),
+                $this->generateUrl('app_host_reservation_show', ['id' => $reservation->id]),
+            );
+            $this->addFlash('success', 'Demande de reservation envoyee a l hote.');
+        }
+
+        $entityManager->flush();
+
+        return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->id]);
+    }
+
+    #[Route('/mes-reservations/{id}/annuler', name: 'app_reservation_cancel', requirements: ['id' => '\d+'], methods: ['POST'])]
+    public function cancel(
+        Reservation $reservation,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        NotificationService $notificationService,
+        DisponibiliteService $disponibilites,
+    ): RedirectResponse {
+        $this->verifierAccesVoyageur($reservation);
+
+        if (!$this->isCsrfTokenValid('reservation_cancel_'.$reservation->id, (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Action expiree. Reessayez.');
+
+            return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->id]);
+        }
+
+        if (!$this->peutEtreAnnulee($reservation)) {
+            $this->addFlash('error', 'Cette reservation ne peut plus etre annulee.');
+
+            return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->id]);
+        }
+
+        $motif = trim((string) $request->request->get('motif_annulation', ''));
+        if ($motif === '') {
+            $this->addFlash('error', 'Le motif d annulation est obligatoire.');
+
+            return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->id]);
+        }
+
+        if ($reservation->statut === ReservationStatut::CONFIRMEE) {
+            $disponibilites->libererPeriodeReservee($reservation);
+        }
+
+        $reservation->statut = ReservationStatut::ANNULEE_PAR_VOYAGEUR;
+        $reservation->motifAnnulation = $motif;
+        $reservation->dateAnnulation = new \DateTimeImmutable();
 
         $notificationService->creer(
             $reservation->hote,
-            'reservation_demande',
-            'Nouvelle demande de reservation',
-            sprintf('%s souhaite reserver %s du %s au %s.', $user->prenom, $logement->titre, $dateArrivee->format('d/m/Y'), $dateDepart->format('d/m/Y')),
+            'reservation_annulee',
+            'Reservation annulee',
+            sprintf('%s a annule sa reservation pour %s. Motif : %s', $reservation->voyageur->prenom, $reservation->logement->titre, $motif),
             $this->generateUrl('app_host_reservation_show', ['id' => $reservation->id]),
         );
-        $entityManager->flush();
 
-        $this->addFlash('success', 'Demande de reservation envoyee a l hote.');
+        $entityManager->flush();
+        $this->addFlash('success', 'Reservation annulee.');
 
         return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->id]);
     }
@@ -192,6 +270,15 @@ class ReservationController extends AbstractController
         if ($reservation->voyageur->id !== $user->id) {
             throw $this->createAccessDeniedException();
         }
+    }
+
+    private function peutEtreAnnulee(Reservation $reservation): bool
+    {
+        return in_array($reservation->statut, [
+            ReservationStatut::EN_ATTENTE_HOTE,
+            ReservationStatut::ACCEPTEE_EN_ATTENTE_PAIEMENT,
+            ReservationStatut::CONFIRMEE,
+        ], true);
     }
 
     private function creerDate(string $valeur): ?\DateTimeImmutable

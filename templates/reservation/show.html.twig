@@ -28,6 +28,12 @@
                     {% if reservation.messageVoyageur %}
                         <p class="mt-5 rounded-md bg-gray-50 p-4 text-sm text-gray-700">{{ reservation.messageVoyageur }}</p>
                     {% endif %}
+                    {% if reservation.motifRefus %}
+                        <p class="mt-5 rounded-md bg-red-50 p-4 text-sm text-red-800">Motif de refus : {{ reservation.motifRefus }}</p>
+                    {% endif %}
+                    {% if reservation.motifAnnulation %}
+                        <p class="mt-5 rounded-md bg-amber-50 p-4 text-sm text-amber-800">Motif d annulation : {{ reservation.motifAnnulation }}</p>
+                    {% endif %}
                 </article>
 
                 <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
@@ -51,6 +57,17 @@
                     <a href="{{ path('app_reservation_payment', { id: reservation.id }) }}" class="mt-6 inline-flex w-full justify-center rounded-md bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">Payer maintenant</a>
                 {% elseif reservation.statut.value == 'confirmee' %}
                     <p class="mt-6 rounded-md bg-green-50 p-4 text-sm text-green-800">Reservation confirmee.</p>
+                {% endif %}
+
+                {% if app.user and app.user.id == reservation.voyageur.id and reservation.statut.value in ['en_attente_hote', 'acceptee_en_attente_paiement', 'confirmee'] %}
+                    <form method="post" action="{{ path('app_reservation_cancel', { id: reservation.id }) }}" class="mt-6 space-y-3 border-t border-gray-100 pt-5">
+                        <input type="hidden" name="_token" value="{{ csrf_token('reservation_cancel_' ~ reservation.id) }}">
+                        <label class="block">
+                            <span class="text-sm font-medium text-gray-700">Motif d annulation</span>
+                            <textarea name="motif_annulation" rows="3" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"></textarea>
+                        </label>
+                        <button type="submit" class="w-full rounded-md border border-red-300 px-4 py-2.5 text-sm font-semibold text-red-700 hover:bg-red-50">Annuler la reservation</button>
+                    </form>
                 {% endif %}
             </aside>
         </div>

@@ -6,6 +6,7 @@ use App\Entity\Reservation;
 use App\Entity\User;
 use App\Enum\ReservationStatut;
 use App\Repository\ReservationRepository;
+use App\Service\DisponibiliteService;
 use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -41,7 +42,7 @@ class HostReservationController extends AbstractController
     }
 
     #[Route('/{id}/accepter', name: 'app_host_reservation_accept', requirements: ['id' => '\\d+'], methods: ['POST'])]
-    public function accept(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, NotificationService $notificationService): RedirectResponse
+    public function accept(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, NotificationService $notificationService, DisponibiliteService $disponibilites): RedirectResponse
     {
         $this->verifierAccesHote($reservation);
 
@@ -53,6 +54,12 @@ class HostReservationController extends AbstractController
 
         if ($reservation->statut !== ReservationStatut::EN_ATTENTE_HOTE) {
             $this->addFlash('error', 'Cette reservation ne peut plus etre acceptee.');
+
+            return $this->redirectToRoute('app_host_reservation_show', ['id' => $reservation->id]);
+        }
+
+        if (!$disponibilites->estDisponible($reservation->logement, $reservation->dateArrivee, $reservation->dateDepart, $reservation)) {
+            $this->addFlash('error', 'Ces dates ne sont plus disponibles. La demande ne peut pas etre acceptee.');
 
             return $this->redirectToRoute('app_host_reservation_show', ['id' => $reservation->id]);
         }
@@ -92,14 +99,22 @@ class HostReservationController extends AbstractController
             return $this->redirectToRoute('app_host_reservation_show', ['id' => $reservation->id]);
         }
 
+        $motif = trim((string) $request->request->get('motif_refus', ''));
+        if ($motif === '') {
+            $this->addFlash('error', 'Le motif de refus est obligatoire.');
+
+            return $this->redirectToRoute('app_host_reservation_show', ['id' => $reservation->id]);
+        }
+
         $reservation->statut = ReservationStatut::REFUSEE;
+        $reservation->motifRefus = $motif;
         $reservation->dateAnnulation = new \DateTimeImmutable();
 
         $notificationService->creer(
             $reservation->voyageur,
             'reservation_refusee',
             'Demande refusee',
-            sprintf('Votre demande pour %s a ete refusee par l hote.', $reservation->logement->titre),
+            sprintf('Votre demande pour %s a ete refusee par l hote. Motif : %s', $reservation->logement->titre, $motif),
             $this->generateUrl('app_reservation_show', ['id' => $reservation->id]),
         );
         $entityManager->flush();
@@ -107,6 +122,66 @@ class HostReservationController extends AbstractController
         $this->addFlash('success', 'Demande refusee.');
 
         return $this->redirectToRoute('app_host_reservation_show', ['id' => $reservation->id]);
+    }
+
+    #[Route('/{id}/annuler', name: 'app_host_reservation_cancel', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function cancel(
+        Reservation $reservation,
+        Request $request,
+        EntityManagerInterface $entityManager,
+        NotificationService $notificationService,
+        DisponibiliteService $disponibilites,
+    ): RedirectResponse {
+        $this->verifierAccesHote($reservation);
+
+        if (!$this->isCsrfTokenValid('host_reservation_cancel_'.$reservation->id, (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Action expiree. Reessayez.');
+
+            return $this->redirectToRoute('app_host_reservation_show', ['id' => $reservation->id]);
+        }
+
+        if (!$this->peutEtreAnnulee($reservation)) {
+            $this->addFlash('error', 'Cette reservation ne peut plus etre annulee.');
+
+            return $this->redirectToRoute('app_host_reservation_show', ['id' => $reservation->id]);
+        }
+
+        $motif = trim((string) $request->request->get('motif_annulation', ''));
+        if ($motif === '') {
+            $this->addFlash('error', 'Le motif d annulation est obligatoire.');
+
+            return $this->redirectToRoute('app_host_reservation_show', ['id' => $reservation->id]);
+        }
+
+        if ($reservation->statut === ReservationStatut::CONFIRMEE) {
+            $disponibilites->libererPeriodeReservee($reservation);
+        }
+
+        $reservation->statut = ReservationStatut::ANNULEE_PAR_HOTE;
+        $reservation->motifAnnulation = $motif;
+        $reservation->dateAnnulation = new \DateTimeImmutable();
+
+        $notificationService->creer(
+            $reservation->voyageur,
+            'reservation_annulee',
+            'Reservation annulee par l hote',
+            sprintf('Votre reservation pour %s a ete annulee par l hote. Motif : %s', $reservation->logement->titre, $motif),
+            $this->generateUrl('app_reservation_show', ['id' => $reservation->id]),
+        );
+
+        $entityManager->flush();
+        $this->addFlash('success', 'Reservation annulee.');
+
+        return $this->redirectToRoute('app_host_reservation_show', ['id' => $reservation->id]);
+    }
+
+    private function peutEtreAnnulee(Reservation $reservation): bool
+    {
+        return in_array($reservation->statut, [
+            ReservationStatut::EN_ATTENTE_HOTE,
+            ReservationStatut::ACCEPTEE_EN_ATTENTE_PAIEMENT,
+            ReservationStatut::CONFIRMEE,
+        ], true);
     }
 
     private function verifierAccesHote(Reservation $reservation): void
