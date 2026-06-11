@@ -5,12 +5,19 @@ declare(strict_types=1);
 namespace App\Controller\Front;
 
 use App\Entity\Reservation;
+use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Form\CancellationReasonType;
+use App\Message\ReservationStatusChangedMessage;
+use App\Service\NotificationService;
 use App\Repository\ReservationRepository;
-use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
-use Symfony\Component\HttpFoundation\Response;
-use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\ReservationVoter;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 
 #[Route('/reservations')]
@@ -43,6 +50,65 @@ final class ReservationController extends AbstractController
 
         return $this->render('front/reservation/show.html.twig', [
             'reservation' => $reservation,
+        ]);
+    }
+
+    #[Route('/{id}/annuler', name: 'app_reservation_cancel', methods: ['GET', 'POST'])]
+    #[IsGranted(ReservationVoter::VIEW, subject: 'reservation')]
+    public function cancel(
+        Request $request,
+        Reservation $reservation,
+        EntityManagerInterface $entityManager,
+        MessageBusInterface $bus,
+        NotificationService $notificationService,
+    ): Response {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        $isGuest = $reservation->getGuest()?->getId() === $user->getId();
+        $isHost = $reservation->getProperty()?->getHost()?->getId() === $user->getId();
+
+        if (!$isGuest && !$isHost) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!in_array($reservation->getStatus(), ['pending', 'confirmed'], true)) {
+            $this->addFlash('error', 'Cette réservation ne peut plus être annulée.');
+
+            return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
+        }
+
+        $form = $this->createForm(CancellationReasonType::class, null, [
+            'label_text' => 'Motif de l\'annulation',
+            'csrf_token_id' => 'cancel_reservation_' . $reservation->getId(),
+        ]);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $history = new ReservationStatusHistory();
+            $history->setReservation($reservation);
+            $history->setOldStatus($reservation->getStatus());
+            $history->setNewStatus('cancelled');
+            $history->setChangedBy($user);
+            $entityManager->persist($history);
+
+            $reservation->setStatus('cancelled');
+            $reservation->setCancellationReason($form->get('reason')->getData());
+            $notificationService->notifyStatusChanged($reservation, 'cancelled');
+            $entityManager->flush();
+
+            $bus->dispatch(new ReservationStatusChangedMessage((string) $reservation->getId(), 'cancelled'));
+
+            $this->addFlash('success', 'Réservation annulée.');
+
+            return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
+        }
+
+        return $this->render('front/reservation/cancel.html.twig', [
+            'reservation' => $reservation,
+            'form' => $form,
         ]);
     }
 }

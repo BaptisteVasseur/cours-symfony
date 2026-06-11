@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<body style="font-family: sans-serif; color: #111; max-width: 600px; margin: 0 auto; padding: 24px;">
+
+{% set property = reservation.property %}
+{% set guest = reservation.guest %}
+{% set guestProfile = guest ? guest.profile : null %}
+{% set host = property ? property.host : null %}
+{% set hostProfile = host ? host.profile : null %}
+{% set nights = reservation.checkinDate and reservation.checkoutDate
+    ? (reservation.checkoutDate.timestamp - reservation.checkinDate.timestamp) // 86400
+    : 0 %}
+
+<h2 style="margin-bottom: 4px;">
+    {% if role == 'guest' %}
+        Your booking request has been received
+    {% else %}
+        New booking request for {{ property.title }}
+    {% endif %}
+</h2>
+<p style="color: #6b7280; margin-top: 0;">StayNest</p>
+
+<p>Hi {{ recipient.profile ? recipient.profile.firstName : recipient.email }},</p>
+
+{% if role == 'guest' %}
+    <p>
+        Your request for <strong>{{ property.title }}</strong> has been submitted.
+        {% if reservation.status == 'confirmed' %}
+            It has been <strong style="color: #059669;">automatically confirmed</strong> (instant booking).
+        {% else %}
+            It is now <strong style="color: #d97706;">pending host approval</strong>.
+        {% endif %}
+    </p>
+{% else %}
+    <p>
+        <strong>
+            {{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : guest.email }}
+        </strong>
+        is requesting to book your property.
+    </p>
+{% endif %}
+
+<table style="border-collapse: collapse; width: 100%; margin: 20px 0;">
+    <tr style="background: #f9fafb;">
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb; color: #6b7280; width: 40%;">Property</td>
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb; font-weight: 600;">{{ property.title }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb; color: #6b7280;">Check-in</td>
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb; font-weight: 600;">{{ reservation.checkinDate|date('d/m/Y') }}</td>
+    </tr>
+    <tr style="background: #f9fafb;">
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb; color: #6b7280;">Check-out</td>
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb; font-weight: 600;">{{ reservation.checkoutDate|date('d/m/Y') }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb; color: #6b7280;">Duration</td>
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb;">{{ nights }} night{{ nights > 1 ? 's' : '' }}</td>
+    </tr>
+    <tr style="background: #f9fafb;">
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb; color: #6b7280;">Guests</td>
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb;">{{ reservation.guestsCount }}</td>
+    </tr>
+    <tr>
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb; color: #6b7280;">Total</td>
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb; font-weight: 700; font-size: 16px;">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</td>
+    </tr>
+    <tr style="background: #f9fafb;">
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb; color: #6b7280;">Status</td>
+        <td style="padding: 10px 12px; border: 1px solid #e5e7eb;">
+            {% if reservation.status == 'confirmed' %}
+                <span style="color: #059669; font-weight: 600;">Confirmed</span>
+            {% else %}
+                <span style="color: #d97706; font-weight: 600;">Pending approval</span>
+            {% endif %}
+        </td>
+    </tr>
+</table>
+
+{% if role == 'host' %}
+    <div style="margin: 8px 0;">
+        <p style="margin-bottom: 6px; font-weight: 600;">Guest details</p>
+        <p style="margin: 2px 0; color: #374151;">
+            {{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : 'N/A' }}
+        </p>
+        <p style="margin: 2px 0; color: #6b7280;">{{ guest.email }}</p>
+    </div>
+
+    <div style="margin: 24px 0; text-align: center;">
+        <a href="{{ dashboardUrl }}"
+           style="display: inline-block; background: #111827; color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600;">
+            Review the request →
+        </a>
+    </div>
+{% endif %}
+
+<hr style="border: none; border-top: 1px solid #e5e7eb; margin: 24px 0;">
+<p style="color: #9ca3af; font-size: 12px; text-align: center;">StayNest — manage your reservations from your personal space.</p>
+</body>
+</html>

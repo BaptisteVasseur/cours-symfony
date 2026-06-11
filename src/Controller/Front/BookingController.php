@@ -6,13 +6,18 @@ namespace App\Controller\Front;
 
 use App\Entity\Property;
 use App\Entity\Reservation;
+use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Form\BookingType;
+use App\Message\ReservationCreatedMessage;
 use App\Repository\PropertyRepository;
+use App\Service\AvailabilityService;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\PropertyVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
@@ -27,6 +32,9 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
+        AvailabilityService $availabilityService,
+        MessageBusInterface $bus,
+        NotificationService $notificationService,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -44,7 +52,23 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_logement_detail', ['id' => $property->getId()]);
         }
 
-        $form = $this->createForm(BookingType::class);
+        $prefill = [];
+        if ($request->isMethod('GET')) {
+            $checkinParam = $request->query->get('checkin');
+            $checkoutParam = $request->query->get('checkout');
+            $guestsParam = $request->query->get('guests');
+            if ($checkinParam) {
+                try { $prefill['checkinDate'] = new \DateTimeImmutable($checkinParam); } catch (\Exception) {}
+            }
+            if ($checkoutParam) {
+                try { $prefill['checkoutDate'] = new \DateTimeImmutable($checkoutParam); } catch (\Exception) {}
+            }
+            if ($guestsParam) {
+                $prefill['guestsCount'] = max(1, (int) $guestsParam);
+            }
+        }
+
+        $form = $this->createForm(BookingType::class, $prefill ?: null);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -56,19 +80,13 @@ final class BookingController extends AbstractController
             if ($checkin >= $checkout) {
                 $this->addFlash('error', 'La date de départ doit être postérieure à la date d\'arrivée.');
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
 
-            if ($guestsCount > $property->getMaxGuests()) {
-                $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
+            if (!$availabilityService->isAvailable($property, $checkin, $checkout, $guestsCount)) {
+                $this->addFlash('error', $availabilityService->getUnavailabilityReason($property, $checkin, $checkout, $guestsCount));
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
 
             $nights = (int) $checkin->diff($checkout)->days;
@@ -91,8 +109,18 @@ final class BookingController extends AbstractController
             $reservation->setSecurityDeposit($property->getSecurityDeposit());
             $reservation->setCurrency('EUR');
 
+            $history = new ReservationStatusHistory();
+            $history->setReservation($reservation);
+            $history->setOldStatus(null);
+            $history->setNewStatus($reservation->getStatus());
+            $history->setChangedBy($user);
+            $entityManager->persist($history);
+
             $entityManager->persist($reservation);
+            $notificationService->notifyReservationCreated($reservation);
             $entityManager->flush();
+
+            $bus->dispatch(new ReservationCreatedMessage((string) $reservation->getId()));
 
             $this->addFlash('success', 'Votre réservation a été enregistrée.');
 

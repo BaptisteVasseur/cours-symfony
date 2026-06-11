@@ -1,0 +1,81 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Demandes de réservation{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-2xl font-bold text-gray-900">Demandes en attente</h1>
+            <a href="{{ path('app_account_properties') }}" class="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-2">
+                <i class="fa-solid fa-arrow-left"></i> Mes logements
+            </a>
+        </div>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {% if reservations|length == 0 %}
+            <div class="text-center py-16 text-gray-500">
+                <i class="fa-solid fa-calendar-check text-4xl mb-4 text-gray-300"></i>
+                <p class="text-lg font-medium">Aucune demande en attente</p>
+                <p class="text-sm mt-1">Les nouvelles demandes de réservation apparaîtront ici.</p>
+            </div>
+        {% else %}
+            <div class="space-y-4">
+                {% for reservation in reservations %}
+                    {% set property = reservation.property %}
+                    {% set guest = reservation.guest %}
+                    {% set guestProfile = guest ? guest.profile : null %}
+                    {% set cover = property ? property.coverMedia : null %}
+                    {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
+                    {% set nights = reservation.checkinDate and reservation.checkoutDate ? (reservation.checkoutDate.timestamp - reservation.checkinDate.timestamp) // 86400 : 0 %}
+
+                    <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm flex flex-col sm:flex-row">
+                        <div class="sm:w-40 h-36 sm:h-auto shrink-0">
+                            <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                        </div>
+                        <div class="flex-1 p-5 flex flex-col justify-between gap-4 sm:flex-row">
+                            <div class="space-y-1">
+                                <p class="font-semibold text-gray-900">{{ property.title }}</p>
+                                <p class="text-sm text-gray-500">
+                                    Voyageur :
+                                    {% if guestProfile %}
+                                        {{ guestProfile.firstName }} {{ guestProfile.lastName }}
+                                    {% else %}
+                                        {{ guest.email }}
+                                    {% endif %}
+                                </p>
+                                <p class="text-sm text-gray-500">
+                                    <i class="fa-regular fa-calendar text-gray-400 mr-1"></i>
+                                    {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                                    <span class="text-gray-400">({{ nights }} nuit{{ nights > 1 ? 's' : '' }})</span>
+                                </p>
+                                <p class="text-sm text-gray-500">
+                                    <i class="fa-solid fa-users text-gray-400 mr-1"></i>
+                                    {{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' : '' }}
+                                </p>
+                                <p class="text-sm font-semibold text-gray-900">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</p>
+                                <p class="text-xs text-gray-400">Demande reçue le {{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
+                            </div>
+                            <div class="flex flex-col gap-2 sm:items-end sm:justify-center shrink-0">
+                                <form method="POST" action="{{ path('app_host_reservations_accept', { id: reservation.id }) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('accept_reservation_' ~ reservation.id) }}">
+                                    <button type="submit" class="w-full sm:w-auto px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-xl transition">
+                                        <i class="fa-solid fa-check mr-1"></i> Accepter
+                                    </button>
+                                </form>
+                                <a href="{{ path('app_host_reservations_refuse', { id: reservation.id }) }}"
+                                   class="w-full sm:w-auto px-5 py-2 border border-red-300 text-red-600 hover:bg-red-50 text-sm font-semibold rounded-xl transition text-center">
+                                    <i class="fa-solid fa-xmark mr-1"></i> Refuser
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </main>
+{% endblock %}

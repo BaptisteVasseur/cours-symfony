@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Property;
+use App\Entity\PropertyAvailability;
+use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
@@ -115,6 +118,71 @@ class PropertyRepository extends ServiceEntityRepository
             ->setParameter('property', $property)
             ->getQuery()
             ->getOneOrNullResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
+    public function findForSearch(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        ?int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->where('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere(
+                $qb->expr()->orX(
+                    'LOWER(a.city) LIKE :destination',
+                    'LOWER(a.addressLine1) LIKE :destination',
+                    'LOWER(p.title) LIKE :destination',
+                )
+            )->setParameter('destination', '%' . mb_strtolower($destination) . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null && $checkin < $checkout) {
+            $qb->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        'SELECT 1 FROM ' . Reservation::class . ' r2
+                        WHERE r2.property = p
+                        AND r2.status = :confirmed
+                        AND r2.checkinDate < :checkout
+                        AND r2.checkoutDate > :checkin'
+                    )
+                )
+            )
+            ->andWhere(
+                $qb->expr()->not(
+                    $qb->expr()->exists(
+                        'SELECT 1 FROM ' . PropertyAvailability::class . ' av
+                        WHERE av.property = p
+                        AND av.startDate < :checkout
+                        AND av.endDate > :checkin'
+                    )
+                )
+            )
+            ->setParameter('confirmed', 'confirmed')
+            ->setParameter('checkin', $checkin, Types::DATE_IMMUTABLE)
+            ->setParameter('checkout', $checkout, Types::DATE_IMMUTABLE);
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     /**

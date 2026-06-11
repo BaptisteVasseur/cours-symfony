@@ -8,6 +8,7 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PropertyAvailabilityRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyAvailabilityRepository::class)]
 #[ORM\Table(name: 'property_availability')]
@@ -19,11 +20,18 @@ class PropertyAvailability
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Assert\NotNull]
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
-    private ?\DateTimeImmutable $availableDate = null;
+    private ?\DateTimeImmutable $startDate = null;
 
-    #[ORM\Column]
-    private bool $isAvailable = true;
+    #[Assert\NotNull]
+    #[Assert\GreaterThan(propertyPath: 'startDate', message: 'La date de fin doit être postérieure à la date de début.')]
+    #[ORM\Column(type: Types::DATE_IMMUTABLE)]
+    private ?\DateTimeImmutable $endDate = null;
+
+    #[Assert\Length(max: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $reason = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $priceOverride = null;
@@ -43,26 +51,38 @@ class PropertyAvailability
         return $this;
     }
 
-    public function getAvailableDate(): ?\DateTimeImmutable
+    public function getStartDate(): ?\DateTimeImmutable
     {
-        return $this->availableDate;
+        return $this->startDate;
     }
 
-    public function setAvailableDate(\DateTimeImmutable $availableDate): static
+    public function setStartDate(\DateTimeImmutable $startDate): static
     {
-        $this->availableDate = $availableDate;
+        $this->startDate = $startDate;
 
         return $this;
     }
 
-    public function isAvailable(): bool
+    public function getEndDate(): ?\DateTimeImmutable
     {
-        return $this->isAvailable;
+        return $this->endDate;
     }
 
-    public function setIsAvailable(bool $isAvailable): static
+    public function setEndDate(\DateTimeImmutable $endDate): static
     {
-        $this->isAvailable = $isAvailable;
+        $this->endDate = $endDate;
+
+        return $this;
+    }
+
+    public function getReason(): ?string
+    {
+        return $this->reason;
+    }
+
+    public function setReason(?string $reason): static
+    {
+        $this->reason = $reason;
 
         return $this;
     }
