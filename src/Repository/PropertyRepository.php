@@ -48,6 +48,53 @@ class PropertyRepository extends ServiceEntityRepository
     /**
      * @return list<Property>
      */
+    public function findWithFilters(
+        ?string $destination,
+        ?\DateTimeImmutable $checkin,
+        ?\DateTimeImmutable $checkout,
+        int $guests,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.country) LIKE :destination OR LOWER(p.title) LIKE :destination')
+                ->setParameter('destination', '%' . mb_strtolower($destination) . '%');
+        }
+
+        if ($guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            $qb->andWhere(
+                'p.id NOT IN (
+                    SELECT IDENTITY(r2.property) FROM App\Entity\Reservation r2
+                    WHERE r2.status NOT IN (:excluded)
+                    AND r2.checkinDate < :checkout
+                    AND r2.checkoutDate > :checkin
+                )'
+            )
+            ->setParameter('excluded', ['cancelled', 'rejected'])
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
+     * @return list<Property>
+     */
     public function findPendingForModeration(int $limit = 10): array
     {
         return $this->createQueryBuilder('p')
