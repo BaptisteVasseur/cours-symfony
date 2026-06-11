@@ -1,7 +1,9 @@
 {% extends 'layout/base.html.twig' %}
 
 {% block body %}
-    <body class="text-gray-800 font-sans antialiased bg-white flex flex-col min-h-screen">
+    <body class="text-gray-800 font-sans antialiased bg-white flex flex-col min-h-screen"
+          data-realtime-user-id="{{ app.user ? app.user.id : '' }}"
+          data-realtime-token-url="{{ app.user ? path('app_realtime_token') : '' }}">
 
     {% include 'layout/partials/app/header.html.twig' %}
 

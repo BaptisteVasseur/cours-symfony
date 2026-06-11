@@ -2,11 +2,9 @@
     <button type="button" data-notifications-menu-toggle class="relative p-2.5 text-gray-600 hover:bg-gray-100 hover:text-gray-900 rounded-full transition shrink-0" aria-expanded="false" aria-haspopup="true" aria-label="Notifications">
         <i class="fa-regular fa-bell text-lg"></i>
         {% set count = unread_notifications_count() %}
-        {% if count > 0 %}
-            <span class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[9px] font-bold text-white ring-2 ring-white">
-                {{ count }}
-            </span>
-        {% endif %}
+        <span data-realtime-notification-badge class="absolute top-1 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-brand text-[9px] font-bold text-white ring-2 ring-white {{ count > 0 ? '' : 'hidden' }}">
+            {{ count }}
+        </span>
     </button>
 
     <div data-notifications-menu-dropdown class="hidden absolute right-0 top-full mt-3 w-80 bg-white rounded-2xl shadow-xl border border-gray-200 py-2 z-50 overflow-hidden">
@@ -19,10 +17,10 @@
             {% endif %}
         </div>
 
-        <div class="max-h-96 overflow-y-auto divide-y divide-gray-100">
+        <div class="max-h-96 overflow-y-auto divide-y divide-gray-100" data-realtime-notifications-list>
             {% set notifs = latest_notifications(5) %}
             {% if notifs is empty %}
-                <div class="p-6 text-center text-sm text-gray-500">
+                <div class="p-6 text-center text-sm text-gray-500" data-realtime-notifications-empty>
                     <i class="fa-regular fa-bell text-3xl text-gray-300 mb-2 block"></i>
                     Aucune notification
                 </div>
