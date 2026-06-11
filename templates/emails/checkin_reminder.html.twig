@@ -1,0 +1,17 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block subject %}Votre arrivée approche — {{ reservation.property.title }}{% endblock %}
+
+{% block body %}
+    {% set property = reservation.property %}
+    <h2 style="margin-top:0;">Votre séjour commence demain 🎒</h2>
+    <p>Bonjour {{ guestName }},</p>
+    <p>Petit rappel : votre arrivée à <strong>{{ property.title }}</strong> est prévue le
+        <strong>{{ reservation.checkinDate|date('d/m/Y') }}</strong>.</p>
+    <ul>
+        {% if property.checkinTime %}<li><strong>Heure d'arrivée :</strong> à partir de {{ property.checkinTime|date('H\\hi') }}</li>{% endif %}
+        {% if property.address %}<li><strong>Adresse :</strong> {{ property.address.addressLine1 }}, {{ property.address.postalCode }} {{ property.address.city }}</li>{% endif %}
+        <li><strong>Voyageurs :</strong> {{ reservation.guestsCount }}</li>
+    </ul>
+    <p>Bon séjour !</p>
+{% endblock %}

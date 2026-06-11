@@ -1,0 +1,16 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block subject %}Réservation annulée{% endblock %}
+
+{% block body %}
+    {% set property = reservation.property %}
+    <h2 style="margin-top:0;">Réservation annulée</h2>
+    <p>La réservation pour <strong>{{ property.title }}</strong>
+        ({{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}) a été annulée.</p>
+    {% if reservation.cancellationReason %}
+        <p style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px;">
+            <strong>Motif :</strong> {{ reservation.cancellationReason }}
+        </p>
+    {% endif %}
+    <p>Les dates correspondantes sont de nouveau disponibles à la réservation.</p>
+{% endblock %}

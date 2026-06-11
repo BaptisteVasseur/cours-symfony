@@ -1,0 +1,17 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block subject %}Votre réservation est confirmée{% endblock %}
+
+{% block body %}
+    {% set property = reservation.property %}
+    <h2 style="margin-top:0;">Réservation confirmée ✅</h2>
+    <p>La réservation pour <strong>{{ property.title }}</strong> est confirmée.</p>
+    <table style="width:100%; border-collapse:collapse; margin-top:12px;">
+        <tr><td style="padding:6px 0; color:#888;">Arrivée</td><td style="padding:6px 0; text-align:right;"><strong>{{ reservation.checkinDate|date('d/m/Y') }}</strong></td></tr>
+        <tr><td style="padding:6px 0; color:#888;">Départ</td><td style="padding:6px 0; text-align:right;"><strong>{{ reservation.checkoutDate|date('d/m/Y') }}</strong></td></tr>
+        <tr><td style="padding:6px 0; color:#888;">Voyageurs</td><td style="padding:6px 0; text-align:right;"><strong>{{ reservation.guestsCount }}</strong></td></tr>
+        <tr><td style="padding:6px 0; color:#888;">Voyageur</td><td style="padding:6px 0; text-align:right;"><strong>{{ guestName }}</strong></td></tr>
+        <tr><td style="padding:6px 0; color:#888;">Hôte</td><td style="padding:6px 0; text-align:right;"><strong>{{ hostName }}</strong></td></tr>
+        <tr><td style="padding:10px 0 0; color:#888; border-top:1px solid #eee;">Total</td><td style="padding:10px 0 0; text-align:right; border-top:1px solid #eee;"><strong>{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</strong></td></tr>
+    </table>
+{% endblock %}

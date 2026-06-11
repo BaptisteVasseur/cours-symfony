@@ -1,0 +1,19 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block subject %}Nouvelle demande de réservation{% endblock %}
+
+{% block body %}
+    {% set property = reservation.property %}
+    <h2 style="margin-top:0;">Nouvelle demande de réservation</h2>
+    <p>Bonjour {{ hostName }},</p>
+    <p>Vous avez reçu une nouvelle demande de réservation pour <strong>{{ property.title }}</strong>.</p>
+    <ul>
+        <li><strong>Dates :</strong> du {{ reservation.checkinDate|date('d/m/Y') }} au {{ reservation.checkoutDate|date('d/m/Y') }}</li>
+        <li><strong>Voyageurs :</strong> {{ reservation.guestsCount }}</li>
+        <li><strong>Voyageur :</strong> {{ guestName }} ({{ reservation.guest.email }})</li>
+        <li><strong>Total :</strong> {{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</li>
+    </ul>
+    <p style="margin-top:24px;">
+        <a href="{{ url('app_host_reservations') }}" style="background:#FF385C; color:#ffffff; padding:12px 20px; border-radius:8px; text-decoration:none; display:inline-block;">Gérer la demande</a>
+    </p>
+{% endblock %}

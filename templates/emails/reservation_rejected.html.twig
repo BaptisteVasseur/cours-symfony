@@ -1,0 +1,17 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block subject %}Votre demande de réservation a été refusée{% endblock %}
+
+{% block body %}
+    {% set property = reservation.property %}
+    <h2 style="margin-top:0;">Demande refusée</h2>
+    <p>Bonjour {{ guestName }},</p>
+    <p>Votre demande de réservation pour <strong>{{ property.title }}</strong>
+        ({{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}) n'a pas pu être acceptée par l'hôte.</p>
+    {% if reservation.cancellationReason %}
+        <p style="background:#fef2f2; border:1px solid #fecaca; border-radius:8px; padding:12px;">
+            <strong>Motif :</strong> {{ reservation.cancellationReason }}
+        </p>
+    {% endif %}
+    <p>N'hésitez pas à rechercher un autre logement disponible pour ces dates.</p>
+{% endblock %}
