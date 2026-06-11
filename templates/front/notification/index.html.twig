@@ -15,6 +15,7 @@
             {% set unreadCount = notifications_unread_count(app.user) %}
             {% if unreadCount > 0 %}
                 <form action="{{ path('app_notifications_mark_all_read') }}" method="POST" class="m-0 shrink-0">
+                    <input type="hidden" name="_token" value="{{ csrf_token('mark_all_read') }}">
                     <button type="submit" class="w-full sm:w-auto text-sm font-semibold text-brand hover:text-brandHover border border-brand hover:bg-brand/5 px-4 py-2 rounded-full transition text-center">
                         Tout marquer comme lu
                     </button>
@@ -32,6 +33,7 @@
             <div class="space-y-4">
                 {% for notif in notifications %}
                     <form action="{{ path('app_notification_read', { id: notif.id }) }}" method="POST" class="m-0">
+                        <input type="hidden" name="_token" value="{{ csrf_token('read' ~ notif.id) }}">
                         <button type="submit" class="w-full text-left p-5 border rounded-2xl hover:shadow-md transition bg-white block relative group {% if not notif.isRead %}border-brand/20 bg-brand/5/10{% else %}border-gray-200{% endif %}">
                             <div class="flex items-start gap-4">
                                 <div class="p-3 rounded-full shrink-0 {% if not notif.isRead %}bg-brand/10 text-brand{% else %}bg-gray-100 text-gray-500{% endif %}">

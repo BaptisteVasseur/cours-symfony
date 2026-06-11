@@ -51,12 +51,22 @@ final readonly class BookingCancelledHandler
                     $body = sprintf('%s a annulé sa réservation pour "%s". Motif : %s', $guestName, $property->getTitle(), $reason);
                     $this->notificationService->notify($host, $title, $body, '/compte/hote/reservations');
                 }
+                if ($guest !== null) {
+                    $title = 'Réservation annulée';
+                    $body = sprintf('Vous avez annulé votre réservation pour "%s". Motif : %s', $property->getTitle(), $reason);
+                    $this->notificationService->notify($guest, $title, $body, '/reservations/' . $reservation->getId());
+                }
             } 
             elseif ($actorStr === 'host') {
                 if ($guest !== null) {
                     $title = 'Réservation annulée par l\'hôte';
                     $body = sprintf('L\'hôte a annulé votre réservation pour "%s". Motif : %s', $property->getTitle(), $reason);
                     $this->notificationService->notify($guest, $title, $body, '/reservations/' . $reservation->getId());
+                }
+                if ($host !== null) {
+                    $title = 'Réservation annulée';
+                    $body = sprintf('Vous avez annulé la réservation pour "%s". Motif : %s', $property->getTitle(), $reason);
+                    $this->notificationService->notify($host, $title, $body, '/compte/hote/reservations');
                 }
             } 
             else {

@@ -228,6 +228,14 @@ function prependNotification(payload) {
     form.method = 'POST';
     form.className = 'm-0';
 
+    if (payload.csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = '_token';
+        csrfInput.value = payload.csrfToken;
+        form.appendChild(csrfInput);
+    }
+
     const button = document.createElement('button');
     button.type = 'submit';
     button.className = 'w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-start gap-3 bg-brand/5';

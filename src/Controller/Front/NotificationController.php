@@ -20,11 +20,29 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class NotificationController extends AbstractController
 {
     #[Route('', name: 'app_notifications_index', methods: ['GET'])]
-    public function index(NotificationRepository $notificationRepository): Response
-    {
+    public function index(
+        NotificationRepository $notificationRepository,
+        EntityManagerInterface $entityManager,
+        RealtimePublisher $realtimePublisher,
+    ): Response {
         $user = $this->getUser();
         if (!$user instanceof User) {
             return $this->redirectToRoute('app_login');
+        }
+
+        $unreadNotifications = $notificationRepository->findBy([
+            'user' => $user,
+            'isRead' => false,
+        ]);
+
+        if (count($unreadNotifications) > 0) {
+            foreach ($unreadNotifications as $notification) {
+                $notification->setIsRead(true);
+            }
+            $entityManager->flush();
+            $realtimePublisher->publishToUser($user, 'notifications.read', [
+                'unreadCount' => 0,
+            ]);
         }
 
         $notifications = $notificationRepository->findBy(
@@ -50,10 +68,26 @@ final class NotificationController extends AbstractController
             throw $this->createAccessDeniedException();
         }
 
+        $token = $request->request->get('_token') ?? $request->headers->get('X-CSRF-Token');
+        if (!$this->isCsrfTokenValid('read' . $notification->getId(), (string) $token)) {
+            throw $this->createAccessDeniedException('Jeton CSRF invalide.');
+        }
+
         if (!$notification->isRead()) {
             $notification->setIsRead(true);
             $entityManager->flush();
             $realtimePublisher->publishToUser($user, 'notifications.read', [
+                'unreadCount' => $notificationRepository->count(['user' => $user, 'isRead' => false]),
+            ]);
+        }
+
+        $isAjax = $request->isXmlHttpRequest() 
+            || $request->headers->get('X-Requested-With') === 'XMLHttpRequest'
+            || str_contains($request->headers->get('Accept', ''), 'application/json');
+
+        if ($isAjax) {
+            return $this->json([
+                'success' => true,
                 'unreadCount' => $notificationRepository->count(['user' => $user, 'isRead' => false]),
             ]);
         }
@@ -83,6 +117,11 @@ final class NotificationController extends AbstractController
             return $this->redirectToRoute('app_login');
         }
 
+        $token = $request->request->get('_token') ?? $request->headers->get('X-CSRF-Token');
+        if (!$this->isCsrfTokenValid('mark_all_read', (string) $token)) {
+            throw $this->createAccessDeniedException('Jeton CSRF invalide.');
+        }
+
         $unreadNotifications = $notificationRepository->findBy([
             'user' => $user,
             'isRead' => false,
@@ -96,6 +135,17 @@ final class NotificationController extends AbstractController
         $realtimePublisher->publishToUser($user, 'notifications.read', [
             'unreadCount' => 0,
         ]);
+
+        $isAjax = $request->isXmlHttpRequest() 
+            || $request->headers->get('X-Requested-With') === 'XMLHttpRequest'
+            || str_contains($request->headers->get('Accept', ''), 'application/json');
+
+        if ($isAjax) {
+            return $this->json([
+                'success' => true,
+                'unreadCount' => 0,
+            ]);
+        }
 
         $this->addFlash('success', 'Toutes les notifications ont été marquées comme lues.');
 

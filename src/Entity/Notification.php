@@ -11,6 +11,7 @@ use Doctrine\ORM\Mapping as ORM;
 
 #[ORM\Entity(repositoryClass: NotificationRepository::class)]
 #[ORM\Table(name: 'notifications')]
+#[ORM\Index(columns: ['user_id', 'is_read'], name: 'idx_notif_user_is_read')]
 class Notification
 {
     use UuidEntityTrait;

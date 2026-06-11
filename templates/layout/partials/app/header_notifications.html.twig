@@ -12,6 +12,7 @@
             <h3 class="font-semibold text-gray-900 text-sm">Notifications</h3>
             {% if count > 0 %}
                 <form action="{{ path('app_notifications_mark_all_read') }}" method="POST" class="m-0">
+                    <input type="hidden" name="_token" value="{{ csrf_token('mark_all_read') }}">
                     <button type="submit" class="text-xs text-brand hover:text-brandHover font-semibold transition">Tout marquer comme lu</button>
                 </form>
             {% endif %}
@@ -27,6 +28,7 @@
             {% else %}
                 {% for notif in notifs %}
                     <form action="{{ path('app_notification_read', { id: notif.id }) }}" method="POST" class="m-0">
+                        <input type="hidden" name="_token" value="{{ csrf_token('read' ~ notif.id) }}">
                         <button type="submit" class="w-full text-left px-4 py-3 hover:bg-gray-50 transition flex items-start gap-3 {% if not notif.isRead %}bg-brand/5{% endif %}">
                             <span class="mt-1.5 flex h-2 w-2 shrink-0 rounded-full {% if not notif.isRead %}bg-brand{% else %}bg-transparent{% endif %}"></span>
                             <div class="flex-1 min-w-0">
