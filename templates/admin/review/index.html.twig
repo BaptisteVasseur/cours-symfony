@@ -1,0 +1,52 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block page_title %}Modération des avis{% endblock %}
+
+{% block content %}
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <p class="text-xs font-medium text-gray-400 uppercase">Total signalements</p>
+            <h4 class="text-2xl font-bold text-gray-900 mt-1">{{ total }}</h4>
+        </div>
+        <div class="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+            <p class="text-xs font-medium text-gray-400 uppercase">À traiter</p>
+            <h4 class="text-2xl font-bold text-amber-600 mt-1">{{ pending }}</h4>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+        <div class="px-6 py-4 border-b border-gray-200">
+            <h3 class="font-bold text-gray-900">Signalements d'avis</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-sm">
+                <thead>
+                    <tr class="bg-gray-50 text-gray-400 font-semibold border-b border-gray-200 uppercase text-[11px] tracking-wider">
+                        <th class="px-6 py-3">Avis</th>
+                        <th class="px-6 py-3">Motif</th>
+                        <th class="px-6 py-3">Signalé par</th>
+                        <th class="px-6 py-3">Statut</th>
+                        <th class="px-6 py-3 text-right">Actions</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-200">
+                    {% for report in reports %}
+                        {{ include('admin/review/partials/review_report_row.html.twig') }}
+                    {% else %}
+                        <tr>
+                            <td colspan="5" class="px-6 py-8 text-center text-gray-400">Aucun signalement d'avis.</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% endblock %}

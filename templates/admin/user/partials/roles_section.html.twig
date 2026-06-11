@@ -1,0 +1,39 @@
+<div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
+    <h3 class="font-bold text-gray-900 mb-4">Gestion des rôles</h3>
+
+    {% if user.assignedRoles|length > 0 %}
+        <ul class="space-y-2 mb-4">
+            {% for roleCode in user.assignedRoles %}
+                <li class="flex items-center justify-between text-sm font-medium text-gray-700 p-2 rounded-lg bg-gray-50">
+                    <span class="flex items-center gap-2">
+                        <i class="fa-solid fa-shield-halved text-xs text-gray-400"></i>
+                        {{ roleLabels[roleCode]|default(roleCode) }}
+                        <span class="text-xs text-gray-400 font-normal">({{ roleCode }})</span>
+                    </span>
+                    <form method="post" action="{{ path('app_user_role_remove', { id: user.id }) }}">
+                        <input type="hidden" name="_token" value="{{ csrf_token('role_remove' ~ user.id) }}">
+                        <input type="hidden" name="roleCode" value="{{ roleCode }}">
+                        <button type="submit" class="text-xs text-rose-600 hover:text-rose-800 font-semibold">Retirer</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p class="text-sm text-gray-400 mb-4">Aucun rôle métier assigné (ROLE_USER par défaut).</p>
+    {% endif %}
+
+    <form method="post" action="{{ path('app_user_role_assign', { id: user.id }) }}" class="flex gap-2">
+        <input type="hidden" name="_token" value="{{ csrf_token('role_assign' ~ user.id) }}">
+        <select name="roleCode" required class="flex-grow text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:border-gray-400">
+            <option value="">Ajouter un rôle…</option>
+            {% for roleCode, roleLabel in availableRoles %}
+                {% if roleCode not in user.assignedRoles %}
+                    <option value="{{ roleCode }}">{{ roleLabel }}</option>
+                {% endif %}
+            {% endfor %}
+        </select>
+        <button type="submit" class="bg-gray-900 hover:bg-gray-700 text-white font-semibold text-sm px-4 py-2 rounded-lg transition shrink-0">
+            Assigner
+        </button>
+    </form>
+</div>

@@ -1,0 +1,25 @@
+<article class="pb-6 border-b border-gray-100 last:border-0">
+    <div class="flex items-center gap-3 mb-2">
+        <div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-semibold text-sm">
+            {% if review.reviewer and review.reviewer.profile and review.reviewer.profile.firstName %}
+                {{ review.reviewer.profile.firstName|first|upper }}
+            {% else %}
+                V
+            {% endif %}
+        </div>
+        <div>
+            <p class="font-semibold text-sm">
+                {{ review.reviewer and review.reviewer.profile ? review.reviewer.profile.firstName : 'Voyageur' }}
+            </p>
+            <p class="text-xs text-gray-500">{{ review.createdAt|date('d/m/Y') }}</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-1 mb-2">
+        {% for i in 1..review.rating %}
+            <i class="fa-solid fa-star text-xs"></i>
+        {% endfor %}
+    </div>
+    {% if review.comment %}
+        <p class="text-gray-700 text-sm">{{ review.comment }}</p>
+    {% endif %}
+</article>

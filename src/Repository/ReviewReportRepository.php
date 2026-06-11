@@ -17,4 +17,29 @@ class ReviewReportRepository extends ServiceEntityRepository
     {
         parent::__construct($registry, ReviewReport::class);
     }
+
+    /**
+     * @return list<ReviewReport>
+     */
+    public function findAllForListing(): array
+    {
+        return $this->createQueryBuilder('rr')
+            ->addSelect('rev', 'rep', 'reviewer', 'property')
+            ->leftJoin('rr.review', 'rev')
+            ->leftJoin('rr.reportedBy', 'rep')
+            ->leftJoin('rev.reviewer', 'reviewer')
+            ->leftJoin('rev.property', 'property')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countPending(): int
+    {
+        return (int) $this->createQueryBuilder('rr')
+            ->select('COUNT(rr.id)')
+            ->andWhere('rr.status NOT IN (:statuses)')
+            ->setParameter('statuses', ['dismissed', 'upheld'])
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }

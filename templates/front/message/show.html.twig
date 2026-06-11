@@ -1,0 +1,60 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Conversation{% endblock %}
+
+{% set reservation = conversation.reservation %}
+{% set property = reservation ? reservation.property : null %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-3xl mx-auto w-full">
+        <a href="{{ path('app_messages_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i>
+            Retour aux messages
+        </a>
+
+        <div class="mb-6">
+            <h1 class="text-xl font-semibold text-gray-900">{{ property ? property.title : 'Conversation' }}</h1>
+            {% if reservation %}
+                <p class="text-sm text-gray-500 mt-1">
+                    Séjour du {{ reservation.checkinDate|date('d/m/Y') }} au {{ reservation.checkoutDate|date('d/m/Y') }}
+                </p>
+            {% endif %}
+        </div>
+
+        <div class="bg-white border border-gray-200 rounded-2xl shadow-sm min-h-[400px] flex flex-col">
+            <div class="flex-grow p-6 space-y-4 overflow-y-auto">
+                {% if conversation.messages|length > 0 %}
+                    {% for message in conversation.messages %}
+                        {% set isMine = message.sender and message.sender.id == app.user.id %}
+                        {% set senderProfile = message.sender ? message.sender.profile : null %}
+                        <div class="flex {{ isMine ? 'justify-end' : 'justify-start' }}">
+                            <div class="max-w-[80%] rounded-2xl px-4 py-3 {{ isMine ? 'bg-brand text-white' : 'bg-gray-100 text-gray-900' }}">
+                                <p class="text-xs font-semibold mb-1 {{ isMine ? 'text-white/80' : 'text-gray-500' }}">
+                                    {{ senderProfile and senderProfile.firstName ? senderProfile.firstName : 'Membre' }}
+                                    · {{ message.createdAt|date('d/m H:i') }}
+                                </p>
+                                {% if message.content %}
+                                    <p class="text-sm whitespace-pre-line">{{ message.content }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-center text-gray-400 text-sm py-12">Aucun message dans cette conversation.</p>
+                {% endif %}
+            </div>
+
+            <div class="border-t border-gray-200 p-4">
+                {{ form_start(form, { action: path('app_messages_show', { id: conversation.id }), attr: { class: 'flex items-end gap-3' } }) }}
+                    <div class="flex-1">
+                        {{ form_widget(form.content) }}
+                        {{ form_errors(form.content) }}
+                    </div>
+                    <button type="submit" class="shrink-0 bg-brand hover:bg-brandHover text-white font-semibold px-5 py-3 rounded-xl transition text-sm">
+                        Envoyer
+                    </button>
+                {{ form_end(form) }}
+            </div>
+        </div>
+    </main>
+{% endblock %}
