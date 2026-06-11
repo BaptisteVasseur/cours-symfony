@@ -17,7 +17,20 @@
         {% endfor %}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
-                <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
+                <h1 class="text-2xl font-bold text-gray-900 mb-4">Finaliser votre réservation</h1>
+                {% if property.instantBooking %}
+                    <div class="flex items-center gap-2 text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 mb-6">
+                        <i class="fa-solid fa-bolt text-emerald-500"></i>
+                        <span class="font-medium">Réservation instantanée</span>
+                        <span class="text-emerald-600 text-xs">— votre réservation sera confirmée immédiatement</span>
+                    </div>
+                {% else %}
+                    <div class="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-6">
+                        <i class="fa-solid fa-clock text-amber-500"></i>
+                        <span class="font-medium">Réservation sur demande</span>
+                        <span class="text-amber-600 text-xs">— l'hôte devra accepter votre demande</span>
+                    </div>
+                {% endif %}
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                     {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -35,9 +48,70 @@
                     <div class="p-5">
                         <h2 class="font-semibold">{{ property.title }}</h2>
                         <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+                        <div id="price-breakdown" class="mt-4 space-y-2 text-sm text-gray-600 hidden">
+                            <div class="flex justify-between">
+                                <span id="nights-label">0 nuits</span>
+                                <span id="nights-total">0 €</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>Frais de service (12%)</span>
+                                <span id="service-fee">0 €</span>
+                            </div>
+                            {% if property.cleaningFee %}
+                                <div class="flex justify-between">
+                                    <span>Frais de ménage</span>
+                                    <span>{{ property.cleaningFee|number_format(0, ',', ' ') }} €</span>
+                                </div>
+                            {% endif %}
+                            <div class="flex justify-between font-semibold text-gray-900 border-t border-gray-200 pt-2 mt-2">
+                                <span>Total</span>
+                                <span id="price-total">0 €</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </aside>
         </div>
     </main>
+
+    <script>
+        (function () {
+            const pricePerNight = {{ property.pricePerNight }};
+            const cleaningFee = {{ property.cleaningFee ?? 0 }};
+            const checkinInput = document.querySelector('[name$="[checkinDate]"]') || document.querySelector('[name*="checkin"]');
+            const checkoutInput = document.querySelector('[name$="[checkoutDate]"]') || document.querySelector('[name*="checkout"]');
+            const breakdown = document.getElementById('price-breakdown');
+            const nightsLabel = document.getElementById('nights-label');
+            const nightsTotal = document.getElementById('nights-total');
+            const serviceFeeEl = document.getElementById('service-fee');
+            const priceTotalEl = document.getElementById('price-total');
+
+            function fmt(n) {
+                return n.toLocaleString('fr-FR', { minimumFractionDigits: 0, maximumFractionDigits: 2 }) + ' €';
+            }
+
+            function recalculate() {
+                if (!checkinInput || !checkoutInput) return;
+                const checkin = new Date(checkinInput.value);
+                const checkout = new Date(checkoutInput.value);
+                if (isNaN(checkin) || isNaN(checkout) || checkout <= checkin) {
+                    breakdown.classList.add('hidden');
+                    return;
+                }
+                const nights = Math.round((checkout - checkin) / 86400000);
+                const base = nights * pricePerNight;
+                const fee = Math.round(base * 0.12 * 100) / 100;
+                const total = base + fee + cleaningFee;
+                nightsLabel.textContent = nights + ' nuit' + (nights > 1 ? 's' : '');
+                nightsTotal.textContent = fmt(base);
+                serviceFeeEl.textContent = fmt(fee);
+                priceTotalEl.textContent = fmt(total);
+                breakdown.classList.remove('hidden');
+            }
+
+            checkinInput?.addEventListener('change', recalculate);
+            checkoutInput?.addEventListener('change', recalculate);
+            recalculate();
+        })();
+    </script>
 {% endblock %}

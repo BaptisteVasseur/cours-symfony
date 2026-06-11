@@ -32,8 +32,12 @@ final class ReservationController extends AbstractController
 
     #[Route('/{id}', name: 'app_reservation_show', methods: ['GET'])]
     #[IsGranted(ReservationVoter::VIEW, subject: 'reservation')]
-    public function show(Reservation $reservation, ReservationRepository $reservationRepository): Response
+    public function show(?Reservation $reservation, ReservationRepository $reservationRepository): Response
     {
+        if (!$reservation) {
+            $this->addFlash('error', 'Cette réservation n\'existe plus.');
+            return $this->redirectToRoute('app_reservation_index');
+        }
         $user = $this->getUser();
         if (!$user instanceof User) {
             return $this->redirectToRoute('app_login');

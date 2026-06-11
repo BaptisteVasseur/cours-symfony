@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rappel d'arrivée demain</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9fafb; margin: 0; padding: 0; }
+        .wrapper { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+        .header { background: #ff385c; padding: 32px 40px; text-align: center; }
+        .header h1 { color: #fff; margin: 0; font-size: 22px; }
+        .body { padding: 32px 40px; color: #374151; font-size: 15px; line-height: 1.6; }
+        .info-grid { background: #f3f4f6; border-radius: 8px; padding: 20px 24px; margin: 20px 0; }
+        .info-row { display: flex; justify-content: space-between; padding: 6px 0; }
+        .info-label { color: #6b7280; font-size: 13px; }
+        .info-value { font-weight: 600; color: #111827; }
+        .btn { display: inline-block; background: #ff385c; color: #ffffff !important; text-decoration: none; font-weight: 600; padding: 12px 28px; border-radius: 8px; margin-top: 24px; }
+        .footer { background: #f9fafb; text-align: center; padding: 20px 40px; font-size: 12px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+    </style>
+</head>
+<body>
+<div class="wrapper">
+    <div class="header">
+        <h1>Votre arrivée est demain !</h1>
+    </div>
+    <div class="body">
+        <p>Bonjour {{ guestName }},</p>
+        <p>Nous vous rappelons que votre séjour commence <strong>demain</strong> à <strong>{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</strong>.</p>
+
+        <div class="info-grid">
+            <div class="info-row">
+                <span class="info-label">Logement</span>
+                <span class="info-value">{{ property.title }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Arrivée</span>
+                <span class="info-value">{{ reservation.checkinDate|date('d/m/Y') }}</span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Départ</span>
+                <span class="info-value">{{ reservation.checkoutDate|date('d/m/Y') }}</span>
+            </div>
+            {% if property.address %}
+                <div class="info-row">
+                    <span class="info-label">Adresse</span>
+                    <span class="info-value">{{ property.address.city }}, {{ property.address.country }}</span>
+                </div>
+            {% endif %}
+        </div>
+
+        <p>N'hésitez pas à consulter votre réservation pour retrouver toutes les informations utiles.</p>
+
+        <a href="{{ reservationUrl }}" class="btn">Voir ma réservation</a>
+    </div>
+    <div class="footer">
+        Clone Airbnb · Ce message a été envoyé automatiquement, merci de ne pas y répondre.
+    </div>
+</div>
+</body>
+</html>

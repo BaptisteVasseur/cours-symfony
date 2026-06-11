@@ -1,0 +1,42 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Refuser une réservation{% endblock %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-2xl mx-auto w-full">
+    <a href="{{ path('app_host_reservations_pending') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Retour aux demandes
+    </a>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'error' ? 'bg-red-50 text-red-800' : 'bg-yellow-50 text-yellow-800' }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <h1 class="text-xl font-semibold text-gray-900 mb-2">Refuser la réservation</h1>
+        {% set property = reservation.property %}
+        {% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
+        <p class="text-sm text-gray-500 mb-6">
+            {{ property ? property.title : 'Logement' }} — {{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : reservation.guest.email }}
+            · {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+        </p>
+
+        {{ form_start(form, { attr: { class: 'space-y-4' } }) }}
+            {{ form_row(form.reason, {
+                label: 'Motif du refus',
+                attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', rows: 4 }
+            }) }}
+            <div class="flex gap-3 pt-2">
+                <a href="{{ path('app_host_reservations_pending') }}" class="flex-1 text-center py-2.5 border border-gray-200 rounded-xl text-sm font-semibold hover:bg-gray-50 transition">
+                    Annuler
+                </a>
+                <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 rounded-xl text-sm transition">
+                    Confirmer le refus
+                </button>
+            </div>
+        {{ form_end(form) }}
+    </div>
+</main>
+{% endblock %}

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -89,6 +90,130 @@ class ReservationRepository extends ServiceEntityRepository
             ->andWhere('r.guest = :guest')
             ->setParameter('guest', $guest)
             ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Returns confirmed reservations that overlap with the given date range.
+     *
+     * Overlap condition: checkin_date < :checkout AND checkout_date > :checkin
+     *
+     * @return list<Reservation>
+     */
+    public function findConfirmedOverlapping(Property $property, \DateTimeInterface $checkin, \DateTimeInterface $checkout): array
+    {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Returns pending reservations for all properties owned by the given host.
+     *
+     * @return list<Reservation>
+     */
+    public function findPendingByHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->join('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Returns all reservations for all properties owned by the given host.
+     *
+     * @return list<Reservation>
+     */
+    public function findByHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->join('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->setParameter('host', $host)
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Returns all confirmed reservations for a given property, with guest info.
+     *
+     * @return list<Reservation>
+     */
+    public function findConfirmedByProperty(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Returns pending reservations created before the given threshold (for auto-expiry).
+     *
+     * @return list<Reservation>
+     */
+    public function findExpiredPending(\DateTimeInterface $threshold): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g')
+            ->leftJoin('r.guest', 'g')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.createdAt < :threshold')
+            ->setParameter('status', 'pending')
+            ->setParameter('threshold', $threshold)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Returns confirmed reservations with a check-in date matching the given date.
+     *
+     * @return list<Reservation>
+     */
+    public function findCheckinOn(\DateTimeInterface $date): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate = :date')
+            ->setParameter('status', 'confirmed')
+            ->setParameter('date', $date)
             ->getQuery()
             ->getResult();
     }

@@ -1,0 +1,122 @@
+CONCEPTION — Moteur de réservation & iCal
+
+
+1. Modélisation temporelle
+
+Pour moi le checkout day doit être exclusif, c'est-à-dire qu'un nouveau guest
+peut arriver le jour où l'autre part. C'est comme ça que ça marche sur Airbnb
+et ça a du sens : si quelqu'un part le 14 juin à 11h et qu'un autre arrive à
+15h, les dates ne se chevauchent pas vraiment.
+
+Dans le code les colonnes checkin_date et checkout_date sont des DATE_IMMUTABLE
+donc sans heure. Les champs checkinTime et checkoutTime sur Property sont juste
+des infos affichées au voyageur, ils n'entrent pas dans les calculs.
+
+La règle de chevauchement que j'utilise dans les requêtes :
+
+    checkin_date < :checkout AND checkout_date > :checkin
+
+Avec ça si A finit le 14 et B commence le 14, il n'y a pas de conflit parce que
+14 < 14 est faux. C'est exactement le comportement voulu. En iCal c'est pareil
+d'ailleurs, DTEND est exclusif par convention.
+
+
+2. Est-ce que pending bloque les dates ?
+
+Non. J'ai choisi que pending ne bloque pas les dates.
+
+Mon raisonnement : si pending bloquait, un utilisateur malveillant peut juste
+envoyer plein de demandes et bloquer le calendrier d'un hôte pendant 24h sans
+jamais payer. Même avec une limite par utilisateur c'est contournable.
+
+Le risque avec mon choix c'est l'overbooking — l'hôte pourrait accepter deux
+demandes pour les mêmes dates par erreur. Pour éviter ça j'utilise un verrou
+pessimiste au moment où l'hôte accepte une demande. Concrètement : avant de
+confirmer, j'ouvre une transaction, je verrouille les lignes concernées avec
+PESSIMISTIC_WRITE, et je re-vérifie la disponibilité à l'intérieur. Si une
+autre confirmation est passée entre-temps la transaction échoue. Sinon ça passe.
+
+J'ajoute aussi une vérification côté applicatif pour pas qu'un guest puisse
+créer 10 demandes pending sur le même logement pour les mêmes dates.
+
+
+3. Concurrence
+
+C'est un peu le même sujet que le point 2. Si deux users cliquent en même temps
+sur "réserver" pour le même logement et les mêmes dates :
+
+  - Transaction A verrouille les réservations confirmées du logement (FOR UPDATE)
+  - Transaction B essaie de faire pareil → elle attend
+  - A vérifie, c'est libre → insère → commit
+  - B se déverrouille → relit les données → voit la resa de A → conflit → rollback
+  - L'utilisateur B voit "ces dates ne sont plus disponibles"
+
+J'avais pensé à une contrainte d'unicité en base genre une table avec une ligne
+par nuit réservée, mais ça impliquerait d'insérer des lignes par nuit à chaque
+réservation et ça colle pas trop avec le reste du modèle. Du coup le verrou
+pessimiste me semble plus propre ici.
+
+
+4. Performance
+
+Le truc à éviter c'est de faire une requête SQL par nuit pour vérifier la dispo.
+Sur 20 nuits ça ferait 20 requêtes, c'est nul.
+
+Dans AvailabilityService je fais deux requêtes maximum peu importe la durée :
+
+  - une sur Reservation : est-ce qu'une resa confirmée chevauche la plage ?
+  - une sur PropertyAvailability : est-ce qu'un jour est manuellement bloqué
+    dans la plage ?
+
+Si les deux retournent 0 résultats c'est dispo. C'est tout, 2 requêtes pour
+1 nuit comme pour 90 nuits.
+
+Pour la recherche j'utilise NOT EXISTS en sous-requête plutôt qu'un JOIN, parce
+qu'un JOIN sur les réservations ferait exploser le nombre de lignes retournées
+et obligerait à du DISTINCT partout.
+
+
+5. Asynchronisme
+
+L'email doit partir après le flush() et pas avant, c'est assez évident quand on
+y réfléchit : si le flush() plante pour une raison quelconque, la réservation
+n'existe pas en base. Si l'email était déjà parti le guest aurait une
+confirmation pour rien. Donc toujours dans cet ordre :
+
+  persist → flush → dispatch
+
+Le transport Messenger configuré c'est doctrine (messenger_messages en base).
+Du coup si le worker crash les messages sont pas perdus, ils sont en base et
+seront repris au redémarrage. La retry strategy est déjà configurée avec
+max_retries: 3. Si ça échoue 3 fois le message va dans le transport failed et
+on peut le rejouer avec messenger:failed:retry.
+
+
+6. Structure SQL du calendrier
+
+Le projet utilise déjà un modèle avec une ligne par jour bloqué dans
+PropertyAvailability. J'aurais pu partir sur un modèle par plages (date_start,
+date_end) mais j'ai préféré garder ce qui existait.
+
+Les avantages qui m'ont convaincu :
+
+  - Les requêtes de plage sont très simples avec BETWEEN, pas de logique de
+    chevauchement d'intervalles à gérer
+  - Le champ priceOverride permet d'avoir un prix différent par jour (utile pour
+    les week-ends ou les périodes de forte demande)
+
+Le seul vrai défaut c'est le volume si on pré-peuplait tout le calendrier
+(365 lignes par an). Mais on ne stocke que les jours explicitement bloqués —
+absence de ligne = dispo par défaut. Une propriété sans blocage a 0 lignes dans
+cette table. C'est propre.
+
+
+Pour résumer rapidement les choix que j'ai faits :
+
+- le checkout day est exclusif, pending ne bloque pas les dates et c'est le verrou pessimiste qui protège contre
+l'overbooking au moment de la confirmation.
+- La vérification de dispo se fait en 2 requêtes max peu importe la durée du séjour.
+Les emails partent toujours après le flush, jamais avant.
+- Si le worker Messenger tombe les messages restent en base et sont repris automatiquement.
+- Le calendrier repose sur des jours individuels avec absence de ligne qui signifie disponible par défaut. Les tokens iCal sont
+générés avec bin2hex(random_bytes(32)).

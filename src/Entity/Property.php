@@ -134,6 +134,9 @@ class Property
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[ORM\Column(length: 64, nullable: true, unique: true)]
+    private ?string $calendarToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
@@ -558,6 +561,18 @@ class Property
     public function removeReview(Review $review): static
     {
         $this->reviews->removeElement($review);
+
+        return $this;
+    }
+
+    public function getCalendarToken(): ?string
+    {
+        return $this->calendarToken;
+    }
+
+    public function setCalendarToken(?string $calendarToken): static
+    {
+        $this->calendarToken = $calendarToken;
 
         return $this;
     }
