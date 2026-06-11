@@ -20,8 +20,8 @@ enum UnavailabilityReason: string
             self::PROPERTY_NOT_FOUND => 'Logement introuvable.',
             self::PROPERTY_NOT_PUBLISHED => 'Ce logement n\'est pas publié.',
             self::CAPACITY_EXCEEDED => 'La capacité du logement est insuffisante pour ce nombre de voyageurs.',
-            self::BLOCKED_BY_HOST => 'L\'hôte a bloqué ces dates.',
-            self::ALREADY_BOOKED => 'Le logement est déjà réservé sur cette période.',
+            self::BLOCKED_BY_HOST => 'Ces dates sont indisponibles.',
+            self::ALREADY_BOOKED => 'Ces dates sont indisponibles.',
         };
     }
 }

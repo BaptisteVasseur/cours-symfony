@@ -44,7 +44,27 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_logement_detail', ['id' => $property->getId()]);
         }
 
-        $form = $this->createForm(BookingType::class);
+        $defaults = [];
+        $checkinParam = $request->query->get('checkin');
+        $checkoutParam = $request->query->get('checkout');
+        $guestsParam = $request->query->get('guests');
+        if (is_string($checkinParam) && $checkinParam !== '') {
+            try {
+                $defaults['checkinDate'] = new \DateTimeImmutable($checkinParam);
+            } catch (\Exception) {
+            }
+        }
+        if (is_string($checkoutParam) && $checkoutParam !== '') {
+            try {
+                $defaults['checkoutDate'] = new \DateTimeImmutable($checkoutParam);
+            } catch (\Exception) {
+            }
+        }
+        if (is_string($guestsParam) && ctype_digit($guestsParam) && (int) $guestsParam >= 1) {
+            $defaults['guestsCount'] = (int) $guestsParam;
+        }
+
+        $form = $this->createForm(BookingType::class, $defaults);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -61,10 +81,7 @@ final class BookingController extends AbstractController
             } catch (BookingUnavailableException $exception) {
                 $this->addFlash('error', $exception->getMessage());
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $this->redirectToRoute('app_booking_checkout', ['id' => $property->getId()]);
             }
 
             $this->addFlash(
