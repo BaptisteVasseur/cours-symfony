@@ -14,6 +14,7 @@ use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\ReservationVoter;
 use App\Service\ICalUrlService;
+use App\Service\ReservationStatusHistoryService;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Mailer\MailerInterface;
 use Twig\Environment;
@@ -60,9 +61,14 @@ final class DashboardController extends AbstractController
     }
 
     #[Route('/reservation/{id}/accept', name: 'app_host_reservation_accept', methods: ['POST'])]
-    public function accept(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, \Symfony\Component\Mailer\MailerInterface $mailer, \Twig\Environment $twig): Response
+    public function accept(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, ReservationStatusHistoryService $reservationStatusHistoryService, \Symfony\Component\Mailer\MailerInterface $mailer, \Twig\Environment $twig): Response
     {
         $this->denyAccessUnlessGranted(ReservationVoter::MANAGE, $reservation);
+
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
 
         $token = $request->request->get('_token');
         if (!$this->isCsrfTokenValid('accept-reservation'.$reservation->getId(), $token)) {
@@ -71,8 +77,10 @@ final class DashboardController extends AbstractController
             return $this->redirectToRoute('app_host_dashboard');
         }
 
+        $oldStatus = $reservation->getStatus();
         $reservation->setStatus('confirmed');
         $entityManager->persist($reservation);
+        $reservationStatusHistoryService->record($reservation, $oldStatus, 'confirmed', $user);
         $entityManager->flush();
 
         // send notification (confirmed) to guest and host
@@ -102,9 +110,14 @@ final class DashboardController extends AbstractController
     }
 
     #[Route('/reservation/{id}/reject', name: 'app_host_reservation_reject', methods: ['POST'])]
-    public function reject(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, \Symfony\Component\Mailer\MailerInterface $mailer, \Twig\Environment $twig): Response
+    public function reject(Reservation $reservation, Request $request, EntityManagerInterface $entityManager, ReservationStatusHistoryService $reservationStatusHistoryService, \Symfony\Component\Mailer\MailerInterface $mailer, \Twig\Environment $twig): Response
     {
         $this->denyAccessUnlessGranted(ReservationVoter::MANAGE, $reservation);
+
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
 
         $token = $request->request->get('_token');
         if (!$this->isCsrfTokenValid('reject-reservation'.$reservation->getId(), $token)) {
@@ -121,10 +134,12 @@ final class DashboardController extends AbstractController
             return $this->redirectToRoute('app_host_dashboard');
         }
 
+        $oldStatus = $reservation->getStatus();
         $reservation->setStatus('cancelled');
         $reservation->setCancellationReason($reason);
 
         $entityManager->persist($reservation);
+        $reservationStatusHistoryService->record($reservation, $oldStatus, 'cancelled', $user);
         $entityManager->flush();
 
         // send notification (cancelled) with reason

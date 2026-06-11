@@ -1,4 +1,4 @@
-<header class="relative border-b border-neutral-200" x-data="{ menuOpen: false }">
+<header class="relative border-b border-neutral-200" data-main-menu>
     <div class="px-12 py-6">
         <div class="flex items-center justify-between">
             <a href="/" class="flex items-center gap-2 text-rose-500 font-bold text-3xl">
@@ -12,24 +12,6 @@
                     <span class="font-semibold">Logements</span>
                 </a>
 
-                <a href="#" class="relative flex flex-col items-center gap-1 text-neutral-600 pb-3">
-					<span
-                        class="absolute -top-3 right-0 rounded-md bg-slate-500 px-2 py-0.5 text-[10px] font-bold text-white">
-						NOUVEAU
-					</span>
-                    <span class="text-4xl leading-none">🎈</span>
-                    <span>Expériences</span>
-                </a>
-
-                <a href="#" class="relative flex flex-col items-center gap-1 text-neutral-600 pb-3">
-					<span
-                        class="absolute -top-3 right-0 rounded-md bg-slate-500 px-2 py-0.5 text-[10px] font-bold text-white">
-						NOUVEAU
-					</span>
-                    <span class="text-4xl leading-none">🛎️</span>
-                    <span>Services</span>
-                </a>
-
                 <a
                     href="{{ path('app_reservation_index') }}"
                    class="relative flex flex-col items-center gap-1 text-neutral-600 pb-3">
@@ -38,6 +20,11 @@
                 </a>
 
                 {% if app.user and is_granted('ROLE_HOST') %}
+                    <a href="{{ path('app_host_dashboard') }}"
+                       class="relative flex flex-col items-center gap-1 text-neutral-600 pb-3">
+                        <span class="text-4xl leading-none">📊</span>
+                        <span>Dashboard hôte</span>
+                    </a>
                     <a href="{{ path('app_host_property_index') }}"
                        class="relative flex flex-col items-center gap-1 text-neutral-600 pb-3">
                         <span class="text-4xl leading-none">🏘️</span>
@@ -52,28 +39,22 @@
                         <p class="font-semibold">Connecté</p>
                         <p class="max-w-[180px] truncate text-neutral-500">{{ app.user.userIdentifier }}</p>
                     </div>
-                    <img
-                        src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80"
-                        alt="Avatar utilisateur"
-                        class="h-10 w-10 rounded-full object-cover"
-                    />
                 {% endif %}
 
 
                 <button
                     type="button"
-                    @click="menuOpen = !menuOpen"
+                    data-menu-toggle
                     class="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-2xl hover:bg-neutral-200"
+                    aria-expanded="false"
                     aria-label="Ouvrir le menu"
                 >
                     ≡
                 </button>
 
                 <div
-                    x-show="menuOpen"
-                    @click.outside="menuOpen = false"
-                    x-transition
-                    class="absolute right-0 top-16 z-50 w-72 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5"
+                    data-menu-dropdown
+                    class="hidden absolute right-0 top-16 z-50 w-72 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5"
                 >
                     <div class="py-2">
                         {% if app.user %}
@@ -91,6 +72,12 @@
 
                             {% if is_granted('ROLE_HOST') %}
                                 <a
+                                    href="{{ path('app_host_dashboard') }}"
+                                    class="block px-5 py-3 font-semibold hover:bg-neutral-100"
+                                >
+                                    Dashboard hôte
+                                </a>
+                                <a
                                     href="{{ path('app_host_property_index') }}"
                                     class="block px-5 py-3 font-semibold hover:bg-neutral-100"
                                 >
@@ -99,13 +86,6 @@
                             {% endif %}
 
 
-
-                            <a
-                                href="#"
-                                class="block px-5 py-3 hover:bg-neutral-100"
-                            >
-                                Mon profil
-                            </a>
 
                             <a
                                 href="{{ logout_path() }}"
@@ -121,21 +101,6 @@
                                 Se connecter
                             </a>
 
-                            <a
-                                href="#"
-                                class="block px-5 py-3 hover:bg-neutral-100"
-                            >
-                                Créer un compte
-                            </a>
-
-                            <div class="my-2 border-t border-neutral-200"></div>
-
-                            <a
-                                href="#"
-                                class="block px-5 py-3 hover:bg-neutral-100"
-                            >
-                                Aide
-                            </a>
                         {% endif %}
                     </div>
                 </div>
@@ -179,3 +144,35 @@
         </div>
     </div>
 </header>
+
+<script>
+    document.querySelectorAll('[data-main-menu]').forEach((menu) => {
+        if (menu.dataset.menuBound === '1') {
+            return;
+        }
+
+        const toggle = menu.querySelector('[data-menu-toggle]');
+        const dropdown = menu.querySelector('[data-menu-dropdown]');
+
+        if (!toggle || !dropdown) {
+            return;
+        }
+
+        menu.dataset.menuBound = '1';
+
+        toggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const shouldOpen = dropdown.classList.contains('hidden');
+            dropdown.classList.toggle('hidden', !shouldOpen);
+            toggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!menu.contains(event.target)) {
+                dropdown.classList.add('hidden');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    });
+</script>
+

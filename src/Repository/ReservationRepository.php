@@ -59,6 +59,7 @@ class ReservationRepository extends ServiceEntityRepository
             ->leftJoin('disp.openedBy', 'openedBy')
             ->andWhere('r = :reservation')
             ->setParameter('reservation', $reservation)
+            ->addOrderBy('h.createdAt', 'DESC')
             ->getQuery()
             ->getOneOrNullResult();
     }

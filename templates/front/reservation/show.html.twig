@@ -18,6 +18,12 @@
     'pending': 'bg-yellow-100 text-yellow-800',
     'cancelled': 'bg-red-100 text-red-800',
 } %}
+{% set statusBorderColors = {
+    'confirmed': 'border-green-200 bg-green-50 text-green-800',
+    'completed': 'border-blue-200 bg-blue-50 text-blue-800',
+    'pending': 'border-yellow-200 bg-yellow-50 text-yellow-800',
+    'cancelled': 'border-red-200 bg-red-50 text-red-800',
+} %}
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
@@ -58,6 +64,37 @@
                         <div><dt class="text-gray-500">Départ</dt><dd class="font-semibold">{{ reservation.checkoutDate|date('d/m/Y') }}</dd></div>
                         <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
                     </dl>
+                </section>
+
+                <section class="border border-gray-200 rounded-xl p-6">
+                    <h2 class="text-lg font-semibold mb-4">Historique des statuts</h2>
+                    {% if reservation.statusHistory|length > 0 %}
+                        <div class="space-y-3">
+                            {% for history in reservation.statusHistory %}
+                                <div class="rounded-xl border p-4 {{ statusBorderColors[history.newStatus]|default('border-gray-200 bg-gray-50 text-gray-800') }}">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div>
+                                            <p class="font-semibold">
+                                                {% if history.oldStatus %}
+                                                    {{ statusLabels[history.oldStatus]|default(history.oldStatus) }} →
+                                                {% endif %}
+                                                {{ statusLabels[history.newStatus]|default(history.newStatus) }}
+                                            </p>
+                                            {% if history.changedBy %}
+                                                <p class="mt-1 text-xs text-gray-500">Par {{ history.changedBy.email }}</p>
+                                            {% endif %}
+                                        </div>
+                                        <span class="text-xs text-gray-500">{{ history.createdAt|date('d/m/Y H:i') }}</span>
+                                    </div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% else %}
+                        <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 text-sm text-gray-600">
+                            <p>Aucun changement de statut enregistré.</p>
+                            <p class="mt-1">Statut actuel : <strong>{{ statusLabels[reservation.status]|default(reservation.status) }}</strong></p>
+                        </div>
+                    {% endif %}
                 </section>
 
                 <section class="mt-4">

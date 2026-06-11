@@ -13,10 +13,16 @@
                 </p>
             </div>
 
-            <a href="{{ path('app_host_property_index') }}"
-               class="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100">
-                Mes logements
-            </a>
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="{{ path('app_host_calendar') }}"
+                   class="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100">
+                    Synchronisation iCal
+                </a>
+                <a href="{{ path('app_host_property_index') }}"
+                   class="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100">
+                    Mes logements
+                </a>
+            </div>
         </div>
 
         {% for label, messages in app.flashes %}

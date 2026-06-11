@@ -11,6 +11,7 @@ use App\Form\BookingType;
 use App\Repository\PropertyRepository;
 use App\Security\Voter\PropertyVoter;
 use App\Service\PropertyAvailabilityService;
+use App\Service\ReservationStatusHistoryService;
 use Doctrine\ORM\EntityManagerInterface;
 use Psr\Log\LoggerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -33,6 +34,7 @@ final class BookingController extends AbstractController
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
         PropertyAvailabilityService $propertyAvailabilityService,
+        ReservationStatusHistoryService $reservationStatusHistoryService,
         MailerInterface $mailer,
         Environment $twig,
         LoggerInterface $logger,
@@ -129,6 +131,7 @@ final class BookingController extends AbstractController
             $reservation->setCurrency('EUR');
 
             $entityManager->persist($reservation);
+            $reservationStatusHistoryService->record($reservation, null, 'pending', $user);
             $entityManager->flush();
 
             // send email to host
@@ -232,6 +235,7 @@ final class BookingController extends AbstractController
             $reservation->setCurrency('EUR');
 
             $entityManager->persist($reservation);
+            $reservationStatusHistoryService->record($reservation, null, 'pending', $user);
             $entityManager->flush();
 
             // send email to host

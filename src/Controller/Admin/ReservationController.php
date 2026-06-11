@@ -6,8 +6,10 @@ namespace App\Controller\Admin;
 
 use App\Entity\Dispute;
 use App\Entity\Reservation;
+use App\Entity\User;
 use App\Form\ReservationType;
 use App\Repository\ReservationRepository;
+use App\Service\ReservationStatusHistoryService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -42,7 +44,7 @@ final class ReservationController extends AbstractController
     }
 
     #[Route('/new', name: 'app_admin_reservation_new', methods: ['GET', 'POST'])]
-    public function new(Request $request, EntityManagerInterface $entityManager): Response
+    public function new(Request $request, EntityManagerInterface $entityManager, ReservationStatusHistoryService $reservationStatusHistoryService): Response
     {
         $reservation = new Reservation();
         if ($reservation->getCurrency() === null) {
@@ -54,6 +56,11 @@ final class ReservationController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $entityManager->persist($reservation);
+
+            $user = $this->getUser();
+            if ($user instanceof User && $reservation->getStatus() !== null) {
+                $reservationStatusHistoryService->record($reservation, null, $reservation->getStatus(), $user);
+            }
             $entityManager->flush();
 
             $this->addFlash('success', 'Réservation créée avec succès.');
@@ -78,12 +85,20 @@ final class ReservationController extends AbstractController
     }
 
     #[Route('/{id}/edit', name: 'app_admin_reservation_edit', methods: ['GET', 'POST'])]
-    public function edit(Request $request, Reservation $reservation, EntityManagerInterface $entityManager): Response
+    public function edit(Request $request, Reservation $reservation, EntityManagerInterface $entityManager, ReservationStatusHistoryService $reservationStatusHistoryService): Response
     {
+        $oldStatus = $reservation->getStatus();
         $form = $this->createForm(ReservationType::class, $reservation);
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
+            $newStatus = $reservation->getStatus();
+            $user = $this->getUser();
+
+            if ($user instanceof User && $oldStatus !== null && $newStatus !== null && $oldStatus !== $newStatus) {
+                $reservationStatusHistoryService->record($reservation, $oldStatus, $newStatus, $user);
+            }
+
             $entityManager->flush();
 
             $this->addFlash('success', 'Réservation mise à jour avec succès.');
