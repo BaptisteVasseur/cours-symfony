@@ -36,6 +36,11 @@ class PropertyListingType extends AbstractType
                 'widget' => 'single_text',
                 'required' => false,
             ])
+            ->add('instantBooking', CheckboxType::class, [
+                'label' => 'Réservation instantanée',
+                'help' => 'Les réservations sont confirmées automatiquement, sans validation de votre part.',
+                'required' => false,
+            ])
             ->add('allowSameDayBooking', CheckboxType::class, [
                 'label' => 'Autoriser une arrivée le jour d\'un départ',
                 'help' => 'Nécessite au moins 3 heures d\'écart entre l\'heure de départ et l\'heure d\'arrivée.',

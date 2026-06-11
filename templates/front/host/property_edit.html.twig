@@ -40,6 +40,17 @@
 
                 <div class="rounded-xl border border-gray-200 p-4">
                     <label class="flex items-start gap-3 cursor-pointer">
+                        {{ form_widget(form.instantBooking, { attr: { class: 'mt-1 h-4 w-4 rounded border-gray-300 text-brand' } }) }}
+                        <span>
+                            <span class="block text-sm font-semibold text-gray-900">Réservation instantanée</span>
+                            <span class="block text-xs text-gray-500">Les réservations sont confirmées automatiquement, sans validation de votre part.</span>
+                        </span>
+                    </label>
+                    {{ form_errors(form.instantBooking) }}
+                </div>
+
+                <div class="rounded-xl border border-gray-200 p-4">
+                    <label class="flex items-start gap-3 cursor-pointer">
                         {{ form_widget(form.allowSameDayBooking, { attr: { class: 'mt-1 h-4 w-4 rounded border-gray-300 text-brand' } }) }}
                         <span>
                             <span class="block text-sm font-semibold text-gray-900">Autoriser une arrivée le jour d'un départ</span>
