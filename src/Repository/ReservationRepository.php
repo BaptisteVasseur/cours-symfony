@@ -54,6 +54,25 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+    /**
+     * @return list<Reservation>
+     */
+    public function trouverConfirmeesPourLogement(Logement $logement): array
+    {
+        return $this->createQueryBuilder('r')
+            ->leftJoin('r.voyageur', 'v')
+            ->addSelect('v')
+            ->leftJoin('r.logement', 'l')
+            ->addSelect('l')
+            ->andWhere('r.logement = :logement')
+            ->andWhere('r.statut = :statut')
+            ->setParameter('logement', $logement)
+            ->setParameter('statut', ReservationStatut::CONFIRMEE)
+            ->orderBy('r.dateArrivee', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function existeChevauchementConfirme(
         Logement $logement,
         \DateTimeInterface $dateArrivee,

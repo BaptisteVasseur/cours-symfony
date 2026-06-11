@@ -86,6 +86,25 @@ class HostLogementCalendarController extends AbstractController
         return $this->redirectToRoute('app_host_logement_calendar', ['id' => $logement->id, 'mois' => $mois]);
     }
 
+    #[Route('/ical/regenerer', name: 'app_host_logement_ical_regenerate', requirements: ['id' => '\\d+'], methods: ['POST'])]
+    public function regenerateIcalToken(Logement $logement, Request $request, EntityManagerInterface $entityManager): RedirectResponse
+    {
+        $this->verifierAccesHote($logement);
+
+        if (!$this->isCsrfTokenValid('host_logement_ical_regenerate_'.$logement->id, (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Action expiree. Reessayez.');
+
+            return $this->redirectToRoute('app_host_logement_show', ['id' => $logement->id]);
+        }
+
+        $logement->regenererTokenIcal();
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Lien iCal regenere. Les anciens liens ne sont plus valides.');
+
+        return $this->redirectToRoute('app_host_logement_show', ['id' => $logement->id]);
+    }
+
     private function verifierAccesHote(Logement $logement): void
     {
         $user = $this->getUser();
