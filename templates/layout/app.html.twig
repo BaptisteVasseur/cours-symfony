@@ -1,13 +1,23 @@
 {% extends 'layout/base.html.twig' %}
 
 {% block body %}
-    <div class="min-h-screen flex flex-col">
-        {% include 'layout/partials/app/header.html.twig' %}
+    {% include 'layout/partials/app/header.html.twig' %}
 
-        <main class="flex-grow">
-            {% block content %}{% endblock %}
-        </main>
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="max-w-3xl mx-auto w-full px-4 pt-4">
+                <div class="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-sm font-medium
+                    {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
+                       (label == 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
+                       'bg-amber-50 text-amber-800 border border-amber-200') }}">
+                    <i class="fa-solid shrink-0 {{ label == 'success' ? 'fa-circle-check text-emerald-500' : (label == 'error' ? 'fa-circle-xmark text-red-400' : 'fa-triangle-exclamation text-amber-500') }}"></i>
+                    {{ message }}
+                </div>
+            </div>
+        {% endfor %}
+    {% endfor %}
 
-        {% include 'layout/partials/app/footer.html.twig' %}
-    </div>
+    {% block content %}{% endblock %}
+
+    {% include 'layout/partials/app/footer.html.twig' %}
 {% endblock %}

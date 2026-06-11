@@ -1,0 +1,72 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Disponibilités — {{ property.title }}{% endblock %}
+
+{% block body %}
+<div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <nav class="text-sm text-gray-500 mb-1">
+                <a href="{{ path('app_account_properties') }}" class="hover:underline">Mes logements</a>
+                <span class="mx-1">/</span>
+                <span class="text-gray-900">{{ property.title }}</span>
+            </nav>
+            <h1 class="text-2xl font-bold text-gray-900">Gérer les disponibilités</h1>
+        </div>
+        <a href="{{ path('app_availability_block', {id: property.id}) }}"
+           class="bg-brand hover:bg-brandHover text-white font-semibold px-5 py-2.5 rounded-xl transition-colors">
+            + Bloquer une période
+        </a>
+    </div>
+
+    {% if blockedDates is empty %}
+        <div class="text-center py-16 text-gray-400">
+            <svg class="w-12 h-12 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <p class="font-medium">Aucune date bloquée</p>
+            <p class="text-sm mt-1">Toutes vos dates sont disponibles à la réservation.</p>
+        </div>
+    {% else %}
+        <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+            <table class="w-full text-sm">
+                <thead class="bg-gray-50 text-gray-600 uppercase text-xs tracking-wide">
+                    <tr>
+                        <th class="px-6 py-3 text-left">Date bloquée</th>
+                        <th class="px-6 py-3 text-left">Motif</th>
+                        <th class="px-6 py-3 text-right">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for availability in blockedDates %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 font-medium text-gray-900">
+                            {{ availability.availableDate|date('d/m/Y') }}
+                        </td>
+                        <td class="px-6 py-4 text-gray-500">
+                            {{ availability.reason ?: '—' }}
+                        </td>
+                        <td class="px-6 py-4 text-right">
+                            <form method="POST"
+                                  action="{{ path('app_availability_unblock', {id: property.id, availabilityId: availability.id}) }}"
+                                  onsubmit="return confirm('Débloquer cette date ?')">
+                                <input type="hidden" name="_token" value="{{ csrf_token('unblock' ~ availability.id) }}">
+                                <button type="submit" class="text-red-500 hover:text-red-700 font-medium">
+                                    Débloquer
+                                </button>
+                            </form>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="text-xs text-gray-400 mt-3">
+            {{ blockedDates|length }} date{{ blockedDates|length > 1 ? 's' : '' }} bloquée{{ blockedDates|length > 1 ? 's' : '' }}
+        </p>
+    {% endif %}
+
+</div>
+{% endblock %}

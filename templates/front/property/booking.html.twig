@@ -6,38 +6,212 @@
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
-            <i class="fa-solid fa-arrow-left"></i> Retour au logement
-        </a>
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
-            {% endfor %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+
+    <a href="{{ path('app_logement_detail', { id: property.id }) }}"
+       class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Retour au logement
+    </a>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
         {% endfor %}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2">
-                <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
-                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                    {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
+    {% endfor %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {# ── Formulaire ── #}
+        <div class="lg:col-span-2">
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
+
+            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                {{ form_start(form, { attr: { class: 'space-y-6', id: 'booking-form', 'data-turbo': 'false' } }) }}
+
+                    {# Dates #}
+                    <div>
+                        <p class="text-sm font-semibold text-gray-700 mb-3">Vos dates</p>
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Arrivée</label>
+                                {{ form_widget(form.checkinDate, {
+                                    attr: {
+                                        class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent',
+                                        id: 'checkin-input',
+                                        min: 'today'|date('Y-m-d')
+                                    }
+                                }) }}
+                                <div class="text-xs text-red-600 mt-1">{{ form_errors(form.checkinDate) }}</div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-gray-400 mb-1.5">Départ</label>
+                                {{ form_widget(form.checkoutDate, {
+                                    attr: {
+                                        class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent',
+                                        id: 'checkout-input',
+                                        min: 'today'|date('Y-m-d')
+                                    }
+                                }) }}
+                                <div class="text-xs text-red-600 mt-1">{{ form_errors(form.checkoutDate) }}</div>
+                            </div>
                         </div>
-                        {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
-                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
-                    {{ form_end(form) }}
-                </div>
+
+                        <p id="range-error" style="display:none"
+                           class="mt-2 text-xs text-red-600 font-medium">
+                            <i class="fa-solid fa-circle-xmark mr-1"></i>
+                            Cette période contient des dates déjà réservées. Veuillez choisir d'autres dates.
+                        </p>
+                    </div>
+
+                    {{ form_row(form.guestsCount, {
+                        label: 'Voyageurs',
+                        attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests }
+                    }) }}
+
+                    <button type="submit"
+                        class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl transition">
+                        Confirmer la réservation
+                    </button>
+
+                {{ form_end(form) }}
             </div>
-            <aside>
-                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
-                    <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
-                    <div class="p-5">
-                        <h2 class="font-semibold">{{ property.title }}</h2>
-                        <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+        </div>
+
+        {# ── Récap logement #}
+        <aside>
+            <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
+                <img src="{{ cover ? cover.fileUrl : placeholderImage }}"
+                     alt="{{ property.title }}" class="w-full h-48 object-cover">
+                <div class="p-5">
+                    <h2 class="font-semibold text-gray-900">{{ property.title }}</h2>
+                    <p class="text-lg font-bold mt-2 text-gray-900">
+                        {{ property.pricePerNight|number_format(0, ',', ' ') }} €
+                        <span class="text-sm font-normal text-gray-500">/ nuit</span>
+                    </p>
+                    <div id="price-preview" style="display:none"
+                         class="mt-4 pt-4 border-t border-gray-100 space-y-1 text-sm text-gray-600">
+                        <div class="flex justify-between">
+                            <span id="pp-nights"></span>
+                            <span id="pp-subtotal"></span>
+                        </div>
+                        {% if property.cleaningFee %}
+                        <div class="flex justify-between">
+                            <span>Frais de ménage</span>
+                            <span>{{ property.cleaningFee|number_format(0, ',', ' ') }} €</span>
+                        </div>
+                        {% endif %}
+                        <div class="flex justify-between">
+                            <span>Frais de service (12 %)</span>
+                            <span id="pp-service"></span>
+                        </div>
+                        <div class="flex justify-between font-bold text-gray-900 pt-2 border-t border-gray-100">
+                            <span>Total</span>
+                            <span id="pp-total"></span>
+                        </div>
                     </div>
                 </div>
-            </aside>
-        </div>
-    </main>
+            </div>
+        </aside>
+
+    </div>{# /grid #}
+
+</main>
+
+<script type="application/json" id="cal-data">
+{
+    "booked":   {{ bookedRanges|json_encode|raw }},
+    "blocked":  {{ blockedDates|json_encode|raw }},
+    "price":    {{ property.pricePerNight|json_encode|raw }},
+    "cleaning": {{ (property.cleaningFee ?? 0)|json_encode|raw }}
+}
+</script>
+
+<script>
+(function () {
+    var raw  = document.getElementById('cal-data').textContent;
+    var data = JSON.parse(raw);
+    var BOOKED          = data.booked;
+    var BLOCKED         = data.blocked;
+    var PRICE_PER_NIGHT = parseFloat(data.price);
+    var CLEANING_FEE    = parseFloat(data.cleaning) || 0;
+
+    var checkinInput  = document.getElementById('checkin-input');
+    var checkoutInput = document.getElementById('checkout-input');
+    var rangeErrorEl  = document.getElementById('range-error');
+    var pricePreview  = document.getElementById('price-preview');
+
+    if (!checkinInput || !checkoutInput) return;
+
+    /* build disabled set */
+    var disabledSet = {};
+    BOOKED.forEach(function(r) {
+        var cur = new Date(r.from + 'T00:00:00');
+        var end = new Date(r.to   + 'T00:00:00');
+        while (cur < end) {
+            disabledSet[cur.toISOString().slice(0,10)] = true;
+            cur = new Date(cur.getTime() + 86400000);
+        }
+    });
+    BLOCKED.forEach(function(d) { disabledSet[d] = true; });
+
+    function rangeHasDisabled(from, to) {
+        var cur = new Date(from.getTime() + 86400000);
+        while (cur < to) {
+            if (disabledSet[cur.toISOString().slice(0,10)]) return true;
+            cur = new Date(cur.getTime() + 86400000);
+        }
+        return false;
+    }
+
+    function updateCheckoutMin() {
+        if (checkinInput.value) {
+            var next = new Date(checkinInput.value + 'T00:00:00');
+            next = new Date(next.getTime() + 86400000);
+            checkoutInput.min = next.toISOString().slice(0,10);
+        }
+    }
+
+    function updatePrice() {
+        var ci = checkinInput.value;
+        var co = checkoutInput.value;
+        if (!ci || !co) { pricePreview.style.display = 'none'; return; }
+
+        var from = new Date(ci + 'T00:00:00');
+        var to   = new Date(co + 'T00:00:00');
+        if (to <= from) { pricePreview.style.display = 'none'; return; }
+
+        if (rangeHasDisabled(from, to)) {
+            rangeErrorEl.style.display = 'block';
+            pricePreview.style.display = 'none';
+            return;
+        }
+        rangeErrorEl.style.display = 'none';
+
+        var nights     = Math.round((to - from) / 86400000);
+        var subtotal   = PRICE_PER_NIGHT * nights;
+        var serviceFee = Math.round(subtotal * 0.12 * 100) / 100;
+        var total      = subtotal + CLEANING_FEE + serviceFee;
+
+        document.getElementById('pp-nights').textContent   = nights + ' nuit' + (nights > 1 ? 's' : '') + ' × ' + PRICE_PER_NIGHT + ' €';
+        document.getElementById('pp-subtotal').textContent = subtotal.toLocaleString('fr-FR') + ' €';
+        document.getElementById('pp-service').textContent  = serviceFee.toLocaleString('fr-FR') + ' €';
+        document.getElementById('pp-total').textContent    = total.toLocaleString('fr-FR') + ' €';
+        pricePreview.style.display = 'block';
+    }
+
+    checkinInput.addEventListener('change', function() {
+        updateCheckoutMin();
+        /* reset checkout if now before new checkin */
+        if (checkoutInput.value && checkoutInput.value <= checkinInput.value) {
+            checkoutInput.value = '';
+        }
+        updatePrice();
+    });
+    checkoutInput.addEventListener('change', updatePrice);
+
+    updateCheckoutMin();
+    updatePrice();
+})();
+</script>
+
 {% endblock %}

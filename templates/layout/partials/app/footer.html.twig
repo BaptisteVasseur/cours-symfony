@@ -1,15 +1,69 @@
-<footer class="bg-gray-100 border-t border-gray-200 px-6 md:px-12 py-4 text-xs text-gray-600 flex flex-col sm:flex-row items-center justify-between space-y-2 sm:space-y-0">
-    <div class="flex flex-wrap justify-center sm:justify-start space-x-3">
-        <span>© 2026 Airbnb, Inc.</span>
-        <span>·</span>
-        <a href="#" class="hover:underline">Conditions</a>
-        <span>·</span>
-        <a href="#" class="hover:underline">Plan du site</a>
-        <span>·</span>
-        <a href="#" class="hover:underline">Confidentialité</a>
+<footer class="bg-ink text-white/40 mt-auto" style="border-top: 1px solid rgba(201,146,42,0.15);">
+
+    <div class="max-w-screen-xl mx-auto px-6 md:px-8 pt-14 pb-10 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-10">
+
+        {# Brand #}
+        <div class="col-span-2 sm:col-span-3 lg:col-span-1 mb-2">
+            <a href="{{ path('app_home') }}" class="inline-flex items-center gap-2.5 mb-5">
+                <svg width="22" height="22" viewBox="0 0 32 32" fill="none">
+                    <path d="M16 1C10.2 1 5.5 6 5.5 12.2c0 7.8 10.5 18.8 10.5 18.8s10.5-11 10.5-18.8C26.5 6 21.8 1 16 1zm0 15a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9z" fill="url(#footerGrad)"/>
+                    <defs>
+                        <linearGradient id="footerGrad" x1="5.5" y1="1" x2="26.5" y2="31" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#F0D080"/>
+                            <stop offset="1" stop-color="#C9922A"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="font-display font-semibold text-lg text-white tracking-wide">StayNest</span>
+            </a>
+            <p class="text-sm leading-relaxed max-w-xs">Des logements uniques pour des séjours inoubliables en France et au-delà.</p>
+            <div class="gold-rule mt-6 max-w-[80px]" style="height:1px; background: linear-gradient(90deg, #C9922A, transparent);"></div>
+        </div>
+
+        <div>
+            <p class="text-white font-semibold text-xs uppercase tracking-widest mb-5">Voyager</p>
+            <ul class="space-y-3 text-sm">
+                <li><a href="{{ path('app_search') }}" class="hover:text-gold transition">Rechercher</a></li>
+                <li><a href="{{ path('app_home') }}" class="hover:text-gold transition">Logements</a></li>
+                <li><a href="{{ path('app_help') }}" class="hover:text-gold transition">Centre d'aide</a></li>
+            </ul>
+        </div>
+
+        <div>
+            <p class="text-white font-semibold text-xs uppercase tracking-widest mb-5">Héberger</p>
+            <ul class="space-y-3 text-sm">
+                {% if app.user %}
+                <li><a href="{{ path('app_host_reservation_index') }}" class="hover:text-gold transition">Dashboard hôte</a></li>
+                <li><a href="{{ path('app_account_properties') }}" class="hover:text-gold transition">Mes annonces</a></li>
+                {% else %}
+                <li><a href="{{ path('app_register') }}" class="hover:text-gold transition">Proposer un logement</a></li>
+                {% endif %}
+            </ul>
+        </div>
+
+        <div>
+            <p class="text-white font-semibold text-xs uppercase tracking-widest mb-5">StayNest</p>
+            <ul class="space-y-3 text-sm">
+                <li><a href="#" class="hover:text-gold transition">À propos</a></li>
+                <li><a href="#" class="hover:text-gold transition">Confidentialité</a></li>
+                <li><a href="#" class="hover:text-gold transition">Conditions</a></li>
+            </ul>
+        </div>
+
     </div>
-    <div class="flex items-center space-x-4 font-semibold text-gray-800">
-        <span class="cursor-pointer hover:underline"><i class="fa-solid fa-globe mr-1"></i> Français (FR)</span>
-        <span class="cursor-pointer hover:underline">€ EUR</span>
+
+    <div style="border-top: 1px solid rgba(255,255,255,0.06);">
+        <div class="max-w-screen-xl mx-auto px-6 md:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs">
+            <p>© 2026 StayNest, Inc. · Tous droits réservés.</p>
+            <div class="flex items-center gap-5">
+                <span class="flex items-center gap-1.5 cursor-pointer hover:text-gold transition">
+                    <i class="fa-solid fa-globe text-gold/50"></i> Français
+                </span>
+                <span class="flex items-center gap-1.5 cursor-pointer hover:text-gold transition">
+                    <i class="fa-solid fa-euro-sign text-gold/50"></i> EUR
+                </span>
+            </div>
+        </div>
     </div>
+
 </footer>

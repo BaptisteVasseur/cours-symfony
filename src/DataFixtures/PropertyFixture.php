@@ -49,7 +49,7 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
                 'Villa Luxe avec Piscine Privée',
                 'Magnifique villa avec vue montagne et piscine chauffée.',
                 'villa',
-                'published',
+                'pending',
                 '145.00',
                 'Chamonix',
                 'France',

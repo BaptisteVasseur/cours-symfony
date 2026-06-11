@@ -94,32 +94,76 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
-     * Find overlapping reservations for a property in the given date range.
-     * Excludes cancelled reservations and optionally a specific reservation (for updates).
-     *
      * @return list<Reservation>
      */
-    public function findOverlapping(
-        \App\Entity\Property $property,
-        \DateTimeImmutable $checkin,
-        \DateTimeImmutable $checkout,
-        ?Reservation $exclude = null,
-    ): array {
-        $qb = $this->createQueryBuilder('r')
-            ->andWhere('r.property = :property')
-            ->andWhere('r.status NOT IN (:cancelledStatuses)')
+    public function findPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->where('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findNonPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->where('p.host = :host')
+            ->andWhere('r.status != :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return Reservation[]
+     */
+    /**
+     * @return list<Reservation>
+     */
+    public function findActiveForProperty(\App\Entity\Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->where('r.property = :property')
+            ->andWhere('r.status NOT IN (:excluded)')
+            ->andWhere('r.checkoutDate > :today')
+            ->setParameter('property', $property)
+            ->setParameter('excluded', ['cancelled', 'rejected'])
+            ->setParameter('today', new \DateTimeImmutable('today'))
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findOverlapping(string $propertyId, \DateTimeImmutable $checkin, \DateTimeImmutable $checkout): array
+    {
+        return $this->createQueryBuilder('r')
+            ->where('IDENTITY(r.property) = :propertyId')
+            ->andWhere('r.status NOT IN (:excluded)')
             ->andWhere('r.checkinDate < :checkout')
             ->andWhere('r.checkoutDate > :checkin')
-            ->setParameter('property', $property)
-            ->setParameter('cancelledStatuses', ['cancelled'])
+            ->setParameter('propertyId', $propertyId)
+            ->setParameter('excluded', ['cancelled', 'rejected'])
             ->setParameter('checkin', $checkin)
-            ->setParameter('checkout', $checkout);
-
-        if ($exclude !== null) {
-            $qb->andWhere('r != :exclude')
-                ->setParameter('exclude', $exclude);
-        }
-
-        return $qb->getQuery()->getResult();
+            ->setParameter('checkout', $checkout)
+            ->getQuery()
+            ->getResult();
     }
+
 }

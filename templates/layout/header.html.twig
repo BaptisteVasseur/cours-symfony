@@ -1,3 +1,4 @@
+{% if not is_granted('ROLE_CHEH') %}
 <header class="sticky top-0 z-50 bg-white border-b border-gray-200 shadow-sm">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16 md:h-20">
@@ -51,11 +52,8 @@
                             <div class="px-4 py-2 text-sm font-semibold text-gray-800 border-b border-gray-100 mb-1">
                                 {{ app.user.profile ? app.user.profile.firstName ~ ' ' ~ app.user.profile.lastName : app.user.email }}
                             </div>
-                            {% if is_granted('ROLE_ADMIN')%}
-                                <a href="{{ path('app_admin_dashboard')}}">Panel Admin</a>
-                            {% endif %}
                             <a href="{{ path('app_reservation_index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Mes réservations</a>
-                            <a href="{{ path('app_property_index') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Mes annonces</a>
+                            <a href="{{ path('app_property_myproperties') }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Mes annonces</a>
                             <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Mon compte</a>
                             <div class="border-t border-gray-100 my-1"></div>
                             <a href="/logout" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Déconnexion</a>
@@ -91,3 +89,4 @@
         </div>
     </div>
 </header>
+{% endif %}

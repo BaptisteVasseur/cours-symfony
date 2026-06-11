@@ -26,9 +26,9 @@ class UserFixture extends Fixture
         $users = [
             [
                 FixtureReferences::USER_SUPER_ADMIN,
-                'admin@airbnb-clone.fr',
-                'Alexandre',
-                'Dupuis',
+                'admin@staynest.fr',
+                'Mathieu',
+                'Arnaud',
                 'active',
                 true,
                 [Roles::SUPER_ADMIN, Roles::ADMIN],
@@ -37,9 +37,9 @@ class UserFixture extends Fixture
             ],
             [
                 FixtureReferences::USER_ADMIN,
-                'moderation@airbnb-clone.fr',
-                'Claire',
-                'Martin',
+                'moderation@staynest.fr',
+                'Camille',
+                'Rousseau',
                 'active',
                 true,
                 [Roles::ADMIN],
@@ -48,9 +48,9 @@ class UserFixture extends Fixture
             ],
             [
                 FixtureReferences::USER_HOST_1,
-                'jeanmarc.dupont@email.com',
-                'Jean-Marc',
-                'Dupont',
+                'thomas.leroy@email.com',
+                'Thomas',
+                'Leroy',
                 'active',
                 true,
                 [Roles::HOST],
@@ -59,9 +59,9 @@ class UserFixture extends Fixture
             ],
             [
                 FixtureReferences::USER_HOST_2,
-                'elena.k@email.com',
-                'Elena',
-                'Kowalski',
+                'yasmine.benali@email.com',
+                'Yasmine',
+                'Benali',
                 'active',
                 true,
                 [Roles::HOST],
@@ -70,9 +70,9 @@ class UserFixture extends Fixture
             ],
             [
                 FixtureReferences::USER_HOST_3,
-                'pierre.lambert@email.com',
-                'Pierre',
-                'Lambert',
+                'nicolas.fontaine@email.com',
+                'Nicolas',
+                'Fontaine',
                 'pending',
                 false,
                 [Roles::HOST],
@@ -81,9 +81,9 @@ class UserFixture extends Fixture
             ],
             [
                 FixtureReferences::USER_GUEST_1,
-                'sophie.chen@email.com',
-                'Sophie',
-                'Chen',
+                'lea.moreau@email.com',
+                'Léa',
+                'Moreau',
                 'active',
                 true,
                 [],
@@ -92,9 +92,9 @@ class UserFixture extends Fixture
             ],
             [
                 FixtureReferences::USER_GUEST_2,
-                'lucas.bernard@email.com',
-                'Lucas',
-                'Bernard',
+                'romain.girard@email.com',
+                'Romain',
+                'Girard',
                 'active',
                 true,
                 [],
@@ -103,9 +103,9 @@ class UserFixture extends Fixture
             ],
             [
                 FixtureReferences::USER_GUEST_3,
-                'marie.dubois@email.com',
-                'Marie',
-                'Dubois',
+                'ines.perrot@email.com',
+                'Inès',
+                'Perrot',
                 'suspended',
                 true,
                 [],
@@ -123,7 +123,17 @@ class UserFixture extends Fixture
             $profile->setFirstName($firstName);
             $profile->setLastName($lastName);
             $profile->setBirthDate(new \DateTimeImmutable(sprintf('-%d years', random_int(25, 55))));
-            $profile->setAvatarUrl(sprintf('https://i.pravatar.cc/150?u=%s', urlencode($email)));
+            $avatarSeeds = [
+                'admin@staynest.fr'           => 'https://randomuser.me/api/portraits/men/32.jpg',
+                'moderation@staynest.fr'      => 'https://randomuser.me/api/portraits/women/44.jpg',
+                'thomas.leroy@email.com'      => 'https://randomuser.me/api/portraits/men/52.jpg',
+                'yasmine.benali@email.com'    => 'https://randomuser.me/api/portraits/women/68.jpg',
+                'nicolas.fontaine@email.com'  => 'https://randomuser.me/api/portraits/men/71.jpg',
+                'lea.moreau@email.com'        => 'https://randomuser.me/api/portraits/women/22.jpg',
+                'romain.girard@email.com'     => 'https://randomuser.me/api/portraits/men/18.jpg',
+                'ines.perrot@email.com'       => 'https://randomuser.me/api/portraits/women/55.jpg',
+            ];
+            $profile->setAvatarUrl($avatarSeeds[$email] ?? sprintf('https://i.pravatar.cc/150?u=%s', urlencode($email)));
             $profile->setBio(sprintf('Profil de %s %s sur la plateforme.', $firstName, $lastName));
             $profile->setIdentityStatus($identityStatus);
             $manager->persist($profile);
@@ -161,27 +171,43 @@ class UserFixture extends Fixture
             $this->addReference($reference, $user);
         }
 
+        $guestNames = [
+            ['Emma', 'Petit'], ['Hugo', 'Simon'], ['Chloé', 'Michel'], ['Nathan', 'Laurent'],
+            ['Jade', 'Garcia'], ['Théo', 'David'], ['Manon', 'Bertrand'], ['Louis', 'Robert'],
+            ['Zoé', 'Lecomte'], ['Axel', 'Morel'], ['Alice', 'Fournier'], ['Maxime', 'Blanc'],
+            ['Lucie', 'Guerin'], ['Tom', 'Chevalier'], ['Inès', 'Faure'], ['Baptiste', 'Mathieu'],
+            ['Clara', 'Renard'], ['Antoine', 'Clement'], ['Elisa', 'Gauthier'], ['Kevin', 'Noel'],
+        ];
         for ($i = 1; $i <= 20; $i++) {
             $user = $this->createUser(sprintf('guest%d@example.com', $i), 'active', $i % 3 !== 0, []);
             $manager->persist($user);
 
             $profile = new UserProfile();
             $profile->setUser($user);
-            $profile->setFirstName('Voyageur');
-            $profile->setLastName((string) $i);
+            [$fn, $ln] = $guestNames[$i - 1];
+            $profile->setFirstName($fn);
+            $profile->setLastName($ln);
+            $profile->setAvatarUrl(sprintf('https://i.pravatar.cc/150?img=%d', $i));
             $profile->setIdentityStatus('verified');
             $manager->persist($profile);
             $user->setProfile($profile);
         }
 
+        $hostNames = [
+            ['Olivier', 'Mercier'], ['Sabine', 'Dupuis'], ['Franck', 'Bonnet'], ['Aurelie', 'Henry'],
+            ['Julien', 'Martin'], ['Nathalie', 'Perrin'], ['Yann', 'Muller'], ['Delphine', 'Leclerc'],
+            ['Serge', 'Vasseur'], ['Isabelle', 'Collin'],
+        ];
         for ($i = 1; $i <= 10; $i++) {
             $user = $this->createUser(sprintf('host%d@example.com', $i), 'active', true, [Roles::HOST]);
             $manager->persist($user);
 
             $profile = new UserProfile();
             $profile->setUser($user);
-            $profile->setFirstName('Hôte');
-            $profile->setLastName((string) $i);
+            [$fn, $ln] = $hostNames[$i - 1];
+            $profile->setFirstName($fn);
+            $profile->setLastName($ln);
+            $profile->setAvatarUrl(sprintf('https://i.pravatar.cc/150?img=%d', $i + 20));
             $profile->setIdentityStatus('verified');
             $manager->persist($profile);
             $user->setProfile($profile);

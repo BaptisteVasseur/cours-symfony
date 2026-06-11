@@ -9,17 +9,20 @@ use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
 use App\Message\ReservationConfirmedMessage;
+use App\Message\ReservationPendingMessage;
+use App\Repository\PropertyAvailabilityRepository;
 use App\Repository\PropertyRepository;
 use App\Repository\ReservationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+use Symfony\Component\Messenger\MessageBusInterface;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\PropertyVoter;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
-use Symfony\Component\Messenger\MessageBusInterface;
 
+#[IsGranted('ROLE_USER')]
 final class BookingController extends AbstractController
 {
     #[Route('/logement/{id}/reserver', name: 'app_booking_checkout', methods: ['GET', 'POST'])]
@@ -29,14 +32,16 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         ReservationRepository $reservationRepository,
+        PropertyAvailabilityRepository $availabilityRepository,
         EntityManagerInterface $entityManager,
         MessageBusInterface $bus,
     ): Response {
+        $property = $propertyRepository->findOneForDetail($property) ?? $property;
+
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
         }
 
-        $property = $propertyRepository->findOneForDetail($property) ?? $property;
         $user = $this->getUser();
         if (!$user instanceof User) {
             return $this->redirectToRoute('app_login');
@@ -48,8 +53,28 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_logement_detail', ['id' => $property->getId()]);
         }
 
+        $bookedRanges = array_map(
+            static fn (Reservation $r) => [
+                'from' => $r->getCheckinDate()->format('Y-m-d'),
+                'to'   => $r->getCheckoutDate()->format('Y-m-d'),
+            ],
+            $reservationRepository->findActiveForProperty($property),
+        );
+
+        $blockedDates = array_map(
+            static fn (\App\Entity\PropertyAvailability $a) => $a->getAvailableDate()->format('Y-m-d'),
+            $availabilityRepository->findBlockedDates($property),
+        );
+
         $form = $this->createForm(BookingType::class);
         $form->handleRequest($request);
+
+        $renderBooking = fn () => $this->render('front/property/booking.html.twig', [
+            'property'     => $property,
+            'form'         => $form,
+            'bookedRanges' => $bookedRanges,
+            'blockedDates' => $blockedDates,
+        ]);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
@@ -60,30 +85,25 @@ final class BookingController extends AbstractController
             if ($checkin >= $checkout) {
                 $this->addFlash('error', 'La date de départ doit être postérieure à la date d\'arrivée.');
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $renderBooking();
             }
 
             if ($guestsCount > $property->getMaxGuests()) {
                 $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $renderBooking();
             }
 
-            // Check for overlapping reservations
-            $overlapping = $reservationRepository->findOverlapping($property, $checkin, $checkout);
-            if (count($overlapping) > 0) {
-                $this->addFlash('error', 'Ce logement n\'est pas disponible pour les dates sélectionnées. Veuillez choisir d\'autres dates.');
+            if ($reservationRepository->findOverlapping((string) $property->getId(), $checkin, $checkout)) {
+                $this->addFlash('error', 'Ce logement est déjà réservé sur cette période.');
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $renderBooking();
+            }
+
+            if ($availabilityRepository->hasBlockedDayInRange($property, $checkin, $checkout)) {
+                $this->addFlash('error', 'Une ou plusieurs nuits de cette période sont indisponibles (bloquées par l\'hôte).');
+
+                return $renderBooking();
             }
 
             $nights = (int) $checkin->diff($checkout)->days;
@@ -107,31 +127,19 @@ final class BookingController extends AbstractController
             $reservation->setCurrency('EUR');
 
             $entityManager->persist($reservation);
-
-            // If instant booking: cancel any pending reservations that now overlap
-            if ($property->isInstantBooking()) {
-                $pendingOverlaps = $reservationRepository->findOverlapping($property, $checkin, $checkout, $reservation);
-                foreach ($pendingOverlaps as $pending) {
-                    if ($pending->getStatus() === 'pending') {
-                        $pending->setStatus('cancelled');
-                        $pending->setCancellationReason('Annulation automatique : une autre réservation a été confirmée pour ces dates.');
-                    }
-                }
-            }
-
             $entityManager->flush();
 
-            // Dispatch async email notification
-            $bus->dispatch(new ReservationConfirmedMessage($reservation->getId()));
+            if ($reservation->getStatus() === 'pending') {
+                $bus->dispatch(new ReservationPendingMessage((string) $reservation->getId()));
+            } else {
+                $bus->dispatch(new ReservationConfirmedMessage((string) $reservation->getId()));
+            }
 
             $this->addFlash('success', 'Votre réservation a été enregistrée.');
 
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }
 
-        return $this->render('front/property/booking.html.twig', [
-            'property' => $property,
-            'form' => $form,
-        ]);
+        return $renderBooking();
     }
 }

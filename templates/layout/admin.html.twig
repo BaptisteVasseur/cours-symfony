@@ -1,17 +1,19 @@
 {% extends 'layout/base.html.twig' %}
 
 {% block body %}
-    <div class="bg-gray-50 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
-        {% include 'layout/partials/admin/sidebar.html.twig' %}
+    <body class="bg-gray-50 font-sans antialiased text-gray-800 flex h-screen overflow-hidden">
 
-        <div class="flex-grow flex flex-col overflow-hidden">
-            {% embed 'layout/partials/admin/header.html.twig' %}
-                {% block page_title %}{% endblock %}
-            {% endembed %}
+    {% include 'layout/partials/admin/sidebar.html.twig' %}
 
-            <main class="flex-grow p-6 overflow-y-auto">
-                {% block content %}{% endblock %}
-            </main>
-        </div>
+    <div class="flex-grow flex flex-col overflow-hidden">
+        {% embed 'layout/partials/admin/header.html.twig' %}
+            {% block page_title %}{% endblock %}
+        {% endembed %}
+
+        <main class="flex-grow p-6 overflow-y-auto">
+            {% block content %}{% endblock %}
+        </main>
     </div>
+
+    </body>
 {% endblock %}
