@@ -1,0 +1,148 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Nouvelle annonce - StayShare{% endblock %}
+
+{% block body %}
+    <main class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+        <a href="{{ path('app_host_logement_index') }}" class="text-sm font-semibold text-rose-600 hover:text-rose-700">Retour aux annonces</a>
+
+        <div class="mt-5">
+            <p class="text-sm font-semibold uppercase text-rose-600">Espace hote</p>
+            <h1 class="mt-2 text-3xl font-bold text-gray-950">Nouvelle annonce</h1>
+            <p class="mt-2 text-sm text-gray-600">Cette premiere version cree un brouillon. Les photos, disponibilites et politiques seront ajoutees dans les prochaines etapes.</p>
+        </div>
+
+        <form method="post" action="{{ path('app_host_logement_new') }}" class="mt-8 space-y-8">
+            <section class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-semibold text-gray-950">Informations principales</h2>
+                <div class="mt-5 grid gap-5 sm:grid-cols-2">
+                    <label class="sm:col-span-2">
+                        <span class="block text-sm font-medium text-gray-700">Titre</span>
+                        <input name="titre" type="text" maxlength="180" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label class="sm:col-span-2">
+                        <span class="block text-sm font-medium text-gray-700">Description</span>
+                        <textarea name="description" rows="5" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"></textarea>
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Type</span>
+                        <select name="type_logement" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                            {% for type in types %}
+                                <option value="{{ type.value }}">{{ type.value|replace({'_': ' '})|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Categorie</span>
+                        <select name="categorie" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                            {% for categorie in categories %}
+                                <option value="{{ categorie.value }}">{{ categorie.value|replace({'_': ' '})|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Voyageurs</span>
+                        <input name="capacite_voyageurs" type="number" min="1" value="2" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Chambres</span>
+                        <input name="nombre_chambres" type="number" min="0" value="1" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Lits</span>
+                        <input name="nombre_lits" type="number" min="1" value="1" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Salles de bain</span>
+                        <input name="nombre_salles_bain" type="number" min="0.5" step="0.5" value="1" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Surface</span>
+                        <input name="surface" type="number" min="1" step="0.01" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                </div>
+            </section>
+
+            <section class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-semibold text-gray-950">Adresse</h2>
+                <div class="mt-5 grid gap-5 sm:grid-cols-2">
+                    <label class="sm:col-span-2">
+                        <span class="block text-sm font-medium text-gray-700">Adresse</span>
+                        <input name="adresse_ligne1" type="text" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label class="sm:col-span-2">
+                        <span class="block text-sm font-medium text-gray-700">Complement</span>
+                        <input name="adresse_ligne2" type="text" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Ville</span>
+                        <input name="ville" type="text" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Code postal</span>
+                        <input name="code_postal" type="text" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Region</span>
+                        <input name="region" type="text" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Pays</span>
+                        <input name="pays" type="text" value="France" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Latitude</span>
+                        <input name="latitude" type="number" step="0.0000001" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Longitude</span>
+                        <input name="longitude" type="number" step="0.0000001" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                </div>
+            </section>
+
+            <section class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-semibold text-gray-950">Tarifs et reglement</h2>
+                <div class="mt-5 grid gap-5 sm:grid-cols-3">
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Prix par nuit</span>
+                        <input name="prix_nuit" type="number" min="1" step="0.01" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Frais de menage</span>
+                        <input name="frais_menage" type="number" min="0" step="0.01" value="0" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label>
+                        <span class="block text-sm font-medium text-gray-700">Depot de garantie</span>
+                        <input name="depot_garantie" type="number" min="0" step="0.01" value="0" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                </div>
+
+                <div class="mt-6 grid gap-3 sm:grid-cols-2">
+                    {% for name, label in {
+                        animaux_acceptes: 'Animaux acceptes',
+                        fumeurs_acceptes: 'Fumeurs acceptes',
+                        fetes_autorisees: 'Fetes autorisees',
+                        enfants_acceptes: 'Enfants acceptes'
+                    } %}
+                        <label class="flex gap-3 rounded-md border border-gray-100 px-4 py-3 text-sm text-gray-700">
+                            <input name="{{ name }}" type="checkbox" {{ name == 'enfants_acceptes' ? 'checked' : '' }} class="mt-0.5 h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500">
+                            <span>{{ label }}</span>
+                        </label>
+                    {% endfor %}
+                </div>
+
+                <label class="mt-5 block">
+                    <span class="block text-sm font-medium text-gray-700">Regles supplementaires</span>
+                    <textarea name="regles_supplementaires" rows="4" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"></textarea>
+                </label>
+            </section>
+
+            <input type="hidden" name="_token" value="{{ csrf_token('host_logement_new') }}">
+
+            <div class="flex justify-end">
+                <button type="submit" class="rounded-md bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">Creer le brouillon</button>
+            </div>
+        </form>
+    </main>
+{% endblock %}

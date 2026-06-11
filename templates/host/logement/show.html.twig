@@ -1,0 +1,83 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}{{ logement.titre }} - Annonce hote{% endblock %}
+
+{% block body %}
+    <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <a href="{{ path('app_host_logement_index') }}" class="text-sm font-semibold text-rose-600 hover:text-rose-700">Retour aux annonces</a>
+
+        <div class="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase text-rose-600">Annonce hote</p>
+                <h1 class="mt-2 text-3xl font-bold text-gray-950">{{ logement.titre }}</h1>
+                <p class="mt-2 text-sm text-gray-600">{{ logement.typeLogement.value }} - {{ logement.categorie.value }}</p>
+            </div>
+            <span class="rounded-md bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">{{ logement.statut.value }}</span>
+        </div>
+
+        <div class="mt-8 grid gap-6 lg:grid-cols-[1fr_340px]">
+            <section class="space-y-6">
+                <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-950">Description</h2>
+                    <p class="mt-4 leading-7 text-gray-700">{{ logement.description }}</p>
+                    <div class="mt-5 flex flex-wrap gap-3 text-sm text-gray-600">
+                        <span>{{ logement.capaciteVoyageurs }} voyageurs</span>
+                        <span>{{ logement.nombreChambres }} chambres</span>
+                        <span>{{ logement.nombreLits }} lits</span>
+                        <span>{{ logement.nombreSallesBain }} salles de bain</span>
+                    </div>
+                </article>
+
+                <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-950">Adresse</h2>
+                    {% if logement.adresse %}
+                        <p class="mt-4 text-sm text-gray-700">
+                            {{ logement.adresse.adresseLigne1 }}<br>
+                            {% if logement.adresse.adresseLigne2 %}{{ logement.adresse.adresseLigne2 }}<br>{% endif %}
+                            {{ logement.adresse.codePostal }} {{ logement.adresse.ville }}, {{ logement.adresse.pays }}
+                        </p>
+                    {% endif %}
+                </article>
+
+                <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-950">Reglement</h2>
+                    {% if logement.reglementInterieur %}
+                        <div class="mt-4 grid gap-3 sm:grid-cols-2">
+                            <p class="text-sm text-gray-700">Animaux : {{ logement.reglementInterieur.animauxAcceptes ? 'oui' : 'non' }}</p>
+                            <p class="text-sm text-gray-700">Fumeurs : {{ logement.reglementInterieur.fumeursAcceptes ? 'oui' : 'non' }}</p>
+                            <p class="text-sm text-gray-700">Fetes : {{ logement.reglementInterieur.fetesAutorisees ? 'oui' : 'non' }}</p>
+                            <p class="text-sm text-gray-700">Enfants : {{ logement.reglementInterieur.enfantsAcceptes ? 'oui' : 'non' }}</p>
+                        </div>
+                        {% if logement.reglementInterieur.reglesSupplementaires %}
+                            <p class="mt-4 text-sm text-gray-700">{{ logement.reglementInterieur.reglesSupplementaires }}</p>
+                        {% endif %}
+                    {% endif %}
+                </article>
+            </section>
+
+            <aside class="h-fit rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-semibold text-gray-950">Preparation publication</h2>
+                {% if logement.tarif %}
+                    <p class="mt-4 text-sm text-gray-700"><strong>{{ logement.tarif.prixNuit }} EUR</strong> / nuit</p>
+                {% endif %}
+                <ul class="mt-5 space-y-2 text-sm text-gray-700">
+                    <li>Informations principales : OK</li>
+                    <li>Adresse : {{ logement.adresse ? 'OK' : 'a completer' }}</li>
+                    <li>Tarif : {{ logement.tarif ? 'OK' : 'a completer' }}</li>
+                    <li>Reglement : {{ logement.reglementInterieur ? 'OK' : 'a completer' }}</li>
+                    <li>Photos : {{ logement.photos is not empty ? 'OK' : 'a ajouter' }}</li>
+                    <li>Disponibilites : {{ logement.disponibilites is not empty ? 'OK' : 'a ajouter' }}</li>
+                    <li>Politique d annulation : {{ logement.politiqueAnnulation ? 'OK' : 'a ajouter' }}</li>
+                </ul>
+
+                {% if logement.statut.value == 'brouillon' %}
+                    <a href="{{ path('app_host_logement_publication', { id: logement.id }) }}" class="mt-6 inline-flex w-full justify-center rounded-md bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">Preparer la publication</a>
+                {% elseif logement.statut.value == 'en_attente' %}
+                    <p class="mt-6 rounded-md bg-amber-50 p-4 text-sm text-amber-800">Annonce soumise a moderation.</p>
+                {% elseif logement.statut.value == 'publie' %}
+                    <p class="mt-6 rounded-md bg-green-50 p-4 text-sm text-green-800">Annonce publiee et visible dans la recherche.</p>
+                {% endif %}
+            </aside>
+        </div>
+    </main>
+{% endblock %}

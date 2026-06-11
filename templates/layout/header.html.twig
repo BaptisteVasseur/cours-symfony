@@ -1,0 +1,23 @@
+<header class="border-b border-gray-100 bg-white">
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+        <a href="{{ path('app_home') }}" class="text-xl font-bold text-rose-600">StayShare</a>
+        <nav class="flex items-center gap-4 text-sm font-medium text-gray-700">
+            <a href="{{ path('app_logement_index') }}" class="hover:text-rose-600">Explorer</a>
+            {% if app.user %}
+                {% if is_granted('ROLE_ADMIN') %}
+                    <a href="{{ path('app_admin_dashboard') }}" class="hover:text-rose-600">Admin</a>
+                {% endif %}
+                {% if is_granted('ROLE_HOTE') %}
+                    <a href="{{ path('app_host_logement_index') }}" class="hover:text-rose-600">Mes annonces</a>
+                    <a href="{{ path('app_host_reservation_index') }}" class="hover:text-rose-600">Demandes</a>
+                {% endif %}
+                <a href="{{ path('app_reservation_index') }}" class="hover:text-rose-600">Mes reservations</a>
+                <a href="{{ path('app_account_dashboard') }}" class="hover:text-rose-600">Mon compte</a>
+                <a href="{{ path('app_logout') }}" class="rounded-md bg-gray-950 px-3 py-2 text-white hover:bg-gray-800">Deconnexion</a>
+            {% else %}
+                <a href="{{ path('app_login') }}" class="hover:text-rose-600">Connexion</a>
+                <a href="{{ path('app_register') }}" class="rounded-md bg-rose-600 px-3 py-2 text-white hover:bg-rose-700">Inscription</a>
+            {% endif %}
+        </nav>
+    </div>
+</header>

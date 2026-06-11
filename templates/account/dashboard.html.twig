@@ -1,0 +1,58 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Mon compte - StayShare{% endblock %}
+
+{% block body %}
+    <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase text-rose-600">Espace utilisateur</p>
+                <h1 class="mt-2 text-3xl font-bold text-gray-950">Bonjour {{ user.prenom }}</h1>
+                <p class="mt-2 text-sm text-gray-600">Retrouvez ici vos reservations, annonces et informations de profil.</p>
+            </div>
+            <span class="rounded-md bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">{{ user.role.value }}</span>
+        </div>
+
+        <section class="mt-8 grid gap-5 md:grid-cols-3">
+            <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-semibold text-gray-950">Profil</h2>
+                <dl class="mt-4 space-y-3 text-sm">
+                    <div>
+                        <dt class="text-gray-500">Nom</dt>
+                        <dd class="font-medium text-gray-900">{{ user.prenom }} {{ user.nom }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500">Email</dt>
+                        <dd class="font-medium text-gray-900">{{ user.email }}</dd>
+                    </div>
+                    <div>
+                        <dt class="text-gray-500">Statut</dt>
+                        <dd class="font-medium text-gray-900">{{ user.statut.value }}</dd>
+                    </div>
+                </dl>
+            </article>
+
+            <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-semibold text-gray-950">Reservations</h2>
+                <p class="mt-4 text-sm text-gray-600">Consultez vos demandes, confirmations et annulations.</p>
+                <div class="mt-5 flex flex-wrap gap-3">
+                    <a href="{{ path('app_reservation_index') }}" class="inline-flex rounded-md border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-900 hover:border-rose-300 hover:text-rose-600">Voir mes reservations</a>
+                    <a href="{{ path('app_logement_index') }}" class="inline-flex rounded-md bg-rose-600 px-4 py-2 text-sm font-semibold text-white hover:bg-rose-700">Rechercher</a>
+                </div>
+            </article>
+
+            <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-semibold text-gray-950">Annonces hote</h2>
+                <p class="mt-4 text-sm text-gray-600">Creez vos brouillons, preparez leur publication et suivez leur statut.</p>
+                {% if is_granted('ROLE_HOTE') %}
+                    <div class="mt-5 flex flex-wrap gap-3">
+                        <a href="{{ path('app_host_logement_index') }}" class="inline-flex rounded-md border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-900 hover:border-rose-300 hover:text-rose-600">Gerer mes annonces</a>
+                        <a href="{{ path('app_host_reservation_index') }}" class="inline-flex rounded-md bg-gray-950 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-800">Demandes recues</a>
+                    </div>
+                {% else %}
+                    <a href="{{ path('app_register') }}" class="mt-5 inline-flex rounded-md bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-500">Compte hote requis</a>
+                {% endif %}
+            </article>
+        </section>
+    </main>
+{% endblock %}

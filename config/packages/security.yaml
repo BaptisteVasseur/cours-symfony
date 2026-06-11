@@ -24,6 +24,7 @@ security:
                 login_path: app_login
                 check_path: app_login
                 enable_csrf: true
+                default_target_path: app_account_dashboard
             logout:
                 path: app_logout
                 # where to redirect after logout
@@ -36,20 +37,18 @@ security:
             # switch_user: true
 
     role_hierarchy:
-        # ROLE_FACTURATION, ROLE_SERVICE_CLIENT, ROLE_PREPARATEUR_COMMANDE
-        # ROLE_PRESTATAIRE, ROLE_CLIENT, ROLE_BANNI, ROLE_VIP, ROLE_ADMIN
-        # ROLE_SUPER_ADMIN
-
-        ROLE_PRESTATAIRE: ROLE_USER
-        ROLE_CLIENT: ROLE_USER
-        ROLE_BANNI: ROLE_USER
-        ROLE_VIP: ROLE_USER
-        ROLE_ADMIN: [ROLE_PRESTATAIRE, ROLE_SERVICE_CLIENT, ROLE_PREPARATEUR_COMMANDE, ROLE_CLIENT, ROLE_BANNI, ROLE_VIP]
+        ROLE_VOYAGEUR: ROLE_USER
+        ROLE_HOTE: ROLE_VOYAGEUR
+        ROLE_SUPPORT: ROLE_USER
+        ROLE_ADMIN: [ROLE_HOTE, ROLE_SUPPORT]
         ROLE_SUPER_ADMIN: ROLE_ADMIN
 
     # Note: Only the *first* matching rule is applied
     access_control:
-#         - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/mon-compte, roles: ROLE_USER }
+        - { path: ^/mes-reservations, roles: ROLE_USER }
+        - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/hote, roles: ROLE_HOTE }
 #        - { path: ^/(login|register), roles: PUBLIC_ACCESS }
 #        - { path: ^/, roles: ROLE_USER }
 

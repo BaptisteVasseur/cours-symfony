@@ -1,0 +1,35 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Paiement reservation #{{ reservation.id }} - StayShare{% endblock %}
+
+{% block body %}
+    <main class="mx-auto max-w-3xl px-4 py-10 sm:px-6 lg:px-8">
+        <a href="{{ path('app_reservation_show', { id: reservation.id }) }}" class="text-sm font-semibold text-rose-600 hover:text-rose-700">Retour a la reservation</a>
+
+        <div class="mt-5">
+            <p class="text-sm font-semibold uppercase text-rose-600">Paiement sandbox</p>
+            <h1 class="mt-2 text-3xl font-bold text-gray-950">Confirmer le paiement</h1>
+            <p class="mt-2 text-sm text-gray-600">Cette page simule un paiement reussi pour valider le parcours de reservation.</p>
+        </div>
+
+        <section class="mt-8 rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+            <h2 class="text-lg font-semibold text-gray-950">{{ reservation.logement.titre }}</h2>
+            <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                <p class="text-sm text-gray-700">Arrivee<br><strong>{{ reservation.dateArrivee|date('d/m/Y') }}</strong></p>
+                <p class="text-sm text-gray-700">Depart<br><strong>{{ reservation.dateDepart|date('d/m/Y') }}</strong></p>
+            </div>
+
+            <dl class="mt-6 space-y-3 text-sm text-gray-700">
+                <div class="flex justify-between gap-4"><dt>Nuits</dt><dd>{{ reservation.prixNuits }} EUR</dd></div>
+                <div class="flex justify-between gap-4"><dt>Menage</dt><dd>{{ reservation.fraisMenage }} EUR</dd></div>
+                <div class="flex justify-between gap-4"><dt>Service</dt><dd>{{ reservation.fraisService }} EUR</dd></div>
+                <div class="flex justify-between gap-4 border-t border-gray-100 pt-3 text-lg font-semibold text-gray-950"><dt>Total</dt><dd>{{ reservation.montantTotal }} EUR</dd></div>
+            </dl>
+
+            <form method="post" action="{{ path('app_reservation_payment_confirm', { id: reservation.id }) }}" class="mt-6">
+                <input type="hidden" name="_token" value="{{ csrf_token('reservation_payment_' ~ reservation.id) }}">
+                <button type="submit" class="w-full rounded-md bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">Payer et confirmer</button>
+            </form>
+        </section>
+    </main>
+{% endblock %}

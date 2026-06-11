@@ -1,0 +1,75 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}StayShare - Locations de vacances{% endblock %}
+
+{% block body %}
+    <main>
+        <section class="relative min-h-[72vh] overflow-hidden bg-gray-950">
+            <img
+                src="https://images.unsplash.com/photo-1523217582562-09d0def993a6?auto=format&fit=crop&w=1800&q=80"
+                alt="Maison de vacances avec terrasse"
+                class="absolute inset-0 h-full w-full object-cover opacity-70"
+            >
+            <div class="absolute inset-0 bg-gradient-to-r from-gray-950/80 via-gray-950/35 to-transparent"></div>
+
+            <div class="relative mx-auto flex min-h-[72vh] max-w-7xl flex-col justify-center px-4 pb-16 pt-20 sm:px-6 lg:px-8">
+                <div class="max-w-2xl text-white">
+                    <h1 class="text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">Trouvez le sejour qui vous ressemble</h1>
+                    <p class="mt-5 max-w-xl text-lg text-white/85">Recherchez un logement, comparez les prix et preparez une demande de reservation en quelques minutes.</p>
+                </div>
+
+                <form action="{{ path('app_logement_index') }}" method="get" class="mt-10 grid gap-3 rounded-lg bg-white p-3 shadow-xl sm:grid-cols-[1.5fr_1fr_1fr_auto]">
+                    <label class="block">
+                        <span class="text-xs font-semibold uppercase text-gray-500">Destination</span>
+                        <input name="destination" type="text" placeholder="Paris, Nice, Annecy..." class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-gray-950 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold uppercase text-gray-500">Voyageurs</span>
+                        <input name="voyageurs" type="number" min="1" value="2" class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-gray-950 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <label class="block">
+                        <span class="text-xs font-semibold uppercase text-gray-500">Budget max</span>
+                        <input name="prix_max" type="number" min="1" placeholder="250" class="mt-1 w-full rounded-md border border-gray-200 px-3 py-2 text-gray-950 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                    </label>
+                    <button type="submit" class="self-end rounded-md bg-rose-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300">Rechercher</button>
+                </form>
+            </div>
+        </section>
+
+        <section class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+            <div class="flex items-end justify-between gap-4">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-950">Logements populaires</h2>
+                    <p class="mt-1 text-sm text-gray-600">Une premiere selection pour tester le parcours voyageur.</p>
+                </div>
+                <a href="{{ path('app_logement_index') }}" class="text-sm font-semibold text-rose-600 hover:text-rose-700">Tout explorer</a>
+            </div>
+
+            <div class="mt-7 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {% for logement in logements_populaires %}
+                    {% set photo = logement.photos|first %}
+                    <article class="overflow-hidden rounded-lg border border-gray-100 bg-white shadow-sm">
+                        <a href="{{ path('app_logement_show', { id: logement.id }) }}">
+                            <img src="{{ photo ? photo.url : 'https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?auto=format&fit=crop&w=900&q=80' }}" alt="{{ logement.titre }}" class="h-56 w-full object-cover">
+                        </a>
+                        <div class="p-4">
+                            <div class="flex items-start justify-between gap-3">
+                                <div>
+                                    <h3 class="font-semibold text-gray-950">{{ logement.titre }}</h3>
+                                    <p class="mt-1 text-sm text-gray-600">{{ logement.adresse ? logement.adresse.ville ~ ', ' ~ logement.adresse.pays : 'Adresse a confirmer' }}</p>
+                                </div>
+                                <span class="text-sm font-semibold text-gray-900">{{ logement.noteMoyenne|number_format(2, '.', ' ') }}</span>
+                            </div>
+                            <p class="mt-4 text-sm text-gray-700"><strong>{{ logement.tarif ? logement.tarif.prixNuit : '0.00' }} EUR</strong> / nuit</p>
+                        </div>
+                    </article>
+                {% else %}
+                    <div class="rounded-lg border border-gray-100 bg-white p-8 text-center shadow-sm sm:col-span-2 lg:col-span-3">
+                        <h3 class="text-lg font-semibold text-gray-950">Aucun logement publie</h3>
+                        <p class="mt-2 text-sm text-gray-600">Chargez les fixtures pour afficher les logements de demonstration.</p>
+                    </div>
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+{% endblock %}

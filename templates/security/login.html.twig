@@ -1,0 +1,59 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Connexion - StayShare{% endblock %}
+
+{% block body %}
+    <main class="mx-auto flex min-h-[70vh] max-w-md items-center px-4 py-12 sm:px-6 lg:px-8">
+        <section class="w-full">
+            <h1 class="text-3xl font-bold text-gray-950">Connexion</h1>
+            <p class="mt-2 text-sm text-gray-600">Accedez a votre espace voyageur, hote ou administrateur.</p>
+
+            {% if error %}
+                <div class="mt-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    Identifiants invalides.
+                </div>
+            {% endif %}
+
+            <form method="post" action="{{ path('app_login') }}" class="mt-8 space-y-5">
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700">Email</label>
+                    <input
+                        id="email"
+                        name="_username"
+                        type="email"
+                        value="{{ last_username }}"
+                        autocomplete="email"
+                        required
+                        class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-950 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
+                    >
+                </div>
+
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Mot de passe</label>
+                    <input
+                        id="password"
+                        name="_password"
+                        type="password"
+                        autocomplete="current-password"
+                        required
+                        class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-950 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200"
+                    >
+                </div>
+
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+
+                <button
+                    type="submit"
+                    class="w-full rounded-md bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300"
+                >
+                    Se connecter
+                </button>
+
+                <p class="text-center text-sm text-gray-600">
+                    Pas encore de compte ?
+                    <a href="{{ path('app_register') }}" class="font-semibold text-rose-600 hover:text-rose-700">Creer un compte</a>
+                </p>
+            </form>
+        </section>
+    </main>
+{% endblock %}

@@ -1,0 +1,85 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Publication - {{ logement.titre }}{% endblock %}
+
+{% block body %}
+    <main class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+        <a href="{{ path('app_host_logement_show', { id: logement.id }) }}" class="text-sm font-semibold text-rose-600 hover:text-rose-700">Retour a l'annonce</a>
+
+        <div class="mt-5">
+            <p class="text-sm font-semibold uppercase text-rose-600">Publication</p>
+            <h1 class="mt-2 text-3xl font-bold text-gray-950">Preparer la mise en ligne</h1>
+            <p class="mt-2 text-sm text-gray-600">Completez les derniers elements obligatoires avant soumission a moderation.</p>
+        </div>
+
+        <div class="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
+            <form method="post" action="{{ path('app_host_logement_publication', { id: logement.id }) }}" class="space-y-6">
+                {% if logement.photos is empty %}
+                    <section class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                        <h2 class="text-lg font-semibold text-gray-950">Photo principale</h2>
+                        <label class="mt-5 block">
+                            <span class="block text-sm font-medium text-gray-700">URL de la photo</span>
+                            <input name="photo_url" type="url" placeholder="https://..." class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                        </label>
+                    </section>
+                {% endif %}
+
+                {% if logement.politiqueAnnulation is null %}
+                    <section class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                        <h2 class="text-lg font-semibold text-gray-950">Politique d'annulation</h2>
+                        <label class="mt-5 block">
+                            <span class="block text-sm font-medium text-gray-700">Politique</span>
+                            <select name="politique_annulation_id" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                                <option value="">Choisir</option>
+                                {% for politique in politiques %}
+                                    <option value="{{ politique.id }}">{{ politique.nom }}</option>
+                                {% endfor %}
+                            </select>
+                        </label>
+                    </section>
+                {% endif %}
+
+                {% if logement.disponibilites is empty %}
+                    <section class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                        <h2 class="text-lg font-semibold text-gray-950">Disponibilites</h2>
+                        <div class="mt-5 grid gap-5 sm:grid-cols-2">
+                            <label>
+                                <span class="block text-sm font-medium text-gray-700">Debut</span>
+                                <input name="disponibilite_debut" type="date" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                            </label>
+                            <label>
+                                <span class="block text-sm font-medium text-gray-700">Fin</span>
+                                <input name="disponibilite_fin" type="date" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                            </label>
+                        </div>
+                    </section>
+                {% endif %}
+
+                <input type="hidden" name="_token" value="{{ csrf_token('host_logement_publication_' ~ logement.id) }}">
+                <button type="submit" class="rounded-md bg-rose-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">Soumettre a moderation</button>
+            </form>
+
+            <aside class="h-fit rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-semibold text-gray-950">Checklist</h2>
+                <ul class="mt-5 space-y-2 text-sm text-gray-700">
+                    <li>Titre : {{ logement.titre ? 'OK' : 'a completer' }}</li>
+                    <li>Description : {{ logement.description ? 'OK' : 'a completer' }}</li>
+                    <li>Adresse : {{ logement.adresse ? 'OK' : 'a completer' }}</li>
+                    <li>Tarif : {{ logement.tarif ? 'OK' : 'a completer' }}</li>
+                    <li>Reglement : {{ logement.reglementInterieur ? 'OK' : 'a completer' }}</li>
+                    <li>Photo : {{ logement.photos is not empty ? 'OK' : 'a ajouter' }}</li>
+                    <li>Disponibilites : {{ logement.disponibilites is not empty ? 'OK' : 'a ajouter' }}</li>
+                    <li>Politique : {{ logement.politiqueAnnulation ? 'OK' : 'a choisir' }}</li>
+                </ul>
+
+                {% if motifs_invalides %}
+                    <div class="mt-5 rounded-md bg-amber-50 p-4 text-sm text-amber-800">
+                        {% for motif in motifs_invalides %}
+                            <p>{{ motif }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </aside>
+        </div>
+    </main>
+{% endblock %}

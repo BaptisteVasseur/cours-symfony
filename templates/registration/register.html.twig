@@ -1,0 +1,74 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Inscription - StayShare{% endblock %}
+
+{% block body %}
+    <main class="mx-auto flex min-h-[70vh] max-w-2xl items-center px-4 py-12 sm:px-6 lg:px-8">
+        <section class="w-full">
+            <h1 class="text-3xl font-bold text-gray-950">Creer un compte</h1>
+            <p class="mt-2 text-sm text-gray-600">Inscrivez-vous comme voyageur ou hote pour commencer a utiliser la plateforme.</p>
+
+            <form method="post" action="{{ path('app_register') }}" class="mt-8 grid gap-5 sm:grid-cols-2">
+                <label>
+                    <span class="block text-sm font-medium text-gray-700">Prenom</span>
+                    <input name="prenom" type="text" required autocomplete="given-name" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-950 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                </label>
+
+                <label>
+                    <span class="block text-sm font-medium text-gray-700">Nom</span>
+                    <input name="nom" type="text" required autocomplete="family-name" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-950 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                </label>
+
+                <label>
+                    <span class="block text-sm font-medium text-gray-700">Email</span>
+                    <input name="email" type="email" required autocomplete="email" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-950 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                </label>
+
+                <label>
+                    <span class="block text-sm font-medium text-gray-700">Telephone</span>
+                    <input name="telephone" type="tel" autocomplete="tel" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-950 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                </label>
+
+                <label>
+                    <span class="block text-sm font-medium text-gray-700">Date de naissance</span>
+                    <input name="date_naissance" type="date" required class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-950 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                </label>
+
+                <label>
+                    <span class="block text-sm font-medium text-gray-700">Type de compte</span>
+                    <select name="role" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-950 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                        <option value="ROLE_VOYAGEUR">Voyageur</option>
+                        <option value="ROLE_HOTE">Hote</option>
+                    </select>
+                </label>
+
+                <label>
+                    <span class="block text-sm font-medium text-gray-700">Mot de passe</span>
+                    <input name="password" type="password" required autocomplete="new-password" minlength="8" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-950 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                </label>
+
+                <label>
+                    <span class="block text-sm font-medium text-gray-700">Confirmation</span>
+                    <input name="password_confirmation" type="password" required autocomplete="new-password" minlength="8" class="mt-2 w-full rounded-md border border-gray-300 px-3 py-2 text-gray-950 shadow-sm focus:border-rose-500 focus:outline-none focus:ring-2 focus:ring-rose-200">
+                </label>
+
+                <label class="flex gap-3 sm:col-span-2">
+                    <input name="consentement_cgu" type="checkbox" required class="mt-1 h-4 w-4 rounded border-gray-300 text-rose-600 focus:ring-rose-500">
+                    <span class="text-sm text-gray-700">J accepte les conditions generales et confirme avoir au moins 18 ans.</span>
+                </label>
+
+                <input type="hidden" name="_token" value="{{ csrf_token('register') }}">
+
+                <div class="sm:col-span-2">
+                    <button type="submit" class="w-full rounded-md bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-rose-700 focus:outline-none focus:ring-2 focus:ring-rose-300">
+                        Creer mon compte
+                    </button>
+                    <p class="mt-4 text-center text-sm text-gray-600">
+                        Deja inscrit ?
+                        <a href="{{ path('app_login') }}" class="font-semibold text-rose-600 hover:text-rose-700">Se connecter</a>
+                    </p>
+                </div>
+            </form>
+        </section>
+    </main>
+{% endblock %}

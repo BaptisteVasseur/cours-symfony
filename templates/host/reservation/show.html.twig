@@ -1,0 +1,64 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Demande #{{ reservation.id }} - StayShare{% endblock %}
+
+{% block body %}
+    <main class="mx-auto max-w-5xl px-4 py-10 sm:px-6 lg:px-8">
+        <a href="{{ path('app_host_reservation_index') }}" class="text-sm font-semibold text-rose-600 hover:text-rose-700">Retour aux demandes</a>
+
+        <div class="mt-5 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase text-rose-600">Demande #{{ reservation.id }}</p>
+                <h1 class="mt-2 text-3xl font-bold text-gray-950">{{ reservation.logement.titre }}</h1>
+                <p class="mt-2 text-sm text-gray-600">Voyageur : {{ reservation.voyageur.prenom }} {{ reservation.voyageur.nom }}</p>
+            </div>
+            <span class="rounded-md bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">{{ reservation.statut.value }}</span>
+        </div>
+
+        <div class="mt-8 grid gap-6 lg:grid-cols-[1fr_320px]">
+            <section class="space-y-6">
+                <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-950">Sejour demande</h2>
+                    <div class="mt-5 grid gap-4 sm:grid-cols-2">
+                        <p class="text-sm text-gray-700">Arrivee<br><strong>{{ reservation.dateArrivee|date('d/m/Y') }}</strong></p>
+                        <p class="text-sm text-gray-700">Depart<br><strong>{{ reservation.dateDepart|date('d/m/Y') }}</strong></p>
+                        <p class="text-sm text-gray-700">Nuits<br><strong>{{ reservation.nombreNuits }}</strong></p>
+                        <p class="text-sm text-gray-700">Voyageurs<br><strong>{{ reservation.nombreVoyageurs }}</strong></p>
+                    </div>
+                    {% if reservation.messageVoyageur %}
+                        <p class="mt-5 rounded-md bg-gray-50 p-4 text-sm text-gray-700">{{ reservation.messageVoyageur }}</p>
+                    {% endif %}
+                </article>
+
+                <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-950">Decision hote</h2>
+                    {% if reservation.statut.value == 'en_attente_hote' %}
+                        <div class="mt-5 flex flex-wrap gap-3">
+                            <form method="post" action="{{ path('app_host_reservation_accept', { id: reservation.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('host_reservation_accept_' ~ reservation.id) }}">
+                                <button type="submit" class="rounded-md bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">Accepter</button>
+                            </form>
+                            <form method="post" action="{{ path('app_host_reservation_refuse', { id: reservation.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('host_reservation_refuse_' ~ reservation.id) }}">
+                                <button type="submit" class="rounded-md border border-gray-300 px-4 py-2.5 text-sm font-semibold text-gray-900 hover:border-red-300 hover:text-red-700">Refuser</button>
+                            </form>
+                        </div>
+                    {% elseif reservation.statut.value == 'acceptee_en_attente_paiement' %}
+                        <p class="mt-4 text-sm text-gray-700">Demande acceptee le {{ reservation.dateAcceptation|date('d/m/Y H:i') }}. Paiement attendu avant le {{ reservation.dateExpirationPaiement|date('d/m/Y H:i') }}.</p>
+                    {% else %}
+                        <p class="mt-4 text-sm text-gray-700">Cette demande est deja traitee.</p>
+                    {% endif %}
+                </article>
+            </section>
+
+            <aside class="h-fit rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                <h2 class="text-lg font-semibold text-gray-950">Montants</h2>
+                <dl class="mt-5 space-y-3 text-sm text-gray-700">
+                    <div class="flex justify-between gap-4"><dt>Total voyageur</dt><dd>{{ reservation.montantTotal }} EUR</dd></div>
+                    <div class="flex justify-between gap-4"><dt>Revenu hote</dt><dd>{{ reservation.montantHote }} EUR</dd></div>
+                    <div class="flex justify-between gap-4"><dt>Commission</dt><dd>{{ reservation.commissionPlateforme }} EUR</dd></div>
+                </dl>
+            </aside>
+        </div>
+    </main>
+{% endblock %}

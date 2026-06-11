@@ -1,0 +1,31 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Administration - StayShare{% endblock %}
+
+{% block body %}
+    <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase text-rose-600">Back-office</p>
+                <h1 class="mt-2 text-3xl font-bold text-gray-950">Administration</h1>
+                <p class="mt-2 text-sm text-gray-600">Supervisez la moderation des annonces et les prochains modules admin.</p>
+            </div>
+            <a href="{{ path('app_admin_logement_index') }}" class="rounded-md bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">Annonces a moderer</a>
+        </div>
+
+        <section class="mt-8 grid gap-5 md:grid-cols-3">
+            <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                <p class="text-sm text-gray-500">En attente</p>
+                <p class="mt-2 text-3xl font-bold text-gray-950">{{ annonces_en_attente }}</p>
+            </article>
+            <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                <p class="text-sm text-gray-500">Publiees</p>
+                <p class="mt-2 text-3xl font-bold text-gray-950">{{ annonces_publiees }}</p>
+            </article>
+            <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                <p class="text-sm text-gray-500">Brouillons</p>
+                <p class="mt-2 text-3xl font-bold text-gray-950">{{ annonces_brouillon }}</p>
+            </article>
+        </section>
+    </main>
+{% endblock %}

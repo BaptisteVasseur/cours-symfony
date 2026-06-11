@@ -1,211 +1,113 @@
-# Guide du projet Airbnb - Symfony
+# Directives agent - Projet cours-symfony
 
-## Vue d'ensemble
+Ce fichier sert de guide de travail pour Codex sur ce projet. Il peut etre modifie par l'equipe pour ajouter des consignes, priorites, interdits ou conventions locales.
 
-Ce projet est une application de location de biens immobiliers (style Airbnb) développée avec **Symfony 8.0** et **PHP 8.4**. L'application permet aux utilisateurs de réserver des propriétés, de gérer leurs réservations, de laisser des avis, et inclut un système de gamification avec badges, défis et récompenses.
+## Contexte du projet
+
+- Application Symfony de reservation de logements entre particuliers.
+- Le cahier des charges de reference est disponible dans `../CahierDesCharges.md`.
+- Le perimetre couvre les voyageurs, hotes, administrateurs, support, annonces, recherches, reservations, paiements, remboursements, messagerie, avis, signalements, litiges et administration.
+- Le modele de reservation est uniquement par demande : l'hote accepte, puis le voyageur paie, puis la reservation est confirmee.
 
 ## Stack technique
 
-- **Framework** : Symfony 8.0
-- **PHP** : 8.4+
-- **Base de données** : PostgreSQL 16
-- **ORM** : Doctrine ORM 3.6
-- **Messaging** : RabbitMQ (AMQP) pour les messages asynchrones
-- **Cache** : Redis 7 (optionnel, configuré mais pas activé par défaut)
-- **Frontend** : Stimulus, Turbo, Asset Mapper
-- **Docker** : Configuration complète pour le développement
+- PHP `>=8.4`
+- Symfony `8.0.*`
+- Doctrine ORM `^3.6`
+- API Platform `^4.2`
+- PostgreSQL via Docker Compose
+- Twig, Asset Mapper, Stimulus et Turbo pour le frontend
+- PHPUnit `^12.5` pour les tests
 
-## Structure du projet
+## Directives de travail
 
-```
-src/
-├── Controller/          # Contrôleurs Symfony
-├── Entity/              # Entités Doctrine (16 entités)
-├── Repository/          # Repositories Doctrine
-├── DataFixtures/        # Fixtures pour remplir la base de données
-└── Kernel.php
-
-config/
-├── packages/            # Configuration des bundles Symfony
-└── routes/              # Configuration des routes
-
-docker/
-└── nginx/              # Configuration Nginx
-
-assets/                 # Assets frontend (Stimulus, CSS)
-templates/              # Templates Twig
-migrations/             # Migrations Doctrine
-```
-
-## Entités principales
-
-### Utilisateurs et authentification
-- **User** : Utilisateurs avec authentification Symfony (UserInterface)
-- **GamificationUserStats** : Statistiques de gamification par utilisateur
-
-### Propriétés
-- **Property** : Propriétés à louer
-- **PropertyPhoto** : Photos des propriétés
-- **Amenity** : Équipements disponibles (WiFi, Piscine, etc.)
-- **Availability** : Disponibilités et prix par date
-
-### Réservations
-- **Booking** : Réservations
-- **Payment** : Paiements associés aux réservations
-- **Review** : Avis entre hôtes et invités
-- **Message** : Messages entre utilisateurs
-
-### Gamification
-- **Badge** : Badges disponibles
-- **UserBadge** : Badges obtenus par les utilisateurs
-- **Challenge** : Défis disponibles
-- **UserChallenge** : Progression des utilisateurs dans les défis
-- **Reward** : Récompenses disponibles
-- **UserReward** : Récompenses obtenues par les utilisateurs
+- Lire le code existant avant de modifier un fichier.
+- Respecter le cahier des charges, meme quand une demande est courte.
+- Garder les changements scopes a la demande en cours.
+- Ne pas supprimer ou renommer du code sans raison explicite.
+- Ne pas inventer de fonctionnalites hors perimetre sans validation.
+- Preferer les patterns Symfony, Doctrine et API Platform deja presents dans le projet.
+- Utiliser des enums PHP pour les statuts, roles et valeurs metier fermees.
+- Ajouter ou mettre a jour les tests quand la logique metier ou les contrats publics changent.
+- Expliquer clairement les changements effectues et les commandes de verification lancees.
 
 ## Conventions de code
 
-### Langue
-- **Toutes les chaînes de caractères doivent être en français** (messages, statuts, descriptions, etc.)
-- Les commentaires de code peuvent être en français ou en anglais
+- Namespace applicatif : `App\`.
+- Entites Doctrine dans `src/Entity`.
+- Repositories dans `src/Repository`.
+- Enums dans `src/Enum`.
+- Services metier dans `src/Service` si necessaire.
+- Controleurs dans `src/Controller`.
+- Noms de classes en `PascalCase`.
+- Proprietes et methodes en `camelCase`.
+- Noms de tables et colonnes en `snake_case` cote base de donnees.
+- Preferer `DateTimeImmutable` pour les dates.
+- Utiliser les attributs PHP modernes pour Doctrine, validation et API Platform.
+- Garder les messages utilisateur en francais.
+- Garder les noms techniques en anglais ou francais selon l'existant, sans melanger dans une meme entite.
 
-### Naming
-- Entités : PascalCase (ex: `User`, `Property`)
-- Propriétés : camelCase (ex: `firstName`, `checkInDate`)
-- Méthodes : camelCase (ex: `getFullName()`, `setStatus()`)
-- Tables : snake_case (ex: `property_photo`, `user_badge`)
+## Regles metier importantes
 
-### Statuts et valeurs
-Les statuts utilisent des valeurs en français avec underscores :
-- Réservations : `en_attente`, `confirmé`, `terminé`, `annulé`
-- Propriétés : `actif`, `inactif`, `en_attente`
-- Paiements : `en_attente`, `terminé`, `échoué`, `remboursé`
-- Récompenses : `gagné`, `utilisé`, `expiré`
+- Un utilisateur suspendu ne peut pas reserver, publier, communiquer ou laisser un avis.
+- Un utilisateur doit avoir au moins 18 ans pour reserver ou publier un logement.
+- Un voyageur ne peut pas reserver son propre logement.
+- Une annonce publiee doit avoir au minimum un titre, une description, une adresse, une photo, un tarif, des disponibilites, un reglement interieur et une politique d'annulation.
+- Une annonce suspendue ne doit pas apparaitre dans la recherche.
+- Une annonce archivee ne peut plus recevoir de demande.
+- Une demande de reservation ne bloque pas definitivement les dates.
+- Les dates sont bloquees uniquement apres paiement confirme.
+- Une reservation confirmee ne peut exister que si le paiement est valide par Stripe ou PayPal.
+- Les montants, frais et commissions doivent etre historises au moment de la reservation.
+- Un avis ne peut etre laisse qu'apres une reservation terminee.
+- Les actions sensibles d'administration doivent etre historisees.
+- Les donnees personnelles et documents d'identite doivent etre proteges selon les exigences RGPD.
 
-### Types de propriétés
-- `Appartement`, `Maison`, `Villa`, `Copropriété`, `Studio`, `Loft`, `Cottage`, `Chalet`
+## Priorites d'implementation
 
-## Base de données
+1. Modeliser correctement le domaine avec entites, enums, relations Doctrine et validations.
+2. Mettre en place l'authentification et les droits selon les roles.
+3. Exposer les ressources API ou pages necessaires de facon progressive.
+4. Implementer les parcours principaux : recherche, annonce, demande, paiement, confirmation.
+5. Ajouter la messagerie, les avis, les favoris, les notifications et l'administration.
 
-- **SGBD** : PostgreSQL 16
-- **Migrations** : Doctrine Migrations
-- **Fixtures** : DoctrineFixturesBundle (fichier `AppFixtures.php`)
-- **Schéma** : Voir `planttext-bdd.txt` pour le diagramme UML
+## Commandes utiles
 
-### Commandes utiles
 ```bash
-# Créer une migration
-php bin/console make:migration
-
-# Exécuter les migrations
-php bin/console doctrine:migrations:migrate
-
-# Charger les fixtures
-php bin/console doctrine:fixtures:load
-```
-
-## Docker
-
-Le projet utilise Docker Compose avec les services suivants :
-
-- **php** : Service PHP 8.4 avec extensions (port 8888)
-- **nginx** : Serveur web (port 8000)
-- **database** : PostgreSQL 16 (port 5432)
-- **adminer** : Interface web pour PostgreSQL (port 8080)
-- **rabbitmq** : Broker de messages (ports 5672, 15672)
-- **redis** : Cache (port 6379)
-- **mailer** : Mailpit pour le développement (ports 1025, 8025)
-- **messenger-worker** : Worker pour consommer les messages RabbitMQ
-
-### Commandes Docker
-```bash
-# Démarrer les services
-docker compose up -d
-
-# Arrêter les services
-docker compose down
-
-# Voir les logs
-docker compose logs -f
-```
-
-## Messaging asynchrone
-
-Le projet utilise **RabbitMQ** pour les messages asynchrones via Symfony Messenger :
-
-- **Transport** : `amqp://guest:guest@rabbitmq:5672/%2f/messages`
-- **Configuration** : `config/packages/messenger.yaml`
-- **Worker** : Service Docker `messenger-worker` qui exécute `messenger:consume async`
-
-Les messages suivants sont routés vers le transport asynchrone :
-- `SendEmailMessage` (emails)
-- `ChatMessage` (notifications)
-- `SmsMessage` (SMS)
-
-## Sécurité
-
-- **Authentification** : Symfony Security avec UserInterface
-- **Hachage des mots de passe** : UserPasswordHasherInterface (auto)
-- **CSRF** : Protection activée
-- **Fixtures** : Tous les utilisateurs ont le mot de passe `password123` (dev uniquement)
-
-## Assets et frontend
-
-- **Asset Mapper** : Gestion des assets JavaScript/CSS
-- **Stimulus** : Framework JavaScript pour les contrôleurs
-- **Turbo** : Navigation rapide sans rechargement de page
-- **Pas de build step** : Assets servis directement
-
-## Tests
-
-- **Framework** : PHPUnit 12.5
-- **Configuration** : `phpunit.dist.xml`
-- **Base de données de test** : Suffixe `_test` ajouté automatiquement
-
-## Développement
-
-### Variables d'environnement
-- `DATABASE_URL` : URL de connexion PostgreSQL
-- `MESSENGER_TRANSPORT_DSN` : URL de connexion RabbitMQ
-- `MAILER_DSN` : Configuration du mailer
-- `REDIS_URL` : URL de connexion Redis (optionnel)
-
-### Commandes utiles
-```bash
-# Lancer le serveur de développement
-php -S localhost:8000 -t public
-
-# Vider le cache
-php bin/console cache:clear
-
-# Créer une entité
+make up
+make down
+make cache
+make sh
 php bin/console make:entity
-
-# Créer un contrôleur
-php bin/console make:controller
+php bin/console make:migration
+php bin/console doctrine:migrations:migrate
+php bin/phpunit
 ```
 
-## Points d'attention
+## Verification attendue
 
-1. **Toutes les chaînes doivent être en français** dans les fixtures et le code métier
-2. **Les dates** utilisent `DateTimeImmutable` partout
-3. **Les relations Doctrine** sont bien configurées avec les bonnes inversions
-4. **Les statuts** utilisent des valeurs en français avec underscores
-5. **Le worker Messenger** doit tourner en continu pour traiter les messages asynchrones
-6. **Les fixtures** créent des données cohérentes entre toutes les entités
+- Lancer les tests pertinents quand ils existent.
+- Pour les entites Doctrine, verifier au minimum que le mapping est coherent avec :
 
-## Architecture
+```bash
+php bin/console doctrine:schema:validate
+```
 
-- **MVC** : Modèle-Vue-Contrôleur classique Symfony
-- **Repository Pattern** : Toutes les entités ont leur repository
-- **Service Layer** : Logique métier dans les services (à créer si nécessaire)
-- **Event-Driven** : Utilisation de Messenger pour les opérations asynchrones
+- Pour les changements de schema, generer une migration Doctrine si la demande le necessite.
+- Signaler clairement si une commande n'a pas pu etre lancee.
 
-## Prochaines étapes suggérées
+## Consignes specifiques du developpeur
 
-1. Créer les contrôleurs pour les fonctionnalités principales
-2. Implémenter les formulaires Symfony pour les réservations
-3. Ajouter la validation des données
-4. Créer les templates Twig pour l'interface utilisateur
-5. Implémenter l'API REST si nécessaire
-6. Ajouter les tests unitaires et fonctionnels
+Ajoute ici tes directives personnelles. Exemples :
+
+- Ne pas utiliser EasyAdmin sauf demande explicite.
+- Exposer les entites via API Platform uniquement apres validation.
+- Preferer les UUID pour les identifiants.
+- Toujours nommer les statuts metier en francais.
+- Ne pas generer de fixtures sans demande.
+
+### Directives actives
+
+- Respecter le cahier des charges comme source fonctionnelle principale.
+- Demander confirmation avant de modifier une decision d'architecture importante.
+- Garder les reponses et messages fonctionnels en francais.

@@ -1,0 +1,56 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Mes annonces - StayShare{% endblock %}
+
+{% block body %}
+    <main class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold uppercase text-rose-600">Espace hote</p>
+                <h1 class="mt-2 text-3xl font-bold text-gray-950">Mes annonces</h1>
+                <p class="mt-2 text-sm text-gray-600">Creez et preparez vos logements avant moderation.</p>
+            </div>
+            <div class="flex flex-wrap gap-3">
+                <a href="{{ path('app_host_reservation_index') }}" class="rounded-md border border-gray-200 px-4 py-2.5 text-sm font-semibold text-gray-900 hover:border-rose-300 hover:text-rose-600">Demandes recues</a>
+                <a href="{{ path('app_host_logement_new') }}" class="rounded-md bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">Nouvelle annonce</a>
+            </div>
+        </div>
+
+        <section class="mt-8 grid gap-5">
+            {% for logement in logements %}
+                <article class="rounded-lg border border-gray-100 bg-white p-5 shadow-sm">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <p class="text-sm text-gray-500">{{ logement.typeLogement.value }} - {{ logement.categorie.value }}</p>
+                            <h2 class="mt-1 text-xl font-semibold text-gray-950">
+                                <a href="{{ path('app_host_logement_show', { id: logement.id }) }}" class="hover:text-rose-600">{{ logement.titre }}</a>
+                            </h2>
+                            <p class="mt-2 text-sm text-gray-600">
+                                {% if logement.adresse %}
+                                    {{ logement.adresse.ville }}, {{ logement.adresse.pays }}
+                                {% else %}
+                                    Adresse incomplete
+                                {% endif %}
+                            </p>
+                        </div>
+                        <span class="rounded-md bg-gray-100 px-3 py-2 text-sm font-semibold text-gray-700">{{ logement.statut.value }}</span>
+                    </div>
+                    <div class="mt-5 flex flex-wrap gap-3 text-sm text-gray-600">
+                        <span>{{ logement.capaciteVoyageurs }} voyageurs</span>
+                        <span>{{ logement.nombreChambres }} chambres</span>
+                        <span>{{ logement.nombreLits }} lits</span>
+                        {% if logement.tarif %}
+                            <span>{{ logement.tarif.prixNuit }} EUR / nuit</span>
+                        {% endif %}
+                    </div>
+                </article>
+            {% else %}
+                <div class="rounded-lg border border-gray-100 bg-white p-8 text-center shadow-sm">
+                    <h2 class="text-xl font-semibold text-gray-950">Aucune annonce pour le moment</h2>
+                    <p class="mt-2 text-sm text-gray-600">Creez un premier brouillon pour commencer le parcours hote.</p>
+                    <a href="{{ path('app_host_logement_new') }}" class="mt-5 inline-flex rounded-md bg-rose-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-rose-700">Creer une annonce</a>
+                </div>
+            {% endfor %}
+        </section>
+    </main>
+{% endblock %}
