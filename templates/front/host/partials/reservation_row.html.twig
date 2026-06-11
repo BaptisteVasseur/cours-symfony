@@ -1,0 +1,28 @@
+{% set guest = reservation.guest %}
+{% set guestProfile = guest ? guest.profile : null %}
+{% set status = reservation.status %}
+
+<div class="border border-gray-200 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 bg-white">
+    <div class="space-y-0.5 min-w-0">
+        <div class="flex items-center gap-2 flex-wrap">
+            <p class="font-semibold text-sm text-gray-900 truncate">{{ reservation.property.title }}</p>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full {{ statusColors[status]|default('bg-gray-100 text-gray-600') }}">
+                {{ statusLabels[status]|default(status) }}
+            </span>
+        </div>
+        <p class="text-sm text-gray-600">
+            {{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : guest.email }}
+            <span class="text-gray-300">·</span>
+            {{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' : '' }}
+        </p>
+        <p class="text-xs text-gray-500">
+            {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+        </p>
+        {% if status == 'cancelled' and reservation.cancellationReason %}
+            <p class="text-xs text-red-500 italic">Motif : {{ reservation.cancellationReason }}</p>
+        {% endif %}
+    </div>
+    <p class="text-sm font-bold text-gray-800 whitespace-nowrap shrink-0">
+        {{ reservation.totalPrice|number_format(2, ',', ' ') }} €
+    </p>
+</div>

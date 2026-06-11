@@ -1,0 +1,154 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Réservations reçues{% endblock %}
+
+{% set statusLabels = {
+    'confirmed': 'Confirmée',
+    'pending':   'En attente',
+    'cancelled': 'Annulée',
+    'completed': 'Terminée',
+} %}
+{% set statusColors = {
+    'confirmed': 'bg-green-100 text-green-800',
+    'pending':   'bg-yellow-100 text-yellow-800',
+    'cancelled': 'bg-red-100 text-red-800',
+    'completed': 'bg-blue-100 text-blue-800',
+} %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+
+    <div class="mb-8">
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Réservations reçues</h1>
+        <p class="text-gray-500 mt-1">Gérez les demandes et suivez vos réservations.</p>
+    </div>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    {# Compteurs #}
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
+        <div class="border border-yellow-200 bg-yellow-50 rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-yellow-700">{{ pending|length }}</p>
+            <p class="text-xs text-yellow-600 mt-1">En attente</p>
+        </div>
+        <div class="border border-green-200 bg-green-50 rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-green-700">{{ confirmed|length }}</p>
+            <p class="text-xs text-green-600 mt-1">Confirmées</p>
+        </div>
+        <div class="border border-blue-200 bg-blue-50 rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-blue-700">{{ others|filter(r => r.status == 'completed')|length }}</p>
+            <p class="text-xs text-blue-600 mt-1">Terminées</p>
+        </div>
+        <div class="border border-red-200 bg-red-50 rounded-xl p-4 text-center">
+            <p class="text-2xl font-bold text-red-700">{{ others|filter(r => r.status == 'cancelled')|length }}</p>
+            <p class="text-xs text-red-600 mt-1">Annulées</p>
+        </div>
+    </div>
+
+    {# ── Demandes en attente ── #}
+    <section class="mb-10">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            Demandes en attente
+            {% if pending|length > 0 %}
+                <span class="text-xs font-bold bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">{{ pending|length }}</span>
+            {% endif %}
+        </h2>
+
+        {% if pending|length == 0 %}
+            <div class="text-center py-10 border border-dashed border-gray-200 rounded-xl text-gray-400 text-sm">
+                Aucune demande en attente.
+            </div>
+        {% else %}
+            <div class="space-y-4">
+                {% for reservation in pending %}
+                    {% set guest = reservation.guest %}
+                    {% set guestProfile = guest ? guest.profile : null %}
+                    <div class="border border-yellow-200 rounded-xl p-5 bg-yellow-50">
+                        <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+                            <div class="space-y-1 min-w-0">
+                                <p class="font-semibold text-gray-900 truncate">{{ reservation.property.title }}</p>
+                                <p class="text-sm text-gray-600">
+                                    <i class="fa-solid fa-user text-xs mr-1"></i>
+                                    {{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : guest.email }}
+                                </p>
+                                <p class="text-sm text-gray-600">
+                                    <i class="fa-regular fa-calendar text-xs mr-1"></i>
+                                    {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                                    <span class="text-gray-400">·</span>
+                                    {{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' : '' }}
+                                </p>
+                                <p class="text-sm font-semibold text-gray-800">
+                                    {{ reservation.totalPrice|number_format(2, ',', ' ') }} €
+                                </p>
+                                <p class="text-xs text-gray-400">Demande reçue le {{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
+                            </div>
+
+                            <div class="flex flex-col gap-2 shrink-0 min-w-[180px]">
+                                <form method="post" action="{{ path('app_host_reservation_accept', { id: reservation.id }) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('accept' ~ reservation.id) }}">
+                                    <button type="submit"
+                                        class="w-full px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded-lg">
+                                        <i class="fa-solid fa-check mr-1"></i> Accepter
+                                    </button>
+                                </form>
+
+                                <form method="post" action="{{ path('app_host_reservation_refuse', { id: reservation.id }) }}" class="space-y-1.5">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('refuse' ~ reservation.id) }}">
+                                    <textarea name="reason" rows="2" required placeholder="Motif du refus (obligatoire)…"
+                                        class="w-full text-xs border border-red-200 rounded-lg px-2 py-1.5 resize-none bg-white"></textarea>
+                                    <button type="submit"
+                                        class="w-full px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg">
+                                        <i class="fa-solid fa-xmark mr-1"></i> Refuser
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+
+    {# ── Réservations confirmées ── #}
+    <section class="mb-10">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Réservations confirmées</h2>
+
+        {% if confirmed|length == 0 %}
+            <div class="text-center py-8 border border-dashed border-gray-200 rounded-xl text-gray-400 text-sm">
+                Aucune réservation confirmée.
+            </div>
+        {% else %}
+            <div class="space-y-3">
+                {% for reservation in confirmed %}
+                    {% include 'front/host/partials/reservation_row.html.twig' with {
+                        reservation: reservation,
+                        statusLabels: statusLabels,
+                        statusColors: statusColors
+                    } %}
+                {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+
+    {# ── Historique (annulées, terminées) ── #}
+    {% if others|length > 0 %}
+        <section>
+            <h2 class="text-lg font-semibold text-gray-800 mb-4">Historique</h2>
+            <div class="space-y-3">
+                {% for reservation in others %}
+                    {% include 'front/host/partials/reservation_row.html.twig' with {
+                        reservation: reservation,
+                        statusLabels: statusLabels,
+                        statusColors: statusColors
+                    } %}
+                {% endfor %}
+            </div>
+        </section>
+    {% endif %}
+
+</main>
+{% endblock %}
