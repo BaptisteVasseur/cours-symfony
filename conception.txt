@@ -1,0 +1,107 @@
+CONCEPTION TECHNIQUE — Moteur de réservation & calendrier (clone Airbnb)
+
+
+0. MODÈLE DE DONNÉES
+- Existant réutilisé : Property (instantBooking, maxGuests, status, checkin/out en Time),
+  Reservation (checkinDate/checkoutDate en DATE, status pending/confirmed/completed/cancelled),
+  PropertyAvailability (1 ligne/jour : isAvailable, priceOverride, minimumStay),
+  ReservationStatusHistory (trace des transitions), PropertyICalSync (URL iCal).
+- Ajouts : Property.calendarToken (export iCal sécurisé) + entité BookingHold
+  (logement, voyageur, dates, expiresAt) pour le verrou de checkout (cf. point 2).
+- Archi : logique dans des Services (AvailabilityService, ReservationService,
+  ICalExport/ImportService), requêtes de dates dans les Repositories, contrôleurs fins.
+
+
+1. MODÉLISATION TEMPORELLE — le jour de check-out est-il réservable ?
+Oui car c'est un intervalle semi-ouvert [checkinDate, checkoutDate) en gros, le jour de
+départ est un jour de changement de client, pas une nuit occupée donc nb nuits =
+checkout - checkin
+Du coup, une nouvelle résa peut avoir checkin = checkout d'une autre résa
+
+
+2. GESTION DES ÉTATS — une demande Pending bloque-t-elle les dates ?
+Non, y'a que le Confirmed qui verrouille vraiment le calendrier (c'est ce que demande
+l'algo du sujet).
+En mode sur demande (instantBooking=false), plusieurs Pending peuvent coexister sur les
+mêmes dates et c'est l'hôte qui choisit.
+Si je bloquais dès le Pending ce serait du blocage abusif et l'hôte perdrait des clients.
+Du coup c'est seulement à la confirmation que je re-vérifie la dispo, et la contrainte
+d'exclusion (pt 3) fait qu'une seule peut passer. Les Pending pas traités expirent à 24h
+(G.1), ça protège le voyageur qui attend une réponse.
+En mode instantané (instantBooking=true), la résa est confirmée auto si les dates sont
+libres. Sauf que le voyageur passe par une page de récap avant : pour pas qu'il finalise
+tout puis se fasse doubler, je pose un hold de 15 min (entité BookingHold + compte à
+rebours). Tant qu'un hold est actif, les autres voyageurs sont bloqués sur ces dates ;
+il saute à la confirmation, ou il expire tout seul s'il abandonne.
+En gros le cycle c'est pending -> confirmed -> completed, et pending/confirmed ->
+cancelled. Chaque changement est tracé dans ReservationStatusHistory.
+
+
+3. CONCURRENCE — deux validations à la milliseconde près ?
+Le risque c'est une race condition : les deux lisent "libre" en même temps puis insèrent
+chacun leur résa. Une simple vérif en PHP suffit pas.
+Du coup je m'appuie sur Postgres avec une contrainte d'exclusion : EXCLUDE USING gist sur
+daterange(checkin_date, checkout_date, '[)'), seulement quand status=confirmed (et il faut
+l'extension btree_gist). Le '[)' reprend mon intervalle semi-ouvert de la Q1, donc le jour
+de rotation passe. C'est la base elle-même qui refuse deux confirmées qui se chevauchent.
+En gros le premier qui commit gagne, le deuxième viole la contrainte donc il se prend une
+exception + rollback, et je lui affiche "dates plus dispo". Jamais de double booking, et
+c'est garanti par la base, pas juste par mon code.
+
+
+4. PERFORMANCE — valider 20 nuits sans requêtes itératives ?
+Je fais 2 requêtes qui couvrent toute la plage d'un coup.
+Grace à test de chevauchement : existant.checkin < ma_checkout ET existant.checkout >
+ma_checkin — une seule requête, peu importe que je demande 2 ou 20 nuits.
+Donc une requête pour voir si une résa confirmée chevauche, et une autre pour voir si
+l'hôte a bloqué un jour dans la plage. La capacité (maxGuests) et le statut publié, je les
+check en mémoire, sans requête.
+Et je mets des index sur (property_id, status, checkin_date, checkout_date) et
+(property_id, available_date) pour que ça reste rapide.
+
+
+5. ASYNCHRONISME — email après flush ? si le broker tombe ?
+J'envoie le mail après le flush, jamais avant. Parce qu'avant le flush la résa a pas
+encore d'ID et elle est pas committée : si le flush plante après que j'ai envoyé le mail,
+j'ai prévenu le client d'une résa qui existe pas (et un mail ça se rollback pas).
+L'envoi est délégué au worker (messenger:consume), donc la réponse HTTP reste rapide et le
+mail part en tâche de fond.
+J'utilise le transport doctrine://default : les messages sont stockés en base, donc si le
+worker est coupé ils repartent à son redémarrage, rien n'est perdu.
+Et si on était sur RabbitMQ et qu'il tombe : Messenger encaisse ça avec des retries (avec
+backoff), et les messages qui échouent finissent dans un transport "failed" que je peux
+relancer à la main une fois le broker revenu (messenger:failed:retry) — rien n'est perdu,
+c'est juste différé. Pour des mails vraiment critiques on pourrait même garder doctrine://
+en fallback.
+
+
+6. STRUCTURE SQL DU CALENDRIER — jours ou périodes ?
+Je pars sur un hybride, chaque table pour ce qu'elle fait de mieux.
+Les réservations en périodes (checkin/checkout) : c'est compact, le test de chevauchement
+est simple et ça colle avec la contrainte d'exclusion.
+Les blocages et tarifs de l'hôte en jours (PropertyAvailability) : ça permet de régler le
+prix et le séjour min au jour près, et d'afficher un calendrier mensuel facilement.
+Tout en jours j'évite (365 lignes par an et par logement, et galère pour les périodes de
+prix), tout en périodes aussi.
+Au final un jour est dispo si aucune résa confirmée le couvre ET aucune ligne
+PropertyAvailability le bloque.
+
+
+7. SCHÉMA DE FLUX
+- Réservation : récap (checkout) -> instantané : BookingHold 15 min -> confirmation
+  (re-vérif dispo) -> résa confirmed + suppression du hold ; sur demande : création pending.
+  Flush en transaction (contrainte d'exclusion) -> log historique -> mails async ->
+  redirect + flash.
+- Modération hôte : liste des Pending -> accepter (re-vérif -> confirmed) / refuser
+  (motif -> cancelled) -> mail async.
+- Annulation : motif obligatoire -> cancelled -> dates libérées -> mails aux 2 parties.
+- Recherche (/search) : destination + dispo (checkin/checkout) + capacité (maxGuests ≥ guests).
+- Export iCal : /api/properties/{id}/calendar.ics?token= -> VCALENDAR des séjours confirmés,
+  403 sans token valide.
+- Import iCal (bonus) : commande app:ical:sync (cron) -> HttpClient lit l'URL -> blocages
+  dans PropertyAvailability ; gestion des conflits/suppressions ; maj lastSyncAt.
+
+
+8. BONUS ENVISAGÉS
+- G.1 expiration Pending 24h (worker) | G.5 timeline (ReservationStatusHistory) |
+  G.6 tarif dynamique front | G.8 notifs in-app (cloche, entité Notification).
