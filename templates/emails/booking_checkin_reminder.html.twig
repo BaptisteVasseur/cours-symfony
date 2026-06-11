@@ -1,0 +1,35 @@
+{% extends 'emails/_base.html.twig' %}
+
+{% block body %}
+    <h1 style="font-size:18px;margin:0 0 16px;">Votre séjour commence demain ! 🎉</h1>
+    <p style="margin:0 0 12px;">Bonjour {{ booking.guest.firstName }},</p>
+    <p style="margin:0 0 16px;">
+        Petit rappel : votre check-in à <strong>{{ booking.listing.title }}</strong> a lieu
+        <strong>demain ({{ booking.checkIn|date('d/m/Y') }})</strong>. Voici vos informations d'accès.
+    </p>
+
+    <table cellpadding="0" cellspacing="0" style="width:100%;font-size:14px;border-collapse:collapse;margin:16px 0;">
+        {% if location %}
+            <tr><td style="padding:6px 0;color:#71717a;">Adresse</td><td style="padding:6px 0;text-align:right;">
+                {{ location.addressLine1 ?? '' }}{{ location.addressLine2 ? ', ' ~ location.addressLine2 : '' }}<br>
+                {{ location.postalCode ?? '' }} {{ location.city ?? '' }}, {{ location.country ?? '' }}
+            </td></tr>
+        {% endif %}
+        <tr><td style="padding:6px 0;color:#71717a;">Arrivée</td><td style="padding:6px 0;text-align:right;">{{ booking.checkIn|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding:6px 0;color:#71717a;">Départ</td><td style="padding:6px 0;text-align:right;">{{ booking.checkOut|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding:6px 0;color:#71717a;">Voyageurs</td><td style="padding:6px 0;text-align:right;">{{ booking.guestsCount }}</td></tr>
+        <tr><td style="padding:6px 0;color:#71717a;border-top:1px solid #e4e4e7;">Votre hôte</td><td style="padding:6px 0;text-align:right;border-top:1px solid #e4e4e7;">
+            {{ host.firstName }} {{ host.lastName }}<br>
+            <a href="mailto:{{ host.email }}" style="color:#FF385C;">{{ host.email }}</a>
+            {% if host.phone %}<br>{{ host.phone }}{% endif %}
+        </td></tr>
+    </table>
+
+    <p style="margin:0 0 16px;font-size:14px;color:#71717a;">
+        Pour toute question avant votre arrivée, contactez directement votre hôte. Bon séjour !
+    </p>
+
+    <a href="http://localhost:8089/my-bookings" style="display:inline-block;background:#FF385C;color:#ffffff;text-decoration:none;padding:12px 22px;border-radius:8px;font-weight:bold;">
+        Voir ma réservation
+    </a>
+{% endblock %}
