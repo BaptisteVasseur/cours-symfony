@@ -98,6 +98,29 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Returns pending reservations on all properties hosted by the given user,
+     * ordered by check-in date ascending (most urgent first).
+     *
+     * @return list<Reservation>
+     */
+    public function findPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'g', 'gp')
+            ->join('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->join('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * Returns all booked date ranges for a property as [['from' => 'Y-m-d', 'to' => 'Y-m-d'], ...].
      * The range covers [checkinDate, checkoutDate - 1 day] (semi-open interval: checkout day is free).
      * Used to feed the front-end calendar so users cannot select already-booked nights.
