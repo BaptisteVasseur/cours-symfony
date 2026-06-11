@@ -17,6 +17,7 @@ use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
 
 #[ApiResource(
@@ -31,6 +32,8 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Patch(security: "is_granted('ROLE_ADMIN')"),
         new Delete(security: "is_granted('ROLE_ADMIN')"),
     ],
+    normalizationContext: ['groups' => ['reservation:read']],
+    denormalizationContext: ['groups' => ['reservation:write']],
 )]
 #[Assert\Expression(
     expression: "this.getStatus() != 'cancelled' or (this.getCancellationReason() !== null and this.getCancellationReason() !== '')",
@@ -38,60 +41,76 @@ use Symfony\Component\Validator\Constraints as Assert;
 )]
 #[ORM\Entity(repositoryClass: ReservationRepository::class)]
 #[ORM\Table(name: 'reservations')]
+#[ORM\Index(name: 'idx_reservations_property_status_dates', columns: ['property_id', 'status', 'checkin_date', 'checkout_date'])]
 class Reservation
 {
     use UuidEntityTrait;
 
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_CONFIRMED = 'confirmed';
+    public const STATUS_COMPLETED = 'completed';
+    public const STATUS_CANCELLED = 'cancelled';
+
+    #[Groups(['reservation:read', 'reservation:write'])]
     #[Assert\NotNull(message: 'Le logement est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'reservations')]
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Groups(['reservation:read', 'reservation:write'])]
     #[Assert\NotNull(message: 'Le voyageur est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'reservations')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $guest = null;
 
     #[Assert\NotNull(message: 'La date d\'arrivée est obligatoire.')]
+    #[Groups(['reservation:read', 'reservation:write'])]
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     private ?\DateTimeImmutable $checkinDate = null;
 
     #[Assert\NotNull(message: 'La date de départ est obligatoire.')]
     #[Assert\GreaterThan(propertyPath: 'checkinDate', message: 'La date de départ doit être postérieure à la date d\'arrivée.')]
+    #[Groups(['reservation:read', 'reservation:write'])]
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     private ?\DateTimeImmutable $checkoutDate = null;
 
     #[Assert\NotNull(message: 'Le nombre de voyageurs est obligatoire.')]
     #[Assert\GreaterThanOrEqual(value: 1, message: 'Il doit y avoir au moins {{ compared_value }} voyageur.')]
+    #[Groups(['reservation:read', 'reservation:write'])]
     #[ORM\Column]
     private ?int $guestsCount = null;
 
     #[Assert\NotBlank(message: 'Le statut est obligatoire.')]
     #[Assert\Choice(
-        choices: ['pending', 'confirmed', 'completed', 'cancelled'],
+        choices: [self::STATUS_PENDING, self::STATUS_CONFIRMED, self::STATUS_COMPLETED, self::STATUS_CANCELLED],
         message: 'Le statut sélectionné n\'est pas valide.',
     )]
+    #[Groups(['reservation:read', 'reservation:write'])]
     #[ORM\Column(length: 50)]
     private ?string $status = null;
 
     #[Assert\NotBlank(message: 'Le prix total est obligatoire.')]
     #[Assert\Type(type: 'numeric', message: 'Le prix total doit être un nombre.')]
     #[Assert\Positive(message: 'Le prix total doit être supérieur à 0.')]
+    #[Groups(['reservation:read', 'reservation:write'])]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $totalPrice = null;
 
     #[Assert\Type(type: 'numeric', message: 'Les frais de ménage doivent être un nombre.')]
     #[Assert\GreaterThanOrEqual(value: 0, message: 'Les frais de ménage ne peuvent pas être négatifs.')]
+    #[Groups(['reservation:read', 'reservation:write'])]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $cleaningFee = null;
 
     #[Assert\Type(type: 'numeric', message: 'Les frais de service doivent être un nombre.')]
     #[Assert\GreaterThanOrEqual(value: 0, message: 'Les frais de service ne peuvent pas être négatifs.')]
+    #[Groups(['reservation:read', 'reservation:write'])]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $serviceFee = null;
 
     #[Assert\Type(type: 'numeric', message: 'La caution doit être un nombre.')]
     #[Assert\GreaterThanOrEqual(value: 0, message: 'La caution ne peut pas être négative.')]
+    #[Groups(['reservation:read', 'reservation:write'])]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $securityDeposit = null;
 
@@ -100,13 +119,16 @@ class Reservation
         choices: ['EUR', 'USD', 'GBP'],
         message: 'La devise sélectionnée n\'est pas valide.',
     )]
+    #[Groups(['reservation:read', 'reservation:write'])]
     #[ORM\Column(length: 10)]
     private ?string $currency = null;
 
     #[Assert\Length(max: 2000, maxMessage: 'Le motif d\'annulation ne peut pas dépasser {{ limit }} caractères.')]
+    #[Groups(['reservation:read', 'reservation:write'])]
     #[ORM\Column(type: Types::TEXT, nullable: true)]
     private ?string $cancellationReason = null;
 
+    #[Groups(['reservation:read'])]
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 

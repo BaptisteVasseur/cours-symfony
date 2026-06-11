@@ -1,0 +1,104 @@
+# Conception technique - Réservation, disponibilités et export iCal
+
+## 1. Modèle de données
+
+Le projet contient déjà les principales entités nécessaires au moteur de réservation.
+
+L’entité `Property` représente un logement. Elle contient notamment l’hôte, le statut du logement, la capacité d’accueil, le prix et le choix de réservation instantanée.
+
+L’entité `Reservation` représente une réservation faite par un voyageur. Elle contient le logement concerné, les dates de séjour, le nombre de voyageurs, le statut de la réservation, le prix total et éventuellement un motif d’annulation.
+
+L’entité `PropertyAvailability` sert à gérer le calendrier de l’hôte. Pour ce projet, j’ai choisi de représenter les indisponibilités sous forme de périodes avec une date de début et une date de fin, plutôt qu’avec une ligne par jour. Cela permet d’éviter de créer trop de lignes en base et rend les recherches plus simples.
+
+L’entité `ReservationStatusHistory` permet de garder une trace des changements de statut d’une réservation. Cela permet de savoir quand une réservation est passée en attente, confirmée ou annulée.
+
+Les dates sont gérées sous forme d’intervalles `[début, fin)`. Cela signifie que la date de départ est exclue. Par exemple, si un voyageur quitte le logement le 12, un autre voyageur peut arriver le 12. Les heures réelles de départ et d’arrivée, comme 11h et 15h, sont surtout des informations pratiques pour les voyageurs, mais elles ne changent pas le blocage des nuitées en base.
+
+## 2. Workflow de réservation
+
+Une réservation peut avoir plusieurs statuts.
+
+Le statut `Pending` correspond à une demande envoyée par un voyageur, mais qui attend encore la validation de l’hôte.
+
+Le statut `Confirmed` signifie que la réservation est acceptée. Dans ce cas, les dates sont bloquées dans le calendrier du logement.
+
+Le statut `Cancelled` correspond à une réservation annulée. Dans ce cas, un motif d’annulation est obligatoire.
+
+Le statut `Completed` représente une réservation terminée, lorsque le séjour a déjà eu lieu.
+
+Le comportement dépend aussi du paramètre `instantBooking` du logement. Si cette option est activée, la réservation est directement confirmée si les dates sont disponibles. Si elle n’est pas activée, la réservation est créée en attente et l’hôte doit l’accepter ou la refuser manuellement.
+
+Les changements de statut importants sont enregistrés afin de garder un historique clair de la réservation.
+
+## 3. Gestion des disponibilités
+
+Un logement est considéré comme disponible uniquement si plusieurs conditions sont respectées.
+
+Le logement doit d’abord être publié. Ensuite, sa capacité doit être suffisante pour le nombre de voyageurs demandé. Il ne doit pas non plus y avoir d’indisponibilité manuelle créée par l’hôte sur la période demandée. Enfin, aucune réservation confirmée ne doit chevaucher les dates choisies.
+
+Pour vérifier les chevauchements de dates, j’utilise la logique suivante :
+
+```txt
+dateStart < requestedEnd AND dateEnd > requestedStart
+```
+
+Cette condition permet de détecter correctement toutes les périodes qui se croisent. Elle permet aussi d’accepter naturellement le cas où un voyageur part le matin et un autre arrive le même jour.
+
+J’ai choisi de ne pas bloquer définitivement les dates lorsqu’une réservation est seulement en `Pending`. Ce choix évite qu’un voyageur puisse bloquer abusivement le calendrier sans confirmation. En contrepartie, il faut obligatoirement revérifier la disponibilité au moment où l’hôte accepte la demande.
+
+## 4. Gestion de la concurrence
+
+La concurrence est un point important, car deux voyageurs pourraient essayer de réserver le même logement pour les mêmes dates presque au même moment.
+
+Pour limiter ce risque, la création d’une réservation instantanée et l’acceptation d’une demande passent par un service métier. Avant de confirmer une réservation, le service revérifie la disponibilité dans une transaction Doctrine.
+
+Cette solution permet d’éviter une grande partie des problèmes de double validation. Dans un vrai environnement de production, il serait possible d’aller plus loin avec un verrou pessimiste sur le logement ou avec une contrainte spécifique en base de données, par exemple une contrainte d’exclusion PostgreSQL sur les réservations confirmées.
+
+## 5. Performance
+
+La disponibilité n’est pas vérifiée jour par jour. Ce serait trop coûteux, surtout pour des séjours longs.
+
+À la place, les repositories utilisent des requêtes sur des périodes avec la condition de chevauchement. Cela permet de vérifier une plage de 20 nuits avec peu de requêtes SQL.
+
+Cette approche est plus performante et fonctionne bien avec des index sur le logement, les dates de début et de fin des périodes, ainsi que les dates de check-in et check-out des réservations.
+
+## 6. Envoi des emails
+
+Les emails transactionnels ne sont pas envoyés directement dans le contrôleur. Ils sont déclenchés après l’enregistrement en base, puis délégués à Symfony Messenger.
+
+Ce choix évite d’envoyer un email pour une réservation qui n’aurait finalement pas été sauvegardée. Il permet aussi de ne pas ralentir l’interface utilisateur pendant l’envoi des emails.
+
+Si le système asynchrone tombe en panne, les messages peuvent rester dans la file configurée. En cas d’échec, ils peuvent être consultés et rejoués depuis la file d’erreurs selon la configuration de Messenger.
+
+## 7. Choix SQL pour le calendrier
+
+Pour le calendrier de l’hôte, j’ai choisi d’utiliser des périodes d’indisponibilité avec `dateStart` et `dateEnd`.
+
+Ce choix est plus simple et plus efficace qu’une table contenant une ligne par jour. Par exemple, si un hôte bloque trois semaines pour travaux, une seule ligne suffit au lieu de créer vingt-et-une lignes.
+
+Ce modèle simplifie aussi les exports iCal et les recherches de disponibilité. Les anciennes données au format journalier peuvent être transformées en périodes d’une nuit.
+
+## 8. Export iCal
+
+Chaque logement possède un token d’export iCal stocké en base de données. L’URL du flux prend cette forme :
+
+```txt
+/api/properties/{id}/calendar.ics?token={secret}
+```
+
+Le flux n’est accessible que si le token fourni est valide. Sans token correct, les données ne sont pas exposées. L’hôte peut aussi régénérer le token si nécessaire, ce qui permet de révoquer l’ancien lien.
+
+Le fichier iCal exporte uniquement les réservations confirmées. Les réservations en attente ou annulées ne sont donc pas incluses dans le calendrier.
+
+Le format utilisé est un format `VCALENDAR` simple, avec des événements contenant les dates de début et de fin du séjour. Les dates sont exportées en journées entières, ce qui correspond bien à une logique de nuitées.
+
+L’import iCal automatique n’est pas inclus dans cette première version. Il pourra être ajouté plus tard avec une commande Symfony dédiée à la synchronisation.
+## 9. Import iCal
+
+L'hote peut enregistrer une URL iCal externe sur son calendrier. La commande Symfony `app:ical:sync` recupere les flux configures, lit les evenements `VEVENT`, puis transforme `DTSTART` et `DTEND` en periodes bloquees `[dateStart, dateEnd)`.
+
+Les blocages importes sont distingues des blocages manuels avec `source=ical`, `externalUid`, `iCalSync` et `lastSeenAt`. Cela permet de synchroniser les evenements distants sans supprimer les indisponibilites creees manuellement par l'hote.
+
+En cas de chevauchement entre un evenement iCal et une reservation locale `Confirmed`, la reservation locale est prioritaire. Le blocage iCal n'est pas cree, le conflit est comptabilise par la commande, et aucune reservation confirmee n'est supprimee.
+
+Lorsqu'un evenement disparait du flux distant, il n'est plus marque comme vu pendant la synchronisation. La commande supprime alors uniquement les anciens blocages `source=ical` du flux concerne. Les blocages manuels et les reservations locales ne sont jamais supprimes par l'import.

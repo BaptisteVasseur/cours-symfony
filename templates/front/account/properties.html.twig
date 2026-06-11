@@ -1,22 +1,42 @@
 {% extends 'layout/app.html.twig' %}
 
-{% block title %}Mes propriétés{% endblock %}
+{% block title %}Mes proprietes{% endblock %}
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Mes propriétés</h1>
-        <p class="text-gray-500 mb-8">Annonces dont vous êtes l'hôte</p>
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Mes proprietes</h1>
+                <p class="text-gray-500">Annonces dont vous etes l'hote</p>
+            </div>
+            <a href="{{ path('app_host_property_new') }}" class="inline-flex items-center justify-center gap-2 bg-brand hover:bg-brandHover text-white font-semibold px-5 py-3 rounded-xl">
+                <i class="fa-solid fa-plus"></i> Creer une annonce
+            </a>
+        </div>
 
         {% if properties|length > 0 %}
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for property in properties %}
-                    {% include 'components/card.html.twig' with { property: property } %}
+                    <div>
+                        {% include 'components/card.html.twig' with { property: property } %}
+                        <div class="mt-3 grid grid-cols-2 gap-2">
+                            <a href="{{ path('app_host_property_calendar', { id: property.id }) }}" class="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50">
+                                <i class="fa-solid fa-calendar-days"></i> Calendrier
+                            </a>
+                            <a href="{{ path('app_host_property_settings', { id: property.id }) }}" class="inline-flex items-center justify-center gap-2 rounded-xl bg-gray-900 px-3 py-2 text-sm font-semibold text-white hover:bg-gray-800">
+                                <i class="fa-solid fa-gear"></i> Parametres
+                            </a>
+                        </div>
+                    </div>
                 {% endfor %}
             </div>
         {% else %}
             <div class="text-center py-16 border border-dashed border-gray-200 rounded-xl">
                 <i class="fa-solid fa-house text-4xl text-gray-300 mb-4"></i>
-                <p class="text-gray-500">Vous n'avez pas encore d'annonce publiée.</p>
+                <p class="text-gray-500">Vous n'avez pas encore d'annonce publiee.</p>
+                <a href="{{ path('app_host_property_new') }}" class="inline-flex items-center justify-center gap-2 mt-5 bg-brand hover:bg-brandHover text-white font-semibold px-5 py-3 rounded-xl">
+                    <i class="fa-solid fa-plus"></i> Creer une annonce
+                </a>
             </div>
         {% endif %}
     </main>

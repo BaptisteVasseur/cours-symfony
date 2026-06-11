@@ -206,3 +206,175 @@ Stripe (MVP), Google Maps, SendGrid/Twilio/Firebase (notifications), OAuth Googl
 - `security.yaml` contient des rôles hérités d’un autre projet (`ROLE_PRESTATAIRE`, etc.) — à remplacer par les rôles voyageur/hôte/admin du cahier des charges.
 - Redis et Mercure sont commentés dans Docker : activer avant cache distribué et temps réel.
 - Commandes `composer` / `bin/console` : privilégier le conteneur `php` pour cohérence avec l’environnement du projet.
+
+
+# AGENTS.md
+
+## Mission
+
+Projet Symfony : module de réservation + disponibilités + iCal pour un clone Airbnb.
+Objectif Codex : rester très ciblé, modifier peu de fichiers, éviter les scans larges et les réponses longues.
+
+## Anti-token
+
+* Répondre en français, court et actionnable.
+* Lire d’abord seulement : `README.md`, `composer.json`, entités, repositories, contrôleurs, formulaires, templates et routes liés aux logements/réservations.
+* Utiliser `rg`, `find`, `ls` ciblés. Ne pas ouvrir tout le dépôt.
+* Ne pas recopier de gros fichiers ni de gros logs ; résumer.
+* Avant de coder : plan en 3-6 puces, fichiers visés, validations prévues.
+* Réutiliser les conventions existantes ; pas de refonte globale.
+* Pas de nouvelle dépendance Composer sans validation.
+* Final : changements, fichiers modifiés, commandes lancées, limites.
+
+## Livrable prioritaire
+
+Avant le code, créer/compléter `conception.txt` à la racine.
+
+À couvrir :
+
+* modèle de données ;
+* workflow `Pending -> Confirmed -> Cancelled/Completed` ;
+* disponibilité et superposition ;
+* concurrence ;
+* performance ;
+* asynchronisme emails ;
+* choix SQL calendrier ;
+* export/import iCal.
+
+Choix recommandés :
+
+* Dates en intervalle `[checkin, checkout)` : le checkout est exclusif.
+* Un départ le matin et une arrivée le même jour sont compatibles.
+* `Pending` ne bloque pas définitivement ; revalidation obligatoire à l’acceptation.
+* Seuls `Confirmed` + indisponibilités hôte bloquent.
+* Préférer des périodes `dateStart/dateEnd` à une ligne par jour.
+* Chevauchement : `start < requestedEnd AND end > requestedStart`.
+* Confirmer dans une transaction pour limiter les doubles validations simultanées.
+
+## Règles métier
+
+Statuts :
+
+* `Pending` : demande en attente hôte.
+* `Confirmed` : réservation acceptée, dates bloquées.
+* `Cancelled` : annulation avec motif.
+* `Completed` : séjour terminé.
+
+`instantBooking` :
+
+* `true` : si libre, créer en `Confirmed`.
+* `false` : créer en `Pending`.
+
+Disponibilité si :
+
+* logement publié ;
+* aucune indisponibilité manuelle chevauchante ;
+* aucune réservation `Confirmed` chevauchante ;
+* capacité suffisante.
+
+Recherche `/search` :
+
+* `destination` : ville/adresse ;
+* `checkin`, `checkout` : disponibilité stricte ;
+* `guests` : capacité minimale.
+
+## Implémentation attendue
+
+Adapter les noms à l’existant.
+
+À privilégier :
+
+* entité `Reservation`/`Booking` ;
+* entité `AvailabilityBlock`/`PropertyAvailability` ;
+* statuts constants ou enum ;
+* `AvailabilityService` ;
+* `ReservationService` ;
+* `IcalService` ;
+* messages Messenger pour emails ;
+* requêtes de chevauchement dans les repositories.
+
+Contrôleurs :
+
+* vérifier droits ;
+* valider entrées ;
+* appeler services ;
+* flash + redirection ;
+* logique métier hors contrôleur.
+
+Hôte :
+
+* calendrier mensuel minimum ;
+* blocage de période avec motif ;
+* dashboard des demandes `Pending` ;
+* accepter/refuser avec motif.
+
+Voyageur :
+
+* checkout/récapitulatif ;
+* revalidation disponibilité à la soumission ;
+* création `Confirmed` ou `Pending` ;
+* suivi réservation ;
+* annulation avec motif.
+
+Emails :
+
+* utiliser Symfony Messenger ;
+* envoyer après `flush()` ;
+* vérifier via Mailpit si configuré.
+
+## iCal
+
+Export obligatoire :
+`/api/properties/{id}/calendar.ics?token={secret}`
+
+Règles :
+
+* token unique par logement, stocké en base ;
+* révocable ;
+* aucun flux sans token valide ;
+* exporter uniquement les réservations `Confirmed`.
+
+Format minimal :
+
+```ics
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Clone Airbnb//FR
+BEGIN:VEVENT
+UID:res-{id}@clone-airbnb.local
+SUMMARY:{propertyTitle} - {travelerName}
+DTSTART;VALUE=DATE:{YYYYMMDD}
+DTEND;VALUE=DATE:{YYYYMMDD}
+DESCRIPTION:Sejour {nights} nuits - {total} EUR - {travelerEmail}
+END:VEVENT
+END:VCALENDAR
+```
+
+Bonus import seulement après le socle :
+
+* commande `app:ical:sync` ;
+* URL iCal externe ;
+* création de périodes bloquées ;
+* documenter conflits et suppressions distantes.
+
+## Sécurité
+
+* Voyageur interdit de réserver son propre logement.
+* Hôte limité à ses propres logements.
+* Accepter/refuser réservé au propriétaire.
+* Annulation autorisée uniquement aux parties concernées.
+* Pas de secret en dur.
+* Token iCal obligatoire.
+
+## Validation
+
+Lancer seulement les commandes utiles et disponibles :
+
+* `composer validate`
+* `php bin/console lint:twig templates`
+* `php bin/console lint:container`
+* `php bin/console doctrine:schema:validate`
+* tests existants si présents
+
+Si une commande échoue à cause de l’environnement, expliquer brièvement.
+::: 

@@ -1,0 +1,68 @@
+Demo de verification - reservation, calendrier et annonces
+
+URL application : http://localhost:8089
+Mailpit : http://localhost:8025
+
+Comptes utiles :
+- Hote : jeanmarc.dupont@email.com / password
+- Voyageur : sophie.chen@email.com / password
+- Admin : test@example.com / password
+
+1. Verifier la recherche et les dates bloquees
+- Connectez-vous avec sophie.chen@email.com.
+- Ouvrez http://localhost:8089/search.
+- Cherchez une ville existante, par exemple Paris, avec 1 voyageur.
+- Ouvrez une annonce publiee.
+- Cliquez sur Reserver.
+- Sur la page de reservation, regardez le calendrier : les dates deja reservees ou bloquees sont grises et rayees.
+- Essayez de reserver une periode disponible : la reservation est creee.
+- Si le logement est en reservation instantanee, le statut doit etre Confirmee.
+- Sinon, le statut doit etre En attente.
+
+2. Verifier qu'un hote ne reserve pas son propre logement
+- Connectez-vous avec jeanmarc.dupont@email.com.
+- Ouvrez Mes proprietes.
+- Cliquez sur une de vos annonces.
+- Le bouton ne doit pas etre Reserver : il doit afficher Parametres calendrier.
+- Si vous forcez l'URL /logement/{id}/reserver sur votre propre logement, vous devez etre redirige vers le calendrier.
+
+3. Creer une annonce
+- Connectez-vous avec un utilisateur.
+- Ouvrez le menu utilisateur puis Mes proprietes.
+- Cliquez sur Creer une annonce.
+- Remplissez titre, adresse, ville, pays, capacite, prix et politique d'annulation.
+- Validez.
+- Vous devez arriver sur la page calendrier de cette nouvelle annonce.
+- Revenez dans Mes proprietes : l'annonce doit etre visible.
+
+4. Bloquer une periode cote hote
+- Depuis Mes proprietes, cliquez sur Calendrier.
+- Dans Bloquer une periode, choisissez une date de debut, une date de fin et un motif.
+- Validez.
+- La periode doit apparaitre dans le calendrier hote.
+- Retournez sur le checkout voyageur de cette annonce : les dates bloquees doivent etre grises et rayees.
+
+5. Accepter ou refuser une demande
+- Avec un voyageur, creez une reservation sur un logement qui n'est pas en reservation instantanee.
+- Connectez-vous avec l'hote du logement.
+- Ouvrez Demandes hote dans le menu.
+- Cliquez sur Accepter pour confirmer la demande.
+- Ou renseignez un motif puis cliquez sur Refuser.
+- Verifiez Mailpit : un email doit etre envoye.
+
+6. Annuler une reservation comme client
+- Connectez-vous comme voyageur.
+- Ouvrez Mes reservations.
+- Ouvrez une reservation En attente ou Confirmee.
+- Cliquez sur Annuler.
+- Saisissez un motif.
+- Validez.
+- Le statut doit passer a Annulee et le motif doit etre visible sur le detail.
+- Verifiez Mailpit : les parties doivent recevoir un email.
+
+7. Verifier iCal
+- Connectez-vous comme hote.
+- Ouvrez le calendrier d'une annonce.
+- Copiez l'URL iCal affichee.
+- Ouvrez-la dans un nouvel onglet : le fichier .ics doit se telecharger ou s'afficher.
+- Modifiez le token dans l'URL : l'acces doit etre refuse.

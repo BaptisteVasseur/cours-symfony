@@ -8,6 +8,8 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PropertyMediaRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyMediaRepository::class)]
 #[ORM\Table(name: 'property_media')]
@@ -19,15 +21,24 @@ class PropertyMedia
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Groups(['property:read'])]
+    #[Assert\NotBlank(message: 'Le type de media est obligatoire.')]
+    #[Assert\Choice(choices: ['image', 'video'])]
     #[ORM\Column(length: 50)]
     private ?string $mediaType = null;
 
+    #[Groups(['property:read'])]
+    #[Assert\NotBlank(message: 'L\'URL du fichier est obligatoire.')]
+    #[Assert\Url(requireTld: false)]
     #[ORM\Column(type: Types::TEXT)]
     private ?string $fileUrl = null;
 
+    #[Groups(['property:read'])]
+    #[Assert\PositiveOrZero]
     #[ORM\Column]
     private int $sortOrder = 0;
 
+    #[Groups(['property:read'])]
     #[ORM\Column]
     private bool $isCover = false;
 

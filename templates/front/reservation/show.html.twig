@@ -55,12 +55,20 @@
                         <div><dt class="text-gray-500">Départ</dt><dd class="font-semibold">{{ reservation.checkoutDate|date('d/m/Y') }}</dd></div>
                         <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
                     </dl>
+                    {% if reservation.cancellationReason %}
+                        <div class="mt-5 rounded-xl bg-red-50 text-red-800 px-4 py-3 text-sm">
+                            Motif : {{ reservation.cancellationReason }}
+                        </div>
+                    {% endif %}
                 </section>
             </div>
             <aside>
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
                     <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
                     <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                    {% if reservation.status in ['pending', 'confirmed'] %}
+                        <a href="{{ path('app_reservation_cancel', { id: reservation.id }) }}" class="block mt-4 text-center border border-red-200 text-red-700 font-semibold py-3 rounded-xl hover:bg-red-50">Annuler</a>
+                    {% endif %}
                 </div>
             </aside>
         </div>

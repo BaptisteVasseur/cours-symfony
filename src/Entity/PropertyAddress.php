@@ -8,6 +8,8 @@ use App\Entity\Trait\UuidEntityTrait;
 use App\Repository\PropertyAddressRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Attribute\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PropertyAddressRepository::class)]
 #[ORM\Table(name: 'property_addresses')]
@@ -19,24 +21,41 @@ class PropertyAddress
     #[ORM\JoinColumn(nullable: false)]
     private ?Property $property = null;
 
+    #[Groups(['property:read'])]
+    #[Assert\NotBlank(message: 'Le pays est obligatoire.')]
+    #[Assert\Length(max: 100)]
     #[ORM\Column(length: 100)]
     private ?string $country = null;
 
+    #[Groups(['property:read'])]
+    #[Assert\NotBlank(message: 'La ville est obligatoire.')]
+    #[Assert\Length(max: 100)]
     #[ORM\Column(length: 100)]
     private ?string $city = null;
 
+    #[Groups(['property:read'])]
+    #[Assert\Length(max: 20)]
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $postalCode = null;
 
+    #[Groups(['property:read'])]
+    #[Assert\NotBlank(message: 'L\'adresse est obligatoire.')]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255)]
     private ?string $addressLine1 = null;
 
+    #[Groups(['property:read'])]
+    #[Assert\Length(max: 255)]
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $addressLine2 = null;
 
+    #[Groups(['property:read'])]
+    #[Assert\Range(min: -90, max: 90)]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
     private ?string $latitude = null;
 
+    #[Groups(['property:read'])]
+    #[Assert\Range(min: -180, max: 180)]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 7, nullable: true)]
     private ?string $longitude = null;
 

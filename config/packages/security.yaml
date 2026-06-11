@@ -29,23 +29,21 @@ security:
                 interval: '15 minutes'
 
     role_hierarchy:
-        ROLE_USER:
+        ROLE_USER: []
         ROLE_HOST: ROLE_USER
-        ROLE_MODERATEUR: ROLE_USER
-        ROLE_ADMIN: [ROLE_MODERATEUR, ROLE_HOST]
+        ROLE_ADMIN: ROLE_HOST
         ROLE_SUPER_ADMIN: ROLE_ADMIN
 
     access_control:
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
         - { path: ^/api/contexts, roles: PUBLIC_ACCESS }
         - { path: ^/api/validation_errors, roles: PUBLIC_ACCESS }
+        - { path: ^/api/properties/[^/]+/calendar\.ics$, roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }
         - { path: ^/(login|register|aide)$, roles: PUBLIC_ACCESS }
         - { path: ^/$, roles: PUBLIC_ACCESS }
         - { path: ^/search, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
-        - { path: ^/property, roles: ROLE_ADMIN }
-        - { path: ^/user, roles: ROLE_ADMIN }
         - { path: ^/logement, roles: ROLE_USER }
         - { path: ^/reservations, roles: ROLE_USER }
         - { path: ^/compte, roles: ROLE_USER }

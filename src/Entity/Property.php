@@ -29,27 +29,29 @@ use Symfony\Component\Validator\Constraints as Assert;
         new Patch(security: "is_granted('ROLE_ADMIN')"),
         new Delete(security: "is_granted('ROLE_ADMIN')"),
     ],
-    normalizationContext: ['groups' => ['mon-groupe']],
-    denormalizationContext: ['groups' => ['mon-groupe-2']],
+    normalizationContext: ['groups' => ['property:read']],
+    denormalizationContext: ['groups' => ['property:write']],
 )]
 #[ORM\Entity(repositoryClass: PropertyRepository::class)]
 #[ORM\Table(name: 'properties')]
+#[ORM\UniqueConstraint(name: 'uniq_properties_ical_export_token', columns: ['i_cal_export_token'])]
 class Property
 {
     use UuidEntityTrait;
 
-    #[Groups(['mon-groupe'])]
+    #[Groups(['property:read', 'property:write'])]
     #[Assert\NotNull(message: 'L\'hôte est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'properties')]
     #[ORM\JoinColumn(nullable: false)]
     private ?User $host = null;
 
+    #[Groups(['property:read', 'property:write'])]
     #[Assert\NotNull(message: 'La politique d\'annulation est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'properties')]
     #[ORM\JoinColumn(nullable: false)]
     private ?CancellationPolicy $cancellationPolicy = null;
 
-    #[Groups(['mon-groupe', 'mon-groupe-2'])]
+    #[Groups(['property:read', 'property:write', 'reservation:read'])]
     #[Assert\NotBlank(message: 'Le titre est obligatoire.')]
     #[Assert\Length(
         min: 5,
@@ -60,7 +62,7 @@ class Property
     #[ORM\Column(length: 255)]
     private ?string $title = null;
 
-    #[Groups(['mon-groupe'])]
+    #[Groups(['property:read', 'property:write'])]
     #[Assert\Length(
         min: 10,
         max: 5000,
@@ -75,6 +77,7 @@ class Property
         choices: ['villa', 'loft', 'apartment', 'house', 'chalet'],
         message: 'Le type de logement sélectionné n\'est pas valide.',
     )]
+    #[Groups(['property:read', 'property:write'])]
     #[ORM\Column(length: 50)]
     private ?string $propertyType = null;
 
@@ -83,60 +86,77 @@ class Property
         choices: ['draft', 'pending', 'published'],
         message: 'Le statut sélectionné n\'est pas valide.',
     )]
+    #[Groups(['property:read', 'property:write'])]
     #[ORM\Column(length: 50)]
     private ?string $status = 'pending';
 
     #[Assert\NotNull(message: 'Le nombre de voyageurs est obligatoire.')]
     #[Assert\GreaterThanOrEqual(value: 1, message: 'Il doit y avoir au moins {{ compared_value }} voyageur.')]
+    #[Groups(['property:read', 'property:write'])]
     #[ORM\Column]
     private ?int $maxGuests = null;
 
     #[Assert\NotNull(message: 'Le nombre de chambres est obligatoire.')]
     #[Assert\GreaterThanOrEqual(value: 0, message: 'Le nombre de chambres ne peut pas être négatif.')]
+    #[Groups(['property:read', 'property:write'])]
     #[ORM\Column]
     private ?int $bedrooms = null;
 
     #[Assert\NotNull(message: 'Le nombre de lits est obligatoire.')]
     #[Assert\GreaterThanOrEqual(value: 1, message: 'Il doit y avoir au moins {{ compared_value }} lit.')]
+    #[Groups(['property:read', 'property:write'])]
     #[ORM\Column]
     private ?int $beds = null;
 
     #[Assert\NotNull(message: 'Le nombre de salles de bain est obligatoire.')]
     #[Assert\GreaterThanOrEqual(value: 1, message: 'Il doit y avoir au moins {{ compared_value }} salle de bain.')]
+    #[Groups(['property:read', 'property:write'])]
     #[ORM\Column]
     private ?int $bathrooms = null;
 
     #[Assert\NotBlank(message: 'Le prix par nuit est obligatoire.')]
     #[Assert\Type(type: 'numeric', message: 'Le prix par nuit doit être un nombre.')]
     #[Assert\Positive(message: 'Le prix par nuit doit être supérieur à 0.')]
+    #[Groups(['property:read', 'property:write', 'reservation:read'])]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $pricePerNight = null;
 
     #[Assert\Type(type: 'numeric', message: 'Les frais de ménage doivent être un nombre.')]
     #[Assert\GreaterThanOrEqual(value: 0, message: 'Les frais de ménage ne peuvent pas être négatifs.')]
+    #[Groups(['property:read', 'property:write'])]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $cleaningFee = null;
 
     #[Assert\Type(type: 'numeric', message: 'La caution doit être un nombre.')]
     #[Assert\GreaterThanOrEqual(value: 0, message: 'La caution ne peut pas être négative.')]
+    #[Groups(['property:read', 'property:write'])]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $securityDeposit = null;
 
+    #[Groups(['property:read', 'property:write'])]
     #[ORM\Column(type: Types::TIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $checkinTime = null;
 
+    #[Groups(['property:read', 'property:write'])]
     #[ORM\Column(type: Types::TIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $checkoutTime = null;
 
+    #[Groups(['property:read', 'property:write'])]
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[Groups(['property:read'])]
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[Groups(['property:read'])]
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $iCalExportToken = null;
+
+    #[Groups(['property:read'])]
     #[ORM\OneToOne(mappedBy: 'property', targetEntity: PropertyAddress::class, cascade: ['persist', 'remove'])]
     private ?PropertyAddress $address = null;
 
@@ -148,6 +168,7 @@ class Property
     private Collection $propertyAmenities;
 
     /** @var Collection<int, PropertyMedia> */
+    #[Groups(['property:read'])]
     #[ORM\OneToMany(targetEntity: PropertyMedia::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $media;
 
@@ -176,6 +197,7 @@ class Property
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
         $this->createdAt = new \DateTimeImmutable();
+        $this->regenerateICalExportToken();
     }
 
     public function getHost(): ?User
@@ -392,6 +414,25 @@ class Property
         $this->updatedAt = $updatedAt;
 
         return $this;
+    }
+
+    public function getICalExportToken(): ?string
+    {
+        return $this->iCalExportToken;
+    }
+
+    public function setICalExportToken(?string $iCalExportToken): static
+    {
+        $this->iCalExportToken = $iCalExportToken;
+
+        return $this;
+    }
+
+    public function regenerateICalExportToken(): string
+    {
+        $this->iCalExportToken = bin2hex(random_bytes(32));
+
+        return $this->iCalExportToken;
     }
 
     public function getAddress(): ?PropertyAddress

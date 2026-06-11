@@ -13,7 +13,7 @@ logs:
 	docker compose logs -f --tail=100 php
 
 up start:
-	docker compose up -d && \
+	docker compose up -d --build && \
     echo "==> Les services ont été démarrés avec succès" && \
     echo "==> Vous pouvez accéder à l'application : http://localhost:8089" && \
     echo "==> Vous pouvez accéder à l'interface de la BDD : http://localhost:8088" && \
