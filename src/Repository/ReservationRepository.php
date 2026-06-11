@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
@@ -71,5 +72,54 @@ class ReservationRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
 
         return $result !== null ? (float) $result : 0.0;
+    }
+
+    public function hasConfirmedOverlap(
+        Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+        ?Reservation $exclude = null,
+    ): bool {
+        $qb = $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout);
+
+        if ($exclude !== null) {
+            $qb->andWhere('r != :exclude')->setParameter('exclude', $exclude);
+        }
+
+        return (int) $qb->getQuery()->getSingleScalarResult() > 0;
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedInRange(
+        Property $property,
+        \DateTimeImmutable $from,
+        \DateTimeImmutable $to,
+    ): array {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate < :to')
+            ->andWhere('r.checkoutDate > :from')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 }
