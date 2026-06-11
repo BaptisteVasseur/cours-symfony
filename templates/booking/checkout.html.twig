@@ -1,0 +1,90 @@
+{% extends 'layout/base.html.twig' %}
+
+{% block title %}Récapitulatif — {{ property.title }}{% endblock %}
+
+{% block body %}
+<div class="max-w-2xl mx-auto px-4 py-10">
+    <div class="mb-6">
+        <a href="{{ path('app_property_show', {id: property.id}) }}" class="text-sm text-gray-500 hover:underline">&larr; Retour au logement</a>
+    </div>
+
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Confirmer votre réservation</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {# Récapitulatif logement #}
+        <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+            {% if property.images.first %}
+                <img src="{{ property.images.first.imageUrl }}" alt="{{ property.title }}" class="w-full h-40 object-cover">
+            {% else %}
+                <div class="w-full h-40 bg-gray-100"></div>
+            {% endif %}
+            <div class="p-4">
+                <p class="font-semibold text-gray-900">{{ property.title }}</p>
+                <p class="text-sm text-gray-500">{{ property.city }}, {{ property.country }}</p>
+                <p class="text-sm text-gray-500 mt-1">Hébergé par {{ property.host.firstName }}</p>
+                {% if property.instantBooking %}
+                    <span class="mt-2 inline-block text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Réservation instantanée</span>
+                {% else %}
+                    <span class="mt-2 inline-block text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">Sur demande — l'hôte doit valider</span>
+                {% endif %}
+            </div>
+        </div>
+
+        {# Détails réservation #}
+        <div class="bg-white border border-gray-200 rounded-2xl p-5 space-y-4">
+            <h2 class="font-semibold text-gray-900">Votre séjour</h2>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-xs text-gray-400 uppercase tracking-wide">Arrivée</p>
+                    <p class="font-semibold text-gray-900 mt-0.5">{{ checkIn|date('D d M Y') }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 uppercase tracking-wide">Départ</p>
+                    <p class="font-semibold text-gray-900 mt-0.5">{{ checkOut|date('D d M Y') }}</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <p class="text-xs text-gray-400 uppercase tracking-wide">Voyageurs</p>
+                    <p class="font-semibold text-gray-900 mt-0.5">{{ guests }}</p>
+                </div>
+                <div>
+                    <p class="text-xs text-gray-400 uppercase tracking-wide">Durée</p>
+                    <p class="font-semibold text-gray-900 mt-0.5">{{ nights }} nuit(s)</p>
+                </div>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100 space-y-2">
+                <div class="flex justify-between text-sm text-gray-600">
+                    <span>{{ property.pricePerNight }} € × {{ nights }} nuits</span>
+                    <span>{{ totalPrice|number_format(2, ',', ' ') }} €</span>
+                </div>
+                <div class="flex justify-between font-bold text-gray-900">
+                    <span>Total</span>
+                    <span>{{ totalPrice|number_format(2, ',', ' ') }} €</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {# Bouton de confirmation #}
+    <div class="mt-6">
+        <form method="POST" action="{{ path('app_booking_confirm', {id: property.id}) }}">
+            <input type="hidden" name="checkIn" value="{{ checkIn|date('Y-m-d') }}">
+            <input type="hidden" name="checkOut" value="{{ checkOut|date('Y-m-d') }}">
+            <input type="hidden" name="guests" value="{{ guests }}">
+            <button type="submit"
+                    class="w-full bg-rose-500 hover:bg-rose-600 text-white font-bold py-4 rounded-2xl text-lg transition">
+                {% if property.instantBooking %}
+                    Confirmer et réserver
+                {% else %}
+                    Envoyer la demande à l'hôte
+                {% endif %}
+            </button>
+        </form>
+        <p class="text-center text-xs text-gray-400 mt-2">Aucun paiement ne sera débité maintenant.</p>
+    </div>
+</div>
+{% endblock %}
