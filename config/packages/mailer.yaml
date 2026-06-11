@@ -1,3 +1,7 @@
 framework:
     mailer:
         dsn: '%env(MAILER_DSN)%'
+        envelope:
+            sender: 'no-reply@stay-platform.local'
+        headers:
+            From: 'Plateforme de réservation <no-reply@stay-platform.local>'

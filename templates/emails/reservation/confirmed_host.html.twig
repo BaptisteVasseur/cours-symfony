@@ -1,0 +1,31 @@
+{% extends 'emails/layout.html.twig' %}
+
+{% set guestName = guest.profile and (guest.profile.firstName or guest.profile.lastName)
+    ? (guest.profile.firstName ~ ' ' ~ guest.profile.lastName)|trim
+    : guest.email %}
+
+{% block content %}
+    <h1 style="font-size:20px;margin:0 0 16px;">Une réservation est confirmée</h1>
+    <p style="margin:0 0 16px;line-height:1.5;">
+        La réservation de votre logement <strong>{{ property.title }}</strong> est confirmée.
+    </p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;font-size:14px;">
+        <tr><td style="padding:6px 0;color:#6b7280;width:160px;">Logement</td><td style="padding:6px 0;font-weight:bold;">{{ property.title }}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Arrivée</td><td style="padding:6px 0;">{{ reservation.checkinDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Départ</td><td style="padding:6px 0;">{{ reservation.checkoutDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Voyageurs</td><td style="padding:6px 0;">{{ reservation.guestsCount }}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Montant total</td><td style="padding:6px 0;font-weight:bold;">{{ reservation.totalPrice }} {{ reservation.currency }}</td></tr>
+    </table>
+
+    <h2 style="font-size:16px;margin:0 0 8px;">Votre voyageur</h2>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin:0 0 24px;font-size:14px;">
+        <tr><td style="padding:6px 0;color:#6b7280;width:160px;">Nom</td><td style="padding:6px 0;">{{ guestName }}</td></tr>
+        <tr><td style="padding:6px 0;color:#6b7280;">Email</td><td style="padding:6px 0;">{{ guest.email }}</td></tr>
+        {% if guest.phone %}<tr><td style="padding:6px 0;color:#6b7280;">Téléphone</td><td style="padding:6px 0;">{{ guest.phone }}</td></tr>{% endif %}
+    </table>
+
+    <a href="{{ reservationUrl }}" style="display:inline-block;background-color:#e11d48;color:#ffffff;text-decoration:none;font-weight:bold;padding:12px 24px;border-radius:8px;">
+        Voir la réservation
+    </a>
+{% endblock %}

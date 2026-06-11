@@ -9,6 +9,12 @@ framework:
                 retry_strategy:
                     max_retries: 3
                     multiplier: 2
+            email:
+                dsn: '%env(MESSENGER_EMAIL_DSN)%'
+                retry_strategy:
+                    max_retries: 5
+                    delay: 1000
+                    multiplier: 2
             failed: 'doctrine://default?queue_name=failed'
             # sync: 'sync://'
 
@@ -18,7 +24,7 @@ framework:
             messenger.bus.default: []
 
         routing:
-#            Symfony\Component\Mailer\Messenger\SendEmailMessage: async
+            Symfony\Component\Mailer\Messenger\SendEmailMessage: email
 #            Symfony\Component\Notifier\Message\ChatMessage: async
 #            Symfony\Component\Notifier\Message\SmsMessage: async
 
