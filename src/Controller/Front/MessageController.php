@@ -9,6 +9,8 @@ use App\Entity\Message;
 use App\Entity\User;
 use App\Form\MessageType;
 use App\Repository\ConversationRepository;
+use App\Service\MailService;
+use App\Service\NotificationService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -42,6 +44,8 @@ final class MessageController extends AbstractController
         Conversation $conversation,
         ConversationRepository $conversationRepository,
         EntityManagerInterface $entityManager,
+        MailService $mailService,
+        NotificationService $notificationService,
     ): Response {
         $user = $this->getUser();
         if (!$user instanceof User) {
@@ -67,6 +71,25 @@ final class MessageController extends AbstractController
             $message->setIsFlagged(false);
             $entityManager->persist($message);
             $entityManager->flush();
+
+            $recipient = null;
+            foreach ($conversation->getParticipants() as $participant) {
+                if ($participant->getUser()?->getId() !== $user->getId()) {
+                    $recipient = $participant->getUser();
+                    break;
+                }
+            }
+
+            if ($recipient !== null) {
+                $senderName = $user->getProfile() && $user->getProfile()->getFirstName()
+                    ? $user->getProfile()->getFirstName()
+                    : $user->getEmail();
+                $title = sprintf('Nouveau message de %s', $senderName);
+                $linkUrl = $this->generateUrl('app_messages_show', ['id' => $conversation->getId()]);
+                $notificationService->notify($recipient, $title, $content, $linkUrl);
+
+                $mailService->sendNewMessageEmail($message, $recipient);
+            }
 
             return $this->redirectToRoute('app_messages_show', ['id' => $conversation->getId()]);
         }
