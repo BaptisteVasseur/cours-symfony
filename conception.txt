@@ -1,0 +1,68 @@
+Q: Modélisation temporelle : Le jour de check-out est-il réservable par un nouveau voyageur ?
+R:  Le jour de checkout ne doit pas être une nuitée bloquée.
+    La plage vérifiée va du jour d'arrivée (inclus) au jour de départ (exclu), ce qui permet à un nouveau voyageur d'arriver le jour où un autre repart.
+    Par exemple, le 18 juin est libre pour un nouvel arrivant même si quelqu'un part ce jour-là.
+
+Q: Comment gérez-vous la superposition d'un départ à 11h et d'une arrivée à 15h dans votre schéma de données ?
+R:  La superposition départ 11h / arrivée 15h n'est pas modélisée au niveau horaire : le schéma travaille en jour.
+    Le checkout étant exclu de la plage bloquée, le jour de départ est libre pour un nouvel arrivant.
+    Les heures de check-in et check-out (11h/15h) sont stockées dans Property à titre informatif pour les voyageurs,
+    mais n'influencent pas l'algorithme de disponibilité.
+
+Q: Gestion des états : Une demande Pending bloque-t-elle les dates ? Analysez les risques liés à
+ce choix (blocage abusif vs overbooking).
+R:  Une demande pending bloque les dates.
+    Ce choix élimine tout risque d'overbooking au prix d'un risque de blocage abusif,
+    qui peut être atténué par l'expiration automatique des demandes non traitées après 24h (fonctionnalité G.1).
+
+Q: Concurrence : Comment votre base de données réagit-elle si deux utilisateurs valident un paiement
+à la milliseconde près pour le même logement et les mêmes dates ?
+R:  La création d'une réservation est encapsulée dans une transaction.
+    La disponibilité est re-vérifiée juste avant le flush avec un verrou pessimiste, garantissant qu'un seul utilisateur peut confirmer sur une plage donnée.
+    Le second reçoit une erreur de disponibilité.
+
+Q: Performance : Comment valider la disponibilité d'un logement sur 20 nuits consécutives sans
+saturer la base de requêtes SQL itératives ?
+R:  La disponibilité est vérifiée en exactement 2 requêtes SQL, indépendantes de la durée du séjour :
+    un COUNT sur les jours bloqués dans la plage (PropertyAvailability),
+    et une recherche de réservations chevauchantes (Reservation).
+    Si les deux retournent 0, la plage est disponible. Aucune boucle itérative n'est nécessaire.
+
+Q: Asynchronisme : Pourquoi l'envoi d'email doit-il préférentiellement intervenir après le flush() de
+l'ORM ? Quelle est la stratégie si RabbitMQ tombe en panne ?
+R:  L'email est dispatché vers Messenger uniquement après un flush réussi, garantissant que la réservation existe bien en base avant toute notification.
+    Si RabbitMQ est indisponible, les messages tombent dans le transport doctrine (fallback en base de données) et sont réessayés automatiquement au retour du service.
+    Aucun email n'est perdu.
+
+Q: Structure SQL : Justifiez votre choix d'architecture pour le calendrier : table de jours individuels
+( PropertyAvailability ) ou table de périodes ( date_start , date_end ).
+R:  La table de jours individuels (PropertyAvailability) a été retenue face à l'approche par périodes (date_start/date_end).
+    Cette dernière nécessite de fragmenter une période en deux lors d'une réservation au milieu
+    (ex : réservation du 10 au 15 dans une période libre du 1 au 31 -> créer deux nouvelles périodes), une complexité importante.
+    La table représente les indisponibilités : le logement est disponible par défaut pour tout jour absent de la table.
+    Un jour bloqué par l'hôte y est simplement inséré, et supprimé à l'annulation.
+    Les tarifs spéciaux et la durée de séjour minimum par jour sont stockés dans une table dédiée PropertyPricing.
+    Cette séparation est nécessaire, car un jour avec un tarif spécial n'est pas un jour indisponible.
+
+--- Schéma de flux : parcours de réservation ---
+
+1. Voyageur sélectionne les dates -> GET /logement/{id}/reserver
+2. Soumission du formulaire -> AvailabilityService::isAvailable() vérifié
+3. Si indisponible -> flash erreur, retour formulaire
+4. Si disponible -> création Reservation (statut confirmed ou pending selon instantBooking de Property)
+5. flush() ORM -> dispatch ReservationCreatedMessage vers Messenger
+6. Redirection vers /reservations/{id} avec flash succès
+7. Worker Messenger -> envoi email asynchrone via Mailer
+
+--- Schéma de flux : modération hôte (Sur demande) ---
+
+1. Hôte reçoit un email : nouvelle demande pending
+2. Hôte accède au tableau de bord -> liste des demandes pending
+3. Hôte accepte -> statut confirmed, dates verrouillées, email voyageur dispatché
+4. Hôte refuse (avec motif) -> statut cancelled, dates libérées, email voyageur dispatché
+
+--- Schéma de flux : annulation ---
+
+1. Voyageur ou hôte saisit un motif et confirme l'annulation
+2. Statut -> cancelled
+3. Email envoyé vers les deux parties via Messenger
