@@ -2,84 +2,149 @@
 
 {% set cover = property.coverMedia %}
 {% set averageRating = property.averageRating %}
-{% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80' %}
+{% set placeholder = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80' %}
 {% set hostProfile = property.host ? property.host.profile : null %}
+{% set reviewCount = totalReviews|default(property.reviews|length) %}
+
+{% block title %}{{ property.title }} — Airbnb{% endblock %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
-        <div class="mb-6">
-            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">{{ property.title }}</h1>
-            <div class="flex flex-wrap items-center gap-2 mt-2 text-sm text-gray-600">
+<main class="flex-grow">
+
+    {# Breadcrumb   #}
+    <div class="max-w-screen-xl mx-auto px-6 md:px-8 pt-6">
+        <nav class="flex items-center gap-2 text-xs text-gray-400">
+            <a href="{{ path('app_home') }}" class="hover:text-gray-700 transition">Accueil</a>
+            <i class="fa-solid fa-chevron-right text-[9px]"></i>
+            {% if property.address %}
+                <a href="{{ path('app_search', { destination: property.address.city }) }}" class="hover:text-gray-700 transition">{{ property.address.city }}</a>
+                <i class="fa-solid fa-chevron-right text-[9px]"></i>
+            {% endif %}
+            <span class="text-gray-600 font-medium truncate max-w-xs">{{ property.title }}</span>
+        </nav>
+    </div>
+
+    <div class="max-w-screen-xl mx-auto px-6 md:px-8 py-6 space-y-8">
+
+        {# Title block   #}
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">{{ property.title }}</h1>
+            <div class="flex flex-wrap items-center gap-3 text-sm text-gray-600">
                 {% if averageRating %}
                     <span class="flex items-center gap-1 font-semibold text-gray-900">
-                        <i class="fa-solid fa-star text-xs"></i>
-                        {{ averageRating|number_format(2, ',') }}
+                        <i class="fa-solid fa-star text-brand text-xs"></i>
+                        {{ averageRating|number_format(1, ',') }}
                     </span>
-                    <span>·</span>
-                    <span>{{ totalReviews|default(property.reviews|length) }} avis</span>
-                    <span>·</span>
+                    <span class="text-gray-300">·</span>
+                    <a href="{{ path('app_logement_reviews', { id: property.id }) }}" class="underline hover:no-underline">{{ reviewCount }} avis</a>
+                    <span class="text-gray-300">·</span>
                 {% endif %}
                 {% if property.address %}
-                    <span>{{ property.address.city }}, {{ property.address.country }}</span>
+                    <span class="flex items-center gap-1">
+                        <i class="fa-solid fa-location-dot text-brand text-xs"></i>
+                        {{ property.address.city }}, {{ property.address.country }}
+                    </span>
                 {% endif %}
             </div>
         </div>
 
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-2 rounded-xl overflow-hidden mb-10 h-[300px] md:h-[480px]">
-            <div class="md:col-span-2 md:row-span-2 relative">
-                <img
-                    src="{{ cover ? cover.fileUrl : placeholderImage }}"
-                    alt="{{ property.title }}"
-                    class="w-full h-full object-cover"
-                >
+        {# Photo grid   #}
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-2 rounded-3xl overflow-hidden h-[260px] md:h-[440px]">
+            <div class="col-span-2 row-span-2 relative">
+                <img src="{{ cover ? cover.fileUrl : placeholder }}" alt="{{ property.title }}"
+                    class="absolute inset-0 w-full h-full object-cover">
             </div>
             {% for medium in property.media|slice(1, 4) %}
                 <div class="hidden md:block relative">
-                    <img src="{{ medium.fileUrl }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                    <img src="{{ medium.fileUrl }}" alt="{{ property.title }}"
+                        class="absolute inset-0 w-full h-full object-cover">
                 </div>
+            {% endfor %}
+            {# Fill empty slots   #}
+            {% for i in 1..(4 - property.media|length + 1) %}
+                {% if loop.index <= 4 - property.media|length %}
+                    <div class="hidden md:block bg-gray-100"></div>
+                {% endif %}
             {% endfor %}
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-12">
+        {# Content grid   #}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-10 lg:gap-16">
+
+            {# Left column   #}
             <div class="lg:col-span-2 space-y-10">
-                <section class="flex items-center justify-between pb-8 border-b border-gray-200">
+
+                {# Host + specs   #}
+                <section class="flex items-center justify-between pb-8 border-b border-gray-100">
                     <div>
-                        <h2 class="text-xl font-semibold text-gray-900">
-                            Logement proposé par {{ hostProfile ? hostProfile.firstName : 'un hôte' }}
+                        <h2 class="text-xl font-bold text-gray-900">
+                            Proposé par {{ hostProfile ? hostProfile.firstName : 'un hôte' }}
                         </h2>
-                        <p class="text-gray-500 mt-1">
-                            {{ property.maxGuests }} voyageur{{ property.maxGuests > 1 ? 's' : '' }}
-                            · {{ property.bedrooms }} chambre{{ property.bedrooms > 1 ? 's' : '' }}
-                            · {{ property.beds }} lit{{ property.beds > 1 ? 's' : '' }}
-                            · {{ property.bathrooms }} salle{{ property.bathrooms > 1 ? 's' : '' }} de bain
+                        <p class="text-gray-500 text-sm mt-1 flex flex-wrap gap-x-3 gap-y-1">
+                            <span><i class="fa-solid fa-user-group text-xs mr-1"></i>{{ property.maxGuests }} voyageur{{ property.maxGuests > 1 ? 's' : '' }}</span>
+                            <span>·</span>
+                            <span><i class="fa-solid fa-door-closed text-xs mr-1"></i>{{ property.bedrooms }} chambre{{ property.bedrooms > 1 ? 's' : '' }}</span>
+                            <span>·</span>
+                            <span><i class="fa-solid fa-bed text-xs mr-1"></i>{{ property.beds }} lit{{ property.beds > 1 ? 's' : '' }}</span>
+                            <span>·</span>
+                            <span><i class="fa-solid fa-shower text-xs mr-1"></i>{{ property.bathrooms }} sdb</span>
                         </p>
                     </div>
-                    <div class="w-14 h-14 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                    <div class="w-14 h-14 rounded-full bg-gray-200 overflow-hidden shrink-0 ring-2 ring-white shadow">
                         {% if hostProfile and hostProfile.avatarUrl %}
-                            <img src="{{ hostProfile.avatarUrl }}" alt="Hôte" class="w-full h-full object-cover">
+                            <img src="{{ hostProfile.avatarUrl }}" alt="{{ hostProfile.firstName }}" class="w-full h-full object-cover">
                         {% else %}
-                            <div class="w-full h-full flex items-center justify-center text-gray-500 font-bold">
+                            <div class="w-full h-full flex items-center justify-center bg-brand text-white font-bold text-xl">
                                 {{ hostProfile and hostProfile.firstName ? hostProfile.firstName|first|upper : 'H' }}
                             </div>
                         {% endif %}
                     </div>
                 </section>
 
+                {# Highlights   #}
+                <section class="grid grid-cols-1 sm:grid-cols-3 gap-4 pb-8 border-b border-gray-100">
+                    {% if property.instantBooking %}
+                        <div class="flex items-start gap-3">
+                            <i class="fa-solid fa-bolt text-red-400 text-xl mt-0.5 w-6 shrink-0"></i>
+                            <div>
+                                <p class="font-semibold text-sm text-gray-900">Réservation instantanée</p>
+                                <p class="text-xs text-gray-500">Confirmé immédiatement</p>
+                            </div>
+                        </div>
+                    {% endif %}
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-clock text-gray-400 text-xl mt-0.5 w-6 shrink-0"></i>
+                        <div>
+                            <p class="font-semibold text-sm text-gray-900">Arrivée : {{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
+                            <p class="text-xs text-gray-500">Départ : {{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-shield-halved text-gray-400 text-xl mt-0.5 w-6 shrink-0"></i>
+                        <div>
+                            <p class="font-semibold text-sm text-gray-900">Paiement sécurisé</p>
+                            <p class="text-xs text-gray-500">Protection voyageur incluse</p>
+                        </div>
+                    </div>
+                </section>
+
+                {# Description   #}
                 {% if property.description %}
-                    <section class="pb-8 border-b border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-900 mb-4">À propos de ce logement</h2>
-                        <p class="text-gray-700 leading-relaxed whitespace-pre-line">{{ property.description }}</p>
+                    <section class="pb-8 border-b border-gray-100">
+                        <h2 class="text-lg font-bold text-gray-900 mb-4">À propos de ce logement</h2>
+                        <p class="text-gray-700 leading-relaxed whitespace-pre-line text-sm">{{ property.description }}</p>
                     </section>
                 {% endif %}
 
+                {# Amenities   #}
                 {% if property.propertyAmenities|length > 0 %}
-                    <section class="pb-8 border-b border-gray-200">
-                        <h2 class="text-xl font-semibold text-gray-900 mb-4">Équipements</h2>
-                        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <section class="pb-8 border-b border-gray-100">
+                        <h2 class="text-lg font-bold text-gray-900 mb-5">Équipements</h2>
+                        <ul class="grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6">
                             {% for propertyAmenity in property.propertyAmenities %}
                                 {% if propertyAmenity.amenity %}
-                                    <li class="flex items-center gap-3 text-gray-700">
-                                        <i class="fa-solid fa-check text-gray-900"></i>
+                                    <li class="flex items-center gap-3 text-sm text-gray-700">
+                                        <i class="fa-solid fa-check w-4 text-center text-brand text-xs shrink-0"></i>
                                         {{ propertyAmenity.amenity.label }}
                                     </li>
                                 {% endif %}
@@ -88,11 +153,18 @@
                     </section>
                 {% endif %}
 
+                {# Reviews   #}
                 <section>
-                    <h2 class="text-xl font-semibold text-gray-900 mb-6">
-                        Avis ({{ totalReviews|default(property.reviews|length) }})
-                    </h2>
-                    {% set reviewCount = totalReviews|default(property.reviews|length) %}
+                    <div class="flex items-center gap-3 mb-6">
+                        <h2 class="text-lg font-bold text-gray-900">Avis</h2>
+                        {% if averageRating %}
+                            <span class="flex items-center gap-1.5 bg-surface px-3 py-1.5 rounded-full text-sm font-semibold">
+                                <i class="fa-solid fa-star text-brand text-xs"></i>
+                                {{ averageRating|number_format(1, ',') }}
+                                <span class="text-gray-400 font-normal">({{ reviewCount }})</span>
+                            </span>
+                        {% endif %}
+                    </div>
                     {% if reviewCount > 0 %}
                         <div class="space-y-6">
                             {% for review in reviews|default(property.reviews) %}
@@ -100,49 +172,61 @@
                             {% endfor %}
                         </div>
                         {% if reviewCount > 5 %}
-                            <a href="{{ path('app_logement_reviews', { id: property.id }) }}" class="inline-block mt-6 text-sm font-semibold underline text-gray-900 hover:text-brand">
-                                Tout afficher ({{ reviewCount }} avis)
+                            <a href="{{ path('app_logement_reviews', { id: property.id }) }}"
+                               class="inline-flex items-center gap-2 mt-6 text-sm font-semibold border border-gray-800 text-gray-900 hover:bg-gray-900 hover:text-white px-5 py-2.5 rounded-xl transition">
+                                Tous les avis <i class="fa-solid fa-arrow-right text-xs"></i>
                             </a>
                         {% endif %}
                     {% else %}
-                        <p class="text-gray-500 text-sm">Aucun avis pour le moment.</p>
+                        <div class="py-8 text-center bg-surface rounded-2xl">
+                            <p class="text-gray-400 text-sm">Aucun avis pour le moment.</p>
+                        </div>
                     {% endif %}
                 </section>
+
             </div>
 
+            {# Booking sidebar   #}
             <aside class="lg:col-span-1">
-                <div class="sticky top-28 border border-gray-200 rounded-xl shadow-lg p-6">
-                    <p class="text-2xl font-semibold mb-4">
-                        <span class="font-bold">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span>
-                        <span class="text-base font-normal text-gray-600"> / nuit</span>
-                    </p>
-                    {% if property.cleaningFee %}
-                        <p class="text-sm text-gray-500 mb-4">Frais de ménage : {{ property.cleaningFee|number_format(0, ',', ' ') }} €</p>
-                    {% endif %}
-                    <div class="border border-gray-300 rounded-lg mb-4">
-                        <div class="grid grid-cols-2 divide-x divide-gray-300">
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Arrivée</p>
-                                <p class="text-sm text-gray-500">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
-                            </div>
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Départ</p>
-                                <p class="text-sm text-gray-500">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
-                            </div>
-                        </div>
-                        <div class="p-3 border-t border-gray-300">
-                            <p class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</p>
-                            <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
-                        </div>
+                <div class="sticky top-24 bg-white border border-gray-200 rounded-3xl shadow-card-hover p-6 space-y-5"
+                     data-controller="calendar"
+                     data-calendar-booked-value="{{ bookedRanges|default([])|json_encode|e('html_attr') }}"
+                     data-calendar-blocked-value="{{ blockedDates|default([])|json_encode|e('html_attr') }}"
+                     data-calendar-price-value="{{ property.pricePerNight }}"
+                     data-calendar-cleaning-value="{{ property.cleaningFee ?? 0 }}"
+                     data-calendar-property-id-value="{{ property.id }}">
+
+                    <div class="flex items-baseline gap-2">
+                        <span class="text-2xl font-extrabold text-gray-900">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span>
+                        <span class="text-sm text-gray-500">/ nuit</span>
+                        {% if averageRating %}
+                            <span class="ml-auto flex items-center gap-1 text-xs font-semibold text-gray-700 shrink-0">
+                                <i class="fa-solid fa-star text-brand text-[10px]"></i>
+                                {{ averageRating|number_format(1, ',') }}
+                            </span>
+                        {% endif %}
                     </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
-                        Réserver
+
+                    {# Calendrier des disponibilités #}
+                    {% include 'components/calendar.html.twig' with {
+                        property: property,
+                    } %}
+
+                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}"
+                       class="block w-full bg-brand hover:bg-brandHover text-white font-bold py-4 rounded-2xl text-center transition text-sm shadow-sm"
+                       data-calendar-target="bookBtn">
+                        {% if property.instantBooking %}
+                            <i class="fa-solid fa-bolt mr-2"></i>Réserver instantanément
+                        {% else %}
+                            Demander une réservation
+                        {% endif %}
                     </a>
-                    {% if property.instantBooking %}
-                        <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
-                    {% endif %}
+
+                    <p class="text-center text-xs text-gray-400">Aucun frais ne vous sera débité pour l'instant</p>
+
                 </div>
             </aside>
         </div>
-    </main>
+    </div>
+</main>
 {% endblock %}

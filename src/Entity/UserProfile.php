@@ -50,6 +50,10 @@ class UserProfile
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
+    #[ORM\ManyToOne(inversedBy: 'profiles')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Owner $owner = null;
+
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
@@ -78,6 +82,8 @@ class UserProfile
 
         return $this;
     }
+
+
 
     public function getLastName(): ?string
     {

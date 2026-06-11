@@ -1,51 +1,63 @@
 {% set property = reservation.property %}
 {% set cover = property ? property.coverMedia : null %}
-{% set guestProfile = reservation.guest ? reservation.guest.profile : null %}
-{% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80' %}
+{% set placeholder = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=400&q=80' %}
 
-{% set statusLabels = {
-    'confirmed': 'Confirmée',
-    'completed': 'Terminée',
-    'pending': 'En attente',
-    'cancelled': 'Annulée',
+{% set statusConfig = {
+    'confirmed': { label: 'Confirmée',  bg: 'bg-emerald-50',  text: 'text-emerald-700',  dot: 'bg-emerald-400' },
+    'completed': { label: 'Terminée',   bg: 'bg-blue-50',     text: 'text-blue-700',     dot: 'bg-blue-400'    },
+    'pending':   { label: 'En attente', bg: 'bg-amber-50',    text: 'text-amber-700',    dot: 'bg-amber-400'   },
+    'cancelled': { label: 'Annulée',    bg: 'bg-red-50',      text: 'text-red-700',      dot: 'bg-red-400'     },
+    'rejected':  { label: 'Refusée',    bg: 'bg-gray-50',     text: 'text-gray-600',     dot: 'bg-gray-400'    },
 } %}
-{% set statusColors = {
-    'confirmed': 'bg-green-100 text-green-800',
-    'completed': 'bg-blue-100 text-blue-800',
-    'pending': 'bg-yellow-100 text-yellow-800',
-    'cancelled': 'bg-red-100 text-red-800',
-} %}
+{% set sc = statusConfig[reservation.status] ?? { label: reservation.status, bg: 'bg-gray-50', text: 'text-gray-600', dot: 'bg-gray-400' } %}
 
-<a href="{{ path('app_reservation_show', { id: reservation.id }) }}" class="flex flex-col sm:flex-row gap-4 p-4 border border-gray-200 rounded-xl hover:shadow-md transition bg-white">
-    <div class="w-full sm:w-40 h-32 sm:h-28 shrink-0 rounded-lg overflow-hidden">
+<a href="{{ path('app_reservation_show', { id: reservation.id }) }}"
+   class="flex flex-col sm:flex-row gap-4 p-4 bg-white border border-gray-100 rounded-2xl hover:shadow-card hover:border-gray-200 transition-all duration-200 group">
+
+    {# Image   #}
+    <div class="w-full sm:w-32 h-28 shrink-0 rounded-xl overflow-hidden bg-gray-100">
         <img
-            src="{{ cover ? cover.fileUrl : placeholderImage }}"
+            src="{{ cover ? cover.fileUrl : placeholder }}"
             alt="{{ property ? property.title : 'Logement' }}"
-            class="w-full h-full object-cover"
+            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            loading="lazy"
         >
     </div>
-    <div class="flex-grow min-w-0">
-        <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
-            <h2 class="font-semibold text-gray-900 truncate">
-                {{ property ? property.title : 'Logement supprimé' }}
-            </h2>
-            <span class="text-xs font-semibold px-2.5 py-1 rounded-full {{ statusColors[reservation.status]|default('bg-gray-100 text-gray-800') }}">
-                {{ statusLabels[reservation.status]|default(reservation.status) }}
+
+    {# Content   #}
+    <div class="flex-grow min-w-0 flex flex-col justify-between gap-2">
+        <div>
+            <div class="flex flex-wrap items-start justify-between gap-2">
+                <h2 class="font-semibold text-gray-900 text-sm truncate">
+                    {{ property ? property.title : 'Logement supprimé' }}
+                </h2>
+                <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full {{ sc.bg }} {{ sc.text }} shrink-0">
+                    <span class="w-1.5 h-1.5 rounded-full {{ sc.dot }}"></span>
+                    {{ sc.label }}
+                </span>
+            </div>
+            {% if property and property.address %}
+                <p class="text-xs text-gray-400 mt-0.5">
+                    <i class="fa-solid fa-location-dot mr-1"></i>{{ property.address.city }}, {{ property.address.country }}
+                </p>
+            {% endif %}
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4 text-xs text-gray-500">
+            <span class="flex items-center gap-1.5">
+                <i class="fa-regular fa-calendar"></i>
+                {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+            </span>
+            <span class="flex items-center gap-1.5">
+                <i class="fa-solid fa-user-group"></i>
+                {{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' : '' }}
             </span>
         </div>
-        {% if property and property.address %}
-            <p class="text-sm text-gray-500 mb-2">{{ property.address.city }}, {{ property.address.country }}</p>
-        {% endif %}
-        <p class="text-sm text-gray-700">
-            {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
-            · {{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' : '' }}
-        </p>
-        {% if guestProfile %}
-            <p class="text-xs text-gray-400 mt-1">Voyageur : {{ guestProfile.firstName }} {{ guestProfile.lastName }}</p>
-        {% endif %}
     </div>
-    <div class="sm:text-right shrink-0">
-        <p class="font-semibold text-gray-900">{{ reservation.totalPrice|number_format(0, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
-        <p class="text-xs text-gray-400 mt-1">Réf. {{ reservation.id }}</p>
+
+    {# Price   #}
+    <div class="sm:text-right shrink-0 flex sm:flex-col justify-between sm:justify-start gap-2">
+        <p class="font-bold text-gray-900 text-base">{{ reservation.totalPrice|number_format(0, ',', ' ') }} €</p>
+        <p class="text-[10px] text-gray-400 font-mono">{{ reservation.id|slice(0, 8) }}…</p>
     </div>
 </a>

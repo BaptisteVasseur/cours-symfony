@@ -13,10 +13,11 @@ final class PropertyVoter extends Voter
 {
     public const VIEW = 'PROPERTY_VIEW';
     public const EDIT = 'PROPERTY_EDIT';
+    public const HOST = 'HOST';
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return in_array($attribute, [self::VIEW, self::EDIT], true)
+        return in_array($attribute, [self::VIEW, self::EDIT, self::HOST], true)
             && $subject instanceof Property;
     }
 
@@ -38,7 +39,7 @@ final class PropertyVoter extends Voter
 
         return match ($attribute) {
             self::VIEW => $property->getStatus() === 'published' || $isOwner,
-            self::EDIT => $isOwner,
+            self::EDIT, self::HOST => $isOwner,
             default => false,
         };
     }

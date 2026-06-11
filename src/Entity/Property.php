@@ -46,6 +46,10 @@ class Property
 
     #[Assert\NotNull(message: 'La politique d\'annulation est obligatoire.')]
     #[ORM\ManyToOne(inversedBy: 'properties')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?Owner $owner = null;
+
+    #[ORM\ManyToOne(inversedBy: 'properties')]
     #[ORM\JoinColumn(nullable: false)]
     private ?CancellationPolicy $cancellationPolicy = null;
 
@@ -131,6 +135,9 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -186,6 +193,18 @@ class Property
     public function setHost(?User $host): static
     {
         $this->host = $host;
+
+        return $this;
+    }
+
+    public function getOwner(): ?Owner
+    {
+        return $this->owner;
+    }
+
+    public function setOwner(?Owner $owner): static
+    {
+        $this->owner = $owner;
 
         return $this;
     }
@@ -354,6 +373,25 @@ class Property
     public function setCheckoutTime(?\DateTimeImmutable $checkoutTime): static
     {
         $this->checkoutTime = $checkoutTime;
+
+        return $this;
+    }
+
+    public function getIcalToken(): ?string
+    {
+        return $this->icalToken;
+    }
+
+    public function setIcalToken(?string $icalToken): static
+    {
+        $this->icalToken = $icalToken;
+
+        return $this;
+    }
+
+    public function generateIcalToken(): static
+    {
+        $this->icalToken = bin2hex(random_bytes(32));
 
         return $this;
     }

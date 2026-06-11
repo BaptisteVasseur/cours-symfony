@@ -1,22 +1,56 @@
 {% extends 'layout/app.html.twig' %}
 
+{% block title %}Mes réservations — Airbnb{% endblock %}
+
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <div class="mb-8">
-            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Mes réservations</h1>
-            <p class="text-gray-500 mt-1">Historique de toutes vos réservations</p>
-        </div>
-        {% if reservations|length > 0 %}
-            <div class="space-y-4">
-                {% for reservation in reservations %}
-                    {% include 'components/reservation_row.html.twig' with { reservation: reservation } %}
-                {% endfor %}
-            </div>
-        {% else %}
-            <div class="text-center py-16 border border-dashed border-gray-200 rounded-xl">
-                <p class="text-gray-500">Aucune réservation pour le moment.</p>
-                <a href="{{ path('app_home') }}" class="inline-block mt-4 text-brand font-semibold hover:underline">Découvrir des logements</a>
+<main class="flex-grow max-w-3xl mx-auto w-full px-4 py-10">
+
+    <div class="mb-8">
+        <h1 class="text-2xl font-bold text-gray-900">Mes réservations</h1>
+        <p class="text-gray-400 text-sm mt-1">{{ reservations|length }} réservation{{ reservations|length > 1 ? 's' : '' }}</p>
+    </div>
+
+    {% if reservations|length > 0 %}
+
+        {# Upcoming   #}
+        {% set upcoming = reservations|filter(r => r.status in ['confirmed', 'pending']) %}
+        {% if upcoming|length > 0 %}
+            <div class="mb-8">
+                <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">À venir</h2>
+                <div class="space-y-3">
+                    {% for reservation in upcoming %}
+                        {% include 'components/reservation_row.html.twig' with { reservation: reservation } %}
+                    {% endfor %}
+                </div>
             </div>
         {% endif %}
-    </main>
+
+        {# Past   #}
+        {% set past = reservations|filter(r => r.status not in ['confirmed', 'pending']) %}
+        {% if past|length > 0 %}
+            <div>
+                <h2 class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-3">Historique</h2>
+                <div class="space-y-3">
+                    {% for reservation in past %}
+                        {% include 'components/reservation_row.html.twig' with { reservation: reservation } %}
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+    {% else %}
+        <div class="py-24 flex flex-col items-center text-center bg-surface rounded-3xl">
+            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-5 shadow-card">
+                <i class="fa-solid fa-suitcase-rolling text-3xl text-gray-300"></i>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Aucune réservation</h3>
+            <p class="text-gray-400 text-sm max-w-xs mb-6">Explorez nos logements et planifiez votre prochain séjour.</p>
+            <a href="{{ path('app_home') }}" class="inline-flex items-center gap-2 bg-brand text-white font-semibold text-sm px-6 py-3 rounded-2xl hover:bg-brandHover transition">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                Découvrir des logements
+            </a>
+        </div>
+    {% endif %}
+
+</main>
 {% endblock %}

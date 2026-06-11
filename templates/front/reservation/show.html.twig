@@ -58,9 +58,15 @@
                 </section>
             </div>
             <aside>
-                <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
+                <div class="border border-gray-200 rounded-xl p-6 sticky top-28 space-y-4">
                     <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
                     <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                    {% if app.user == reservation.guest and reservation.status in ['pending', 'confirmed'] %}
+                        <a href="{{ path('app_reservation_cancel', { id: reservation.id }) }}"
+                           class="block w-full text-center border border-red-300 text-red-600 hover:bg-red-50 font-semibold py-2.5 rounded-xl transition text-sm">
+                            <i class="fa-solid fa-xmark mr-1"></i> Annuler ma réservation
+                        </a>
+                    {% endif %}
                 </div>
             </aside>
         </div>

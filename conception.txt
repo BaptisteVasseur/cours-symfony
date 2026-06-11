@@ -1,0 +1,54 @@
+Gestion des dates et des disponibilités 
+
+Pour faire fonctionner la gestion des disponibilités, le système de réservations se repose sur les dates, la date de départ n'est pas considérée comme une nuit réservée. Donc par exemple une réservation commence le le 10 juillet et le départ est le 15 juillet Le voyageur occupe donc les nuits du 10 au 14 inclus. 
+Par conséquent, le système proposé exclus le 15 juillet qui lui est libre pour une autre réservation. 
+
+C'est du fait que généralement les gens ne vont pas rester implicitement jusqu'au 15 mais ils vont être en déplacement ce jour. C'est ce qui permet d'autoriser un check-out le matin et un check-in le même jour sans créer de conflit. 
+
+Pour détecter les chevauchements des réservations, on vérifie simplement qu'une réservation existante recoupe la période demandée. Toute réservation qui partage au moins une nuit avec une autre est refusée. Ducoup si un client prend le 10 au 12 et qu'un autre veux prendre du 11 au 14, cet utilisateur va être refusé sur cette réservation s'il la tente. En autre cas la date sera indiqué qu'elle est indisponible dans un calendrier. 
+
+Pour gerer les horaires l'hote définira les horaires d'arrivé et de départ, elle seront a respecter par les clients qui vont venir au logement
+
+Pour les blocages manuels, on est parti sur une granularité fine :
+ un jour bloqué = une ligne en base. 
+
+Cela permet de :
+ - mixer librement périodes bloquées et jours disponibles 
+ - appliquer des prix différents par jour (tarif saisonnier)  
+ - afficher le calendrier jour par jour sans calcul lourd. pour gérer le nombre des visiteurs, un cap sera mis en place à ne pas dépasser le nombre maximum de visiteur pour le logement donné. 
+
+Gestion des statuts de réservation
+
+Pour la gestion des status de réservation pour bien gerer le cycle de vie d'un réservation, la réservation devra passer par plusieurs étapes afin d'être clos. afin d'avoir le meilleur suivi côté bdd et completer le suivi -> pending -> confirmed -> completed -> cancelled -> rejected. 
+lorsqu'une demande est créée, elle est soit :
+ - confirmed : dans le cas d'un instant booking
+ - pending : si l'hôte doit l'accepter manuellement 
+J'ai décidé de bloquer, les réservations pending bloquent déjà les dates. L'objectif est d'éviter qu'une même période puisse être demandée simultanément par plusieurs voyageurs et de supprimer les risques de sur-réservation. -> le pending bloque les dates et le confirmed bloque les dates
+
+
+Cette approche protège partiellement le calendrier vu qu'un utilisateur pourrait multiplier les demandes sans intention réelle de réserver, ce qui bloquerait artificiellement les dates pour d'autres ducoup pour combattre cela il serait envisageable de mettre en place, c'est une limitation de réservations par utilisateur ainsi que supprimer/annuler les réservation en "pending" après 24H pour débloquer les dates, une autre possibilité seraient de faire du upfront payment, cdt, payer d'abord la réservation et ensuite être accepté. 
+
+Moteur de recherche
+
+Pour le moteur de recherche un champ pour rechercher les par mots clés, un fuzzysearch pourrait être implémenté pour gérer les fautes de frappes, un système de filtres pour pouvoir mieux cibler un logement dans une tranche de dates de disponibilités et le nombre de voyageurs
+
+Une attention particulière doit être portée aux performances car cette fonctionnalité est appelée très fréquemment. Les filtres doivent donc être appliqués directement dans la requête SQL afin d'éviter de charger inutilement des logements qui seraient ensuite rejetés côté application.
+
+Optimisation
+
+L'optimisation des performances repose principalement sur la réduction du nombre de requêtes effectuées à la base de données.
+
+Lorsqu'un utilisateur vérifie la disponibilité d'un logement, le système ne réalise pas une requête par jour demandé. Une unique requête permet de vérifier l'ensemble de la période concernée.
+
+Afin d'améliorer encore les performances, des index peuvent être ajoutés sur les colonnes les plus sollicitées lors des recherches, notamment les identifiants des logements et les dates.
+
+Pour la gestion du calendrier, le choix a été fait de stocker les jours individuellement plutôt que sous forme de périodes. Cette approche offre davantage de flexibilité. Par exemple, si un hôte bloque une semaine complète puis décide finalement de rendre disponible une seule journée au milieu de cette période, il suffit de modifier l'état du jour concerné sans avoir à reconstruire plusieurs plages de dates.
+
+Cette approche facilite également la mise en place de tarifs journaliers différents selon les saisons ou certains événements particuliers.
+
+Asynchronisme
+
+En plaçant le dispatch APRÈS le flush(), on garantit que si le flush réussit, la réservation existe, ducoup on peut envoyer l'email en toute confiance
+si le flush échoue alors une exception est levée, le dispatch n'est jamais atteint, aucun email n'est envoyé.
+
+Cette approche améliore à la fois les performances de l'application et la fiabilité du système de notification.

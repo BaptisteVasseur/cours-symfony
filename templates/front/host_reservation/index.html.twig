@@ -1,0 +1,102 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Mes demandes de réservation{% endblock %}
+
+{% block body %}
+<div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+
+    <h1 class="text-2xl font-bold text-gray-900 mb-8">Tableau de bord hôte</h1>
+
+    {# --- Demandes en attente --- #}
+    <section class="mb-12">
+        <h2 class="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-yellow-100 text-yellow-700 text-xs font-bold">
+                {{ pendingReservations|length }}
+            </span>
+            Demandes en attente
+        </h2>
+
+        {% if pendingReservations is empty %}
+            <p class="text-gray-400 text-sm py-6 text-center border border-dashed border-gray-200 rounded-xl">Aucune demande en attente.</p>
+        {% else %}
+            <div class="space-y-4">
+            {% for reservation in pendingReservations %}
+                <div class="bg-white border border-yellow-200 rounded-2xl p-5 flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div class="flex-1">
+                        <p class="font-semibold text-gray-900">{{ reservation.property.title }}</p>
+                        <p class="text-sm text-gray-500 mt-0.5">
+                            {{ reservation.guest.email }} &mdash;
+                            {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                            ({{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' : '' }})
+                        </p>
+                        <p class="text-sm font-medium text-gray-700 mt-1">{{ reservation.totalPrice }} €</p>
+                    </div>
+                    <div class="flex gap-2 shrink-0">
+                        <form method="POST" action="{{ path('app_host_reservation_accept', {id: reservation.id}) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('accept' ~ reservation.id) }}">
+                            <button type="submit"
+                                    class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+                                Accepter
+                            </button>
+                        </form>
+                        <a href="{{ path('app_host_reservation_reject', {id: reservation.id}) }}"
+                           class="border border-red-300 text-red-600 hover:bg-red-50 text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+                            Refuser
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+            </div>
+        {% endif %}
+    </section>
+
+    {# --- Autres réservations --- #}
+    <section>
+        <h2 class="text-lg font-semibold text-gray-800 mb-4">Réservations confirmées / annulées</h2>
+
+        {% if otherReservations is empty %}
+            <p class="text-gray-400 text-sm py-6 text-center border border-dashed border-gray-200 rounded-xl">Aucune réservation.</p>
+        {% else %}
+            <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-500 uppercase text-xs tracking-wide">
+                        <tr>
+                            <th class="px-5 py-3 text-left">Logement</th>
+                            <th class="px-5 py-3 text-left">Voyageur</th>
+                            <th class="px-5 py-3 text-left">Dates</th>
+                            <th class="px-5 py-3 text-left">Statut</th>
+                            <th class="px-5 py-3 text-right">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                    {% for reservation in otherReservations %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-5 py-4 font-medium text-gray-900">{{ reservation.property.title }}</td>
+                            <td class="px-5 py-4 text-gray-500">{{ reservation.guest.email }}</td>
+                            <td class="px-5 py-4 text-gray-500">
+                                {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                            </td>
+                            <td class="px-5 py-4">
+                                <span class="px-2 py-1 rounded-full text-xs font-semibold
+                                    {{ reservation.status == 'confirmed' ? 'bg-green-100 text-green-700' :
+                                       (reservation.status == 'cancelled' ? 'bg-red-100 text-red-700' :
+                                       (reservation.status == 'completed' ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600')) }}">
+                                    {{ reservation.status }}
+                                </span>
+                            </td>
+                            <td class="px-5 py-4 text-right">
+                                {% if reservation.status in ['confirmed', 'pending'] %}
+                                <a href="{{ path('app_host_reservation_cancel', {id: reservation.id}) }}"
+                                   class="text-red-500 hover:text-red-700 text-sm font-medium">Annuler</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </section>
+
+</div>
+{% endblock %}

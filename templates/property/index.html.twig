@@ -1,0 +1,93 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Propriétés disponibles - Airbnb{% endblock %}
+
+
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <div class="mb-6">
+        <h1 class="text-2xl font-bold text-gray-900">{{ properties|length }} logement{{ properties|length > 1 ? 's' : '' }} disponible{{ properties|length > 1 ? 's' : '' }}</h1>
+    </div>
+
+    {% if properties is empty %}
+        <div class="text-center py-20">
+            <div class="text-6xl mb-4">🏠</div>
+            <p class="text-gray-500 text-lg">Aucune propriété disponible pour le moment.</p>
+        </div>
+    {% else %}
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {% for property in properties %}
+            <a href="{{ path('app_property_show', {id: property.id}) }}" class="group block">
+                <div class="rounded-2xl overflow-hidden bg-white hover:-translate-y-1 transition-transform duration-300">
+
+                    {# Image #}
+                    <div class="relative aspect-square bg-gray-100 overflow-hidden rounded-2xl">
+                        {% set coverMedia = null %}
+                        {% for media in property.media %}
+                            {% if media.isCover and coverMedia is null %}
+                                {% set coverMedia = media %}
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if coverMedia %}
+                            <img src="{{ coverMedia.fileUrl }}" alt="{{ property.title }}"
+                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500">
+                        {% else %}
+                            <div class="w-full h-full flex items-center justify-center bg-gradient-to-br from-gray-100 to-gray-200">
+                                <svg class="w-16 h-16 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                                    <polyline stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" points="9 22 9 12 15 12 15 22"/>
+                                </svg>
+                            </div>
+                        {% endif %}
+
+                        <button class="absolute top-3 right-3 p-1.5 rounded-full hover:scale-110 transition-transform" onclick="event.preventDefault()">
+                            <svg class="w-6 h-6 text-white drop-shadow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+                            </svg>
+                        </button>
+
+                        {% if property.instantBooking %}
+                            <span class="absolute top-3 left-3 bg-white text-gray-800 text-xs font-medium px-2 py-1 rounded-full shadow">
+                                ⚡ Réservation instantanée
+                            </span>
+                        {% endif %}
+                    </div>
+
+                    {# Info #}
+                    <div class="pt-3 pb-1">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1 min-w-0">
+                                <h3 class="font-semibold text-gray-900 truncate">
+                                    {% if property.address %}{{ property.address.city }}, {{ property.address.country }}{% else %}{{ property.title }}{% endif %}
+                                </h3>
+                                <p class="text-gray-500 text-sm truncate">{{ property.title }}</p>
+                                <p class="text-gray-500 text-sm">
+                                    {{ property.bedrooms }} ch. · {{ property.beds }} lit{{ property.beds > 1 ? 's' : '' }} · {{ property.bathrooms }} sdb
+                                </p>
+                            </div>
+                            {% if property.reviews|length > 0 %}
+                            <div class="flex items-center gap-1 ml-2 shrink-0">
+                                <svg class="w-4 h-4 text-gray-900" fill="currentColor" viewBox="0 0 24 24">
+                                    <path d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z"/>
+                                </svg>
+                                <span class="text-sm font-medium text-gray-900">{{ property.reviews|length }}</span>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mt-1">
+                            <span class="font-semibold text-gray-900">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span>
+                            <span class="text-gray-500 text-sm"> / nuit</span>
+                        </div>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

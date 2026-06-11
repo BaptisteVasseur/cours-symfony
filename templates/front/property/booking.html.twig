@@ -6,38 +6,90 @@
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
-            <i class="fa-solid fa-arrow-left"></i> Retour au logement
-        </a>
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
-            {% endfor %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+
+    <a href="{{ path('app_logement_detail', { id: property.id }) }}"
+       class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Retour au logement
+    </a>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
         {% endfor %}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2">
-                <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
-                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                    {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                        </div>
-                        {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
-                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
-                    {{ form_end(form) }}
+    {% endfor %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {# ── Formulaire ── #}
+        <div class="lg:col-span-2">
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
+
+            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                {{ form_start(form, { attr: { class: 'space-y-6', id: 'booking-form', 'data-turbo': 'false' } }) }}
+
+                    {# Calendrier #}
+                    <div data-controller="calendar"
+                         data-calendar-booked-value="{{ bookedRanges|json_encode|e('html_attr') }}"
+                         data-calendar-blocked-value="{{ blockedDates|json_encode|e('html_attr') }}"
+                         data-calendar-price-value="{{ property.pricePerNight }}"
+                         data-calendar-cleaning-value="{{ property.cleaningFee ?? 0 }}"
+                         data-calendar-property-id-value="{{ property.id }}">
+                        <p class="text-sm font-semibold text-gray-700 mb-3">Vos dates</p>
+
+                        {{ form_widget(form.checkinDate, {
+                            attr: {
+                                class: 'hidden',
+                                'data-calendar-target': 'checkinInput',
+                            }
+                        }) }}
+                        {{ form_widget(form.checkoutDate, {
+                            attr: {
+                                class: 'hidden',
+                                'data-calendar-target': 'checkoutInput',
+                            }
+                        }) }}
+
+                        {% include 'components/calendar.html.twig' with {
+                            property: property,
+                        } %}
+
+                        <div class="text-xs text-red-600 mt-1">{{ form_errors(form.checkinDate) }}</div>
+                        <div class="text-xs text-red-600 mt-1">{{ form_errors(form.checkoutDate) }}</div>
+                    </div>
+
+                    {{ form_row(form.guestsCount, {
+                        label: 'Voyageurs',
+                        attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests }
+                    }) }}
+
+                    <button type="submit"
+                        class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl transition">
+                        Confirmer la réservation
+                    </button>
+
+                {{ form_end(form) }}
+            </div>
+        </div>
+
+        {# ── Récap logement #}
+        <aside>
+            <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
+                <img src="{{ cover ? cover.fileUrl : placeholderImage }}"
+                     alt="{{ property.title }}" class="w-full h-48 object-cover">
+                <div class="p-5">
+                    <h2 class="font-semibold text-gray-900">{{ property.title }}</h2>
+                    <p class="text-lg font-bold mt-2 text-gray-900">
+                        {{ property.pricePerNight|number_format(0, ',', ' ') }} €
+                        <span class="text-sm font-normal text-gray-500">/ nuit</span>
+                    </p>
+
                 </div>
             </div>
-            <aside>
-                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
-                    <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
-                    <div class="p-5">
-                        <h2 class="font-semibold">{{ property.title }}</h2>
-                        <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
-                    </div>
-                </div>
-            </aside>
-        </div>
-    </main>
+        </aside>
+
+    </div>{# /grid #}
+
+</main>
+
 {% endblock %}

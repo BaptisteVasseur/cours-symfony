@@ -1,0 +1,55 @@
+{% extends 'layout/admin.html.twig' %}
+
+{% block title %}Reservation index{% endblock %}
+
+{% block content %}
+    <h1>Reservation index</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>CheckinDate</th>
+                <th>CheckoutDate</th>
+                <th>GuestsCount</th>
+                <th>Status</th>
+                <th>TotalPrice</th>
+                <th>CleaningFee</th>
+                <th>ServiceFee</th>
+                <th>SecurityDeposit</th>
+                <th>Currency</th>
+                <th>CancellationReason</th>
+                <th>CreatedAt</th>
+                <th>Id</th>
+                <th>actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for reservation in reservations %}
+            <tr>
+                <td>{{ reservation.checkinDate ? reservation.checkinDate|date('Y-m-d') : '' }}</td>
+                <td>{{ reservation.checkoutDate ? reservation.checkoutDate|date('Y-m-d') : '' }}</td>
+                <td>{{ reservation.guestsCount }}</td>
+                <td>{{ reservation.status }}</td>
+                <td>{{ reservation.totalPrice }}</td>
+                <td>{{ reservation.cleaningFee }}</td>
+                <td>{{ reservation.serviceFee }}</td>
+                <td>{{ reservation.securityDeposit }}</td>
+                <td>{{ reservation.currency }}</td>
+                <td>{{ reservation.cancellationReason }}</td>
+                <td>{{ reservation.createdAt ? reservation.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+                <td>{{ reservation.id }}</td>
+                <td>
+                    <a href="{{ path('app_reservation_crud_show', {'id': reservation.id}) }}">show</a>
+                    <a href="{{ path('app_reservation_crud_edit', {'id': reservation.id}) }}">edit</a>
+                </td>
+            </tr>
+        {% else %}
+            <tr>
+                <td colspan="13">no records found</td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_reservation_crud_new') }}">Create new</a>
+{% endblock %}
