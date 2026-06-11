@@ -1,38 +1,61 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="fr" class="scroll-smooth">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Airbnb Clone - Vacances & Hébergements</title>
+        <title>{% block title %}StayNest — Logements de charme{% endblock %}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
         <script src="https://cdn.tailwindcss.com"></script>
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
         <script>
             tailwind.config = {
                 theme: {
                     extend: {
+                        fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
                         colors: {
-                            brand: '#FF385C',
-                            brandHover: '#E61E4D'
-                        }
+                            brand:      '#FF385C',
+                            brandHover: '#E61E4D',
+                            brandLight: '#FFF0F2',
+                            surface:    '#F7F7F7',
+                        },
+                        boxShadow: {
+                            'card':    '0 2px 16px rgba(0,0,0,0.08)',
+                            'card-hover': '0 8px 32px rgba(0,0,0,0.16)',
+                            'popup':   '0 16px 48px rgba(0,0,0,0.18)',
+                        },
+                        borderRadius: { '2xl': '1rem', '3xl': '1.5rem', '4xl': '2rem' },
                     }
                 }
             }
         </script>
+        <style>
+            [x-cloak] { display: none !important; }
+            .no-scrollbar::-webkit-scrollbar { display: none; }
+            .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+            .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+            .aspect-photo { aspect-ratio: 4/3; }
+        </style>
         {% block stylesheets %}{% endblock %}
         {% block javascripts %}
             {{ importmap('app') }}
         {% endblock %}
     </head>
 
-    <body>
+    <body class="font-sans antialiased bg-white text-gray-900">
         {% block content %}
-        <div class="min-h-screen bg-white">
+        <div class="min-h-screen flex flex-col">
             {% include 'layout/header.html.twig' %}
 
             {% for label, messages in app.flashes %}
                 {% for message in messages %}
-                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-                        <div class="px-4 py-3 rounded-lg shadow-md text-sm {{ label == 'success' ? 'bg-green-100 text-green-800' : (label == 'error' ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800') }}">
+                    <div class="mx-auto w-full max-w-4xl px-4 pt-4">
+                        <div class="flex items-center gap-3 px-5 py-4 rounded-2xl text-sm font-medium shadow-card
+                            {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
+                               (label == 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
+                               'bg-amber-50 text-amber-800 border border-amber-200') }}">
+                            <i class="fa-solid {{ label == 'success' ? 'fa-circle-check text-emerald-500' : (label == 'error' ? 'fa-circle-xmark text-red-500' : 'fa-triangle-exclamation text-amber-500') }}"></i>
                             {{ message }}
                         </div>
                     </div>
