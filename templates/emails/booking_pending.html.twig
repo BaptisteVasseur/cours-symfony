@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="fr">
+<body style="font-family: sans-serif; color: #333; max-width: 600px; margin: 0 auto; padding: 24px;">
+
+<div style="background: #FF385C; padding: 20px 24px; border-radius: 8px 8px 0 0;">
+    <h1 style="color: white; margin: 0; font-size: 20px;">Nouvelle demande de réservation</h1>
+</div>
+
+<div style="background: #f9f9f9; padding: 24px; border: 1px solid #e5e5e5; border-top: 0;">
+    <p>Bonjour,</p>
+    <p>Vous avez reçu une nouvelle demande de réservation pour votre logement <strong>{{ booking.listing.title }}</strong>.</p>
+
+    <table style="width: 100%; border-collapse: collapse; margin: 16px 0;">
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Voyageur</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; font-weight: 600;">
+                {% if booking.guest.profile %}{{ booking.guest.profile.firstName }} {{ booking.guest.profile.lastName }}{% else %}{{ booking.guest.email }}{% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Arrivée</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ booking.startDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Départ</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ booking.endDate|date('d/m/Y') }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #eee; color: #666;">Voyageurs</td>
+            <td style="padding: 8px; border-bottom: 1px solid #eee;">{{ booking.guestsCount }}</td>
+        </tr>
+        <tr>
+            <td style="padding: 8px; color: #666;">Total</td>
+            <td style="padding: 8px; font-weight: 700; font-size: 18px;">{{ booking.totalPrice }} €</td>
+        </tr>
+    </table>
+
+    <p>Connectez-vous à votre espace hôte pour accepter ou refuser cette demande.</p>
+
+    <p style="margin-top: 24px; color: #999; font-size: 12px;">Airbnb Clone — Cet email a été envoyé automatiquement.</p>
+</div>
+
+</body>
+</html>
