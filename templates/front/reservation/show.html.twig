@@ -106,6 +106,108 @@
                         {% endif %}
                     {% endif %}
                 </section>
+
+                {# Timeline d'historique de statut #}
+                <section class="border border-gray-200 rounded-xl p-6 bg-white shadow-sm">
+                    <h2 class="text-lg font-semibold mb-6 flex items-center gap-2 text-gray-900">
+                        <i class="fa-solid fa-clock-rotate-left text-gray-400"></i>
+                        Suivi de la réservation
+                    </h2>
+                    <div class="flow-root">
+                        <ul role="list" class="-mb-8">
+                            {% for history in reservation.statusHistory %}
+                                <li>
+                                    <div class="relative pb-8">
+                                        {% if not loop.last %}
+                                            <span class="absolute top-4 left-4 -ml-px h-full w-0.5 bg-gray-200" aria-hidden="true"></span>
+                                        {% endif %}
+                                        <div class="relative flex space-x-3">
+                                            <div>
+                                                <span class="h-8 w-8 rounded-full flex items-center justify-center ring-8 ring-white
+                                                    {% if history.newStatus == 'pending' %}
+                                                        bg-yellow-50 text-yellow-600 ring-yellow-50
+                                                    {% elseif history.newStatus == 'confirmed' %}
+                                                        bg-green-50 text-green-600 ring-green-50
+                                                    {% elseif history.newStatus == 'completed' %}
+                                                        bg-blue-50 text-blue-600 ring-blue-50
+                                                    {% elseif history.newStatus == 'cancelled' %}
+                                                        bg-red-50 text-red-600 ring-red-50
+                                                    {% else %}
+                                                        bg-gray-50 text-gray-600 ring-gray-50
+                                                    {% endif %}">
+                                                    {% if history.newStatus == 'pending' %}
+                                                        <i class="fa-solid fa-paper-plane text-xs"></i>
+                                                    {% elseif history.newStatus == 'confirmed' %}
+                                                        <i class="fa-solid fa-check text-xs"></i>
+                                                    {% elseif history.newStatus == 'completed' %}
+                                                        <i class="fa-solid fa-flag-checkered text-xs"></i>
+                                                    {% elseif history.newStatus == 'cancelled' %}
+                                                        <i class="fa-solid fa-xmark text-xs"></i>
+                                                    {% else %}
+                                                        <i class="fa-solid fa-circle text-[6px]"></i>
+                                                    {% endif %}
+                                                </span>
+                                            </div>
+                                            <div class="flex-1 min-w-0 pt-1.5 flex justify-between space-x-4">
+                                                <div>
+                                                    <p class="text-sm font-semibold text-gray-900">
+                                                        {% if history.newStatus == 'pending' %}
+                                                            Demande de réservation envoyée
+                                                        {% elseif history.newStatus == 'confirmed' %}
+                                                            Réservation confirmée par l'hôte
+                                                        {% elseif history.newStatus == 'completed' %}
+                                                            Séjour terminé
+                                                        {% elseif history.newStatus == 'cancelled' %}
+                                                            {% if history.oldStatus == 'pending' %}
+                                                                {% if history.changedBy %}
+                                                                    {% if history.changedBy.id == reservation.guest.id %}
+                                                                        Demande de réservation annulée par le voyageur
+                                                                    {% else %}
+                                                                        Demande de réservation refusée par l'hôte
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    Demande expirée (non traitée sous 24h)
+                                                                {% endif %}
+                                                            {% else %}
+                                                                {% if history.changedBy %}
+                                                                    {% if history.changedBy.id == reservation.guest.id %}
+                                                                        Réservation annulée par le voyageur
+                                                                    {% else %}
+                                                                        Réservation annulée par l'hôte
+                                                                    {% endif %}
+                                                                {% else %}
+                                                                    Réservation annulée par le système
+                                                                {% endif %}
+                                                            {% endif %}
+                                                        {% else %}
+                                                            Statut changé en {{ statusLabels[history.newStatus]|default(history.newStatus) }}
+                                                        {% endif %}
+                                                    </p>
+                                                    
+                                                    {% if history.newStatus == 'cancelled' and reservation.cancellationReason %}
+                                                        <div class="mt-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg p-2.5 max-w-md">
+                                                            <span class="font-semibold">Motif :</span> {{ reservation.cancellationReason }}
+                                                        </div>
+                                                    {% endif %}
+
+                                                    <p class="text-xs text-gray-500 mt-1 flex items-center gap-1.5">
+                                                        {% if history.changedBy %}
+                                                            <span>Par {{ history.changedBy.profile.firstName|default(history.changedBy.email) }}</span>
+                                                            <span class="text-gray-300">•</span>
+                                                        {% endif %}
+                                                        <span>{{ history.createdAt|date('d/m/Y à H:i') }}</span>
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </li>
+                            {% else %}
+                                <li class="text-sm text-gray-500 italic">Aucun historique disponible.</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </section>
             </div>
 
             <aside class="space-y-6">
