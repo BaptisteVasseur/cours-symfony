@@ -1,0 +1,49 @@
+{{ form_start(form, {
+    attr: {
+        class: 'space-y-6'
+    }
+}) }}
+
+<div class="grid grid-cols-1 gap-5 md:grid-cols-2">
+    {% for field in form %}
+        {% if field.vars.name != '_token' %}
+            <div>
+                {{ form_label(field, null, {
+                    label_attr: {
+                        class: 'mb-2 block text-sm font-semibold text-neutral-900'
+                    }
+                }) }}
+
+                {{ form_widget(field, {
+                    attr: {
+                        class: 'w-full rounded-xl border border-neutral-300 px-4 py-3 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10'
+                    }
+                }) }}
+
+                <div class="mt-1 text-sm text-red-600">
+                    {{ form_errors(field) }}
+                </div>
+            </div>
+        {% endif %}
+    {% endfor %}
+</div>
+
+{{ form_widget(form._token) }}
+
+<div class="mt-8 flex flex-col-reverse gap-3 border-t border-neutral-200 pt-6 sm:flex-row sm:justify-end">
+    <a
+        href="{{ path('app_admin_reservation_index') }}"
+        class="rounded-xl border border-neutral-900 px-5 py-3 text-center font-bold hover:bg-neutral-100"
+    >
+        Annuler
+    </a>
+
+    <button
+        type="submit"
+        class="rounded-xl bg-rose-600 px-6 py-3 font-bold text-white hover:bg-rose-700"
+    >
+        {{ button_label|default('Créer la réservation') }}
+    </button>
+</div>
+
+{{ form_end(form, { render_rest: false }) }}

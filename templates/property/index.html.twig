@@ -1,0 +1,268 @@
+{% extends 'layouts/user.html.twig' %}
+
+{% block title %}Gestion des logements{% endblock %}
+
+{% block content %}
+    <main class="min-h-screen bg-neutral-50 px-6 py-10">
+        <div class="mx-auto max-w-7xl">
+            <div class="mb-8 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+                <div>
+                    <p class="text-sm font-bold uppercase tracking-wide text-rose-600">
+                        Administration
+                    </p>
+
+                    <h1 class="mt-2 text-4xl font-bold text-neutral-900">
+                        Logements
+                    </h1>
+
+                    <p class="mt-2 text-neutral-500">
+                        Gérez les annonces présentes sur la plateforme.
+                    </p>
+                </div>
+
+                <a
+                    href="{{ path('app_property_new') }}"
+                    class="w-fit rounded-xl bg-rose-600 px-5 py-3 font-bold text-white hover:bg-rose-700"
+                >
+                    Créer un logement
+                </a>
+            </div>
+
+            <div class="mb-6 grid grid-cols-1 gap-4 md:grid-cols-4">
+                <div class="rounded-3xl bg-white p-5 shadow-sm">
+                    <p class="text-sm font-semibold text-neutral-500">
+                        Total
+                    </p>
+
+                    <p class="mt-2 text-3xl font-bold">
+                        {{ properties|length }}
+                    </p>
+                </div>
+
+                <div class="rounded-3xl bg-white p-5 shadow-sm">
+                    <p class="text-sm font-semibold text-neutral-500">
+                        Publiés
+                    </p>
+
+                    <p class="mt-2 text-3xl font-bold">
+                        {{ properties|filter(property => property.status == 'published')|length }}
+                    </p>
+                </div>
+
+                <div class="rounded-3xl bg-white p-5 shadow-sm">
+                    <p class="text-sm font-semibold text-neutral-500">
+                        Brouillons
+                    </p>
+
+                    <p class="mt-2 text-3xl font-bold">
+                        {{ properties|filter(property => property.status == 'draft')|length }}
+                    </p>
+                </div>
+
+                <div class="rounded-3xl bg-white p-5 shadow-sm">
+                    <p class="text-sm font-semibold text-neutral-500">
+                        Réservation instantanée
+                    </p>
+
+                    <p class="mt-2 text-3xl font-bold">
+                        {{ properties|filter(property => property.instantBooking)|length }}
+                    </p>
+                </div>
+            </div>
+
+            <div class="overflow-hidden rounded-3xl bg-white shadow-sm">
+                <div class="border-b border-neutral-200 px-6 py-5">
+                    <h2 class="text-xl font-bold">
+                        Liste des logements
+                    </h2>
+                </div>
+
+                {% if properties is empty %}
+                    <div class="p-10 text-center">
+                        <div
+                            class="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-neutral-100 text-3xl">
+                            🏠
+                        </div>
+
+                        <h2 class="text-xl font-semibold">
+                            Aucun logement trouvé
+                        </h2>
+
+                        <p class="mt-2 text-neutral-500">
+                            Créez votre premier logement pour commencer.
+                        </p>
+
+                        <a
+                            href="{{ path('app_property_new') }}"
+                            class="mt-6 inline-block rounded-xl bg-rose-600 px-5 py-3 font-bold text-white hover:bg-rose-700"
+                        >
+                            Créer un logement
+                        </a>
+                    </div>
+                {% else %}
+                    <div class="overflow-x-auto">
+                        <table class="w-full min-w-[1100px] text-left text-sm">
+                            <thead class="bg-neutral-100 text-xs uppercase text-neutral-500">
+                            <tr>
+                                <th class="px-6 py-4 font-bold">Logement</th>
+                                <th class="px-6 py-4 font-bold">Type</th>
+                                <th class="px-6 py-4 font-bold">Statut</th>
+                                <th class="px-6 py-4 font-bold">Capacité</th>
+                                <th class="px-6 py-4 font-bold">Prix</th>
+                                <th class="px-6 py-4 font-bold">Frais</th>
+                                <th class="px-6 py-4 font-bold">Horaires</th>
+                                <th class="px-6 py-4 font-bold">Instant</th>
+                                <th class="px-6 py-4 font-bold">Créé le</th>
+                                <th class="px-6 py-4 text-right font-bold">Actions</th>
+                            </tr>
+                            </thead>
+
+                            <tbody class="divide-y divide-neutral-200">
+                            {% for property in properties %}
+                                {% set cover = property.media|first %}
+
+                                <tr class="hover:bg-neutral-50">
+                                    <td class="px-6 py-5">
+                                        <div class="flex items-center gap-4">
+                                            <img
+                                                src="{{ cover ? cover.fileUrl : 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=120&q=80' }}"
+                                                alt="{{ property.title }}"
+                                                class="h-16 w-20 rounded-2xl object-cover"
+                                            />
+
+                                            <div>
+                                                <p class="max-w-[260px] truncate font-bold text-neutral-900">
+                                                    {{ property.title }}
+                                                </p>
+
+                                                <p class="mt-1 max-w-[260px] truncate text-neutral-500">
+                                                    {{ property.description ?: 'Aucune description' }}
+                                                </p>
+
+                                                <p class="mt-1 text-xs text-neutral-400">
+                                                    ID : {{ property.id }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td class="px-6 py-5">
+											<span class="rounded-full bg-neutral-100 px-3 py-1 font-semibold">
+												{{ property.propertyType|capitalize }}
+											</span>
+                                    </td>
+
+                                    <td class="px-6 py-5">
+											<span class="rounded-full px-3 py-1 text-xs font-bold
+												{% if property.status == 'published' %}
+													bg-green-100 text-green-700
+												{% elseif property.status == 'draft' %}
+													bg-yellow-100 text-yellow-700
+												{% else %}
+													bg-neutral-100 text-neutral-700
+												{% endif %}
+											">
+												{{ property.status|capitalize }}
+											</span>
+                                    </td>
+
+                                    <td class="px-6 py-5 text-neutral-600">
+                                        <p>{{ property.maxGuests }} voyageur{{ property.maxGuests > 1 ? 's' : '' }}</p>
+                                        <p>{{ property.bedrooms }} chambre{{ property.bedrooms > 1 ? 's' : '' }}</p>
+                                        <p>{{ property.beds }} lit{{ property.beds > 1 ? 's' : '' }}</p>
+                                        <p>{{ property.bathrooms }} salle{{ property.bathrooms > 1 ? 's' : '' }}</p>
+                                    </td>
+
+                                    <td class="px-6 py-5">
+                                        <p class="font-bold">
+                                            {{ property.pricePerNight }} €
+                                        </p>
+
+                                        <p class="text-neutral-500">
+                                            par nuit
+                                        </p>
+                                    </td>
+
+                                    <td class="px-6 py-5 text-neutral-600">
+                                        <p>
+                                            Ménage :
+                                            <span class="font-semibold text-neutral-900">
+													{{ property.cleaningFee ? property.cleaningFee ~ ' €' : '—' }}
+												</span>
+                                        </p>
+
+                                        <p>
+                                            Caution :
+                                            <span class="font-semibold text-neutral-900">
+													{{ property.securityDeposit ? property.securityDeposit ~ ' €' : '—' }}
+												</span>
+                                        </p>
+                                    </td>
+
+                                    <td class="px-6 py-5 text-neutral-600">
+                                        <p>
+                                            Arrivée :
+                                            <span class="font-semibold text-neutral-900">
+													{{ property.checkinTime ? property.checkinTime|date('H:i') : '—' }}
+												</span>
+                                        </p>
+
+                                        <p>
+                                            Départ :
+                                            <span class="font-semibold text-neutral-900">
+													{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '—' }}
+												</span>
+                                        </p>
+                                    </td>
+
+                                    <td class="px-6 py-5">
+                                        {% if property.instantBooking %}
+                                            <span
+                                                class="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+													Oui
+												</span>
+                                        {% else %}
+                                            <span
+                                                class="rounded-full bg-neutral-100 px-3 py-1 text-xs font-bold text-neutral-600">
+													Non
+												</span>
+                                        {% endif %}
+                                    </td>
+
+                                    <td class="px-6 py-5 text-neutral-600">
+                                        {{ property.createdAt ? property.createdAt|date('d/m/Y') : '—' }}
+
+                                        {% if property.updatedAt %}
+                                            <p class="mt-1 text-xs text-neutral-400">
+                                                Modifié le {{ property.updatedAt|date('d/m/Y') }}
+                                            </p>
+                                        {% endif %}
+                                    </td>
+
+                                    <td class="px-6 py-5">
+                                        <div class="flex justify-end gap-2">
+                                            <a
+                                                href="{{ path('app_property_detail', {'id': property.id}) }}"
+                                                class="rounded-xl border border-neutral-300 px-4 py-2 font-semibold hover:bg-neutral-100"
+                                            >
+                                                Voir
+                                            </a>
+
+                                            <a
+                                                href="{{ path('app_property_edit', {'id': property.id}) }}"
+                                                class="rounded-xl bg-neutral-900 px-4 py-2 font-semibold text-white hover:bg-neutral-700"
+                                            >
+                                                Modifier
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </main>
+{% endblock %}

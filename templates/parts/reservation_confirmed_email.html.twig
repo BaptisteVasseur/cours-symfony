@@ -1,0 +1,10 @@
+<h3>Réservation confirmée</h3>
+<p>Bonjour,</p>
+<p>La réservation pour <strong>{{ reservation.property.title }}</strong> a été confirmée.</p>
+<ul>
+    <li>Dates : {{ reservation.checkinDate|date('Y-m-d') }} → {{ reservation.checkoutDate|date('Y-m-d') }}</li>
+    <li>Voyageurs : {{ reservation.guestsCount }}</li>
+    <li>Invité : {{ reservation.guest.userIdentifier }}</li>
+    <li>Montant : {{ reservation.totalPrice }} {{ reservation.currency }}</li>
+</ul>
+<p>Merci.</p>

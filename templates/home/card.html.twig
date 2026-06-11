@@ -1,0 +1,30 @@
+{% set cover = property.media|first %}
+
+<a href="{{ path('app_property_detail', { id: property.id }) }}" class="group block cursor-pointer">
+    <article>
+        <div class="relative overflow-hidden rounded-2xl">
+            <img
+                src="{{ cover ? cover.fileUrl : 'https://images.unsplash.com/photo-1540541338287-41700207dee6?auto=format&fit=crop&w=600&q=80' }}"
+                alt="{{ property.title }}"
+                class="h-60 w-full object-cover transition duration-300 group-hover:scale-105"
+            />
+
+            <button
+                type="button"
+                class="absolute right-4 top-4 text-3xl text-white drop-shadow"
+            >
+                ♡
+            </button>
+        </div>
+
+        <div class="mt-2 leading-tight">
+            <h2 class="font-semibold">{{ property.title }}</h2>
+
+            <p class="text-neutral-500">
+                {{ property.beds }}
+                lit{{ property.beds > 1 ? 's' : '' }}
+                · ★ Nouveau
+            </p>
+        </div>
+    </article>
+</a>

@@ -1,0 +1,181 @@
+<header class="relative border-b border-neutral-200" x-data="{ menuOpen: false }">
+    <div class="px-12 py-6">
+        <div class="flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2 text-rose-500 font-bold text-3xl">
+                <span class="text-4xl leading-none">⌂</span>
+                <span>airbnb</span>
+            </a>
+
+            <nav class="hidden md:flex items-center gap-12">
+                <a href="/" class="flex flex-col items-center gap-1 border-b-4 border-neutral-900 pb-3">
+                    <span class="text-4xl leading-none">🏠</span>
+                    <span class="font-semibold">Logements</span>
+                </a>
+
+                <a href="#" class="relative flex flex-col items-center gap-1 text-neutral-600 pb-3">
+					<span
+                        class="absolute -top-3 right-0 rounded-md bg-slate-500 px-2 py-0.5 text-[10px] font-bold text-white">
+						NOUVEAU
+					</span>
+                    <span class="text-4xl leading-none">🎈</span>
+                    <span>Expériences</span>
+                </a>
+
+                <a href="#" class="relative flex flex-col items-center gap-1 text-neutral-600 pb-3">
+					<span
+                        class="absolute -top-3 right-0 rounded-md bg-slate-500 px-2 py-0.5 text-[10px] font-bold text-white">
+						NOUVEAU
+					</span>
+                    <span class="text-4xl leading-none">🛎️</span>
+                    <span>Services</span>
+                </a>
+
+                <a
+                    href="{{ path('app_reservation_index') }}"
+                   class="relative flex flex-col items-center gap-1 text-neutral-600 pb-3">
+                    <span class="text-4xl leading-none">📅</span>
+                    <span>Réservations</span>
+                </a>
+
+                {% if app.user and is_granted('ROLE_HOST') %}
+                    <a href="{{ path('app_host_property_index') }}"
+                       class="relative flex flex-col items-center gap-1 text-neutral-600 pb-3">
+                        <span class="text-4xl leading-none">🏘️</span>
+                        <span>Mes logements</span>
+                    </a>
+                {% endif %}
+            </nav>
+
+            <div class="relative flex items-center gap-5">
+                {% if app.user %}
+                    <div class="hidden lg:block text-right text-sm">
+                        <p class="font-semibold">Connecté</p>
+                        <p class="max-w-[180px] truncate text-neutral-500">{{ app.user.userIdentifier }}</p>
+                    </div>
+                    <img
+                        src="https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=80&q=80"
+                        alt="Avatar utilisateur"
+                        class="h-10 w-10 rounded-full object-cover"
+                    />
+                {% endif %}
+
+
+                <button
+                    type="button"
+                    @click="menuOpen = !menuOpen"
+                    class="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-2xl hover:bg-neutral-200"
+                    aria-label="Ouvrir le menu"
+                >
+                    ≡
+                </button>
+
+                <div
+                    x-show="menuOpen"
+                    @click.outside="menuOpen = false"
+                    x-transition
+                    class="absolute right-0 top-16 z-50 w-72 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5"
+                >
+                    <div class="py-2">
+                        {% if app.user %}
+                            <div class="border-b border-neutral-200 px-5 py-4">
+                                <p class="text-sm text-neutral-500">Connecté en tant que</p>
+                                <p class="truncate font-semibold">{{ app.user.userIdentifier }}</p>
+                            </div>
+
+                            <a
+                                href="{{ path('app_reservation_index') }}"
+                                class="block px-5 py-3 font-semibold hover:bg-neutral-100"
+                            >
+                                Mes réservations
+                            </a>
+
+                            {% if is_granted('ROLE_HOST') %}
+                                <a
+                                    href="{{ path('app_host_property_index') }}"
+                                    class="block px-5 py-3 font-semibold hover:bg-neutral-100"
+                                >
+                                    Mes logements
+                                </a>
+                            {% endif %}
+
+
+
+                            <a
+                                href="#"
+                                class="block px-5 py-3 hover:bg-neutral-100"
+                            >
+                                Mon profil
+                            </a>
+
+                            <a
+                                href="{{ logout_path() }}"
+                                class="block border-t border-neutral-200 px-5 py-3 font-semibold text-rose-600 hover:bg-neutral-100"
+                            >
+                                Se déconnecter
+                            </a>
+                        {% else %}
+                            <a
+                                href="{{ path('app_login') }}"
+                                class="block px-5 py-3 font-semibold hover:bg-neutral-100"
+                            >
+                                Se connecter
+                            </a>
+
+                            <a
+                                href="#"
+                                class="block px-5 py-3 hover:bg-neutral-100"
+                            >
+                                Créer un compte
+                            </a>
+
+                            <div class="my-2 border-t border-neutral-200"></div>
+
+                            <a
+                                href="#"
+                                class="block px-5 py-3 hover:bg-neutral-100"
+                            >
+                                Aide
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-center">
+            <form action="{{ path('app_search') }}" method="get" class="flex w-full max-w-4xl items-center rounded-full border border-neutral-300 bg-white shadow-xl">
+                <div class="flex-1 px-6 py-3 text-left">
+                    <label class="block text-xs font-bold text-neutral-900 mb-1">Destination</label>
+                    <input name="destination" type="text" value="{{ app.request.query.get('destination')|default('') }}" placeholder="Rechercher une destination" class="w-full text-sm text-neutral-700 placeholder-neutral-400 bg-transparent outline-none" />
+                </div>
+
+                <div class="h-8 w-px bg-neutral-300"></div>
+
+                <div class="flex-1 px-6 py-3 text-left">
+                    <label class="block text-xs font-bold text-neutral-900 mb-1">Arrivée</label>
+                    <input name="checkin" type="date" value="{{ app.request.query.get('checkin')|default('') }}" class="w-full text-sm text-neutral-700 bg-transparent outline-none" />
+                </div>
+
+                <div class="h-8 w-px bg-neutral-300"></div>
+
+                <div class="flex-1 px-6 py-3 text-left">
+                    <label class="block text-xs font-bold text-neutral-900 mb-1">Départ</label>
+                    <input name="checkout" type="date" value="{{ app.request.query.get('checkout')|default('') }}" class="w-full text-sm text-neutral-700 bg-transparent outline-none" />
+                </div>
+
+                <div class="h-8 w-px bg-neutral-300"></div>
+
+                <div class="px-4 py-3">
+                    <label class="block text-xs font-bold text-neutral-900 mb-1">Voyageurs</label>
+                    <input name="guests" type="number" min="1" max="16" value="{{ app.request.query.get('guests')|default(1) }}" class="w-20 text-sm text-neutral-700 bg-transparent outline-none" />
+                </div>
+
+                <div class="pr-3 pl-2 py-2">
+                    <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white rounded-full px-5 py-3.5 flex items-center space-x-2 transition font-semibold text-sm">
+                        <span>Rechercher</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</header>

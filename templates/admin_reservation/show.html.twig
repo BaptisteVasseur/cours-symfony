@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+
+<title>Reservation</title>
+
+{% block body %}
+    <h1>Reservation</h1>
+
+    <table class="table">
+        <tbody>
+            <tr>
+                <th>CheckinDate</th>
+                <td>{{ reservation.checkinDate ? reservation.checkinDate|date('Y-m-d') : '' }}</td>
+            </tr>
+            <tr>
+                <th>CheckoutDate</th>
+                <td>{{ reservation.checkoutDate ? reservation.checkoutDate|date('Y-m-d') : '' }}</td>
+            </tr>
+            <tr>
+                <th>GuestsCount</th>
+                <td>{{ reservation.guestsCount }}</td>
+            </tr>
+            <tr>
+                <th>Status</th>
+                <td>{{ reservation.status }}</td>
+            </tr>
+            <tr>
+                <th>TotalPrice</th>
+                <td>{{ reservation.totalPrice }}</td>
+            </tr>
+            <tr>
+                <th>CleaningFee</th>
+                <td>{{ reservation.cleaningFee }}</td>
+            </tr>
+            <tr>
+                <th>ServiceFee</th>
+                <td>{{ reservation.serviceFee }}</td>
+            </tr>
+            <tr>
+                <th>SecurityDeposit</th>
+                <td>{{ reservation.securityDeposit }}</td>
+            </tr>
+            <tr>
+                <th>Currency</th>
+                <td>{{ reservation.currency }}</td>
+            </tr>
+            <tr>
+                <th>CancellationReason</th>
+                <td>{{ reservation.cancellationReason }}</td>
+            </tr>
+            <tr>
+                <th>CreatedAt</th>
+                <td>{{ reservation.createdAt ? reservation.createdAt|date('Y-m-d H:i:s') : '' }}</td>
+            </tr>
+            <tr>
+                <th>Id</th>
+                <td>{{ reservation.id }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <a href="{{ path('app_admin_reservation_index') }}">back to list</a>
+
+    <a href="{{ path('app_admin_reservation_edit', {'id': reservation.id}) }}">edit</a>
+
+    {{ include('admin_reservation/_delete_form.html.twig') }}
+{% endblock %}
