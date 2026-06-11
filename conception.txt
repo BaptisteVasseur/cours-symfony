@@ -1,18 +1,71 @@
-CONCEPTION TECHNIQUE RESERVATION D'UN LIOGEMENT:
+--- QUESTIONS D'ARCHITECTURE ---
 
-On prend en compte la date d'arrivé ainsi que la date de départ du client et son nombre de voyageur
-On verifie les dispo du logement
-Donc aucune reservation autre possible sur les dates d'un logement loué.
+Modélisation temporelle :
+
+Il est favorable que le jour de checkout ne soit pas bloquant, c'est pour cela qu'on met en place les heures qui
+vont permettre à l'utilisateur de rentrer et sortir du logement de sorte à ne pas se gêner,
+Pour ce faire:
+
+
+Gestion des états - risques du pending :
+
+Il est important de laisser la possibilité pour chaque utilisateur de réserver n'importe quel logement
+ce qui permet d'être toujours disponible, pour ce faire on ne bloque les dates uniquement lorsque la réservation
+a été confirmé par l'hôte sinon tout le monde peut mettre une réservation sur la même date.
+Cette logique peut poser problème dans deux circonstances:
+Une personne mal intentionnée /Concurrence peut délibérément réserver énormément de jours sans les payer au final
+l'hôte peut sans vraiment le vouloir accepter deux offres sur les mêmes dates (ce qui n'est plus possible grâce à la vérification de conflit de dates)
+
+La solution pour contrer les soucis de calendrier de réservation plein de demande serait de faire en sorte que chaque
+réservation ne peut rester qu'un certain temps à l'état Pending et par la suite si l'hôte ne l'accepte pas dans les temps
+alors l'offre est supprimée .
+
+Concurrence - deux validations simultanées :
+optimistic locking???? à regarder
+
+Performance - disponibilité sur plusieurs nuits :
+ Pour 20 nuits on utilise  un checkin=début et checkout=fin, la base retourne tous les conflits  peu importe la durée.
+
+
+
+Asynchronisme - email après flush et stratégie de panne :
+ Il est important de réaliser l'envoi de l'email après et lorsque l'on est sûr que le flush est passé car c'est à ce moment
+que l'information est vraiment actée et prise en compte. Cela évite que en cas de problème serveur on envoie un mail sans que la donnée
+ne soit vraiment prise en compte
+.
+
+Structure SQL - jours individuels vs périodes :
+Le système utilise principalement un stockage par périodes (date_debut / date_fin) pour les réservations et les blocages.
+Cette approche est plus adaptée car une réservation représente naturellement une plage de dates. Une seule ligne en base suffit pour
+ enregistrer un séjour de 2 jours comme de 30 jours, ce qui réduit fortement le volume de données stockées.
+Elle permet également d'effectuer les vérifications de disponibilité à l'aide d'une simple recherche de chevauchement entre périodes, sans avoir à parcourir chaque jour individuellement. Les requêtes sont donc plus simples à écrire, plus lisibles et plus performantes lorsque la durée des séjours augmente.
+
+
+CONCEPTION TECHNIQUE RÉSERVATION D'UN LOGEMENT:
+
+On prend en compte la date d'arrivée ainsi que la date de départ et horraire du client et son nombre de voyageurs
+On vérifie les dispo du logement
+Donc aucune réservation autre possible sur les dates d'un logement loué.
 
 Gestion des états :
-- pending: ne bloque pas les dates, il est encore possible de reservé sur ces dates
-- confirmed: bloque les dates, il n'est plus possible de reservé sur ces dates
+- pending: ne bloque pas les dates, il est encore possible de réserver sur ces dates
+- confirmed: bloque les dates, il n'est plus possible de réserver sur ces dates
 - cancelled:Annulation, les dates sont dispo/re dispo
 -completed: séjour terminé
 
-Prendre en compte les InstantBooking qui eux passe directement en confirmed, dépend de si le logment le propose.
-Pending à besoin de confiramtion de l'hote pour vérouiller les dates
+Prendre en compte les InstantBooking qui eux passent directement en confirmed, dépend de si le logement le propose.
+Pending a besoin de confirmation de l'hôte pour verrouiller les dates
 
-Pour les hôtes, il est important pour eux de voir facilement les dates bloquées. Pour ce faire il faut réalisé un calendrier qui montre de manière
+Pour les hôtes, il est important pour eux de voir facilement les dates bloquées. Pour ce faire il faut réaliser un calendrier qui montre de manière
 colorée les dispo de leurs logements.
-On rajoute également également sur cette page un tableau qui vas permettre la confiramtion des reservation en attentes
+On rajoute également sur cette page un tableau qui va permettre la confirmation des réservations en attentes
+
+
+Il est important aussi de permettre à l'hôte de bloquer des dates sur ces logements:
+dates bloquées -> impossible de réserver -> couleur sur le calendrier de l'hôte
+
+
+Une mise en place d'iCAL est une bonne fonctionnalité permettant à l'utilisateur par le biais d'une réservation CONFIRMÉE d'avoir
+sa réservation directement dans son agenda personnel
+
+un système d'historique est également présent afin de permettre à chaque partie de voir l'avancement de l'état d'une réservation

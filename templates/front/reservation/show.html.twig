@@ -9,60 +9,366 @@
 {% set statusLabels = {
     'confirmed': 'Confirmée',
     'completed': 'Terminée',
-    'pending': 'En attente',
+    'pending':   'En attente',
     'cancelled': 'Annulée',
 } %}
 {% set statusColors = {
-    'confirmed': 'bg-green-100 text-green-800',
-    'completed': 'bg-blue-100 text-blue-800',
-    'pending': 'bg-yellow-100 text-yellow-800',
-    'cancelled': 'bg-red-100 text-red-800',
+    'confirmed': 'bg-emerald-100 text-emerald-800 border-emerald-200',
+    'completed': 'bg-blue-100 text-blue-800 border-blue-200',
+    'pending':   'bg-amber-100 text-amber-800 border-amber-200',
+    'cancelled': 'bg-red-100 text-red-800 border-red-200',
+} %}
+{% set timelineConfig = {
+    'pending': {
+        icon:  'fa-clock',
+        dot:   'bg-amber-400',
+        ring:  'ring-amber-100',
+        label: 'Demande envoyée',
+        desc:  'Votre demande de réservation est en attente de validation par l\'hôte.',
+    },
+    'confirmed': {
+        icon:  'fa-circle-check',
+        dot:   'bg-emerald-500',
+        ring:  'ring-emerald-100',
+        label: 'Réservation confirmée',
+        desc:  'La réservation a été acceptée.',
+    },
+    'cancelled': {
+        icon:  'fa-circle-xmark',
+        dot:   'bg-red-500',
+        ring:  'ring-red-100',
+        label: 'Réservation annulée',
+        desc:  'La demande a été refusée ou annulée.',
+    },
+    'completed': {
+        icon:  'fa-flag-checkered',
+        dot:   'bg-blue-500',
+        ring:  'ring-blue-100',
+        label: 'Séjour terminé',
+        desc:  'Le séjour s\'est achevé.',
+    },
 } %}
 
+{% block title %}Réservation — {{ property ? property.title : 'Détail' }}{% endblock %}
+
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
-        <a href="{{ path('app_reservation_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
-            <i class="fa-solid fa-arrow-left"></i> Retour aux réservations
-        </a>
-        <div class="mb-8">
-            <div class="flex flex-wrap items-center gap-3 mb-2">
-                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Confirmation de réservation</h1>
-                <span class="text-sm font-semibold px-3 py-1 rounded-full {{ statusColors[reservation.status]|default('bg-gray-100 text-gray-800') }}">
-                    {{ statusLabels[reservation.status]|default(reservation.status) }}
-                </span>
-            </div>
-            <p class="text-gray-500">Réservation effectuée le {{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
+<main class="flex-grow px-4 md:px-10 py-8 max-w-5xl mx-auto w-full">
+
+    <a href="{{ path('app_reservation_index') }}"
+       class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors">
+        <i class="fa-solid fa-arrow-left text-xs"></i> Mes réservations
+    </a>
+
+    {# ── En-tête ── #}
+    <div class="flex flex-wrap items-start justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900">
+                {{ property ? property.title : 'Réservation' }}
+            </h1>
+            <p class="text-sm text-gray-400 mt-1">
+                Réservation créée le {{ reservation.createdAt|date('d/m/Y à H:i') }}
+            </p>
         </div>
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2 space-y-6">
-                {% if property %}
-                    <section class="border border-gray-200 rounded-xl overflow-hidden">
-                        <div class="flex flex-col sm:flex-row">
-                            <div class="sm:w-48 h-40 sm:h-auto shrink-0">
-                                <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-full object-cover">
-                            </div>
-                            <div class="p-5">
-                                <h2 class="text-lg font-semibold">{{ property.title }}</h2>
-                                <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="text-sm font-semibold text-brand hover:underline mt-2 inline-block">Voir le logement</a>
-                            </div>
-                        </div>
-                    </section>
-                {% endif %}
-                <section class="border border-gray-200 rounded-xl p-6">
-                    <h2 class="text-lg font-semibold mb-4">Détails du séjour</h2>
-                    <dl class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
-                        <div><dt class="text-gray-500">Arrivée</dt><dd class="font-semibold">{{ reservation.checkinDate|date('d/m/Y') }}</dd></div>
-                        <div><dt class="text-gray-500">Départ</dt><dd class="font-semibold">{{ reservation.checkoutDate|date('d/m/Y') }}</dd></div>
-                        <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
-                    </dl>
-                </section>
-            </div>
-            <aside>
-                <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
-                    <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
-                    <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+        <span class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-sm font-semibold
+                     {{ statusColors[reservation.status]|default('bg-gray-100 text-gray-700 border-gray-200') }}">
+            <i class="fa-solid {{ timelineConfig[reservation.status].icon|default('fa-circle') }} text-xs"></i>
+            {{ statusLabels[reservation.status]|default(reservation.status) }}
+        </span>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
+
+        {# ══ COLONNE GAUCHE ══ #}
+        <div class="lg:col-span-3 space-y-6">
+
+            {# Logement #}
+            {% if property %}
+            <section class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm">
+                <div class="flex flex-col sm:flex-row">
+                    <div class="sm:w-44 h-36 sm:h-auto shrink-0">
+                        <img src="{{ cover ? cover.fileUrl : placeholderImage }}"
+                             alt="{{ property.title }}"
+                             class="w-full h-full object-cover">
+                    </div>
+                    <div class="p-5 flex flex-col justify-center">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-gray-400 mb-1">
+                            {{ property.propertyType|capitalize }}
+                        </p>
+                        <h2 class="text-lg font-bold text-gray-900">{{ property.title }}</h2>
+                        {% if property.address %}
+                            <p class="text-sm text-gray-400 mt-1">
+                                <i class="fa-solid fa-location-dot text-xs mr-1"></i>
+                                {{ property.address.city }}{% if property.address.country %}, {{ property.address.country }}{% endif %}
+                            </p>
+                        {% endif %}
+                        <a href="{{ path('app_logement_detail', { id: property.id }) }}"
+                           class="inline-flex items-center gap-1 text-xs font-semibold text-brand hover:underline mt-3">
+                            Voir le logement <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </a>
+                    </div>
                 </div>
-            </aside>
+            </section>
+            {% endif %}
+
+            {# Détails du séjour #}
+            <section class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                <h2 class="text-base font-semibold text-gray-900 mb-4">Détails du séjour</h2>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    <div class="bg-gray-50 rounded-xl p-3">
+                        <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Arrivée</p>
+                        <p class="text-sm font-bold text-gray-900">{{ reservation.checkinDate|date('d/m/Y') }}</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-3">
+                        <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Départ</p>
+                        <p class="text-sm font-bold text-gray-900">{{ reservation.checkoutDate|date('d/m/Y') }}</p>
+                    </div>
+                    <div class="bg-gray-50 rounded-xl p-3">
+                        <p class="text-[10px] font-semibold uppercase tracking-wider text-gray-400 mb-1">Voyageurs</p>
+                        <p class="text-sm font-bold text-gray-900">{{ reservation.guestsCount }}</p>
+                    </div>
+                </div>
+                {% if reservation.cancellationReason %}
+                    <div class="mt-4 px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700 flex items-start gap-2">
+                        <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0"></i>
+                        <span>{{ reservation.cancellationReason }}</span>
+                    </div>
+                {% endif %}
+            </section>
+
+            {# ══ AJOUTER AU CALENDRIER ══ #}
+            {% if reservation.status in ['confirmed', 'completed'] %}
+                {% set calTitle = (property ? property.title : 'Séjour') ~ ' — ' ~ (guestProfile and guestProfile.firstName ? guestProfile.firstName : 'Moi') %}
+                {% set calLocation = property and property.address ? property.address.city ~ (property.address.country ? ', ' ~ property.address.country : '') : '' %}
+                {% set calStart = reservation.checkinDate|date('Ymd') %}
+                {% set calEnd   = reservation.checkoutDate|date('Ymd') %}
+                {% set calDesc  = 'Réservation confirmée — ' ~ reservation.totalPrice|number_format(0, ',', ' ') ~ ' €' %}
+
+                {# Google Calendar URL #}
+                {% set googleUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+                    ~ '&text=' ~ (calTitle|url_encode)
+                    ~ '&dates=' ~ calStart ~ '/' ~ calEnd
+                    ~ '&details=' ~ (calDesc|url_encode)
+                    ~ '&location=' ~ (calLocation|url_encode) %}
+
+                {# Outlook.com URL #}
+                {% set outlookUrl = 'https://outlook.live.com/calendar/0/deeplink/compose?path=/calendar/action/compose&rru=addevent'
+                    ~ '&startdt=' ~ reservation.checkinDate|date('Y-m-d')
+                    ~ '&enddt='   ~ reservation.checkoutDate|date('Y-m-d')
+                    ~ '&subject=' ~ (calTitle|url_encode)
+                    ~ '&body='    ~ (calDesc|url_encode)
+                    ~ '&location=' ~ (calLocation|url_encode) %}
+
+                <section class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
+                        <i class="fa-regular fa-calendar-plus text-emerald-500"></i>
+                        Ajouter à mon calendrier
+                    </h2>
+                    <p class="text-xs text-gray-400 mb-4">
+                        Enregistrez votre séjour directement dans votre application de calendrier préférée.
+                    </p>
+                    <div class="flex flex-wrap gap-3">
+
+                        <a href="{{ path('app_reservation_ical', {id: reservation.id}) }}"
+                           download
+                           class="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold rounded-xl transition">
+                            <i class="fa-solid fa-download text-xs"></i>
+                            Télécharger .ics
+                        </a>
+
+                        <a href="{{ googleUrl }}" target="_blank" rel="noopener"
+                           class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:border-gray-400 text-gray-700 text-sm font-semibold rounded-xl transition">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" fill="#FBBC05"/>
+                                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                            </svg>
+                            Google Calendar
+                        </a>
+
+                        <a href="{{ outlookUrl }}" target="_blank" rel="noopener"
+                           class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:border-gray-400 text-gray-700 text-sm font-semibold rounded-xl transition">
+                            <svg class="w-4 h-4" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M24 12.004a12 12 0 1 1-24 0 12 12 0 0 1 24 0z" fill="#0078D4"/>
+                                <path d="M13.5 6H10a4 4 0 0 0 0 8h.5v3.5a.5.5 0 0 0 .5.5h2a.5.5 0 0 0 .5-.5V6z" fill="#fff"/>
+                                <path d="M14 6h3.5a.5.5 0 0 1 .5.5V10h-4V6z" fill="#50D9FF"/>
+                                <path d="M14 10h4v3.5a.5.5 0 0 1-.5.5H14v-4z" fill="#fff"/>
+                            </svg>
+                            Outlook
+                        </a>
+
+                    </div>
+                    <p class="text-[11px] text-gray-400 mt-3">
+                        <i class="fa-solid fa-circle-info mr-1"></i>
+                        Le fichier .ics fonctionne aussi avec Apple Calendar.
+                    </p>
+                </section>
+            {% endif %}
+
+            {# ══ TIMELINE ══ #}
+            <section class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                <h2 class="text-base font-semibold text-gray-900 mb-6 flex items-center gap-2">
+                    <i class="fa-solid fa-timeline text-gray-300"></i>
+                    Historique de la réservation
+                </h2>
+
+                {# Trier l'historique par date croissante #}
+                {% set sortedHistory = reservation.statusHistory|sort((a, b) => a.createdAt <=> b.createdAt) %}
+
+                {% if sortedHistory|length == 0 %}
+                    {# Aucun historique enregistré — afficher l'état courant seul #}
+                    {% set cfg = timelineConfig[reservation.status]|default({icon: 'fa-circle', dot: 'bg-gray-400', ring: 'ring-gray-100', label: reservation.status, desc: ''}) %}
+                    <div class="flex items-start gap-4">
+                        <div class="relative shrink-0">
+                            <span class="w-9 h-9 rounded-full {{ cfg.dot }} {{ cfg.ring }} ring-4 flex items-center justify-center text-white shadow-sm">
+                                <i class="fa-solid {{ cfg.icon }} text-xs"></i>
+                            </span>
+                        </div>
+                        <div class="pt-1">
+                            <p class="text-sm font-semibold text-gray-900">{{ cfg.label }}</p>
+                            <p class="text-xs text-gray-400 mt-0.5">{{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
+                            <p class="text-xs text-gray-500 mt-1">{{ cfg.desc }}</p>
+                        </div>
+                    </div>
+
+                {% else %}
+                    <ol class="relative">
+                        {% for entry in sortedHistory %}
+                            {% set cfg = timelineConfig[entry.newStatus]|default({icon: 'fa-circle', dot: 'bg-gray-400', ring: 'ring-gray-100', label: entry.newStatus, desc: ''}) %}
+
+                            {# Déterminer qui a effectué l'action #}
+                            {% set actorName = '' %}
+                            {% if entry.changedBy and reservation.guest and entry.changedBy.id == reservation.guest.id %}
+                                {% set actorName = 'Vous (voyageur)' %}
+                            {% elseif entry.changedBy and property and property.host and entry.changedBy.id == property.host.id %}
+                                {% set hostPf = property.host.profile %}
+                                {% set actorName = 'Hôte' ~ (hostPf and hostPf.firstName ? ' · ' ~ hostPf.firstName : '') %}
+                            {% elseif entry.changedBy %}
+                                {% set actorPf = entry.changedBy.profile %}
+                                {% set actorName = actorPf and actorPf.firstName ? actorPf.firstName ~ (actorPf.lastName ? ' ' ~ actorPf.lastName : '') : 'Administrateur' %}
+                            {% endif %}
+
+                            {# Description contextuelle selon la transition #}
+                            {% set transitionDesc = cfg.desc %}
+                            {% if entry.oldStatus is null %}
+                                {% if entry.newStatus == 'confirmed' %}
+                                    {% set transitionDesc = 'Réservation acceptée instantanément (réservation immédiate).' %}
+                                {% else %}
+                                    {% set transitionDesc = 'Votre demande a été envoyée à l\'hôte.' %}
+                                {% endif %}
+                            {% elseif entry.oldStatus == 'pending' and entry.newStatus == 'confirmed' %}
+                                {% set transitionDesc = 'L\'hôte a accepté votre demande de réservation.' %}
+                            {% elseif entry.oldStatus == 'pending' and entry.newStatus == 'cancelled' %}
+                                {% set transitionDesc = 'L\'hôte a refusé votre demande de réservation.' %}
+                            {% endif %}
+
+                            <li class="flex items-start gap-4 pb-8 last:pb-0 relative">
+
+                                {# Ligne verticale reliant les points (sauf le dernier) #}
+                                {% if not loop.last %}
+                                    <span class="absolute left-4 top-9 w-0.5 h-full bg-gray-100 -z-0"></span>
+                                {% endif %}
+
+                                {# Point de la timeline #}
+                                <div class="relative z-10 shrink-0">
+                                    <span class="w-9 h-9 rounded-full {{ cfg.dot }} {{ cfg.ring }} ring-4 flex items-center justify-center text-white shadow-sm">
+                                        <i class="fa-solid {{ cfg.icon }} text-xs"></i>
+                                    </span>
+                                </div>
+
+                                {# Contenu #}
+                                <div class="pt-1 flex-1 min-w-0">
+                                    <div class="flex flex-wrap items-baseline gap-2">
+                                        <p class="text-sm font-bold text-gray-900">{{ cfg.label }}</p>
+                                        {% if entry.oldStatus %}
+                                            <span class="text-[11px] text-gray-400">
+                                                depuis
+                                                <span class="font-medium text-gray-500">{{ statusLabels[entry.oldStatus]|default(entry.oldStatus) }}</span>
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                    <p class="text-xs text-gray-400 mt-0.5">
+                                        {{ entry.createdAt|date('d/m/Y à H:i') }}
+                                        {% if actorName %}
+                                            · <span class="font-medium text-gray-500">{{ actorName }}</span>
+                                        {% endif %}
+                                    </p>
+                                    <p class="text-xs text-gray-500 mt-1.5 leading-relaxed">{{ transitionDesc }}</p>
+                                </div>
+
+                            </li>
+                        {% endfor %}
+                    </ol>
+                {% endif %}
+            </section>
+
         </div>
-    </main>
+
+        {# ══ COLONNE DROITE ══ #}
+        <aside class="lg:col-span-2 space-y-4">
+
+            {# Récapitulatif financier #}
+            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm sticky top-28">
+                <h2 class="text-base font-semibold text-gray-900 mb-4">Récapitulatif</h2>
+
+                {% set nights = reservation.checkinDate.diff(reservation.checkoutDate).days %}
+                <div class="space-y-2.5 text-sm">
+                    <div class="flex justify-between text-gray-600">
+                        <span>{{ nights }} nuit{{ nights > 1 ? 's' : '' }} × {{ property ? property.pricePerNight|number_format(0, ',', ' ') : '—' }} €</span>
+                        <span class="font-medium text-gray-900">
+                            {% if property %}{{ (nights * property.pricePerNight)|number_format(0, ',', ' ') }} €{% else %}—{% endif %}
+                        </span>
+                    </div>
+                    {% if reservation.cleaningFee %}
+                        <div class="flex justify-between text-gray-600">
+                            <span>Frais de ménage</span>
+                            <span class="font-medium text-gray-900">{{ reservation.cleaningFee|number_format(0, ',', ' ') }} €</span>
+                        </div>
+                    {% endif %}
+                    {% if reservation.serviceFee %}
+                        <div class="flex justify-between text-gray-600">
+                            <span>Frais de service <span class="text-xs text-gray-400">(12 %)</span></span>
+                            <span class="font-medium text-gray-900">{{ reservation.serviceFee|number_format(0, ',', ' ') }} €</span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <div class="border-t border-gray-100 mt-4 pt-4 flex justify-between items-baseline">
+                    <span class="font-bold text-gray-900">Total</span>
+                    <span class="text-xl font-bold text-gray-900">
+                        {{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}
+                    </span>
+                </div>
+
+                {% if reservation.securityDeposit %}
+                    <p class="text-xs text-gray-400 mt-2">
+                        Caution : {{ reservation.securityDeposit|number_format(0, ',', ' ') }} €
+                    </p>
+                {% endif %}
+
+                {# Hôte #}
+                {% if property and property.host %}
+                    <div class="mt-5 pt-5 border-t border-gray-100 flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-full bg-gray-200 overflow-hidden shrink-0">
+                            {% if hostProfile and hostProfile.avatarUrl %}
+                                <img src="{{ hostProfile.avatarUrl }}" alt="Hôte" class="w-full h-full object-cover">
+                            {% else %}
+                                <div class="w-full h-full flex items-center justify-center text-gray-500 font-bold text-sm">
+                                    {{ hostProfile and hostProfile.firstName ? hostProfile.firstName|first|upper : 'H' }}
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-400">Votre hôte</p>
+                            <p class="text-sm font-semibold text-gray-900">
+                                {{ hostProfile and hostProfile.firstName ? hostProfile.firstName ~ (hostProfile.lastName ? ' ' ~ hostProfile.lastName : '') : 'Hôte' }}
+                            </p>
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+
+        </aside>
+    </div>
+</main>
 {% endblock %}

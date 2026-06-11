@@ -146,6 +146,93 @@
         </a>
     </div>
 
+    {# ===== Synchronisation iCal ===== #}
+    <div class="mb-8 bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        <div class="flex items-center justify-between flex-wrap gap-4 mb-4">
+            <div>
+                <h2 class="text-base font-semibold text-gray-900 flex items-center gap-2">
+                    <i class="fa-regular fa-calendar-days text-indigo-500"></i>
+                    Synchronisation iCal
+                </h2>
+                <p class="text-sm text-gray-400 mt-0.5">
+                    Synchronisez vos réservations confirmées avec Google Calendar, Outlook ou Apple Calendar.
+                </p>
+            </div>
+        </div>
+
+        {% if property.icalToken %}
+            {# Token existant — afficher l'URL #}
+            {% set icalUrl = url('app_property_ical_export', {id: property.id}) ~ '?token=' ~ property.icalToken %}
+
+            <div class="bg-indigo-50 border border-indigo-200 rounded-xl p-4 mb-4">
+                <p class="text-xs font-semibold text-indigo-700 uppercase tracking-wider mb-2">
+                    <i class="fa-solid fa-link mr-1"></i> Votre URL de synchronisation
+                </p>
+                <div class="flex items-center gap-2">
+                    <input type="text" id="ical-url" readonly value="{{ icalUrl }}"
+                           class="flex-1 bg-white border border-indigo-200 rounded-lg px-3 py-2 text-xs text-gray-700 font-mono focus:outline-none cursor-text select-all">
+                    <button type="button" onclick="copyIcal()"
+                            class="shrink-0 px-3 py-2 bg-indigo-600 text-white text-xs font-semibold rounded-lg hover:bg-indigo-700 transition flex items-center gap-1.5">
+                        <i class="fa-regular fa-copy"></i>
+                        <span id="copy-label">Copier</span>
+                    </button>
+                    <a href="{{ icalUrl }}" download
+                       class="shrink-0 px-3 py-2 bg-white border border-indigo-200 text-indigo-700 text-xs font-semibold rounded-lg hover:bg-indigo-50 transition flex items-center gap-1.5">
+                        <i class="fa-solid fa-download"></i>
+                        .ics
+                    </a>
+                </div>
+                <p class="text-xs text-indigo-500 mt-2">
+                    <i class="fa-solid fa-shield-halved mr-1"></i>
+                    Ce lien est secret — ne le partagez qu'avec vos applications de calendrier.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap gap-3">
+                {# Régénérer #}
+                <form method="POST" action="{{ path('app_host_ical_generate', {id: property.id}) }}"
+                      onsubmit="return confirm('Régénérer le lien invalidera l\'ancienne URL. Continuer ?')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('ical_token_' ~ property.id) }}">
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-sm text-gray-700 rounded-lg hover:border-gray-400 hover:bg-gray-50 transition">
+                        <i class="fa-solid fa-rotate text-gray-400"></i>
+                        Régénérer le lien
+                    </button>
+                </form>
+                {# Révoquer #}
+                <form method="POST" action="{{ path('app_host_ical_revoke', {id: property.id}) }}"
+                      onsubmit="return confirm('Révoquer ce lien ? Vos calendriers ne seront plus synchronisés.')">
+                    <input type="hidden" name="_token" value="{{ csrf_token('ical_revoke_' ~ property.id) }}">
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-red-200 text-sm text-red-600 rounded-lg hover:bg-red-50 transition">
+                        <i class="fa-solid fa-ban"></i>
+                        Révoquer l'accès
+                    </button>
+                </form>
+            </div>
+
+        {% else %}
+            {# Pas encore de token #}
+            <div class="flex items-center gap-4 p-4 bg-gray-50 border border-dashed border-gray-300 rounded-xl">
+                <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                    <i class="fa-solid fa-calendar-plus text-indigo-500"></i>
+                </div>
+                <div class="flex-1">
+                    <p class="text-sm font-medium text-gray-800">Aucun lien iCal généré</p>
+                    <p class="text-xs text-gray-400">Générez un lien secret pour connecter vos applications de calendrier.</p>
+                </div>
+                <form method="POST" action="{{ path('app_host_ical_generate', {id: property.id}) }}">
+                    <input type="hidden" name="_token" value="{{ csrf_token('ical_token_' ~ property.id) }}">
+                    <button type="submit"
+                            class="inline-flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg transition">
+                        <i class="fa-solid fa-link"></i>
+                        Générer le lien iCal
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+
     {# ===== Gestion des indisponibilités ===== #}
     <div class="grid grid-cols-1 lg:grid-cols-5 gap-8">
 
@@ -299,5 +386,18 @@
             endInput.min = startInput.value;
         });
     }
+
+    function copyIcal() {
+        const input = document.getElementById('ical-url');
+        if (!input) return;
+        navigator.clipboard.writeText(input.value).then(() => {
+            const label = document.getElementById('copy-label');
+            if (label) {
+                label.textContent = 'Copié !';
+                setTimeout(() => { label.textContent = 'Copier'; }, 2000);
+            }
+        });
+    }
 </script>
 {% endblock %}
+

@@ -6,6 +6,7 @@ namespace App\Controller\Front;
 
 use App\Entity\Property;
 use App\Entity\Reservation;
+use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Form\BookingType;
 use App\Message\NewReservationRequestMessage;
@@ -76,9 +77,22 @@ final class BookingController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
-            $checkin = $data['checkinDate'];
-            $checkout = $data['checkoutDate'];
             $guestsCount = (int) $data['guestsCount'];
+
+            // Combine selected date with property check-in/out times
+            $checkinTime  = $property->getCheckinTime()  ?? new \DateTimeImmutable('15:00');
+            $checkoutTime = $property->getCheckoutTime() ?? new \DateTimeImmutable('11:00');
+
+            /** @var \DateTimeImmutable $checkin */
+            $checkin = $data['checkinDate']->setTime(
+                (int) $checkinTime->format('H'),
+                (int) $checkinTime->format('i'),
+            );
+            /** @var \DateTimeImmutable $checkout */
+            $checkout = $data['checkoutDate']->setTime(
+                (int) $checkoutTime->format('H'),
+                (int) $checkoutTime->format('i'),
+            );
 
             if ($checkin >= $checkout) {
                 $this->addFlash('error', 'La date de départ doit être postérieure à la date d\'arrivée.');
@@ -124,7 +138,8 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            $nights = (int) $checkin->diff($checkout)->days;
+            // Use date-only diff to count nights correctly regardless of intraday times
+            $nights = (int) $checkin->setTime(0, 0, 0)->diff($checkout->setTime(0, 0, 0))->days;
             $nightlyRate = (float) $property->getPricePerNight();
             $subtotal = $nightlyRate * $nights;
             $cleaningFee = (float) ($property->getCleaningFee() ?? 0);
@@ -145,6 +160,14 @@ final class BookingController extends AbstractController
             $reservation->setCurrency('EUR');
 
             $entityManager->persist($reservation);
+
+            $history = new ReservationStatusHistory();
+            $history->setReservation($reservation);
+            $history->setOldStatus(null);
+            $history->setNewStatus($reservation->getStatus());
+            $history->setChangedBy($user);
+            $entityManager->persist($history);
+
             $entityManager->flush();
 
             if ($reservation->getStatus() === 'pending') {

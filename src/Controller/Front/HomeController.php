@@ -63,8 +63,9 @@ class HomeController extends AbstractController
         $guests      = max(1, $request->query->getInt('guests', 1));
         $destination = (string) $request->query->get('destination', '');
 
-        $checkin  = $this->parseDate($checkinStr);
-        $checkout = $this->parseDate($checkoutStr);
+        // Apply default check-in/out times so search comparisons align with stored DATETIME values
+        $checkin  = $this->parseDate($checkinStr)?->setTime(15, 0);
+        $checkout = $this->parseDate($checkoutStr)?->setTime(11, 0);
 
         return $this->render('front/search/index.html.twig', [
             'properties'  => $propertyRepository->findForSearch($destination ?: null, $checkin, $checkout, $guests > 1 ? $guests : null),

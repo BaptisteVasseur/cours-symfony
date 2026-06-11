@@ -150,8 +150,8 @@ class ReservationRepository extends ServiceEntityRepository
      */
     public function findForPropertyAndMonth(Property $property, int $year, int $month): array
     {
-        $start = new \DateTimeImmutable(sprintf('%04d-%02d-01', $year, $month));
-        $end = $start->modify('last day of this month');
+        $start     = new \DateTimeImmutable(sprintf('%04d-%02d-01 00:00:00', $year, $month));
+        $nextMonth = $start->modify('+1 month'); // first moment of the following month
 
         return $this->createQueryBuilder('r')
             ->addSelect('g', 'gp')
@@ -159,12 +159,12 @@ class ReservationRepository extends ServiceEntityRepository
             ->leftJoin('g.profile', 'gp')
             ->andWhere('r.property = :property')
             ->andWhere('r.status IN (:statuses)')
-            ->andWhere('r.checkinDate <= :end')
+            ->andWhere('r.checkinDate < :nextMonth')
             ->andWhere('r.checkoutDate > :start')
             ->setParameter('property', $property)
             ->setParameter('statuses', ['confirmed', 'pending', 'completed'])
             ->setParameter('start', $start)
-            ->setParameter('end', $end)
+            ->setParameter('nextMonth', $nextMonth)
             ->getQuery()
             ->getResult();
     }
@@ -178,6 +178,26 @@ class ReservationRepository extends ServiceEntityRepository
             ->leftJoin('g.profile', 'gp')
             ->orderBy('r.createdAt', 'DESC')
             ->setMaxResults($limit)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return list<Reservation>
+     */
+    public function findConfirmedForIcal(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkoutDate >= :today')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', ['confirmed', 'completed'])
+            ->setParameter('today', new \DateTimeImmutable('today'))
+            ->orderBy('r.checkinDate', 'ASC')
             ->getQuery()
             ->getResult();
     }

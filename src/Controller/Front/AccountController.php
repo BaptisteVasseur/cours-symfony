@@ -7,6 +7,7 @@ namespace App\Controller\Front;
 use App\Entity\Property;
 use App\Entity\PropertyBlockedPeriod;
 use App\Entity\Reservation;
+use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
 use App\Entity\UserProfile;
 use App\Form\AccountProfileType;
@@ -119,6 +120,14 @@ final class AccountController extends AbstractController
 
         if ($reservation->getStatus() === 'pending') {
             $reservation->setStatus('confirmed');
+
+            $history = new ReservationStatusHistory();
+            $history->setReservation($reservation);
+            $history->setOldStatus('pending');
+            $history->setNewStatus('confirmed');
+            $history->setChangedBy($user);
+            $entityManager->persist($history);
+
             $entityManager->flush();
             $bus->dispatch(new ReservationConfirmedMessage((string) $reservation->getId()));
             $this->addFlash('success', 'Réservation confirmée avec succès.');
@@ -148,6 +157,14 @@ final class AccountController extends AbstractController
         if ($reservation->getStatus() === 'pending') {
             $reservation->setStatus('cancelled');
             $reservation->setCancellationReason('Refusée par l\'hôte.');
+
+            $history = new ReservationStatusHistory();
+            $history->setReservation($reservation);
+            $history->setOldStatus('pending');
+            $history->setNewStatus('cancelled');
+            $history->setChangedBy($user);
+            $entityManager->persist($history);
+
             $entityManager->flush();
             $bus->dispatch(new ReservationCancelledMessage((string) $reservation->getId()));
             $this->addFlash('success', 'Demande de réservation refusée.');
@@ -278,6 +295,62 @@ final class AccountController extends AbstractController
             'nextMonth'  => $nextMonth,
             'today'      => (new \DateTimeImmutable())->format('Y-m-d'),
         ]);
+    }
+
+    #[Route('/proprietes/{id}/ical/generer', name: 'app_host_ical_generate', methods: ['POST'])]
+    public function generateIcalToken(
+        Property $property,
+        Request $request,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
+        if ($property->getHost() !== $user && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('ical_token_' . $property->getId(), $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token de sécurité invalide.');
+
+            return $this->redirectToRoute('app_account_property_calendar', ['id' => $property->getId()]);
+        }
+
+        $property->setIcalToken(bin2hex(random_bytes(32)));
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Lien iCal généré avec succès.');
+
+        return $this->redirectToRoute('app_account_property_calendar', ['id' => $property->getId()]);
+    }
+
+    #[Route('/proprietes/{id}/ical/revoquer', name: 'app_host_ical_revoke', methods: ['POST'])]
+    public function revokeIcalToken(
+        Property $property,
+        Request $request,
+        EntityManagerInterface $entityManager,
+    ): Response {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
+        if ($property->getHost() !== $user && !$this->isGranted('ROLE_ADMIN')) {
+            throw $this->createAccessDeniedException();
+        }
+
+        if (!$this->isCsrfTokenValid('ical_revoke_' . $property->getId(), $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token de sécurité invalide.');
+
+            return $this->redirectToRoute('app_account_property_calendar', ['id' => $property->getId()]);
+        }
+
+        $property->setIcalToken(null);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Lien iCal révoqué. L\'ancienne URL ne fonctionne plus.');
+
+        return $this->redirectToRoute('app_account_property_calendar', ['id' => $property->getId()]);
     }
 
     #[Route('/proprietes/{id}/indisponibilite', name: 'app_host_blocked_period_create', methods: ['POST'])]

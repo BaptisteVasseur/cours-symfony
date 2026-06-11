@@ -53,12 +53,12 @@ class Reservation
     private ?User $guest = null;
 
     #[Assert\NotNull(message: 'La date d\'arrivée est obligatoire.')]
-    #[ORM\Column(type: Types::DATE_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $checkinDate = null;
 
     #[Assert\NotNull(message: 'La date de départ est obligatoire.')]
     #[Assert\GreaterThan(propertyPath: 'checkinDate', message: 'La date de départ doit être postérieure à la date d\'arrivée.')]
-    #[ORM\Column(type: Types::DATE_IMMUTABLE)]
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $checkoutDate = null;
 
     #[Assert\NotNull(message: 'Le nombre de voyageurs est obligatoire.')]

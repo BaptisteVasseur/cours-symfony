@@ -1,0 +1,16 @@
+Fonctionnalités développées sur la branche tp/reservation-calendrier
+======================================================================
+
+Calendrier mensuel hôte (dispo colorées)        -> Mes propriétés > icône calendrier d'un logement (/compte/proprietes/{id}/calendrier)
+Tableau de confirmation des reservations pending -> Mes propriétés (/compte/proprietes) + panneau admin (/admin)
+Périodes d'indisponibilité (blocage manuel)      -> Mes propriétés > calendrier d'un logement, section "Bloquer des dates"
+Barre de recherche avec filtres dates/voyageurs  -> Page d'accueil (/) et page de résultats (/search)
+Propagation des dates dans le tunnel de résa     -> Fiche logement (/logement/{id}) > bouton Réserver > page réservation
+Email nouvelle demande (hôte)                    -> Automatique à la création d'une réservation pending (visible sur Mailpit localhost:8025)
+Email confirmation (voyageur + hôte)             -> Automatique à la confirmation d'une réservation (visible sur Mailpit localhost:8025)
+Email annulation (voyageur)                      -> Automatique au refus d'une réservation (visible sur Mailpit localhost:8025)
+Worker Messenger automatique                     -> Tourne en continu dans Docker (service messenger-worker)
+Export iCal hôte (synchronisation agenda)        -> Mes propriétés > calendrier d'un logement, section "Synchronisation iCal"
+Export iCal voyageur (.ics / Google / Outlook)   -> Détail d'une réservation confirmée (/reservations/{id})
+Timeline historique des statuts                  -> Détail d'une réservation (/reservations/{id}), section historique
+Détection de conflits avec prise en compte des horaires de checkin/checkout -> Automatique lors de la réservation (/logement/{id}/reserver)

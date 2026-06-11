@@ -75,14 +75,18 @@ class PropertyBlockedPeriodRepository extends ServiceEntityRepository
 
     public function hasConflict(Property $property, \DateTimeImmutable $checkin, \DateTimeImmutable $checkout): bool
     {
+        // Blocked periods are stored as DATE (no time); strip time component to compare correctly
+        $checkinDate  = \DateTimeImmutable::createFromFormat('Y-m-d', $checkin->format('Y-m-d')) ?: $checkin;
+        $checkoutDate = \DateTimeImmutable::createFromFormat('Y-m-d', $checkout->format('Y-m-d')) ?: $checkout;
+
         $count = $this->createQueryBuilder('bp')
             ->select('COUNT(bp.id)')
             ->andWhere('bp.property = :property')
-            ->andWhere('bp.startDate <= :checkout')
+            ->andWhere('bp.startDate < :checkout')
             ->andWhere('bp.endDate >= :checkin')
             ->setParameter('property', $property)
-            ->setParameter('checkin', $checkin)
-            ->setParameter('checkout', $checkout)
+            ->setParameter('checkin', $checkinDate)
+            ->setParameter('checkout', $checkoutDate)
             ->getQuery()
             ->getSingleScalarResult();
 
