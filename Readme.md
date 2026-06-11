@@ -30,3 +30,76 @@
 16. Intro API Platform et normalisation/dénormalisation
 
 <!-- Voir les Events ? Faire de l'Asynchrone ? Ajouter des commandes personnalisées ? Faire de services pour séparer le code ? Voir l'envoie de mail ? Faire des appels API avec HTTP Client ? Système de Traductions ? -->
+
+## Étapes d'initialisation détaillées
+
+### 1. Configuration des entités Doctrine, migrations et fixtures
+
+```bash
+# Installer les dépendances nécessaires
+composer require symfony/orm-pack
+composer require --dev symfony/maker-bundle orm-fixtures
+
+# Configurer la connexion BDD dans .env (DATABASE_URL)
+# Créer la base de données
+php bin/console doctrine:database:create
+
+# Générer une entité
+php bin/console make:entity
+
+# Générer la migration à partir des entités
+php bin/console make:migration
+
+# Exécuter les migrations
+php bin/console doctrine:migrations:migrate
+
+# Créer une classe de fixtures
+php bin/console make:fixtures
+
+# Charger les fixtures en base
+php bin/console doctrine:fixtures:load
+```
+
+### 2. Mise en place des contrôleurs, vues Twig et formulaires
+
+```bash
+# Installer Twig et le système de formulaires
+composer require twig
+composer require symfony/form symfony/validator
+
+# Générer un contrôleur (crée aussi le template Twig associé)
+php bin/console make:controller
+
+# Générer un FormType pour une entité
+php bin/console make:form
+
+# Générer un CRUD complet (contrôleur + templates + formulaire)
+php bin/console make:crud
+```
+
+### 3. Gestion de l'authentification et des autorisations par rôles
+
+```bash
+# Installer le composant de sécurité
+composer require symfony/security-bundle
+
+# Créer l'entité User
+php bin/console make:user
+
+# Générer le système d'authentification (formulaire de login)
+php bin/console make:auth
+
+# Créer la commande d'enregistrement / page d'inscription
+php bin/console make:registration-form
+```
+
+- Définir les `access_control` et la hiérarchie des rôles dans `config/packages/security.yaml`.
+- Restreindre l'accès dans les contrôleurs avec `#[IsGranted('ROLE_ADMIN')]` ou `$this->denyAccessUnlessGranted(...)`.
+- Afficher conditionnellement les éléments dans Twig avec `{% if is_granted('ROLE_ADMIN') %}`.
+
+### 4. Maîtrise des Repositories et requêtes personnalisées
+
+- Chaque entité dispose d'un Repository généré automatiquement (`src/Repository/`).
+- Écrire des méthodes personnalisées via le **QueryBuilder** (`createQueryBuilder`) ou en **DQL**.
+- Injecter le Repository dans un contrôleur (autowiring) pour récupérer les données.
+- Utiliser les méthodes intégrées : `find()`, `findOneBy()`, `findBy()`, `findAll()`.

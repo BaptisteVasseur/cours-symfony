@@ -49,6 +49,10 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    # Le worker s'arrête volontairement toutes les heures (--time-limit, anti-fuite mémoire) ;
+    # cette politique le relance automatiquement -> la file est toujours consommée
+    # (notifications livrées en ~1s, sans accumulation).
+    restart: unless-stopped
     volumes:
       - .:/var/www/html:rw
       - vendor:/var/www/html/vendor
@@ -61,7 +65,7 @@ services:
       database:
         condition: service_healthy
     command: >
-      sh -c "php bin/console messenger:consume async -vv --time-limit=3600"
+      sh -c "php bin/console messenger:consume async -v --time-limit=3600 --sleep=1"
 
 
 #  nginx:

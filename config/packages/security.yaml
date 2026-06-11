@@ -39,6 +39,8 @@ security:
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
         - { path: ^/api/contexts, roles: PUBLIC_ACCESS }
         - { path: ^/api/validation_errors, roles: PUBLIC_ACCESS }
+        # Export iCal : accès public, protégé par le jeton du logement (vérifié dans le contrôleur).
+        - { path: '^/api/properties/[^/]+/calendar\.ics$', roles: PUBLIC_ACCESS }
         - { path: ^/api, roles: ROLE_USER }
         - { path: ^/(login|register|aide)$, roles: PUBLIC_ACCESS }
         - { path: ^/$, roles: PUBLIC_ACCESS }

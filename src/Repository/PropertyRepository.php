@@ -118,6 +118,42 @@ class PropertyRepository extends ServiceEntityRepository
     }
 
     /**
+     * Recherche de logements publiés (moteur de recherche, partie C).
+     * Filtre, au niveau SQL, sur la destination (ville / adresse / pays) et la capacité d'accueil.
+     * Le filtrage par disponibilité sur une plage de dates est appliqué ensuite via AvailabilityChecker.
+     *
+     * @return list<Property>
+     */
+    public function search(?string $destination, ?int $guests): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        // Recherche textuelle sur la ville, l'adresse ou le pays.
+        if ($destination !== null && trim($destination) !== '') {
+            $term = '%' . mb_strtolower(trim($destination)) . '%';
+            $qb->andWhere('LOWER(a.city) LIKE :term OR LOWER(a.addressLine1) LIKE :term OR LOWER(a.country) LIKE :term')
+                ->setParameter('term', $term);
+        }
+
+        // Exclusion des logements dont la capacité maximale est inférieure au nombre de voyageurs.
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
      * @return list<Property>
      */
     public function findByHost(User $host): array

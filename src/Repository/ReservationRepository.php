@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -72,6 +73,114 @@ class ReservationRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
 
         return $result !== null ? (float) $result : 0.0;
+    }
+
+    /**
+     * Réservations confirmées d'un logement qui se superposent à la plage [checkin, checkout[.
+     * Deux séjours se chevauchent si checkinExistant < checkoutDemande ET checkoutExistant > checkinDemande.
+     *
+     * @return list<Reservation>
+     */
+    public function findConfirmedOverlapping(
+        Property $property,
+        \DateTimeImmutable $checkin,
+        \DateTimeImmutable $checkout,
+    ): array {
+        return $this->createQueryBuilder('r')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate < :checkout')
+            ->andWhere('r.checkoutDate > :checkin')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('checkin', $checkin)
+            ->setParameter('checkout', $checkout)
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Réservations confirmées d'un logement actives sur une plage de dates (pour l'affichage calendrier).
+     *
+     * @return list<Reservation>
+     */
+    public function findConfirmedBetween(
+        Property $property,
+        \DateTimeImmutable $from,
+        \DateTimeImmutable $to,
+    ): array {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->andWhere('r.checkinDate <= :to')
+            ->andWhere('r.checkoutDate > :from')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * Réservations portant sur les logements d'un hôte (demandes entrantes incluses).
+     * Les réservations en attente (pending) sont remontées en premier.
+     *
+     * @return list<Reservation>
+     */
+    public function findByHostForListing(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'm', 'a', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->setParameter('host', $host)
+            ->orderBy('CASE WHEN r.status = \'pending\' THEN 0 ELSE 1 END', 'ASC')
+            ->addOrderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function countPendingForHost(User $host): int
+    {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->leftJoin('r.property', 'p')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
+
+    /**
+     * Réservations confirmées d'un logement (pour l'export iCal — Partie E).
+     *
+     * @return list<Reservation>
+     */
+    public function findConfirmedForProperty(Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status = :status')
+            ->setParameter('property', $property)
+            ->setParameter('status', 'confirmed')
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     /**

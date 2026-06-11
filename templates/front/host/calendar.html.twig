@@ -1,0 +1,150 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Calendrier · {{ property.title }}{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+        <a href="{{ path('app_host_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-800 mb-4">
+            <i class="fa-solid fa-arrow-left"></i> Retour à mes logements
+        </a>
+
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-1">{{ property.title }}</h1>
+        <p class="text-gray-500 mb-6">Gérez les disponibilités et la tarification de votre logement.</p>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {# ---------- Calendrier ---------- #}
+            <div class="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                <div class="flex items-center justify-between mb-5">
+                    <a href="{{ path('app_host_calendar', { id: property.id, year: prevYear, month: prevMonth }) }}" class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50 transition" aria-label="Mois précédent">
+                        <i class="fa-solid fa-chevron-left text-gray-600 text-sm"></i>
+                    </a>
+                    <h2 class="text-lg font-semibold text-gray-900">{{ monthLabel }}</h2>
+                    <a href="{{ path('app_host_calendar', { id: property.id, year: nextYear, month: nextMonth }) }}" class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50 transition" aria-label="Mois suivant">
+                        <i class="fa-solid fa-chevron-right text-gray-600 text-sm"></i>
+                    </a>
+                </div>
+
+                <div class="grid grid-cols-7 gap-1 mb-1 text-center text-[11px] font-semibold uppercase tracking-wider text-gray-400">
+                    {% for dayName in ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] %}
+                        <div class="py-1">{{ dayName }}</div>
+                    {% endfor %}
+                </div>
+
+                <div class="grid grid-cols-7 gap-1">
+                    {% for week in weeks %}
+                        {% for cell in week %}
+                            {% if not cell.inMonth %}
+                                <div class="aspect-square rounded-lg bg-gray-50/60"></div>
+                            {% else %}
+                                {% set base = 'relative aspect-square rounded-lg border p-1.5 flex flex-col text-left overflow-hidden' %}
+                                {% if cell.reserved %}
+                                    {% set tone = 'border-rose-200 bg-rose-50' %}
+                                {% elseif cell.blocked %}
+                                    {% set tone = 'border-gray-300 bg-gray-100' %}
+                                {% elseif cell.past %}
+                                    {% set tone = 'border-gray-100 bg-white text-gray-300' %}
+                                {% else %}
+                                    {% set tone = 'border-emerald-200 bg-emerald-50/40' %}
+                                {% endif %}
+                                <div class="{{ base }} {{ tone }}" title="{% if cell.reserved %}Réservé · {{ cell.guest }}{% elseif cell.blocked %}Bloqué · {{ cell.reason }}{% else %}Disponible{% endif %}">
+                                    <span class="text-xs font-semibold {{ cell.past and not cell.reserved and not cell.blocked ? 'text-gray-300' : 'text-gray-800' }}">{{ cell.day }}</span>
+
+                                    {% if cell.reserved %}
+                                        <span class="mt-0.5 text-[10px] font-medium text-rose-700 leading-tight line-clamp-2">{{ cell.guest }}</span>
+                                    {% elseif cell.blocked %}
+                                        <span class="mt-0.5 text-[10px] font-medium text-gray-500 leading-tight line-clamp-1">{{ cell.reason }}</span>
+                                        <form method="post" action="{{ path('app_host_unblock', { id: property.id }) }}" class="mt-auto">
+                                            <input type="hidden" name="date" value="{{ cell.date }}">
+                                            <input type="hidden" name="_token" value="{{ csrf_token('availability_unblock') }}">
+                                            <button type="submit" class="text-[10px] text-brand hover:underline font-semibold" title="Lever le blocage">Débloquer</button>
+                                        </form>
+                                    {% endif %}
+
+                                    {% if cell.price or cell.minStay %}
+                                        <span class="mt-auto text-[9px] text-gray-500 leading-tight">
+                                            {% if cell.price %}{{ cell.price|number_format(0, ',', ' ') }} €{% endif %}
+                                            {% if cell.minStay %} · min {{ cell.minStay }}n{% endif %}
+                                        </span>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    {% endfor %}
+                </div>
+
+                {# ---------- Légende ---------- #}
+                <div class="flex flex-wrap items-center gap-4 mt-5 pt-4 border-t border-gray-100 text-xs text-gray-600">
+                    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border border-emerald-200 bg-emerald-50"></span> Disponible</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border border-rose-200 bg-rose-50"></span> Réservé</span>
+                    <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded border border-gray-300 bg-gray-100"></span> Bloqué</span>
+                </div>
+            </div>
+
+            {# ---------- Formulaires ---------- #}
+            <div class="space-y-6">
+                <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                    <h3 class="font-semibold text-gray-900 mb-1 flex items-center gap-2"><i class="fa-solid fa-ban text-gray-400"></i> Bloquer une période</h3>
+                    <p class="text-xs text-gray-500 mb-4">Rendez votre logement indisponible (travaux, usage personnel…).</p>
+                    {{ form_start(blockForm, { attr: { class: 'space-y-4' } }) }}
+                        {{ form_row(blockForm.startDate, { row_attr: { class: 'space-y-1' }, label_attr: { class: 'block text-xs font-semibold text-gray-700' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm' } }) }}
+                        {{ form_row(blockForm.endDate, { row_attr: { class: 'space-y-1' }, label_attr: { class: 'block text-xs font-semibold text-gray-700' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm' } }) }}
+                        {{ form_row(blockForm.reason, { row_attr: { class: 'space-y-1' }, label_attr: { class: 'block text-xs font-semibold text-gray-700' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm bg-white' } }) }}
+                        <button type="submit" class="w-full bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition">Bloquer ces dates</button>
+                    {{ form_end(blockForm) }}
+                </div>
+
+                <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                    <h3 class="font-semibold text-gray-900 mb-1 flex items-center gap-2"><i class="fa-solid fa-tag text-gray-400"></i> Tarif &amp; séjour minimum</h3>
+                    <p class="text-xs text-gray-500 mb-4">Optionnel : ajustez le tarif journalier ou la durée minimale sur une période.</p>
+                    {{ form_start(pricingForm, { attr: { class: 'space-y-4' } }) }}
+                        {{ form_row(pricingForm.startDate, { row_attr: { class: 'space-y-1' }, label_attr: { class: 'block text-xs font-semibold text-gray-700' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm' } }) }}
+                        {{ form_row(pricingForm.endDate, { row_attr: { class: 'space-y-1' }, label_attr: { class: 'block text-xs font-semibold text-gray-700' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm' } }) }}
+                        {{ form_row(pricingForm.priceOverride, { row_attr: { class: 'space-y-1' }, label_attr: { class: 'block text-xs font-semibold text-gray-700' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm' } }) }}
+                        {{ form_row(pricingForm.minimumStay, { row_attr: { class: 'space-y-1' }, label_attr: { class: 'block text-xs font-semibold text-gray-700' }, attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2 text-sm' } }) }}
+                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition">Appliquer</button>
+                    {{ form_end(pricingForm) }}
+                </div>
+
+                {# ---------- Synchronisation iCal ---------- #}
+                <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm">
+                    <h3 class="font-semibold text-gray-900 mb-1 flex items-center gap-2"><i class="fa-regular fa-calendar-check text-gray-400"></i> Synchronisation iCal</h3>
+                    <p class="text-xs text-gray-500 mb-4">Exportez vos séjours confirmés vers Google Calendar, Outlook…</p>
+
+                    {% if icalUrl %}
+                        <label class="block text-xs font-semibold text-gray-700 mb-1">Lien d'abonnement (privé)</label>
+                        <div class="flex items-center gap-2 mb-3">
+                            <input type="text" readonly value="{{ icalUrl }}" onclick="this.select()" class="flex-1 min-w-0 border border-gray-300 rounded-xl px-3 py-2 text-xs text-gray-600 bg-gray-50">
+                            <button type="button" onclick="navigator.clipboard.writeText('{{ icalUrl }}')" class="shrink-0 px-3 py-2 border border-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-50" title="Copier">
+                                <i class="fa-regular fa-copy"></i>
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-3 py-2 mb-3">Ne partagez ce lien qu'avec vos outils d'agenda : il donne accès à vos réservations.</p>
+                        <div class="flex flex-wrap gap-2">
+                            <form method="post" action="{{ path('app_host_ical_generate', { id: property.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('ical_token_' ~ property.id) }}">
+                                <button type="submit" class="text-xs font-semibold px-3 py-2 border border-gray-300 rounded-xl hover:bg-gray-50">Régénérer</button>
+                            </form>
+                            <form method="post" action="{{ path('app_host_ical_revoke', { id: property.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('ical_token_' ~ property.id) }}">
+                                <button type="submit" class="text-xs font-semibold px-3 py-2 border border-red-300 text-red-600 rounded-xl hover:bg-red-50">Révoquer</button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <form method="post" action="{{ path('app_host_ical_generate', { id: property.id }) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('ical_token_' ~ property.id) }}">
+                            <button type="submit" class="w-full bg-gray-900 hover:bg-gray-800 text-white text-sm font-semibold px-4 py-2.5 rounded-xl transition">Activer la synchronisation</button>
+                        </form>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock %}

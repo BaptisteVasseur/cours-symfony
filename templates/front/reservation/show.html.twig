@@ -33,6 +33,16 @@
             </div>
             <p class="text-gray-500">Réservation effectuée le {{ reservation.createdAt|date('d/m/Y à H:i') }}</p>
         </div>
+
+        {% if reservation.status == 'cancelled' and reservation.cancellationReason %}
+            <div class="mb-8 flex items-start gap-3 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-800">
+                <i class="fa-solid fa-circle-info mt-0.5"></i>
+                <div>
+                    <p class="text-sm font-semibold">Motif de l'annulation</p>
+                    <p class="text-sm">{{ reservation.cancellationReason }}</p>
+                </div>
+            </div>
+        {% endif %}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2 space-y-6">
                 {% if property %}
@@ -61,6 +71,22 @@
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
                     <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
                     <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+
+                    {% if reservation.status in ['pending', 'confirmed'] %}
+                        <div class="mt-6 pt-6 border-t border-gray-100">
+                            <h3 class="text-sm font-semibold text-gray-900 mb-2">Annuler la réservation</h3>
+                            <p class="text-xs text-gray-500 mb-3">Un motif est obligatoire. L'hôte sera notifié et les dates seront libérées.</p>
+                            <form method="post" action="{{ path('app_reservation_cancel', { id: reservation.id }) }}" class="space-y-3"
+                                  onsubmit="return confirm('Confirmer l\'annulation de cette réservation ?');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('reservation_cancel_' ~ reservation.id) }}">
+                                <textarea name="reason" rows="2" required placeholder="Motif de l'annulation"
+                                          class="w-full border border-gray-300 rounded-xl px-3 py-2 text-sm"></textarea>
+                                <button type="submit" class="w-full inline-flex items-center justify-center gap-2 border border-red-300 text-red-600 hover:bg-red-50 text-sm font-semibold px-4 py-2.5 rounded-xl transition">
+                                    <i class="fa-solid fa-xmark"></i> Annuler ma réservation
+                                </button>
+                            </form>
+                        </div>
+                    {% endif %}
                 </div>
             </aside>
         </div>
