@@ -30,3 +30,13 @@
 16. Intro API Platform et normalisation/dénormalisation
 
 <!-- Voir les Events ? Faire de l'Asynchrone ? Ajouter des commandes personnalisées ? Faire de services pour séparer le code ? Voir l'envoie de mail ? Faire des appels API avec HTTP Client ? Système de Traductions ? -->
+
+# lancement du projet
+## docker 
+make up
+make sh
+
+## lancer les migrations (dans le container docker)
+php bin/console importmap:install
+php bin/console doctrine:migrations:migrate
+php bin/console doctrine:fixtures:load --append

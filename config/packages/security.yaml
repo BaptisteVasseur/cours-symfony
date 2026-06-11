@@ -48,6 +48,7 @@ security:
         - { path: ^/user, roles: ROLE_ADMIN }
         - { path: ^/logement, roles: ROLE_USER }
         - { path: ^/reservations, roles: ROLE_USER }
+        - { path: ^/compte/annonces, roles: ROLE_HOST }
         - { path: ^/compte, roles: ROLE_USER }
         - { path: ^/messages, roles: ROLE_USER }
 

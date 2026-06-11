@@ -1,0 +1,217 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Modifier — {{ property.title }}{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-3xl mx-auto w-full">
+        <div class="mb-6 flex items-center justify-between">
+            <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
+                <i class="fa-solid fa-arrow-left"></i> Mes annonces
+            </a>
+            <span class="text-xs px-3 py-1 rounded-full font-medium
+                {{ property.status == 'published' ? 'bg-emerald-100 text-emerald-700' :
+                   (property.status == 'pending'   ? 'bg-yellow-100 text-yellow-700' :
+                                                      'bg-gray-100 text-gray-500') }}">
+                {{ property.status == 'published' ? 'Publiée' : (property.status == 'pending' ? 'En attente' : 'Brouillon') }}
+            </span>
+        </div>
+
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-8">Modifier l'annonce</h1>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        {{ form_start(form, { attr: { class: 'space-y-8' } }) }}
+
+        {# ── Informations générales ── #}
+        <section class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-5">
+            <h2 class="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">Informations générales</h2>
+
+            {{ form_row(form.title, {
+                row_attr: { class: 'space-y-1' },
+                label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+            }) }}
+
+            {{ form_row(form.propertyType, {
+                row_attr: { class: 'space-y-1' },
+                label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+            }) }}
+
+            {{ form_row(form.description, {
+                row_attr: { class: 'space-y-1' },
+                label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand', rows: 5 }
+            }) }}
+
+            {{ form_row(form.cancellationPolicy, {
+                row_attr: { class: 'space-y-1' },
+                label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+            }) }}
+        </section>
+
+        {# ── Capacité ── #}
+        <section class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-5">
+            <h2 class="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">Capacité</h2>
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {{ form_row(form.maxGuests, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+                {{ form_row(form.bedrooms, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+                {{ form_row(form.beds, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+                {{ form_row(form.bathrooms, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm text-center focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+            </div>
+        </section>
+
+        {# ── Tarifs ── #}
+        <section class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-5">
+            <h2 class="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">Tarifs</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {{ form_row(form.pricePerNight, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+                {{ form_row(form.cleaningFee, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+                {{ form_row(form.securityDeposit, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+            </div>
+        </section>
+
+        {# ── Horaires et réservation ── #}
+        <section class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-5">
+            <h2 class="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">Horaires et réservation</h2>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {{ form_row(form.checkinTime, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+                {{ form_row(form.checkoutTime, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+            </div>
+            <div class="flex items-center gap-3">
+                {{ form_widget(form.instantBooking, { attr: { class: 'w-4 h-4 accent-brand' } }) }}
+                {{ form_label(form.instantBooking, null, { label_attr: { class: 'text-sm font-semibold text-gray-700' } }) }}
+            </div>
+        </section>
+
+        {# ── Adresse ── #}
+        <section class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-5">
+            <h2 class="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">Adresse</h2>
+            {{ form_row(form.address.addressLine1, {
+                row_attr: { class: 'space-y-1' },
+                label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+            }) }}
+            {{ form_row(form.address.addressLine2, {
+                row_attr: { class: 'space-y-1' },
+                label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+            }) }}
+            <div class="grid grid-cols-2 gap-4">
+                {{ form_row(form.address.postalCode, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+                {{ form_row(form.address.city, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+            </div>
+            {{ form_row(form.address.country, {
+                row_attr: { class: 'space-y-1' },
+                label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+            }) }}
+            <div class="grid grid-cols-2 gap-4">
+                {{ form_row(form.address.latitude, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+                {{ form_row(form.address.longitude, {
+                    row_attr: { class: 'space-y-1' },
+                    label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                    attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand' }
+                }) }}
+            </div>
+        </section>
+
+        {# ── Règles ── #}
+        <section class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-5">
+            <h2 class="text-lg font-semibold text-gray-900 border-b border-gray-100 pb-3">Règles du logement</h2>
+            <div class="space-y-3">
+                <div class="flex items-center gap-3">
+                    {{ form_widget(form.rules.petsAllowed, { attr: { class: 'w-4 h-4 accent-brand' } }) }}
+                    {{ form_label(form.rules.petsAllowed, null, { label_attr: { class: 'text-sm text-gray-700' } }) }}
+                </div>
+                <div class="flex items-center gap-3">
+                    {{ form_widget(form.rules.smokingAllowed, { attr: { class: 'w-4 h-4 accent-brand' } }) }}
+                    {{ form_label(form.rules.smokingAllowed, null, { label_attr: { class: 'text-sm text-gray-700' } }) }}
+                </div>
+                <div class="flex items-center gap-3">
+                    {{ form_widget(form.rules.partiesAllowed, { attr: { class: 'w-4 h-4 accent-brand' } }) }}
+                    {{ form_label(form.rules.partiesAllowed, null, { label_attr: { class: 'text-sm text-gray-700' } }) }}
+                </div>
+            </div>
+            {{ form_row(form.rules.additionalRules, {
+                row_attr: { class: 'space-y-1 mt-4' },
+                label_attr: { class: 'block text-sm font-semibold text-gray-700' },
+                attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand', rows: 3 }
+            }) }}
+        </section>
+
+        {# ── Actions ── #}
+        <div class="flex items-center justify-between gap-4 pb-8">
+            <form method="post" action="{{ path('app_host_property_delete', { id: property.id }) }}"
+                  onsubmit="return confirm('Supprimer définitivement cette annonce ?')">
+                <input type="hidden" name="_token" value="{{ csrf_token('delete_property_' ~ property.id) }}">
+                <button type="submit" class="text-sm text-red-600 hover:text-red-800 font-medium transition">
+                    <i class="fa-solid fa-trash-can mr-1"></i> Supprimer l'annonce
+                </button>
+            </form>
+            <div class="flex items-center gap-4">
+                <a href="{{ path('app_account_properties') }}" class="text-sm text-gray-500 hover:text-gray-800">Annuler</a>
+                <button type="submit" class="bg-brand hover:bg-brandHover text-white font-semibold px-8 py-3 rounded-xl transition">
+                    Enregistrer
+                </button>
+            </div>
+        </div>
+
+        {{ form_end(form) }}
+    </main>
+{% endblock %}
