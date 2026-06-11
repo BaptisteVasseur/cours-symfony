@@ -134,6 +134,23 @@ class ReservationRepository extends ServiceEntityRepository
     /**
      * @return Reservation[]
      */
+    /**
+     * @return list<Reservation>
+     */
+    public function findActiveForProperty(\App\Entity\Property $property): array
+    {
+        return $this->createQueryBuilder('r')
+            ->where('r.property = :property')
+            ->andWhere('r.status NOT IN (:excluded)')
+            ->andWhere('r.checkoutDate > :today')
+            ->setParameter('property', $property)
+            ->setParameter('excluded', ['cancelled', 'rejected'])
+            ->setParameter('today', new \DateTimeImmutable('today'))
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
+    }
+
     public function findOverlapping(string $propertyId, \DateTimeImmutable $checkin, \DateTimeImmutable $checkout): array
     {
         return $this->createQueryBuilder('r')

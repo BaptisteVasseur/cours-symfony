@@ -24,20 +24,24 @@
             <p class="text-xs text-gray-400 truncate mt-0.5">{{ app.user.email }}</p>
         </div>
 
+        {% if is_granted('ROLE_HOST') %}
+        <div class="py-1 border-b border-gray-100">
+            <p class="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">Espace hôte</p>
+            <a href="{{ path('app_host_reservation_index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm font-medium text-brand hover:bg-brandLight transition">
+                <i class="fa-solid fa-table-list w-4 text-center"></i>
+                Demandes de réservation
+            </a>
+            <a href="{{ path('app_account_properties') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-surface transition">
+                <i class="fa-solid fa-house w-4 text-center text-gray-400"></i>
+                Mes logements
+            </a>
+        </div>
+        {% endif %}
+
         <div class="py-1">
             <a href="{{ path('app_reservation_index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-surface transition">
                 <i class="fa-solid fa-suitcase-rolling w-4 text-center text-brand"></i>
                 Mes réservations
-            </a>
-            {% if is_granted('ROLE_HOST') %}
-            <a href="{{ path('app_host_reservation_index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-surface transition">
-                <i class="fa-solid fa-house-chimney-user w-4 text-center text-brand"></i>
-                Tableau de bord hôte
-            </a>
-            {% endif %}
-            <a href="{{ path('app_account_properties') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-surface transition">
-                <i class="fa-solid fa-house w-4 text-center text-gray-400"></i>
-                Mes propriétés
             </a>
             <a href="{{ path('app_messages_index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-surface transition">
                 <i class="fa-solid fa-envelope w-4 text-center text-gray-400"></i>

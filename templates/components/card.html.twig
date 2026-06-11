@@ -2,7 +2,7 @@
 {% set averageRating = property.averageRating %}
 {% set placeholder = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
-<a href="{{ path('app_logement_detail', { id: property.id }) }}" class="group block">
+<a href="{{ hostUrl is defined and hostUrl ? hostUrl : path('app_logement_detail', { id: property.id }) }}" class="group block">
 
     {# Image   #}
     <div class="relative aspect-photo w-full overflow-hidden rounded-2xl mb-3 bg-gray-100">

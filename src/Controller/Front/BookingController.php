@@ -53,8 +53,28 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_logement_detail', ['id' => $property->getId()]);
         }
 
+        $bookedRanges = array_map(
+            static fn (Reservation $r) => [
+                'from' => $r->getCheckinDate()->format('Y-m-d'),
+                'to'   => $r->getCheckoutDate()->format('Y-m-d'),
+            ],
+            $reservationRepository->findActiveForProperty($property),
+        );
+
+        $blockedDates = array_map(
+            static fn (\App\Entity\PropertyAvailability $a) => $a->getAvailableDate()->format('Y-m-d'),
+            $availabilityRepository->findBlockedDates($property),
+        );
+
         $form = $this->createForm(BookingType::class);
         $form->handleRequest($request);
+
+        $renderBooking = fn () => $this->render('front/property/booking.html.twig', [
+            'property'     => $property,
+            'form'         => $form,
+            'bookedRanges' => $bookedRanges,
+            'blockedDates' => $blockedDates,
+        ]);
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data = $form->getData();
@@ -65,37 +85,25 @@ final class BookingController extends AbstractController
             if ($checkin >= $checkout) {
                 $this->addFlash('error', 'La date de départ doit être postérieure à la date d\'arrivée.');
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $renderBooking();
             }
 
             if ($guestsCount > $property->getMaxGuests()) {
                 $this->addFlash('error', sprintf('Ce logement accepte au maximum %d voyageurs.', $property->getMaxGuests()));
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $renderBooking();
             }
 
             if ($reservationRepository->findOverlapping((string) $property->getId(), $checkin, $checkout)) {
                 $this->addFlash('error', 'Ce logement est déjà réservé sur cette période.');
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $renderBooking();
             }
 
             if ($availabilityRepository->hasBlockedDayInRange($property, $checkin, $checkout)) {
                 $this->addFlash('error', 'Une ou plusieurs nuits de cette période sont indisponibles (bloquées par l\'hôte).');
 
-                return $this->render('front/property/booking.html.twig', [
-                    'property' => $property,
-                    'form' => $form,
-                ]);
+                return $renderBooking();
             }
 
             $nights = (int) $checkin->diff($checkout)->days;
@@ -132,9 +140,6 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }
 
-        return $this->render('front/property/booking.html.twig', [
-            'property' => $property,
-            'form' => $form,
-        ]);
+        return $renderBooking();
     }
 }

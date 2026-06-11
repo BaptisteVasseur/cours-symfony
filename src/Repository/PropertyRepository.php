@@ -76,6 +76,7 @@ class PropertyRepository extends ServiceEntityRepository
         }
 
         if ($checkin !== null && $checkout !== null) {
+            // Exclure les propriétés avec une réservation active qui chevauche la période
             $qb->andWhere(
                 'p.id NOT IN (
                     SELECT IDENTITY(r2.property) FROM App\Entity\Reservation r2
@@ -85,8 +86,18 @@ class PropertyRepository extends ServiceEntityRepository
                 )'
             )
             ->setParameter('excluded', ['cancelled', 'rejected'])
-            ->setParameter('checkin', $checkin)
-            ->setParameter('checkout', $checkout);
+            ->setParameter('checkin', $checkin, \Doctrine\DBAL\Types\Types::DATE_IMMUTABLE)
+            ->setParameter('checkout', $checkout, \Doctrine\DBAL\Types\Types::DATE_IMMUTABLE);
+
+            // Exclure les propriétés avec au moins un jour bloqué manuellement dans la période
+            $qb->andWhere(
+                'p.id NOT IN (
+                    SELECT IDENTITY(av.property) FROM App\Entity\PropertyAvailability av
+                    WHERE av.isAvailable = false
+                    AND av.availableDate >= :checkin
+                    AND av.availableDate < :checkout
+                )'
+            );
         }
 
         return $qb->getQuery()->getResult();

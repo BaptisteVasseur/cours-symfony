@@ -74,8 +74,8 @@ class HomeController extends AbstractController
         return $this->render('front/search/index.html.twig', [
             'properties'  => $properties,
             'destination' => $destination,
-            'checkin'     => $checkin,
-            'checkout'    => $checkout,
+            'checkin'     => $checkin?->format('Y-m-d'),
+            'checkout'    => $checkout?->format('Y-m-d'),
             'guests'      => $guests,
         ]);
     }

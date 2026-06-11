@@ -45,8 +45,20 @@ class PropertyAvailabilityRepository extends ServiceEntityRepository
             ->andWhere('a.isAvailable = false')
             ->andWhere('a.availableDate BETWEEN :start AND :end')
             ->setParameter('property', $property)
-            ->setParameter('start', $start)
-            ->setParameter('end', $end)
+            ->setParameter('start', $start, \Doctrine\DBAL\Types\Types::DATE_IMMUTABLE)
+            ->setParameter('end', $end, \Doctrine\DBAL\Types\Types::DATE_IMMUTABLE)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
+     * @return PropertyAvailability[]
+     */
+    public function findByProperty(Property $property): array
+    {
+        return $this->createQueryBuilder('a')
+            ->where('a.property = :property')
+            ->setParameter('property', $property)
             ->getQuery()
             ->getResult();
     }
@@ -63,8 +75,8 @@ class PropertyAvailabilityRepository extends ServiceEntityRepository
             ->andWhere('a.availableDate >= :checkin')
             ->andWhere('a.availableDate < :checkout')
             ->setParameter('property', $property)
-            ->setParameter('checkin', $checkin)
-            ->setParameter('checkout', $checkout)
+            ->setParameter('checkin', $checkin, \Doctrine\DBAL\Types\Types::DATE_IMMUTABLE)
+            ->setParameter('checkout', $checkout, \Doctrine\DBAL\Types\Types::DATE_IMMUTABLE)
             ->getQuery()
             ->getSingleScalarResult();
 

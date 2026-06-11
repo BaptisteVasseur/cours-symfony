@@ -1,6 +1,6 @@
 # État des features — StayNest (cours-symfony)
 
-> Dernière mise à jour : 2026-06-11
+> Dernière mise à jour : 2026-06-11 (branche tp/reservation-calendarier)
 
 ---
 
@@ -25,7 +25,7 @@
 - [x] Vérification `findOverlapping()` à la soumission
 - [x] Notifications email asynchrones via Symfony Messenger (3 messages : pending, confirmed, cancelled)
 - [x] Handlers null-safe sur `getHost()` (fix post code-review)
-- [ ] Vérification capacité `guestsCount <= property.maxGuests` à la soumission *(manquante)*
+- [x] Vérification capacité `guestsCount <= property.maxGuests` à la soumission
 
 ---
 
@@ -33,9 +33,9 @@
 
 - [x] Route `/search` et template `front/search/index.html.twig` présents
 - [x] Paramètres `destination`, `checkin`, `checkout`, `guests` transmis au template
-- [ ] Filtrage réel dans `PropertyRepository` : par ville/destination *(manquant)*
-- [ ] Filtrage par disponibilité sur une période *(manquant)*
-- [ ] Filtrage par capacité (`guests`) *(manquant)*
+- [x] Filtrage réel dans `PropertyRepository::findWithFilters()` : par ville/pays/titre (LIKE)
+- [x] Filtrage par disponibilité sur une période (sous-requête excluant les réservations actives ET les jours bloqués manuellement)
+- [x] Filtrage par capacité (`maxGuests >= guests`)
 
 ---
 
@@ -56,17 +56,17 @@
 
 ## Partie E — Export iCal
 
-- [ ] Champ `icalToken` sur `Property` *(manquant)*
-- [ ] Endpoint `GET /api/properties/{id}/calendar.ics?token={secret}` *(manquant)*
-- [ ] Génération format `.ics` (VCALENDAR / VEVENT) *(manquant)*
+- [x] Champ `icalToken` sur `Property` (unique, 64 hex chars, `generateIcalToken()`)
+- [x] Endpoint `GET /api/properties/{id}/calendar.ics?token={secret}` (`Api\ICalController`)
+- [x] Génération format `.ics` (VCALENDAR / VEVENT, dates VALUE=DATE, Content-Type text/calendar)
 
 ---
 
 ## Partie F — Import iCal (BONUS)
 
-- [ ] Commande `app:ical:sync` *(manquante)*
-- [ ] Consommation des `PropertyICalSync` (URL + `lastSyncAt` existent en base)
-- [ ] Gestion des conflits documentée
+- [x] Commande `app:ical:sync` (`src/Command/ICalSyncCommand.php`)
+- [x] Consommation des `PropertyICalSync` : fetch URL, parse iCal (DTSTART/DTEND/DURATION), bloque les jours dans `PropertyAvailability`, met à jour `lastSyncAt`
+- [x] Gestion des conflits : les blocs manuels existants sont conservés (skip si date déjà présente) ; option `--dry-run` disponible
 
 ---
 
@@ -88,9 +88,12 @@
 - [x] Hero section plein-écran avec barre de recherche intégrée (home)
 - [x] Cards logement avec zoom hover, badge Instant, aspect-ratio 4/3
 - [x] Header sticky avec menu profil dropdown + déconnexion
+- [x] Section "Espace hôte" dans le menu dropdown (tableau de bord, mes logements)
 - [x] Footer sombre avec colonnes de liens
 - [x] Login / Register : split layout (image + formulaire)
 - [x] Mes réservations : groupement "À venir" / "Historique", badge statut coloré
+- [x] Bouton "Annuler ma réservation" sur la page détail réservation voyageur
+- [x] Page "Mes logements" → lien vers gestion disponibilités (pas vers réservation)
 - [x] Page profil avec sidebar nav et avatar
 - [x] Page paramètres avec zone dangereuse + déconnexion
 - [x] Flash messages stylisés (success / error / warning)
@@ -127,18 +130,12 @@ Comptes disponibles (mot de passe : `password123`) :
 
 ```
 CRITIQUE
-├── /search : filtres réels (destination, dates, guests) dans PropertyRepository
-├── Export iCal (champ icalToken + endpoint .ics)
 └── conception.txt ← rédiger soi-même
 
-IMPORTANT (bonus)
-├── Import iCal (app:ical:sync)
+BONUS
 ├── G.6 tarification dynamique JS
-└── G.5 timeline statuts ReservationStatusHistory
-
-SECONDAIRE
+├── G.5 timeline statuts ReservationStatusHistory
 ├── G.1 expiration pending (Worker)
 ├── G.2 rappel J-1
-├── G.8 notifications in-app
-└── Vérification guestsCount <= maxGuests à la réservation
+└── G.8 notifications in-app
 ```

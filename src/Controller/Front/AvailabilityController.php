@@ -50,8 +50,8 @@ final class AvailabilityController extends AbstractController
 
         if ($form->isSubmitted() && $form->isValid()) {
             $data      = $form->getData();
-            $dateStart = $data['dateStart'];
-            $dateEnd   = $data['dateEnd'];
+            $dateStart = \DateTimeImmutable::createFromInterface($data['dateStart']);
+            $dateEnd   = \DateTimeImmutable::createFromInterface($data['dateEnd']);
             $reason    = $data['reason'] ?? null;
 
             if ($dateEnd <= $dateStart) {

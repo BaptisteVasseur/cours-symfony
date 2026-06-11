@@ -135,6 +135,9 @@ class Property
     #[ORM\Column]
     private bool $instantBooking = false;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalToken = null;
+
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
 
@@ -370,6 +373,25 @@ class Property
     public function setCheckoutTime(?\DateTimeImmutable $checkoutTime): static
     {
         $this->checkoutTime = $checkoutTime;
+
+        return $this;
+    }
+
+    public function getIcalToken(): ?string
+    {
+        return $this->icalToken;
+    }
+
+    public function setIcalToken(?string $icalToken): static
+    {
+        $this->icalToken = $icalToken;
+
+        return $this;
+    }
+
+    public function generateIcalToken(): static
+    {
+        $this->icalToken = bin2hex(random_bytes(32));
 
         return $this;
     }

@@ -20,13 +20,13 @@
                 <div class="hidden sm:block w-px bg-gray-100 my-1"></div>
                 <div class="sm:w-36 px-3 py-2">
                     <p class="text-[10px] font-bold uppercase text-gray-400 mb-1">Arrivée</p>
-                    <input type="date" name="checkin" value="{{ checkin ? checkin|date('Y-m-d') : '' }}"
+                    <input type="date" name="checkin" value="{{ checkin ?? '' }}"
                         class="w-full text-sm text-gray-600 focus:outline-none bg-transparent">
                 </div>
                 <div class="hidden sm:block w-px bg-gray-100 my-1"></div>
                 <div class="sm:w-36 px-3 py-2">
                     <p class="text-[10px] font-bold uppercase text-gray-400 mb-1">Départ</p>
-                    <input type="date" name="checkout" value="{{ checkout ? checkout|date('Y-m-d') : '' }}"
+                    <input type="date" name="checkout" value="{{ checkout ?? '' }}"
                         class="w-full text-sm text-gray-600 focus:outline-none bg-transparent">
                 </div>
                 <div class="hidden sm:block w-px bg-gray-100 my-1"></div>
