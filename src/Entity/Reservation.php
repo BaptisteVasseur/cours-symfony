@@ -18,6 +18,18 @@ class Reservation
 {
     use UuidEntityTrait;
 
+    public const STATUS_PENDING = 'pending';
+    public const STATUS_CONFIRMED = 'confirmed';
+    public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_COMPLETED = 'completed';
+
+    public const STATUSES = [
+        self::STATUS_PENDING,
+        self::STATUS_CONFIRMED,
+        self::STATUS_CANCELLED,
+        self::STATUS_COMPLETED,
+    ];
+
     #[ORM\ManyToOne(inversedBy: 'reservations')]
     #[ORM\JoinColumn(nullable: false)]
     #[Assert\NotNull(message: 'Le logement est obligatoire.')]
@@ -44,7 +56,7 @@ class Reservation
 
     #[ORM\Column(length: 50)]
     #[Assert\NotBlank]
-    #[Assert\Choice(choices: ['pending', 'confirmed', 'cancelled', 'completed'], message: 'Statut invalide.')]
+    #[Assert\Choice(choices: self::STATUSES, message: 'Statut invalide.')]
     private ?string $status = null;
 
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
