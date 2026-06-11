@@ -7,6 +7,7 @@ namespace App\Controller\Front;
 use App\Entity\Property;
 use App\Repository\PropertyRepository;
 use App\Repository\ReviewRepository;
+use App\Service\Availability\AvailabilityChecker;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -53,18 +54,58 @@ class HomeController extends AbstractController
     }
 
     #[Route('/search', name: 'app_search', methods: ['GET'])]
-    public function search(Request $request, PropertyRepository $propertyRepository): Response
-    {
+    public function search(
+        Request $request,
+        PropertyRepository $propertyRepository,
+        AvailabilityChecker $availabilityChecker,
+    ): Response {
         $checkin = $this->parseDate($request->query->get('checkin'));
         $checkout = $this->parseDate($request->query->get('checkout'));
+        $guests = $this->parsePositiveInt($request->query->get('guests'));
+        $destination = $request->query->get('destination');
+        $priceMin = $this->parsePositiveInt($request->query->get('priceMin'));
+        $priceMax = $this->parsePositiveInt($request->query->get('priceMax'));
+        $propertyType = $request->query->get('propertyType');
+        $sort = $request->query->get('sort');
+
+        $properties = $propertyRepository->searchPublished([
+            'destination' => $destination,
+            'guests' => $guests,
+            'priceMin' => $priceMin,
+            'priceMax' => $priceMax,
+            'propertyType' => $propertyType,
+            'sort' => $sort,
+        ]);
+
+        if ($checkin instanceof \DateTimeImmutable && $checkout instanceof \DateTimeImmutable && $checkin < $checkout) {
+            $effectiveGuests = $guests ?? 1;
+            $properties = array_values(array_filter(
+                $properties,
+                static fn (Property $property): bool => $availabilityChecker->check($property, $checkin, $checkout, $effectiveGuests)->available,
+            ));
+        }
 
         return $this->render('front/search/index.html.twig', [
-            'properties' => $propertyRepository->findForListing('published'),
+            'properties' => $properties,
             'checkin' => $checkin,
             'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'guests' => $guests ?? 0,
+            'destination' => $destination,
+            'priceMin' => $priceMin ?? 0,
+            'priceMax' => $priceMax ?? 0,
+            'propertyType' => $propertyType,
+            'sort' => $sort,
         ]);
+    }
+
+    private function parsePositiveInt(?string $value): ?int
+    {
+        if ($value === null || $value === '' || !ctype_digit($value)) {
+            return null;
+        }
+        $int = (int) $value;
+
+        return $int > 0 ? $int : null;
     }
 
     private function parseDate(?string $value): ?\DateTimeImmutable

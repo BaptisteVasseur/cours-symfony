@@ -132,4 +132,65 @@ class PropertyRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    /**
+     * @param array{
+     *     destination?: ?string,
+     *     guests?: ?int,
+     *     priceMin?: ?int,
+     *     priceMax?: ?int,
+     *     propertyType?: ?string,
+     *     sort?: ?string,
+     * } $criteria
+     * @return list<Property>
+     */
+    public function searchPublished(array $criteria): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published');
+
+        $destination = isset($criteria['destination']) ? trim((string) $criteria['destination']) : '';
+        if ($destination !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.country) LIKE :destination')
+                ->setParameter('destination', '%' . mb_strtolower($destination) . '%');
+        }
+
+        if (!empty($criteria['guests']) && $criteria['guests'] > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', (int) $criteria['guests']);
+        }
+
+        if (!empty($criteria['priceMin']) && $criteria['priceMin'] > 0) {
+            $qb->andWhere('p.pricePerNight >= :priceMin')
+                ->setParameter('priceMin', (int) $criteria['priceMin']);
+        }
+
+        if (!empty($criteria['priceMax']) && $criteria['priceMax'] > 0) {
+            $qb->andWhere('p.pricePerNight <= :priceMax')
+                ->setParameter('priceMax', (int) $criteria['priceMax']);
+        }
+
+        if (!empty($criteria['propertyType'])) {
+            $qb->andWhere('p.propertyType = :propertyType')
+                ->setParameter('propertyType', (string) $criteria['propertyType']);
+        }
+
+        $sort = $criteria['sort'] ?? null;
+        if ($sort === 'price_asc') {
+            $qb->orderBy('p.pricePerNight', 'ASC');
+        } elseif ($sort === 'price_desc') {
+            $qb->orderBy('p.pricePerNight', 'DESC');
+        } else {
+            $qb->orderBy('p.createdAt', 'DESC');
+        }
+
+        return $qb->getQuery()->getResult();
+    }
 }
