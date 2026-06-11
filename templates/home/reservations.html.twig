@@ -7,9 +7,9 @@
             <p class="text-gray-500 mt-1">Historique de toutes vos réservations</p>
         </div>
 
-        {% if app.user.reservations|length > 0 %}
+        {% if reservations|length > 0 %}
             <div class="space-y-4">
-                {% for reservation in app.user.reservations %}
+                {% for reservation in reservations %}
                     {% include 'parts/reservation_row.html.twig' with { reservation: reservation } %}
                 {% endfor %}
             </div>

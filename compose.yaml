@@ -44,6 +44,12 @@ services:
     ports:
       - "8089:8000"
     entrypoint: ["sh", "/var/www/html/docker/entrypoint.sh"]
+    healthcheck:
+      test: ["CMD-SHELL", "php -r '$$s=@fsockopen(\"127.0.0.1\", 8000); exit($$s ? 0 : 1);'"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 30s
 
   messenger-worker:
     build:
@@ -60,8 +66,10 @@ services:
     depends_on:
       database:
         condition: service_healthy
-    command: >
-      sh -c "php bin/console messenger:consume async -vv --time-limit=3600"
+      php:
+        condition: service_healthy
+    entrypoint: ["sh", "/var/www/html/docker/entrypoint.sh"]
+    command: ["php", "bin/console", "messenger:consume", "async", "-vv", "--time-limit=3600"]
 
 
 #  nginx:

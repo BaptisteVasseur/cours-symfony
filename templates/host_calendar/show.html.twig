@@ -1,0 +1,170 @@
+{% extends 'layout/user.html.twig' %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-lg text-sm font-medium {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        <a href="{{ path('app_host_calendar_index') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i>
+            Retour aux calendriers
+        </a>
+
+        <div class="mb-8 flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+            <div>
+                <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">{{ property.title }}</h1>
+                {% if property.address %}
+                    <p class="text-gray-500 mt-1">{{ property.address.city }}, {{ property.address.country }}</p>
+                {% endif %}
+            </div>
+            <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700 hover:text-gray-900">
+                <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                Voir l'annonce
+            </a>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-1 space-y-6">
+                <section class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-5">Bloquer une periode</h2>
+
+                    {{ form_start(availabilityForm) }}
+                        {{ form_errors(availabilityForm) }}
+
+                        <div class="space-y-4">
+                            {{ form_row(availabilityForm.startDate) }}
+                            {{ form_row(availabilityForm.endDate) }}
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                {{ form_row(availabilityForm.priceOverride) }}
+                                {{ form_row(availabilityForm.minimumStay) }}
+                            </div>
+                        </div>
+
+                        <button type="submit" class="mt-6 w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition">
+                            Bloquer les dates
+                        </button>
+                    {{ form_end(availabilityForm) }}
+                </section>
+
+                <section class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-5">Export iCal</h2>
+
+                    {% if property.iCalExportToken %}
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Lien prive</label>
+                        <input type="text" readonly value="{{ absolute_url(path('app_property_calendar_export', { id: property.id, token: property.iCalExportToken })) }}" class="w-full rounded-lg border-gray-300 text-sm text-gray-700">
+                        <div class="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <form method="post" action="{{ path('app_host_property_calendar_export_token', { id: property.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('host_ical_token' ~ property.id) }}">
+                                <button type="submit" class="w-full inline-flex justify-center items-center gap-2 border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold text-sm px-4 py-2.5 rounded-lg transition">
+                                    <i class="fa-solid fa-rotate"></i>
+                                    Regenerer
+                                </button>
+                            </form>
+                            <form method="post" action="{{ path('app_host_property_calendar_revoke_export_token', { id: property.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('host_ical_revoke' ~ property.id) }}">
+                                <button type="submit" class="w-full inline-flex justify-center items-center gap-2 border border-red-200 text-red-700 hover:bg-red-50 font-semibold text-sm px-4 py-2.5 rounded-lg transition">
+                                    <i class="fa-solid fa-link-slash"></i>
+                                    Revoquer
+                                </button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <p class="text-sm text-gray-500 mb-4">Aucun lien d'export actif.</p>
+                        <form method="post" action="{{ path('app_host_property_calendar_export_token', { id: property.id }) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('host_ical_token' ~ property.id) }}">
+                            <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition">
+                                Generer un lien iCal
+                            </button>
+                        </form>
+                    {% endif %}
+                </section>
+
+                <section class="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+                    <h2 class="text-lg font-semibold text-gray-900 mb-5">Import iCal</h2>
+
+                    {{ form_start(syncForm, { action: path('app_host_property_calendar_import_add', { id: property.id }) }) }}
+                        <div class="space-y-4">
+                            {{ form_row(syncForm.providerName) }}
+                            {{ form_row(syncForm.iCalUrl) }}
+                        </div>
+                        <button type="submit" class="mt-6 w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-3 rounded-lg transition">
+                            Ajouter le flux
+                        </button>
+                    {{ form_end(syncForm) }}
+
+                    <div class="mt-6 divide-y divide-gray-100">
+                        {% for sync in iCalSyncs %}
+                            <div class="py-4 flex items-start justify-between gap-4">
+                                <div class="min-w-0">
+                                    <p class="font-semibold text-gray-900 truncate">{{ sync.providerName }}</p>
+                                    <p class="text-xs text-gray-500 truncate">{{ sync.iCalUrl }}</p>
+                                    <p class="text-xs text-gray-400 mt-1">
+                                        {% if sync.lastSyncAt %}
+                                            Derniere synchro le {{ sync.lastSyncAt|date('d/m/Y H:i') }}
+                                        {% else %}
+                                            Jamais synchronise
+                                        {% endif %}
+                                    </p>
+                                </div>
+                                <form method="post" action="{{ path('app_host_property_calendar_import_delete', { id: property.id, syncId: sync.id }) }}">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('host_ical_delete' ~ sync.id) }}">
+                                    <button type="submit" class="inline-flex justify-center items-center border border-gray-300 text-gray-600 hover:bg-gray-50 p-2.5 rounded-lg transition" title="Supprimer">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        {% else %}
+                            <p class="text-sm text-gray-500 pt-1">Aucun flux importe.</p>
+                        {% endfor %}
+                    </div>
+                </section>
+            </div>
+
+            <section class="lg:col-span-2 bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 flex items-center justify-between gap-3">
+                    <div>
+                        <h2 class="font-semibold text-gray-900">Dates indisponibles</h2>
+                        <p class="text-sm text-gray-500">{{ blockedDates|length }} nuit{{ blockedDates|length > 1 ? 's' : '' }} bloquee{{ blockedDates|length > 1 ? 's' : '' }}</p>
+                    </div>
+                </div>
+
+                <div class="divide-y divide-gray-100">
+                    {% for availability in blockedDates %}
+                        <div class="px-6 py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                            <div>
+                                <p class="font-semibold text-gray-900">{{ availability.availableDate|date('d/m/Y') }}</p>
+                                <p class="text-sm text-gray-500">
+                                    Indisponible
+                                    {% if availability.priceOverride %}
+                                        - {{ availability.priceOverride|number_format(2, ',', ' ') }} EUR
+                                    {% endif %}
+                                    {% if availability.minimumStay %}
+                                        - {{ availability.minimumStay }} nuit{{ availability.minimumStay > 1 ? 's' : '' }} min.
+                                    {% endif %}
+                                </p>
+                            </div>
+                            <form method="post" action="{{ path('app_host_property_calendar_unblock', { id: property.id, availabilityId: availability.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('host_unblock' ~ availability.id) }}">
+                                <button type="submit" class="inline-flex justify-center items-center gap-2 border border-gray-300 text-gray-700 hover:bg-gray-50 font-semibold text-sm px-4 py-2.5 rounded-lg transition">
+                                    <i class="fa-solid fa-unlock"></i>
+                                    Rendre disponible
+                                </button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <div class="px-6 py-16 text-center text-gray-500">
+                            <i class="fa-solid fa-calendar-check text-4xl text-gray-300 mb-4"></i>
+                            <p class="font-semibold text-gray-900">Aucune date bloquee</p>
+                            <p class="text-sm mt-1">Le logement est disponible selon les reservations confirmees.</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </section>
+        </div>
+    </main>
+{% endblock %}

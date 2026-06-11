@@ -49,6 +49,7 @@ security:
     access_control:
         - { path: ^/(login|register), roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/host, roles: ROLE_HOST }
         - { path: ^/property, roles: ROLE_ADMIN }
         - { path: ^/user, roles: ROLE_ADMIN }
 

@@ -20,6 +20,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 )]
 #[ORM\Entity(repositoryClass: PropertyRepository::class)]
 #[ORM\Table(name: 'properties')]
+#[ORM\UniqueConstraint(name: 'uniq_properties_ical_export_token', columns: ['i_cal_export_token'])]
 class Property
 {
     use UuidEntityTrait;
@@ -116,6 +117,9 @@ class Property
 
     #[ORM\Column]
     private bool $instantBooking = false;
+
+    #[ORM\Column(length: 64, nullable: true)]
+    private ?string $iCalExportToken = null;
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
@@ -352,6 +356,18 @@ class Property
     public function setInstantBooking(bool $instantBooking): static
     {
         $this->instantBooking = $instantBooking;
+
+        return $this;
+    }
+
+    public function getICalExportToken(): ?string
+    {
+        return $this->iCalExportToken;
+    }
+
+    public function setICalExportToken(?string $iCalExportToken): static
+    {
+        $this->iCalExportToken = $iCalExportToken;
 
         return $this;
     }

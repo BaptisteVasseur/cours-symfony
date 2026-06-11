@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Repository;
 
 use App\Entity\Property;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -61,6 +62,33 @@ class PropertyRepository extends ServiceEntityRepository
             ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
+    }
+
+    public function findForHost(User $host): array
+    {
+        return $this->createQueryBuilder('p')
+            ->addSelect('m', 'a')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->andWhere('p.host = :host')
+            ->setParameter('host', $host)
+            ->orderBy('p.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    public function findOneForHost(Property $property, User $host): ?Property
+    {
+        return $this->createQueryBuilder('p')
+            ->addSelect('m', 'a')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->andWhere('p = :property')
+            ->andWhere('p.host = :host')
+            ->setParameter('property', $property)
+            ->setParameter('host', $host)
+            ->getQuery()
+            ->getOneOrNullResult();
     }
 
     public function countByStatus(string $status): int
