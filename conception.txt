@@ -1,0 +1,128 @@
+CONCEPTION TECHNIQUE — StayNest
+Auteur  : Nolan
+Date    : 2026-06-11
+Projet  : cours-symfony / TP Reservation & Calendrier
+
+1. MODELE DE DONNEES
+1.1 Entites principales
+
+
+User
+    Champs cles : id, email, passwordHash, roles,
+                  status, isEmailVerified,
+                  preferredLanguage, preferredCurrency, createdAt
+    Role : le user pour tout faire resa, hote etc..., avc 3 diff role admin user et host
+
+Property
+    Champs cles : id, title, propertyType, status, maxGuests, pricePerNight,
+                  cleaningFee, securityDeposit, instantBooking, icalToken, createdAt
+    Role : le logement poste par un hote, doit etre en status published pour etre reservable,
+           icalToken sert a exporter le calendrier sans se connecter
+
+Reservation
+    Champs cles : id, checkinDate, checkoutDate, guestsCount, status,
+                  totalPrice, cleaningFee, serviceFee, securityDeposit,
+                  currency, cancellationReason, createdAt
+    Role : la resa entre un voyageur et un logement, stocke les dates, le prix
+           et le statut, cancellationReason obligatoire si annulee
+
+PropertyAvailability
+    Champs cles : id, availableDate, isAvailable, priceOverride,
+                  minimumStay, reason
+    Role : gere la dispo jour par jour d'un logement, isAvailable=false = jour bloque,
+           reason indique pourquoi (ex : import Airbnb)
+
+PropertyICalSync
+    Champs cles : id, providerName, iCalUrl, lastSyncAt
+    Role : stocke l'URL d'un flux iCal externe (Airbnb, VRBO...) a synchroniser
+           pour bloquer automatiquement les dates deja reservees ailleurs
+
+ReservationStatusHistory
+    Champs cles : id, oldStatus, newStatus, createdAt
+    Role : historique de tous les changements de statut d'une resa,
+           permet de savoir qui a change quoi et quand
+
+
+2. REP
+2.1 Modelisation temporelle
+
+Le jour de checkout est considere comme disponible pour un nouveau voyageur
+On raisonne en nuits, pas en journees : une resa du 10 au 15 bloque les nuits
+du 10, 11, 12, 13 et 14 Le 15 est libre des le matin
+
+Dans PropertyAvailability on stocke des dates au format DATE (pas DATETIME),
+donc un depart a 11h et une arrivee a 15h le meme jour ne posent pas de
+probleme : la date du 15 n'est pas bloquee On fait confiance aux heures de
+checkin/checkout stockees dans Property (checkinTime, checkoutTime) pour que
+l'hote gere sa fenetre de menage
+
+
+2.2 Gestion des etats
+
+Une demande Pending ne bloque PAS les dates dans notre implementation
+Seules les rese Confirmed bloquent le calendrier
+
+Dans cette implementation, les demandes en attente ne bloquent pas les dates
+Il peut donc y avoir plusieurs demandes sur la meme periode
+Lorsqu'une reservation est confirmee, les autres demandes en conflit sont refusees (et au pire cheh pour les autres)
+
+
+2.3 Concurrence
+
+Si deux users valident en meme temps pour le meme logement memes dates,
+on s'appuie sur une transac SQL avc SELECT ... FOR UPDATE sur la table
+resa au moment de la confirmation Le premier commit passe, le second
+detecte le chevauchement et recoit une erreur
+
+Sans cette protection, les deux resa pourraient etre inserees avant
+que l'une detecte l'autre Le verrou pessimiste au niveau base evite ce cas
+En pratique Doctrine permet de faire ca avc LockMode::PESSIMISTIC_WRITE dans
+le repository
+
+
+2.4 Performance
+
+Pour valider 20 nuits sans faire 20 requetes SQL, on utilise une seule requete
+avc une sous-requete DQL qui verif si au moins un jour dans la plage est
+bloque ou reserve :
+
+PropertyAvailabilityRepository::hasBlockedDayInRange() : une requete COUNT
+  avc WHERE availableDate BETWEEN checkin AND checkout 1 day AND isAvailable = false
+
+resaRepository::findOverlapping() : une requete qui verif si
+  checkinDate < checkout AND checkoutDate > checkin en un seul WHERE
+
+Resultat : permet de lim les requettes
+
+
+2.5 Asynchronisme
+
+L'email doit etre dispatche apres le flush() de l'ORM parce qu'avant le flush,
+la resa n'existe pas encore en base Si le handler Messenger essaie de
+charger la resa par son ID avant le flush, il ne la trouve pas
+
+En dispatchant apres le flush, on garantit que la donnee est persistee avant
+que le worker tente de la lire
+
+Si RabbitMQ tombe en panne : on utilise le transport doctrine (file d'attente
+en base de donnees) comme fallback Les messages restent en base et sont traites
+des que le worker redémarre Aucun email n'est perdu, juste retarde
+
+
+2.6 Structure SQL du calendrier
+
+On a choisi la table de jours individuels (PropertyAvailability, une ligne par
+date) plutot qu'une table de periodes (date_start, date_end)
+
+
+
+Requete simple : WHERE availableDate BETWEEN X AND Y, un seul index suffit
+Permet un prix ou un sejour minimum different par jour (priceOverride,
+  minimumStay)
+Fusion facile de plusieurs sources (import Airbnb + VRBO + blocage manuel)
+  sans avoir a gerer des chevauchements de plages
+
+ plus de lignes en base pour les longues periodes Acceptable
+car les logements ont rarement plus de quelques centaines de jours bloques
+
+

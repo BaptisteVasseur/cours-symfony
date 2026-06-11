@@ -5,39 +5,416 @@
 {% set cover = property.coverMedia %}
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
+{% block stylesheets %}
+<style>
+.cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 2px; }
+.cal-day {
+    position: relative; display: flex; align-items: center; justify-content: center;
+    height: 2.4rem; border-radius: 9999px;
+    font-size: .8rem; font-weight: 500; cursor: pointer;
+    transition: background .15s, color .15s; user-select: none;
+}
+.cal-day:hover:not(.cal-day--disabled):not(.cal-day--empty):not(.cal-day--past) {
+    background: #FFF0F2; color: #FF385C;
+}
+.cal-day--today::after {
+    content: ''; position: absolute; bottom: 3px; left: 50%; transform: translateX(-50%);
+    width: 4px; height: 4px; border-radius: 50%; background: #FF385C;
+}
+.cal-day--start, .cal-day--end {
+    background: #FF385C !important; color: #fff !important;
+}
+.cal-day--in-range { background: #FFF0F2; color: #FF385C; border-radius: 0; }
+.cal-day--past { color: #d1d5db; cursor: not-allowed; pointer-events: none; }
+.cal-day--disabled {
+    background: repeating-linear-gradient(
+        135deg, #f9fafb, #f9fafb 4px, #e5e7eb 4px, #e5e7eb 5px
+    );
+    color: #9ca3af; cursor: not-allowed; pointer-events: none;
+    border-radius: 4px;
+}
+.cal-day--empty { pointer-events: none; }
+.cal-day-label { font-size: .7rem; font-weight: 700; color: #9ca3af; text-align: center; padding: 4px 0; }
+</style>
+{% endblock %}
+
 {% block content %}
-    <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
-            <i class="fa-solid fa-arrow-left"></i> Retour au logement
-        </a>
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
-            {% endfor %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+
+    <a href="{{ path('app_logement_detail', { id: property.id }) }}"
+       class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Retour au logement
+    </a>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
         {% endfor %}
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div class="lg:col-span-2">
-                <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
-                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                    {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+    {% endfor %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {# ── Formulaire ── #}
+        <div class="lg:col-span-2">
+            <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
+
+            <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                {{ form_start(form, { attr: { class: 'space-y-6' } }) }}
+
+                    {# Résumé dates sélectionnées #}
+                    <div>
+                        <p class="text-sm font-semibold text-gray-700 mb-3">Sélectionnez vos dates</p>
+                        <div class="flex gap-3 mb-4">
+                            <div class="flex-1 border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
+                                <p class="text-xs font-bold uppercase text-gray-400 mb-1">Arrivée</p>
+                                <p id="checkin-display" class="text-sm font-semibold text-gray-800">—</p>
+                            </div>
+                            <div class="flex items-center text-gray-300 text-xs">&#8594;</div>
+                            <div class="flex-1 border border-gray-200 rounded-xl px-4 py-3 bg-gray-50">
+                                <p class="text-xs font-bold uppercase text-gray-400 mb-1">Départ</p>
+                                <p id="checkout-display" class="text-sm font-semibold text-gray-800">—</p>
+                            </div>
+                            <button type="button" id="clear-dates"
+                                style="display:none"
+                                class="self-center ml-1 text-xs text-gray-400 hover:text-red-500 transition">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
                         </div>
-                        {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
-                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
-                    {{ form_end(form) }}
-                </div>
+
+                        {# Calendrier inline #}
+                        <div class="border border-gray-200 rounded-2xl overflow-hidden">
+                            <div class="flex items-center justify-between px-5 py-3 border-b border-gray-100">
+                                <button type="button" id="cal-prev"
+                                    class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition text-gray-500">
+                                    <i class="fa-solid fa-chevron-left text-xs"></i>
+                                </button>
+                                <div class="flex gap-8 text-sm font-semibold text-gray-800">
+                                    <span id="cal-month-left"></span>
+                                    <span id="cal-month-right"></span>
+                                </div>
+                                <button type="button" id="cal-next"
+                                    class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-100 transition text-gray-500">
+                                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                                </button>
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-100 px-2 pb-4 pt-2">
+                                <div class="px-2 pb-2 sm:pb-0" id="cal-left"></div>
+                                <div class="px-2 pt-2 sm:pt-0" id="cal-right"></div>
+                            </div>
+                        </div>
+
+                        <p id="range-error" style="display:none"
+                           class="mt-2 text-xs text-red-600 font-medium">
+                            <i class="fa-solid fa-circle-xmark mr-1"></i>
+                            Cette période contient des dates déjà réservées. Veuillez choisir d'autres dates.
+                        </p>
+
+                        {# Inputs Symfony cachés — alimentés par le JS #}
+                        {{ form_widget(form.checkinDate,  { attr: { style: 'display:none' } }) }}
+                        {{ form_widget(form.checkoutDate, { attr: { style: 'display:none' } }) }}
+                        <div class="text-sm text-red-600">
+                            {{ form_errors(form.checkinDate) }}
+                            {{ form_errors(form.checkoutDate) }}
+                        </div>
+                    </div>
+
+                    {{ form_row(form.guestsCount, {
+                        label: 'Voyageurs',
+                        attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests }
+                    }) }}
+
+                    <button type="submit"
+                        class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl transition">
+                        Confirmer la réservation
+                    </button>
+
+                {{ form_end(form) }}
             </div>
-            <aside>
-                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
-                    <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
-                    <div class="p-5">
-                        <h2 class="font-semibold">{{ property.title }}</h2>
-                        <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+        </div>
+
+        {# ── Récap logement #}
+        <aside>
+            <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
+                <img src="{{ cover ? cover.fileUrl : placeholderImage }}"
+                     alt="{{ property.title }}" class="w-full h-48 object-cover">
+                <div class="p-5">
+                    <h2 class="font-semibold text-gray-900">{{ property.title }}</h2>
+                    <p class="text-lg font-bold mt-2 text-gray-900">
+                        {{ property.pricePerNight|number_format(0, ',', ' ') }} €
+                        <span class="text-sm font-normal text-gray-500">/ nuit</span>
+                    </p>
+                    <div id="price-preview" style="display:none"
+                         class="mt-4 pt-4 border-t border-gray-100 space-y-1 text-sm text-gray-600">
+                        <div class="flex justify-between">
+                            <span id="pp-nights"></span>
+                            <span id="pp-subtotal"></span>
+                        </div>
+                        {% if property.cleaningFee %}
+                        <div class="flex justify-between">
+                            <span>Frais de ménage</span>
+                            <span>{{ property.cleaningFee|number_format(0, ',', ' ') }} €</span>
+                        </div>
+                        {% endif %}
+                        <div class="flex justify-between">
+                            <span>Frais de service (12 %)</span>
+                            <span id="pp-service"></span>
+                        </div>
+                        <div class="flex justify-between font-bold text-gray-900 pt-2 border-t border-gray-100">
+                            <span>Total</span>
+                            <span id="pp-total"></span>
+                        </div>
                     </div>
                 </div>
-            </aside>
-        </div>
-    </main>
+            </div>
+        </aside>
+
+    </div>{# /grid #}
+
+</main>
+
+{# ── Données JSON pour le calendrier ── #}
+<script type="application/json" id="cal-data">
+{
+    "booked":   {{ bookedRanges|json_encode|raw }},
+    "blocked":  {{ blockedDates|json_encode|raw }},
+    "price":    {{ property.pricePerNight|json_encode|raw }},
+    "cleaning": {{ (property.cleaningFee ?? 0)|json_encode|raw }}
+}
+</script>
+
+<script>
+(function () {
+    var raw  = document.getElementById('cal-data').textContent;
+    var data = JSON.parse(raw);
+    var BOOKED          = data.booked;
+    var BLOCKED         = data.blocked;
+    var PRICE_PER_NIGHT = parseFloat(data.price);
+    var CLEANING_FEE    = parseFloat(data.cleaning) || 0;
+
+    /* ── helpers ── */
+    function fmt(d) {
+        return d.toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+    function ymd(d) {
+        var y = d.getFullYear();
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return y + '-' + m + '-' + day;
+    }
+    function parseYmd(s) {
+        var parts = s.split('-');
+        return new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
+    }
+    function addDays(d, n) { return new Date(d.getTime() + n * 86400000); }
+
+    /* ── dates bloquees ── */
+    var disabledSet = {};
+    /* réservations actives */
+    BOOKED.forEach(function(r) {
+        var cur = parseYmd(r.from);
+        var end = parseYmd(r.to);
+        while (cur < end) { disabledSet[ymd(cur)] = true; cur = addDays(cur, 1); }
+    });
+    /* dates bloquées manuellement par l'hôte */
+    BLOCKED.forEach(function(d) { disabledSet[d] = true; });
+
+    /* ── etat ── */
+    var today = new Date(); today.setHours(0,0,0,0);
+    var viewYear  = today.getFullYear();
+    var viewMonth = today.getMonth();
+    var startDate = null, endDate = null;
+
+    /* ── refs DOM ── */
+    var calLeft        = document.getElementById('cal-left');
+    var calRight       = document.getElementById('cal-right');
+    var monthLeft      = document.getElementById('cal-month-left');
+    var monthRight     = document.getElementById('cal-month-right');
+    var checkinDisplay  = document.getElementById('checkin-display');
+    var checkoutDisplay = document.getElementById('checkout-display');
+    var clearBtn        = document.getElementById('clear-dates');
+    var pricePreview    = document.getElementById('price-preview');
+
+    /* trouver les inputs Symfony par leur name (independant de l ID genere) */
+    var checkinInput  = document.querySelector('input[name$="[checkinDate]"]')
+                     || document.querySelector('input[id$="checkinDate"]');
+    var checkoutInput = document.querySelector('input[name$="[checkoutDate]"]')
+                     || document.querySelector('input[id$="checkoutDate"]');
+
+    var DAYS   = ['Lu','Ma','Me','Je','Ve','Sa','Di'];
+    var MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin',
+                  'Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
+
+    /* ── helpers range ── */
+    function isInRange(d) {
+        if (!startDate || !endDate) return false;
+        return d > startDate && d < endDate;
+    }
+
+    /* ── rendu d un mois ── */
+    function renderMonth(container, year, month) {
+        container.innerHTML = '';
+
+        var header = document.createElement('div');
+        header.className = 'cal-grid';
+        header.style.marginBottom = '4px';
+        DAYS.forEach(function(day) {
+            var el = document.createElement('div');
+            el.className = 'cal-day-label';
+            el.textContent = day;
+            header.appendChild(el);
+        });
+        container.appendChild(header);
+
+        var grid = document.createElement('div');
+        grid.className = 'cal-grid';
+
+        var first = new Date(year, month, 1);
+        var startDow = (first.getDay() + 6) % 7; /* lundi = 0 */
+
+        for (var i = 0; i < startDow; i++) {
+            var blank = document.createElement('div');
+            blank.className = 'cal-day cal-day--empty';
+            grid.appendChild(blank);
+        }
+
+        var daysInMonth = new Date(year, month + 1, 0).getDate();
+        for (var d = 1; d <= daysInMonth; d++) {
+            var date = new Date(year, month, d);
+            var ds   = ymd(date);
+            var el   = document.createElement('div');
+            el.className = 'cal-day';
+            el.textContent = d;
+
+            var isPast     = date < today;
+            var isDisabled = !!disabledSet[ds];
+            var isToday    = ds === ymd(today);
+            var isStart    = startDate && ds === ymd(startDate);
+            var isEnd      = endDate   && ds === ymd(endDate);
+            var inRange    = isInRange(date);
+
+            if (isPast)     el.classList.add('cal-day--past');
+            if (isDisabled) el.classList.add('cal-day--disabled');
+            if (isToday)    el.classList.add('cal-day--today');
+            if (isStart)    el.classList.add('cal-day--start');
+            if (isEnd)      el.classList.add('cal-day--end');
+            if (inRange)    el.classList.add('cal-day--in-range');
+
+            if (!isPast && !isDisabled) {
+                (function(dt) {
+                    el.addEventListener('click', function() { onDayClick(dt); });
+                })(date);
+            }
+
+            grid.appendChild(el);
+        }
+        container.appendChild(grid);
+    }
+
+    function renderCalendar() {
+        var ry = viewMonth === 11 ? viewYear + 1 : viewYear;
+        var rm = (viewMonth + 1) % 12;
+        monthLeft.textContent  = MONTHS[viewMonth] + ' ' + viewYear;
+        monthRight.textContent = MONTHS[rm] + ' ' + ry;
+        renderMonth(calLeft,  viewYear,  viewMonth);
+        renderMonth(calRight, ry, rm);
+    }
+
+    /* verifie qu aucun jour bloque n est dans la plage [from, to[ */
+    function rangeHasDisabled(from, to) {
+        var cur = addDays(from, 1); /* le jour d arrivee lui-meme est deja valide */
+        while (cur < to) {
+            if (disabledSet[ymd(cur)]) return true;
+            cur = addDays(cur, 1);
+        }
+        return false;
+    }
+
+    /* ── interaction ── */
+    function onDayClick(date) {
+        if (!startDate || (startDate && endDate)) {
+            startDate = date; endDate = null;
+        } else {
+            var lo = date < startDate ? date : startDate;
+            var hi = date < startDate ? startDate : date;
+            if (date.getTime() === startDate.getTime()) {
+                startDate = null;
+            } else if (rangeHasDisabled(lo, hi)) {
+                /* plage invalide : recommencer depuis ce jour */
+                startDate = date; endDate = null;
+                showRangeError();
+            } else {
+                startDate = lo; endDate = hi;
+            }
+        }
+        syncInputs();
+        renderCalendar();
+    }
+
+    var rangeErrorEl = document.getElementById('range-error');
+    function showRangeError() {
+        if (!rangeErrorEl) return;
+        rangeErrorEl.style.display = 'block';
+        setTimeout(function() { rangeErrorEl.style.display = 'none'; }, 3000);
+    }
+
+    function syncInputs() {
+        if (startDate && endDate) {
+            if (checkinInput)  checkinInput.value  = ymd(startDate);
+            if (checkoutInput) checkoutInput.value = ymd(endDate);
+            checkinDisplay.textContent  = fmt(startDate);
+            checkoutDisplay.textContent = fmt(endDate);
+            clearBtn.style.display = 'inline';
+            showPrice();
+        } else if (startDate) {
+            if (checkinInput)  checkinInput.value  = ymd(startDate);
+            if (checkoutInput) checkoutInput.value = '';
+            checkinDisplay.textContent  = fmt(startDate);
+            checkoutDisplay.textContent = '-';
+            clearBtn.style.display = 'inline';
+            pricePreview.style.display = 'none';
+        } else {
+            if (checkinInput)  checkinInput.value  = '';
+            if (checkoutInput) checkoutInput.value = '';
+            checkinDisplay.textContent  = '-';
+            checkoutDisplay.textContent = '-';
+            clearBtn.style.display = 'none';
+            pricePreview.style.display = 'none';
+        }
+    }
+
+    function showPrice() {
+        if (!startDate || !endDate) return;
+        var nights = Math.round((endDate - startDate) / 86400000);
+        if (nights <= 0) return;
+        var subtotal   = PRICE_PER_NIGHT * nights;
+        var serviceFee = Math.round(subtotal * 0.12 * 100) / 100;
+        var total      = subtotal + CLEANING_FEE + serviceFee;
+        document.getElementById('pp-nights').textContent   = nights + ' nuit' + (nights > 1 ? 's' : '') + ' x ' + PRICE_PER_NIGHT + ' EUR';
+        document.getElementById('pp-subtotal').textContent = subtotal.toLocaleString('fr-FR') + ' EUR';
+        document.getElementById('pp-service').textContent  = serviceFee.toLocaleString('fr-FR') + ' EUR';
+        document.getElementById('pp-total').textContent    = total.toLocaleString('fr-FR') + ' EUR';
+        pricePreview.style.display = 'block';
+    }
+
+    clearBtn.addEventListener('click', function() {
+        startDate = endDate = null;
+        syncInputs(); renderCalendar();
+    });
+    document.getElementById('cal-prev').addEventListener('click', function() {
+        viewMonth--; if (viewMonth < 0) { viewMonth = 11; viewYear--; }
+        renderCalendar();
+    });
+    document.getElementById('cal-next').addEventListener('click', function() {
+        viewMonth++; if (viewMonth > 11) { viewMonth = 0; viewYear++; }
+        renderCalendar();
+    });
+
+    /* pre-remplissage si Symfony a repopule le formulaire apres erreur */
+    if (checkinInput && checkinInput.value)   startDate = parseYmd(checkinInput.value);
+    if (checkoutInput && checkoutInput.value) endDate   = parseYmd(checkoutInput.value);
+    syncInputs();
+    renderCalendar();
+})();
+</script>
+
 {% endblock %}

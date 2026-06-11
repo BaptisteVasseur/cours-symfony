@@ -10,7 +10,7 @@
         {% if properties|length > 0 %}
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for property in properties %}
-                    {% include 'components/card.html.twig' with { property: property } %}
+                    {% include 'components/card.html.twig' with { property: property, hostUrl: path('app_availability_index', { id: property.id }) } %}
                 {% endfor %}
             </div>
         {% else %}
