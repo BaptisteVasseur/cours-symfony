@@ -39,11 +39,8 @@
                         <p class="text-lg font-bold mt-2 text-gray-900">
                             {{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span>
                         </p>
-
-                        {# Conteneur d'erreur #}
                         <div data-booking-price-target="error" class="mt-4 p-3 bg-rose-50 border border-rose-100 text-rose-800 rounded-xl text-xs hidden"></div>
 
-                        {# Conteneur du détail des prix #}
                         <div data-booking-price-target="breakdown" class="mt-4 pt-4 border-t border-gray-200 hidden space-y-2">
                             <div class="flex justify-between text-sm text-gray-600">
                                 <span data-booking-price-target="nightsLabel">{{ property.pricePerNight|number_format(0, ',', ' ') }} € x 1 nuit</span>

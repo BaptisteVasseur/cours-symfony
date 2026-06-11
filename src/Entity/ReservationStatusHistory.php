@@ -26,7 +26,6 @@ class ReservationStatusHistory
     #[ORM\Column(enumType: BookingStatus::class)]
     private ?BookingStatus $toStatus = null;
 
-    // 'guest' | 'host' | 'system'
     #[ORM\Column(length: 10, nullable: true)]
     private ?string $actor = null;
 

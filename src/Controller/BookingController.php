@@ -61,8 +61,6 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_logement_detail', ['id' => $property->getId()]);
         }
 
-        // If accessed through the legacy route, we submit back to the same page.
-        // If accessed through the new route, we use app_booking_create.
         $actionUrl = $request->attributes->get('_route') === 'app_booking_checkout_legacy'
             ? null
             : $this->generateUrl('app_booking_create', ['property_id' => $property->getId()]);

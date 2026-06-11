@@ -8,8 +8,6 @@
             <a href="{{ path('app_home') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
                 <i class="fa-solid fa-arrow-left"></i> Retour à l'accueil
             </a>
-
-            {# Host Navigation Tabs #}
             {% if is_granted('ROLE_HOST') %}
                 <div class="flex items-center gap-6 border-b border-gray-200 mb-8 pb-1">
                     <a href="{{ path('app_host_dashboard') }}" class="text-sm font-medium pb-4 border-b-2 border-transparent text-gray-500 hover:text-gray-900 transition">

@@ -34,7 +34,6 @@ final readonly class BookingCancelledHandler
         $guest = $reservation->getGuest();
         $host = $property?->getHost();
 
-        // Determine who cancelled
         $actorStr = null;
         foreach ($reservation->getStatusHistory() as $history) {
             if ($history->getToStatus() === BookingStatus::CANCELLED) {
@@ -45,7 +44,6 @@ final readonly class BookingCancelledHandler
         $reason = $reservation->getCancellationReason() ?? 'non spécifié';
 
         if ($property !== null) {
-            // If the actor is the guest, notify the host
             if ($actorStr === 'guest') {
                 if ($host !== null && $guest !== null) {
                     $guestName = $guest->getProfile()?->getFirstName() ?? 'Le voyageur';
@@ -54,7 +52,6 @@ final readonly class BookingCancelledHandler
                     $this->notificationService->notify($host, $title, $body, '/compte/hote/reservations');
                 }
             } 
-            // If the actor is the host, notify the guest
             elseif ($actorStr === 'host') {
                 if ($guest !== null) {
                     $title = 'Réservation annulée par l\'hôte';
@@ -62,7 +59,6 @@ final readonly class BookingCancelledHandler
                     $this->notificationService->notify($guest, $title, $body, '/reservations/' . $reservation->getId());
                 }
             } 
-            // If cancelled by system or unknown actor, notify both
             else {
                 if ($guest !== null) {
                     $title = 'Réservation annulée';

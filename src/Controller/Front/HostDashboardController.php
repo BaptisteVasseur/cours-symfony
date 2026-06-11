@@ -71,7 +71,6 @@ final class HostDashboardController extends AbstractController
         $activeListingsCount = $propertyRepository->count(['host' => $user, 'status' => 'published']);
         $totalListings = $propertyRepository->count(['host' => $user]);
 
-        // Calculate a dynamic occupancy rate
         $occupancyRate = 0.0;
         if ($totalListings > 0) {
             $reservations = $reservationRepository->findByHostForListing($user);
@@ -82,7 +81,6 @@ final class HostDashboardController extends AbstractController
                     $occupiedDays += max(1, $interval->days);
                 }
             }
-            // Occupancy rate based on occupied days in a simulated 30-day window per listing
             $occupancyRate = round(($occupiedDays / ($totalListings * 30)) * 100, 1);
             if ($occupancyRate > 100.0) {
                 $occupancyRate = 100.0;

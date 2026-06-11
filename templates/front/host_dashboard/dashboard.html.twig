@@ -8,8 +8,6 @@
             <a href="{{ path('app_home') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
                 <i class="fa-solid fa-arrow-left"></i> Retour à l'accueil
             </a>
-
-            {# Host Navigation Tabs #}
             <div class="flex items-center gap-6 border-b border-gray-200 mb-8 pb-1">
                 <a href="{{ path('app_host_dashboard') }}" class="text-sm font-semibold pb-4 border-b-2 border-brand text-gray-900">
                     Tableau de bord
@@ -34,7 +32,6 @@
                 </div>
             </div>
 
-            {# KPI Stats Grid #}
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
                 <div class="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
                     <div>
@@ -88,9 +85,7 @@
                 </div>
             </div>
 
-            {# Main Content Split #}
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {# Recent Activity / Reservations #}
                 <div class="lg:col-span-2 space-y-6">
                     <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
                         <h3 class="text-lg font-bold text-gray-900 mb-6">Réservations récentes</h3>
@@ -136,9 +131,7 @@
                                                     {{ res.totalPrice }} €
                                                 </span>
                                             </div>
-                                            
-                                            {# Actions and Messages #}
-                                            <div class="flex items-center gap-2 mt-1">
+                                                                                        <div class="flex items-center gap-2 mt-1">
                                                 <a href="{{ path('app_reservation_contact', { id: res.id }) }}" class="text-xs font-medium text-gray-600 hover:text-gray-900 px-2 py-1 border border-gray-200 rounded-lg hover:bg-gray-50 transition" title="Contacter">
                                                     <i class="fa-solid fa-comment mr-1"></i> Message
                                                 </a>
@@ -159,7 +152,6 @@
                     </div>
                 </div>
 
-                {# Helpful Information / Fast Actions #}
                 <aside class="space-y-6">
                     <div class="bg-gradient-to-br from-gray-900 to-gray-800 text-white rounded-2xl p-6 shadow-sm relative overflow-hidden">
                         <div class="absolute right-0 bottom-0 translate-x-4 translate-y-4 opacity-10 text-9xl">

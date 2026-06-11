@@ -8,8 +8,6 @@
             <a href="{{ path('app_home') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
                 <i class="fa-solid fa-arrow-left"></i> Retour à l'accueil
             </a>
-
-            {# Host Navigation Tabs #}
             <div class="flex items-center gap-6 border-b border-gray-200 mb-8 pb-1">
                 <a href="{{ path('app_host_dashboard') }}" class="text-sm font-medium pb-4 border-b-2 border-transparent text-gray-500 hover:text-gray-900 transition">
                     Tableau de bord
@@ -27,7 +25,6 @@
                 <p class="text-gray-500 text-sm mt-1">Gérez les demandes de séjour de vos voyageurs.</p>
             </div>
 
-            {# Status Filters #}
             <div class="flex flex-wrap items-center gap-2 mb-8 bg-gray-100 p-1 rounded-xl w-fit">
                 <a href="{{ path('app_host_reservations', { status: 'all' }) }}" class="px-4 py-2 rounded-lg text-xs font-semibold transition {% if currentStatus == 'all' %}bg-white text-gray-950 shadow-sm{% else %}text-gray-500 hover:text-gray-900{% endif %}">
                     Toutes
@@ -46,7 +43,6 @@
                 </a>
             </div>
 
-            {# Bookings List #}
             {% if reservations|length > 0 %}
                 <div class="space-y-6">
                     {% for res in reservations %}
@@ -57,12 +53,10 @@
 
                         <div class="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm hover:shadow-md transition">
                             <div class="flex flex-col md:flex-row gap-6">
-                                {# Cover Image #}
                                 <div class="w-full md:w-48 h-36 rounded-xl overflow-hidden shrink-0 bg-gray-100">
                                     <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="" class="w-full h-full object-cover">
                                 </div>
 
-                                {# Booking Details #}
                                 <div class="flex-grow min-w-0 flex flex-col justify-between">
                                     <div>
                                         <div class="flex flex-wrap items-start justify-between gap-2 mb-2">
@@ -115,8 +109,6 @@
                                             </div>
                                         {% endif %}
                                     </div>
-
-                                    {# Traveler and Management Actions #}
                                     <div class="flex flex-wrap items-center justify-between gap-4 border-t border-gray-100 pt-4 mt-auto">
                                         <div class="flex items-center gap-3">
                                             <div class="w-9 h-9 bg-gray-100 rounded-full flex items-center justify-center font-bold text-gray-700 text-xs overflow-hidden">
@@ -162,7 +154,6 @@
                                         </div>
                                     </div>
 
-                                    {# Decline reason form (initially hidden) #}
                                     <div id="decline-{{ res.id }}" class="hidden mt-4 pt-4 border-t border-gray-100">
                                         <form action="{{ path('app_host_reservation_decline', { id: res.id }) }}" method="POST" class="bg-gray-50 p-4 rounded-xl border border-gray-150">
                                             <input type="hidden" name="_token" value="{{ csrf_token('decline' ~ res.id) }}">
@@ -175,7 +166,6 @@
                                         </form>
                                     </div>
 
-                                    {# Cancel reason form (initially hidden) #}
                                     <div id="cancel-{{ res.id }}" class="hidden mt-4 pt-4 border-t border-gray-100">
                                         <form action="{{ path('app_host_reservation_cancel', { id: res.id }) }}" method="POST" class="bg-gray-50 p-4 rounded-xl border border-gray-150">
                                             <input type="hidden" name="_token" value="{{ csrf_token('cancel' ~ res.id) }}">
