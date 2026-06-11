@@ -34,7 +34,7 @@ services:
       - var:/var/www/html/var
     environment:
       DATABASE_URL: postgresql://app:my-super-secret-password@database:5432/app?serverVersion=16&charset=utf8
-      MESSENGER_TRANSPORT_DSN: doctrine://default
+      MESSENGER_TRANSPORT_DSN: doctrine://default?auto_setup=0
       MAILER_DSN: smtp://mailer:1025
     depends_on:
       database:
@@ -55,13 +55,13 @@ services:
       - var:/var/www/html/var
     environment:
       DATABASE_URL: postgresql://app:my-super-secret-password@database:5432/app?serverVersion=16&charset=utf8
-      MESSENGER_TRANSPORT_DSN: doctrine://default
+      MESSENGER_TRANSPORT_DSN: doctrine://default?auto_setup=0
       MAILER_DSN: smtp://mailer:1025
     depends_on:
       database:
         condition: service_healthy
     command: >
-      sh -c "php bin/console messenger:consume async -vv --time-limit=3600"
+      bash -c "until php bin/console dbal:run-sql 'SELECT 1 FROM messenger_messages LIMIT 1' >/dev/null 2>&1; do echo 'En attente du schéma (messenger_messages)...'; sleep 3; done; php bin/console messenger:consume async -vv --time-limit=3600"
 
 
 #  nginx:

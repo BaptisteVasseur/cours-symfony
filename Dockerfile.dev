@@ -6,10 +6,15 @@ RUN apk add --no-cache \
     unzip \
     curl \
     libpng-dev \
+    freetype-dev \
+    libjpeg-turbo-dev \
     libzip-dev \
     oniguruma-dev \
     icu-dev \
-    rabbitmq-c-dev
+    rabbitmq-c-dev \
+    bash
+
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg
 
 RUN docker-php-ext-install \
     pdo \
