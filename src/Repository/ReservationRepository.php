@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
+use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
@@ -72,6 +73,37 @@ class ReservationRepository extends ServiceEntityRepository
             ->getSingleScalarResult();
 
         return $result !== null ? (float) $result : 0.0;
+    }
+
+    /**
+     * Réservations d'un logement chevauchant la plage [from, to], en une seule requête
+     * (overlap : checkin <= to AND checkout >= from).
+     *
+     * @param list<string> $statuses
+     *
+     * @return list<Reservation>
+     */
+    public function findOverlappingForProperty(
+        Property $property,
+        \DateTimeImmutable $from,
+        \DateTimeImmutable $to,
+        array $statuses = ['confirmed', 'pending'],
+    ): array {
+        return $this->createQueryBuilder('r')
+            ->addSelect('g', 'gp')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('r.property = :property')
+            ->andWhere('r.status IN (:statuses)')
+            ->andWhere('r.checkinDate <= :to')
+            ->andWhere('r.checkoutDate >= :from')
+            ->setParameter('property', $property)
+            ->setParameter('statuses', $statuses)
+            ->setParameter('from', $from)
+            ->setParameter('to', $to)
+            ->orderBy('r.checkinDate', 'ASC')
+            ->getQuery()
+            ->getResult();
     }
 
     /**

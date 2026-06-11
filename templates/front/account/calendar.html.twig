@@ -1,0 +1,194 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Calendrier — {{ property.title }}{% endblock %}
+
+{% set dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] %}
+{% set monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'] %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-7xl mx-auto w-full">
+        <a href="{{ path('app_account_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i> Retour à mes propriétés
+        </a>
+
+        <div class="flex flex-wrap items-center justify-between gap-4 mb-2">
+            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Calendrier — {{ property.title }}</h1>
+            <div class="inline-flex rounded-xl border border-gray-200 overflow-hidden text-sm font-medium">
+                <a href="{{ path('app_account_property_calendar', { id: property.id, view: 'month', date: anchor|date('Y-m-d') }) }}"
+                   class="px-4 py-2 {{ view == 'month' ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 hover:bg-gray-50' }}">Mois</a>
+                <a href="{{ path('app_account_property_calendar', { id: property.id, view: 'week', date: anchor|date('Y-m-d') }) }}"
+                   class="px-4 py-2 {{ view == 'week' ? 'bg-gray-900 text-white' : 'bg-white text-gray-700 hover:bg-gray-50' }}">Semaine</a>
+            </div>
+        </div>
+        <p class="text-gray-500 mb-6">Disponibilités, réservations et périodes bloquées de votre logement</p>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <div class="lg:col-span-2">
+                {# ----- Navigation de période ----- #}
+                <div class="flex items-center justify-between mb-4">
+                    {% if view == 'month' %}
+                        <a href="{{ path('app_account_property_calendar', { id: property.id, view: 'month', date: calendar.prev|date('Y-m-d') }) }}"
+                           class="w-9 h-9 inline-flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50" aria-label="Mois précédent">
+                            <i class="fa-solid fa-chevron-left text-sm"></i>
+                        </a>
+                        <h2 class="text-lg font-semibold">{{ monthNames[calendar.month|date('n') - 1] }} {{ calendar.month|date('Y') }}</h2>
+                        <a href="{{ path('app_account_property_calendar', { id: property.id, view: 'month', date: calendar.next|date('Y-m-d') }) }}"
+                           class="w-9 h-9 inline-flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50" aria-label="Mois suivant">
+                            <i class="fa-solid fa-chevron-right text-sm"></i>
+                        </a>
+                    {% else %}
+                        <a href="{{ path('app_account_property_calendar', { id: property.id, view: 'week', date: calendar.prev|date('Y-m-d') }) }}"
+                           class="w-9 h-9 inline-flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50" aria-label="Semaine précédente">
+                            <i class="fa-solid fa-chevron-left text-sm"></i>
+                        </a>
+                        <h2 class="text-lg font-semibold">Semaine du {{ calendar.weekStart|date('d/m') }} au {{ calendar.weekEnd|date('d/m/Y') }}</h2>
+                        <a href="{{ path('app_account_property_calendar', { id: property.id, view: 'week', date: calendar.next|date('Y-m-d') }) }}"
+                           class="w-9 h-9 inline-flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-50" aria-label="Semaine suivante">
+                            <i class="fa-solid fa-chevron-right text-sm"></i>
+                        </a>
+                    {% endif %}
+                </div>
+
+                {% if view == 'month' %}
+                    {# ----- Vue mensuelle ----- #}
+                    <div class="border border-gray-200 rounded-2xl overflow-hidden">
+                        <div class="grid grid-cols-7 bg-gray-50 border-b border-gray-200">
+                            {% for name in dayNames %}
+                                <div class="px-2 py-2 text-xs font-semibold text-gray-500 text-center uppercase">{{ name }}</div>
+                            {% endfor %}
+                        </div>
+                        {% for week in calendar.weeks %}
+                            <div class="grid grid-cols-7 {% if not loop.last %}border-b border-gray-100{% endif %}">
+                                {% for day in week %}
+                                    <div class="min-h-[88px] p-1.5 border-r border-gray-100 last:border-r-0 {{ not day.inMonth ? 'bg-gray-50' }}">
+                                        <span class="inline-flex items-center justify-center w-6 h-6 text-xs rounded-full
+                                            {{ day.isPast or not day.inMonth ? 'text-gray-400' : 'text-gray-800' }}
+                                            {{ day.date|date('Y-m-d') == 'now'|date('Y-m-d') ? 'bg-gray-900 text-white font-semibold' }}">
+                                            {{ day.date|date('j') }}
+                                        </span>
+                                        {% if day.status == 'reserved' %}
+                                            <div class="mt-1 px-1.5 py-1 rounded-md bg-brand/10 text-brand text-[11px] leading-tight font-medium truncate" title="{{ day.label }}">{{ day.label }}</div>
+                                        {% elseif day.status == 'pending' %}
+                                            <div class="mt-1 px-1.5 py-1 rounded-md bg-amber-100 text-amber-800 text-[11px] leading-tight font-medium truncate" title="{{ day.label }}">{{ day.label }}</div>
+                                        {% elseif day.status == 'blocked' %}
+                                            <div class="mt-1 px-1.5 py-1 rounded-md bg-gray-200 text-gray-600 text-[11px] leading-tight font-medium truncate" title="Bloqué : {{ day.label }}">
+                                                <i class="fa-solid fa-ban text-[9px] mr-0.5"></i>{{ day.label }}
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    {# ----- Vue hebdomadaire (précision à l'heure) ----- #}
+                    <div class="border border-gray-200 rounded-2xl overflow-hidden">
+                        <div class="grid" style="grid-template-columns: 3.5rem repeat(7, minmax(0, 1fr));">
+                            <div class="border-b border-gray-200 bg-gray-50"></div>
+                            {% for day in calendar.days %}
+                                <div class="px-1 py-2 text-center border-b border-l border-gray-200 bg-gray-50">
+                                    <p class="text-xs font-semibold text-gray-500 uppercase">{{ dayNames[loop.index0] }}</p>
+                                    <p class="text-sm {{ day.date|date('Y-m-d') == 'now'|date('Y-m-d') ? 'font-bold text-brand' : 'text-gray-800' }}">{{ day.date|date('d/m') }}</p>
+                                </div>
+                            {% endfor %}
+
+                            {# Colonne des heures #}
+                            <div class="relative" style="height: 720px;">
+                                {% for hour in 0..23 %}
+                                    <div class="absolute w-full text-right pr-1.5 text-[10px] text-gray-400 -translate-y-1/2" style="top: {{ (hour / 24 * 100)|round(3) }}%;">
+                                        {% if hour > 0 %}{{ hour }}h{% endif %}
+                                    </div>
+                                {% endfor %}
+                            </div>
+
+                            {% for day in calendar.days %}
+                                <div class="relative border-l border-gray-100 {{ day.isPast ? 'bg-gray-50/60' }}" style="height: 720px;">
+                                    {% for hour in 1..23 %}
+                                        <div class="absolute w-full border-t border-gray-100" style="top: {{ (hour / 24 * 100)|round(3) }}%;"></div>
+                                    {% endfor %}
+                                    {% for segment in day.segments %}
+                                        {% set colors = segment.type == 'reserved'
+                                            ? 'bg-brand/15 border-brand/40 text-brand'
+                                            : (segment.type == 'pending' ? 'bg-amber-100/80 border-amber-300 text-amber-800' : 'bg-gray-200/90 border-gray-300 text-gray-600') %}
+                                        <div class="absolute inset-x-0.5 rounded-md border px-1 py-0.5 overflow-hidden {{ colors }}"
+                                             style="top: {{ (segment.startHour / 24 * 100)|round(3) }}%; height: {{ ((segment.endHour - segment.startHour) / 24 * 100)|round(3) }}%;"
+                                             title="{{ segment.label }} ({{ segment.startHour|round(0, 'floor') }}h–{{ segment.endHour|round(0, 'ceil') }}h)">
+                                            <p class="text-[10px] font-semibold leading-tight truncate">{{ segment.label }}</p>
+                                            <p class="text-[9px] leading-tight">{{ segment.startHour == 0 ? '0h' : segment.startHour|round ~ 'h' }} – {{ segment.endHour == 24 ? '24h' : segment.endHour|round ~ 'h' }}</p>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                {# ----- Légende ----- #}
+                <div class="flex flex-wrap gap-4 mt-4 text-xs text-gray-600">
+                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-brand/20 border border-brand/40"></span> Réservé (confirmé)</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-amber-200 border border-amber-300"></span> En attente (bloquant)</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-gray-300 border border-gray-300"></span> Indisponibilité hôte</span>
+                    <span class="inline-flex items-center gap-1.5"><span class="w-3 h-3 rounded bg-white border border-gray-200"></span> Disponible</span>
+                </div>
+            </div>
+
+            <aside class="space-y-6">
+                {# ----- Déclarer une indisponibilité ----- #}
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="font-semibold text-gray-900 mb-1">Bloquer une période</h2>
+                    <p class="text-sm text-gray-500 mb-4">Ce créneau ne sera plus réservable, à l'heure près (ex. du 12/06 17:00 au 13/06 11:00).</p>
+                    {{ form_start(form, { attr: { class: 'space-y-4' } }) }}
+                        <div class="grid grid-cols-1 gap-3">
+                            {{ form_row(form.startAt, { attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm' } }) }}
+                            {{ form_row(form.endAt, { attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm' } }) }}
+                        </div>
+                        {{ form_row(form.reason, { attr: { class: 'w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm bg-white' } }) }}
+                        <button type="submit" class="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold py-2.5 rounded-xl text-sm">
+                            <i class="fa-solid fa-ban mr-1.5"></i>Déclarer l'indisponibilité
+                        </button>
+                    {{ form_end(form) }}
+                </div>
+
+                {# ----- Périodes bloquées à venir ----- #}
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+                    <h2 class="font-semibold text-gray-900 mb-4">Indisponibilités à venir</h2>
+                    {% if blockedPeriods|length > 0 %}
+                        <ul class="space-y-3">
+                            {% for period in blockedPeriods %}
+                                <li class="flex items-center justify-between gap-3 text-sm border border-gray-100 rounded-xl px-3 py-2.5">
+                                    <div>
+                                        <p class="font-medium text-gray-800">
+                                            {% if period.startAt|date('Y-m-d') == period.endAt|date('Y-m-d') %}
+                                                Le {{ period.startAt|date('d/m/Y') }} de {{ period.startAt|date('H:i') }} à {{ period.endAt|date('H:i') }}
+                                            {% else %}
+                                                Du {{ period.startAt|date('d/m/Y H:i') }} au {{ period.endAt|date('d/m/Y H:i') }}
+                                            {% endif %}
+                                        </p>
+                                        <p class="text-xs text-gray-500">{{ period.reason ?? 'Sans motif' }}</p>
+                                    </div>
+                                    <form method="post" action="{{ path('app_account_property_calendar_unblock', { id: property.id, periodId: period.id }) }}"
+                                          onsubmit="return confirm('Libérer cette période ? Les dates redeviendront réservables.');">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('unblock-' ~ period.id) }}">
+                                        <input type="hidden" name="view" value="{{ view }}">
+                                        <input type="hidden" name="date" value="{{ anchor|date('Y-m-d') }}">
+                                        <button type="submit" class="text-gray-400 hover:text-red-600 p-1.5" title="Libérer la période" aria-label="Libérer la période">
+                                            <i class="fa-solid fa-trash-can"></i>
+                                        </button>
+                                    </form>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p class="text-sm text-gray-500">Aucune indisponibilité à venir.</p>
+                    {% endif %}
+                </div>
+            </aside>
+        </div>
+    </main>
+{% endblock %}

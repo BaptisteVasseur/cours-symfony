@@ -155,6 +155,10 @@ class Property
     #[ORM\OneToMany(targetEntity: PropertyAvailability::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $availabilities;
 
+    /** @var Collection<int, PropertyBlockedPeriod> */
+    #[ORM\OneToMany(targetEntity: PropertyBlockedPeriod::class, mappedBy: 'property', cascade: ['persist', 'remove'], orphanRemoval: true)]
+    private Collection $blockedPeriods;
+
     /** @var Collection<int, PropertyICalSync> */
     #[ORM\OneToMany(targetEntity: PropertyICalSync::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $iCalSyncs;
@@ -172,6 +176,7 @@ class Property
         $this->propertyAmenities = new ArrayCollection();
         $this->media = new ArrayCollection();
         $this->availabilities = new ArrayCollection();
+        $this->blockedPeriods = new ArrayCollection();
         $this->iCalSyncs = new ArrayCollection();
         $this->reservations = new ArrayCollection();
         $this->reviews = new ArrayCollection();
@@ -489,6 +494,29 @@ class Property
     public function removeAvailability(PropertyAvailability $availability): static
     {
         $this->availabilities->removeElement($availability);
+
+        return $this;
+    }
+
+    /** @return Collection<int, PropertyBlockedPeriod> */
+    public function getBlockedPeriods(): Collection
+    {
+        return $this->blockedPeriods;
+    }
+
+    public function addBlockedPeriod(PropertyBlockedPeriod $blockedPeriod): static
+    {
+        if (!$this->blockedPeriods->contains($blockedPeriod)) {
+            $this->blockedPeriods->add($blockedPeriod);
+            $blockedPeriod->setProperty($this);
+        }
+
+        return $this;
+    }
+
+    public function removeBlockedPeriod(PropertyBlockedPeriod $blockedPeriod): static
+    {
+        $this->blockedPeriods->removeElement($blockedPeriod);
 
         return $this;
     }
