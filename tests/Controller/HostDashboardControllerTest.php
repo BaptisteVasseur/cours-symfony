@@ -53,4 +53,23 @@ final class HostDashboardControllerTest extends WebTestCase
 
         $this->assertResponseRedirects('/login');
     }
+
+    public function testContactHostAsGuest(): void
+    {
+        $client = static::createClient();
+        $userRepository = static::getContainer()->get(UserRepository::class);
+        $testUser = $userRepository->findOneBy(['email' => 'test@example.com']);
+        $this->assertNotNull($testUser);
+
+        $reservationRepository = static::getContainer()->get(\App\Repository\ReservationRepository::class);
+        $reservation = $reservationRepository->findOneBy(['guest' => $testUser]);
+        $this->assertNotNull($reservation);
+
+        $client->loginUser($testUser);
+        $client->request('GET', sprintf('/compte/reservations/%s/contact', $reservation->getId()));
+
+        $this->assertResponseRedirects();
+        $client->followRedirect();
+        $this->assertResponseIsSuccessful();
+    }
 }
