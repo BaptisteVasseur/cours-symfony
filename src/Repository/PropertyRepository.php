@@ -6,6 +6,8 @@ namespace App\Repository;
 
 use App\Entity\Property;
 use App\Entity\User;
+use App\Entity\Blockout;
+use App\Entity\Reservation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -131,5 +133,81 @@ class PropertyRepository extends ServiceEntityRepository
             ->orderBy('p.createdAt', 'DESC')
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Moteur de recherche principal (/search).
+     *
+     * Filtres appliqués :
+     * - status = published
+     * - destination : LIKE sur city, addressLine1, country (insensible à la casse)
+     * - guests : maxGuests >= guests
+     * - checkin/checkout : exclusion des propriétés avec réservation confirmée
+     *   ou blockout en overlap [checkin, checkout)
+     *
+     * @return list<Property>
+     */
+    public function findForSearch(
+        ?string $destination = null,
+        ?\DateTimeImmutable $checkin = null,
+        ?\DateTimeImmutable $checkout = null,
+        ?int $guests = null,
+    ): array {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere(
+                $qb->expr()->orX(
+                    $qb->expr()->like('LOWER(a.city)', ':destination'),
+                    $qb->expr()->like('LOWER(a.addressLine1)', ':destination'),
+                    $qb->expr()->like('LOWER(a.country)', ':destination'),
+                )
+            )
+            ->setParameter('destination', '%' . strtolower($destination) . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        if ($checkin !== null && $checkout !== null) {
+            // Exclure les propriétés avec une réservation confirmée en overlap
+            $reservationSubDql = $this->getEntityManager()->createQueryBuilder()
+                ->select('1')
+                ->from(Reservation::class, 'res')
+                ->where('res.property = p')
+                ->andWhere('res.status = :confirmedStatus')
+                ->andWhere('res.checkinDate < :checkout')
+                ->andWhere('res.checkoutDate > :checkin')
+                ->getDQL();
+
+            $qb->andWhere($qb->expr()->not($qb->expr()->exists($reservationSubDql)))
+                ->setParameter('confirmedStatus', 'confirmed')
+                ->setParameter('checkin', $checkin)
+                ->setParameter('checkout', $checkout);
+
+            // Exclure les propriétés avec un blockout en overlap
+            $blockoutSubDql = $this->getEntityManager()->createQueryBuilder()
+                ->select('1')
+                ->from(Blockout::class, 'bl')
+                ->where('bl.property = p')
+                ->andWhere('bl.startDate < :checkout')
+                ->andWhere('bl.endDate > :checkin')
+                ->getDQL();
+
+            $qb->andWhere($qb->expr()->not($qb->expr()->exists($blockoutSubDql)));
+        }
+
+        return $qb->getQuery()->getResult();
     }
 }
