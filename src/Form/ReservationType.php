@@ -35,10 +35,12 @@ class ReservationType extends AbstractType
             ->add('checkinDate', DateType::class, [
                 'label' => 'Date d\'arrivée',
                 'widget' => 'single_text',
+                'input' => 'datetime_immutable',
             ])
             ->add('checkoutDate', DateType::class, [
                 'label' => 'Date de départ',
                 'widget' => 'single_text',
+                'input' => 'datetime_immutable',
             ])
             ->add('guestsCount', IntegerType::class, [
                 'label' => 'Nombre de voyageurs',
