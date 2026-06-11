@@ -7,13 +7,15 @@ namespace App\Controller\Front;
 use App\Entity\Conversation;
 use App\Entity\ConversationParticipant;
 use App\Entity\Reservation;
-use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Exception\BookingConflictException;
 use App\Repository\ConversationRepository;
 use App\Repository\PropertyRepository;
 use App\Repository\ReservationRepository;
 use App\Security\Roles;
 use App\Security\Voter\ReservationVoter;
+use App\Service\BookingService;
+use App\Service\MailService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -125,29 +127,29 @@ final class HostDashboardController extends AbstractController
     public function accept(
         Request $request,
         Reservation $reservation,
-        EntityManagerInterface $entityManager,
+        BookingService $bookingService,
+        MailService $mailService,
     ): Response {
         if (!$this->isCsrfTokenValid('accept'.$reservation->getId(), $request->request->get('_token'))) {
             $this->addFlash('error', 'Jeton CSRF invalide.');
             return $this->redirectToRoute('app_host_reservations');
         }
 
-        if ($reservation->getStatus() !== 'pending') {
-            $this->addFlash('error', 'Cette réservation ne peut plus être acceptée.');
-            return $this->redirectToRoute('app_host_reservations');
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
         }
 
-        $oldStatus = $reservation->getStatus();
-        $reservation->setStatus('confirmed');
-
-        $history = new ReservationStatusHistory();
-        $history->setReservation($reservation);
-        $history->setOldStatus($oldStatus);
-        $history->setNewStatus('confirmed');
-        $history->setChangedBy($this->getUser());
-
-        $entityManager->persist($history);
-        $entityManager->flush();
+        try {
+            $bookingService->confirm($reservation, $user);
+            $mailService->sendBookingConfirmationEmail($reservation);
+        } catch (BookingConflictException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+            return $this->redirectToRoute('app_host_reservations');
+        } catch (\LogicException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+            return $this->redirectToRoute('app_host_reservations');
+        }
 
         $this->addFlash('success', 'La réservation a été acceptée avec succès.');
 
@@ -159,36 +161,25 @@ final class HostDashboardController extends AbstractController
     public function decline(
         Request $request,
         Reservation $reservation,
-        EntityManagerInterface $entityManager,
+        BookingService $bookingService,
     ): Response {
         if (!$this->isCsrfTokenValid('decline'.$reservation->getId(), $request->request->get('_token'))) {
             $this->addFlash('error', 'Jeton CSRF invalide.');
             return $this->redirectToRoute('app_host_reservations');
         }
 
-        if ($reservation->getStatus() !== 'pending') {
-            $this->addFlash('error', 'Cette réservation ne peut plus être refusée.');
-            return $this->redirectToRoute('app_host_reservations');
-        }
-
         $reason = trim((string) $request->request->get('cancellation_reason'));
-        if ($reason === '') {
-            $this->addFlash('error', 'Un motif de refus est obligatoire.');
-            return $this->redirectToRoute('app_host_reservations');
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
         }
 
-        $oldStatus = $reservation->getStatus();
-        $reservation->setStatus('cancelled');
-        $reservation->setCancellationReason($reason);
-
-        $history = new ReservationStatusHistory();
-        $history->setReservation($reservation);
-        $history->setOldStatus($oldStatus);
-        $history->setNewStatus('cancelled');
-        $history->setChangedBy($this->getUser());
-
-        $entityManager->persist($history);
-        $entityManager->flush();
+        try {
+            $bookingService->refuse($reservation, $user, $reason);
+        } catch (\LogicException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+            return $this->redirectToRoute('app_host_reservations');
+        }
 
         $this->addFlash('success', 'La demande de réservation a été refusée.');
 
@@ -200,36 +191,25 @@ final class HostDashboardController extends AbstractController
     public function cancel(
         Request $request,
         Reservation $reservation,
-        EntityManagerInterface $entityManager,
+        BookingService $bookingService,
     ): Response {
         if (!$this->isCsrfTokenValid('cancel'.$reservation->getId(), $request->request->get('_token'))) {
             $this->addFlash('error', 'Jeton CSRF invalide.');
             return $this->redirectToRoute('app_host_reservations');
         }
 
-        if ($reservation->getStatus() !== 'confirmed') {
-            $this->addFlash('error', 'Cette réservation ne peut plus être annulée.');
-            return $this->redirectToRoute('app_host_reservations');
-        }
-
         $reason = trim((string) $request->request->get('cancellation_reason'));
-        if ($reason === '') {
-            $this->addFlash('error', 'Un motif d\'annulation est obligatoire.');
-            return $this->redirectToRoute('app_host_reservations');
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
         }
 
-        $oldStatus = $reservation->getStatus();
-        $reservation->setStatus('cancelled');
-        $reservation->setCancellationReason($reason);
-
-        $history = new ReservationStatusHistory();
-        $history->setReservation($reservation);
-        $history->setOldStatus($oldStatus);
-        $history->setNewStatus('cancelled');
-        $history->setChangedBy($this->getUser());
-
-        $entityManager->persist($history);
-        $entityManager->flush();
+        try {
+            $bookingService->cancel($reservation, $user, $reason);
+        } catch (\LogicException $exception) {
+            $this->addFlash('error', $exception->getMessage());
+            return $this->redirectToRoute('app_host_reservations');
+        }
 
         $this->addFlash('success', 'La réservation a été annulée avec succès.');
 
