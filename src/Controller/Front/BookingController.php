@@ -8,7 +8,9 @@ use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\User;
 use App\Form\BookingType;
+use App\Repository\PropertyAvailabilityRepository;
 use App\Repository\PropertyRepository;
+use App\Repository\ReservationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -26,6 +28,8 @@ final class BookingController extends AbstractController
         Request $request,
         Property $property,
         PropertyRepository $propertyRepository,
+        PropertyAvailabilityRepository $availabilityRepository,
+        ReservationRepository $reservationRepository,
         EntityManagerInterface $entityManager,
     ): Response {
         if ($property->getStatus() !== 'published') {
@@ -71,6 +75,24 @@ final class BookingController extends AbstractController
                 ]);
             }
 
+            if ($availabilityRepository->countUnavailableDays($property, $checkin, $checkout) > 0) {
+                $this->addFlash('error', 'Le logement est indisponible sur certaines dates de votre séjour.');
+
+                return $this->render('front/property/booking.html.twig', [
+                    'property' => $property,
+                    'form' => $form,
+                ]);
+            }
+
+            if ($reservationRepository->hasConfirmedOverlap($property, $checkin, $checkout)) {
+                $this->addFlash('error', 'Le logement est déjà réservé sur ces dates.');
+
+                return $this->render('front/property/booking.html.twig', [
+                    'property' => $property,
+                    'form' => $form,
+                ]);
+            }
+
             $nights = (int) $checkin->diff($checkout)->days;
             $nightlyRate = (float) $property->getPricePerNight();
             $subtotal = $nightlyRate * $nights;
@@ -99,9 +121,40 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }
 
+        $disabledDates = $this->buildDisabledDates(
+            $availabilityRepository->findUnavailableByProperty($property),
+            $reservationRepository->findConfirmedByProperty($property),
+        );
+
         return $this->render('front/property/booking.html.twig', [
-            'property' => $property,
-            'form' => $form,
+            'property'      => $property,
+            'form'          => $form,
+            'disabledDates' => $disabledDates,
         ]);
+    }
+
+    private function buildDisabledDates(array $unavailabilities, array $reservations): array
+    {
+        $disabled = [];
+
+        foreach ($unavailabilities as $availability) {
+            $disabled[] = $availability->getAvailableDate()->format('Y-m-d');
+        }
+
+        foreach ($reservations as $reservation) {
+            $checkin  = $reservation->getCheckinDate();
+            $checkout = $reservation->getCheckoutDate()->modify('-1 day');
+
+            if ($checkout >= $checkin) {
+                $disabled[] = [
+                    'from' => $checkin->format('Y-m-d'),
+                    'to'   => $checkout->format('Y-m-d'),
+                ];
+            } else {
+                $disabled[] = $checkin->format('Y-m-d');
+            }
+        }
+
+        return $disabled;
     }
 }

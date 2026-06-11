@@ -1,0 +1,82 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Modifier — {{ property.title }}{% endblock %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-3xl mx-auto w-full">
+
+    <div class="mb-8 flex items-center justify-between">
+        <div>
+            <h1 class="text-2xl font-semibold text-gray-900">Modifier l'annonce</h1>
+            <p class="text-gray-500 mt-1">{{ property.title }}</p>
+        </div>
+        <a href="{{ path('app_host_property_unavailability', { id: property.id }) }}"
+           class="text-sm font-semibold text-brand hover:underline">
+            Gérer les indisponibilités →
+        </a>
+    </div>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+        {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
+
+            <div class="grid grid-cols-1 gap-5">
+                {{ form_row(form.title, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                {{ form_row(form.description, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', rows: 4 } }) }}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {{ form_row(form.propertyType, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                {{ form_row(form.cancellationPolicy, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+            </div>
+
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                {{ form_row(form.maxGuests, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1 } }) }}
+                {{ form_row(form.bedrooms, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 0 } }) }}
+                {{ form_row(form.beds, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1 } }) }}
+                {{ form_row(form.bathrooms, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 0 } }) }}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
+                {{ form_row(form.pricePerNight, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                {{ form_row(form.cleaningFee, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                {{ form_row(form.securityDeposit, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                {{ form_row(form.checkinTime, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                {{ form_row(form.checkoutTime, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+            </div>
+
+            <div class="flex items-center gap-3">
+                {{ form_widget(form.instantBooking) }}
+                {{ form_label(form.instantBooking) }}
+            </div>
+
+            <div class="border-t border-gray-100 pt-5">
+                <h2 class="text-base font-semibold text-gray-800 mb-4">Adresse du logement</h2>
+                <div class="grid grid-cols-1 gap-4">
+                    {{ form_row(form.address.addressLine1, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                    {{ form_row(form.address.addressLine2, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                    <div class="grid grid-cols-2 gap-4">
+                        {{ form_row(form.address.postalCode, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                        {{ form_row(form.address.city, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                    </div>
+                    {{ form_row(form.address.country, { attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                </div>
+            </div>
+
+            <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">
+                Enregistrer les modifications
+            </button>
+
+        {{ form_end(form) }}
+    </div>
+
+</main>
+{% endblock %}
