@@ -137,7 +137,35 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
             );
             $manager->persist($property);
         }
+        $newProperties = [
+            ['Cabane Perchée en Forêt', 'house', 'published', '130.00', 'Annecy', 'France'],
+            ['Appartement Vue Tour Eiffel', 'apartment', 'published', '290.00', 'Paris', 'France'],
+            ['Mas Provençal avec Oliveraie', 'house', 'published', '175.00', 'Gordes', 'France'],
+            ['Loft Lumineux Quartier Marais', 'loft', 'published', '210.00', 'Paris', 'France'],
+            ['Villa Bord de Mer', 'villa', 'published', '320.00', 'Nice', 'France'],
+            ['Chalet Cosy Pied des Pistes', 'chalet', 'published', '240.00', 'Val d\'Isère', 'France'],
+        ];
 
+        foreach ($newProperties as $i => [$title, $type, $status, $price, $city, $country]) {
+            $property = $this->createProperty(
+                $hosts[$i % 2], // alterne HOST_1 / HOST_2 -> 3 chacun
+                $policies[$i % count($policies)],
+                $title,
+                'Description complète pour ' . $title,
+                $type,
+                $status,
+                $price,
+                $city,
+                $country,
+                sprintf('%05d', random_int(10000, 99999)),
+                43.7 + ($i * 0.15),
+                7.2 + ($i * 0.15),
+                $amenityRefs,
+                $manager,
+                false
+            );
+            $manager->persist($property);
+        }
         $manager->flush();
     }
 
