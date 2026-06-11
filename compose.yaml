@@ -63,6 +63,26 @@ services:
     command: >
       sh -c "php bin/console messenger:consume async -vv --time-limit=3600"
 
+  websocket:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    volumes:
+      - .:/var/www/html:rw
+      - vendor:/var/www/html/vendor
+      - var:/var/www/html/var
+    environment:
+      DATABASE_URL: postgresql://app:my-super-secret-password@database:5432/app?serverVersion=16&charset=utf8
+      MESSENGER_TRANSPORT_DSN: doctrine://default
+      MAILER_DSN: smtp://mailer:1025
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "8090:8090"
+    command: >
+      sh -c "composer install --no-interaction --prefer-dist --no-scripts && php bin/console app:realtime:websocket-server --host=0.0.0.0 --port=8090"
+
 
 #  nginx:
 #    image: nginx:alpine
