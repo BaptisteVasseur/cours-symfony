@@ -125,20 +125,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->conversations = new ArrayCollection();
     }
 
-    public function getId(): ?Uuid { return $this->id; }
+    public function getId(): ?Uuid
+    {
+        return $this->id;
+    }
 
-    /**
-     * Identifiant de connexion utilisé par le firewall Symfony (provider: property "email").
-     */
+
     public function getUserIdentifier(): string
     {
         return (string) $this->email;
     }
 
-    /**
-     * Rôles Symfony dérivés du champ métier `role`.
-     * Tout utilisateur authentifié possède au minimum ROLE_USER.
-     */
     public function getRoles(): array
     {
         $roles = ['ROLE_USER'];
@@ -152,95 +149,227 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return array_unique($roles);
     }
 
-    /**
-     * Mot de passe hashé stocké en base (interface PasswordAuthenticatedUserInterface).
-     */
     public function getPassword(): ?string
     {
         return $this->passwordHash;
     }
 
-    /**
-     * Aucune donnée sensible temporaire à effacer (mot de passe en clair non stocké).
-     */
     public function eraseCredentials(): void
     {
     }
 
-    public function getFirstName(): ?string { return $this->firstName; }
-    public function setFirstName(string $v): static { $this->firstName = $v; return $this; }
+    public function getFirstName(): ?string
+    {
+        return $this->firstName;
+    }
+    public function setFirstName(string $v): static
+    {
+        $this->firstName = $v;
+        return $this;
+    }
 
-    public function getLastName(): ?string { return $this->lastName; }
-    public function setLastName(string $v): static { $this->lastName = $v; return $this; }
+    public function getLastName(): ?string
+    {
+        return $this->lastName;
+    }
+    public function setLastName(string $v): static
+    {
+        $this->lastName = $v;
+        return $this;
+    }
 
-    public function getEmail(): ?string { return $this->email; }
-    public function setEmail(string $v): static { $this->email = $v; return $this; }
+    public function getEmail(): ?string
+    {
+        return $this->email;
+    }
+    public function setEmail(string $v): static
+    {
+        $this->email = $v;
+        return $this;
+    }
 
-    public function getPhone(): ?string { return $this->phone; }
-    public function setPhone(?string $v): static { $this->phone = $v; return $this; }
+    public function getPhone(): ?string
+    {
+        return $this->phone;
+    }
+    public function setPhone(?string $v): static
+    {
+        $this->phone = $v;
+        return $this;
+    }
 
-    public function getPasswordHash(): ?string { return $this->passwordHash; }
-    public function setPasswordHash(string $v): static { $this->passwordHash = $v; return $this; }
+    public function getPasswordHash(): ?string
+    {
+        return $this->passwordHash;
+    }
+    public function setPasswordHash(string $v): static
+    {
+        $this->passwordHash = $v;
+        return $this;
+    }
 
-    public function getProfilePicture(): ?string { return $this->profilePicture; }
-    public function setProfilePicture(?string $v): static { $this->profilePicture = $v; return $this; }
+    public function getProfilePicture(): ?string
+    {
+        return $this->profilePicture;
+    }
+    public function setProfilePicture(?string $v): static
+    {
+        $this->profilePicture = $v;
+        return $this;
+    }
 
-    public function getBiography(): ?string { return $this->biography; }
-    public function setBiography(?string $v): static { $this->biography = $v; return $this; }
+    public function getBiography(): ?string
+    {
+        return $this->biography;
+    }
+    public function setBiography(?string $v): static
+    {
+        $this->biography = $v;
+        return $this;
+    }
 
-    public function getPreferredLanguage(): ?string { return $this->preferredLanguage; }
-    public function setPreferredLanguage(?string $v): static { $this->preferredLanguage = $v; return $this; }
+    public function getPreferredLanguage(): ?string
+    {
+        return $this->preferredLanguage;
+    }
+    public function setPreferredLanguage(?string $v): static
+    {
+        $this->preferredLanguage = $v;
+        return $this;
+    }
 
-    public function getPreferredCurrency(): ?string { return $this->preferredCurrency; }
-    public function setPreferredCurrency(?string $v): static { $this->preferredCurrency = $v; return $this; }
+    public function getPreferredCurrency(): ?string
+    {
+        return $this->preferredCurrency;
+    }
+    public function setPreferredCurrency(?string $v): static
+    {
+        $this->preferredCurrency = $v;
+        return $this;
+    }
 
-    public function getRole(): ?string { return $this->role; }
-    public function setRole(?string $v): static { $this->role = $v; return $this; }
+    public function getRole(): ?string
+    {
+        return $this->role;
+    }
+    public function setRole(?string $v): static
+    {
+        $this->role = $v;
+        return $this;
+    }
 
-    public function getToken(): ?string { return $this->token; }
-    public function setToken(?string $v): static { $this->token = $v; return $this; }
+    public function getToken(): ?string
+    {
+        return $this->token;
+    }
+    public function setToken(?string $v): static
+    {
+        $this->token = $v;
+        return $this;
+    }
 
-    public function isEmailVerified(): bool { return $this->emailVerified; }
-    public function setEmailVerified(bool $v): static { $this->emailVerified = $v; return $this; }
+    public function isEmailVerified(): bool
+    {
+        return $this->emailVerified;
+    }
+    public function setEmailVerified(bool $v): static
+    {
+        $this->emailVerified = $v;
+        return $this;
+    }
 
-    public function isPhoneVerified(): bool { return $this->phoneVerified; }
-    public function setPhoneVerified(bool $v): static { $this->phoneVerified = $v; return $this; }
+    public function isPhoneVerified(): bool
+    {
+        return $this->phoneVerified;
+    }
+    public function setPhoneVerified(bool $v): static
+    {
+        $this->phoneVerified = $v;
+        return $this;
+    }
 
-    public function isIdentityVerified(): bool { return $this->identityVerified; }
-    public function setIdentityVerified(bool $v): static { $this->identityVerified = $v; return $this; }
+    public function isIdentityVerified(): bool
+    {
+        return $this->identityVerified;
+    }
+    public function setIdentityVerified(bool $v): static
+    {
+        $this->identityVerified = $v;
+        return $this;
+    }
 
-    public function getStatus(): ?string { return $this->status; }
-    public function setStatus(?string $v): static { $this->status = $v; return $this; }
+    public function getStatus(): ?string
+    {
+        return $this->status;
+    }
+    public function setStatus(?string $v): static
+    {
+        $this->status = $v;
+        return $this;
+    }
 
-    public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }
-    public function setCreatedAt(\DateTimeImmutable $v): static { $this->createdAt = $v; return $this; }
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+    public function setCreatedAt(\DateTimeImmutable $v): static
+    {
+        $this->createdAt = $v;
+        return $this;
+    }
 
-    public function getUpdatedAt(): ?\DateTimeImmutable { return $this->updatedAt; }
-    public function setUpdatedAt(\DateTimeImmutable $v): static { $this->updatedAt = $v; return $this; }
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+    public function setUpdatedAt(\DateTimeImmutable $v): static
+    {
+        $this->updatedAt = $v;
+        return $this;
+    }
 
-    /** @return Collection<int, Listing> */
-    public function getListings(): Collection { return $this->listings; }
+    public function getListings(): Collection
+    {
+        return $this->listings;
+    }
 
-    /** @return Collection<int, Booking> */
-    public function getBookings(): Collection { return $this->bookings; }
+    public function getBookings(): Collection
+    {
+        return $this->bookings;
+    }
 
-    /** @return Collection<int, Review> */
-    public function getReviews(): Collection { return $this->reviews; }
+    public function getReviews(): Collection
+    {
+        return $this->reviews;
+    }
 
-    /** @return Collection<int, Notification> */
-    public function getNotifications(): Collection { return $this->notifications; }
+    public function getNotifications(): Collection
+    {
+        return $this->notifications;
+    }
 
-    /** @return Collection<int, Wishlist> */
-    public function getWishlists(): Collection { return $this->wishlists; }
+    public function getWishlists(): Collection
+    {
+        return $this->wishlists;
+    }
 
-    /** @return Collection<int, RefreshToken> */
-    public function getRefreshTokens(): Collection { return $this->refreshTokens; }
+    public function getRefreshTokens(): Collection
+    {
+        return $this->refreshTokens;
+    }
 
-    /** @return Collection<int, AuthProvider> */
-    public function getAuthProviders(): Collection { return $this->authProviders; }
+    public function getAuthProviders(): Collection
+    {
+        return $this->authProviders;
+    }
 
-    public function getIdentity(): ?UserIdentity { return $this->identity; }
+    public function getIdentity(): ?UserIdentity
+    {
+        return $this->identity;
+    }
 
-    /** @return Collection<int, Conversation> */
-    public function getConversations(): Collection { return $this->conversations; }
+    public function getConversations(): Collection
+    {
+        return $this->conversations;
+    }
 }

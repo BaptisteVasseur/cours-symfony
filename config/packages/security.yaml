@@ -60,7 +60,9 @@ security:
         - { path: ^/login, roles: PUBLIC_ACCESS }
         - { path: ^/register, roles: PUBLIC_ACCESS }
         - { path: ^/admin, roles: ROLE_ADMIN }
+        - { path: ^/host, roles: ROLE_HOST }
         - { path: ^/my-bookings, roles: ROLE_USER }
+        - { path: ^/notifications, roles: ROLE_USER }
         - { path: ^/booking, roles: ROLE_USER }
         - { path: ^/listing, roles: ROLE_USER }
 

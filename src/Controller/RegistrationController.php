@@ -31,7 +31,6 @@ class RegistrationController extends AbstractController
             $plainPassword = $form->get('plainPassword')->getData();
             $user->setPasswordHash($passwordHasher->hashPassword($user, $plainPassword));
 
-            // Valeurs par défaut pour un nouvel inscrit
             $user->setRole('guest');
             $user->setEmailVerified(false);
             $user->setPhoneVerified(false);
