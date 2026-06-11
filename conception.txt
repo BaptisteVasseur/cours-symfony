@@ -46,17 +46,14 @@ Enfin, chaque logement expose un lien de calendrier (iCal) protégé par un code
 pour que l'hôte synchronise ses dates avec Google Agenda ou Outlook et évite d'accepter deux fois les mêmes dates ailleurs.
 
 
-L'import iCal (et la gestion des conflits) :
+Pour l'import iCal :
 
-L'inverse existe aussi : l'hôte peut donner l'adresse de son calendrier Airbnb,
-et une commande (app:ical:sync, lançable en cron) va lire ce calendrier et bloquer
-chez nous les nuits déjà prises ailleurs.
-Pour les conflits, j'ai réfléchi à trois cas :
-- Je marque chaque blocage importé d'une "source" (l'origine du flux). Comme ça,
-  je ne touche jamais aux jours que l'hôte a bloqués lui-même à la main.
+l'hôte peut donner l'adresse de son calendrier Airbnb,
+et une commande (app:ical:sync) va lire ce calendrier et bloquer chez nous les nuits déjà prises ailleurs.
+
+Pour les conflits auxquels j'ai réfléchi, voici les cas :
+
 - L'import est un miroir du calendrier distant : à chaque passage, si une date
-  n'est plus dans le flux (le séjour a été annulé ailleurs), je la libère
-  automatiquement chez nous.
+  n'est plus dans le flux alors le séjour a été annulé ailleurs, je la libère automatiquement chez nous.
 - Si une nuit importée tombe sur une réservation déjà confirmée chez nous, je la
-  signale comme conflit (risque de double réservation entre plateformes), mais sans
-  planter : la nuit est de toute façon déjà indisponible.
+  signale comme conflit pour évite les risque de double  de réservation entre  les plateformes.
