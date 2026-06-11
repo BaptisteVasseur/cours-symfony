@@ -10,7 +10,13 @@
         {% if properties|length > 0 %}
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {% for property in properties %}
-                    {% include 'components/card.html.twig' with { property: property } %}
+                    <div>
+                        {% include 'components/card.html.twig' with { property: property } %}
+                        <a href="{{ path('app_host_calendar', {id: property.id}) }}"
+                           class="inline-flex items-center gap-1 mt-2 text-xs text-brand hover:underline font-medium">
+                            <i class="fa-regular fa-calendar"></i> Gérer le calendrier
+                        </a>
+                    </div>
                 {% endfor %}
             </div>
         {% else %}

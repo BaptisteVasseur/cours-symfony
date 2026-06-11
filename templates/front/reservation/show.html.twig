@@ -57,12 +57,86 @@
                     </dl>
                 </section>
             </div>
-            <aside>
-                <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
-                    <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
-                    <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+            <aside class="space-y-6">
+                <div class="border border-gray-200 rounded-xl p-6 sticky top-28 space-y-6">
+                    <div>
+                        <h2 class="text-lg font-semibold mb-4">Récapitulatif</h2>
+                        <p class="text-xl font-bold">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency|default('EUR') }}</p>
+                    </div>
+
+                    {% set isHost = app.user and reservation.property and reservation.property.host and reservation.property.host.id == app.user.id %}
+                    {% set isGuest = app.user and reservation.guest and reservation.guest.id == app.user.id %}
+
+                    {% if reservation.status == 'pending' and isHost %}
+                        <div class="space-y-3 border-t border-gray-200 pt-4">
+                            <h3 class="text-sm font-semibold text-gray-700">Actions hôte</h3>
+                            <form action="{{ path('app_reservation_confirm', { id: reservation.id }) }}" method="post">
+                                <input type="hidden" name="_token" value="{{ csrf_token('reservation_confirm' ~ reservation.id) }}">
+                                <button type="submit" class="w-full px-4 py-2 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition">
+                                    Accepter la réservation
+                                </button>
+                            </form>
+                            <form action="{{ path('app_reservation_cancel', { id: reservation.id }) }}" method="post">
+                                <input type="hidden" name="_token" value="{{ csrf_token('reservation_cancel' ~ reservation.id) }}">
+                                <textarea name="cancellation_reason" rows="2" placeholder="Motif du refus (facultatif)"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2 focus:ring-brand focus:border-brand"></textarea>
+                                <button type="submit" class="w-full px-4 py-2 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition">
+                                    Refuser la réservation
+                                </button>
+                            </form>
+                        </div>
+                    {% endif %}
+
+                    {% if reservation.status in ['pending', 'confirmed'] and (isGuest or isHost) %}
+                        {% if not (reservation.status == 'pending' and isHost) %}
+                            <div class="border-t border-gray-200 pt-4">
+                                <form action="{{ path('app_reservation_cancel', { id: reservation.id }) }}" method="post" onsubmit="return confirm('Êtes-vous sûr de vouloir annuler cette réservation ?')">
+                                    <input type="hidden" name="_token" value="{{ csrf_token('reservation_cancel' ~ reservation.id) }}">
+                                    <textarea name="cancellation_reason" rows="2" placeholder="Motif de l'annulation (facultatif)"
+                                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2 focus:ring-brand focus:border-brand"></textarea>
+                                    <button type="submit" class="w-full px-4 py-2 border border-red-300 text-red-700 text-sm font-semibold rounded-lg hover:bg-red-50 transition">
+                                        Annuler la réservation
+                                    </button>
+                                </form>
+                            </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if reservation.cancellationReason %}
+                        <div class="border-t border-gray-200 pt-4">
+                            <p class="text-sm text-gray-500">Motif d'annulation :</p>
+                            <p class="text-sm text-gray-800">{{ reservation.cancellationReason }}</p>
+                        </div>
+                    {% endif %}
                 </div>
             </aside>
         </div>
+
+        {% if reservation.statusHistory is not empty %}
+            <section class="mt-10">
+                <h2 class="text-lg font-semibold mb-4">Historique des statuts</h2>
+                <ol class="relative border-l border-gray-200 ml-3 space-y-6">
+                    {% for entry in reservation.statusHistory %}
+                        <li class="ml-6">
+                            <span class="absolute -left-2.5 flex items-center justify-center w-5 h-5 bg-gray-100 rounded-full ring-4 ring-white">
+                                <span class="w-2 h-2 rounded-full {{ statusColors[entry.newStatus]|default('bg-gray-400') | split(' ') | first }}"></span>
+                            </span>
+                            <div class="flex flex-wrap items-center gap-2">
+                                <span class="text-sm font-semibold px-2 py-0.5 rounded-full {{ statusColors[entry.newStatus]|default('bg-gray-100 text-gray-800') }}">
+                                    {{ statusLabels[entry.newStatus]|default(entry.newStatus) }}
+                                </span>
+                                <span class="text-xs text-gray-500">{{ entry.createdAt|date('d/m/Y à H:i') }}</span>
+                                {% if entry.changedBy %}
+                                    <span class="text-xs text-gray-400">par {{ entry.changedBy.email }}</span>
+                                {% endif %}
+                            </div>
+                            {% if entry.oldStatus %}
+                                <p class="text-xs text-gray-400 mt-1">{{ statusLabels[entry.oldStatus]|default(entry.oldStatus) }} → {{ statusLabels[entry.newStatus]|default(entry.newStatus) }}</p>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ol>
+            </section>
+        {% endif %}
     </main>
 {% endblock %}

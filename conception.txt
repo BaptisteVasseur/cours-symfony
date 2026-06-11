@@ -1,0 +1,295 @@
+================================================================================
+CONCEPTION TECHNIQUE — Moteur de Réservation & Calendrier iCal
+================================================================================
+
+Projet : Clone Airbnb — Symfony 8 / Doctrine ORM / PostgreSQL
+Auteur : Mathis Latimier
+Date   : 2025-06-11
+
+Ce document formalise la conception des fonctionnalités non encore implémentées.
+Les éléments déjà en place (cycle de vie réservation, BookingController, modération
+hôte confirm/cancel, commande app:reservations:complete, vérification overlap) ne
+sont pas redétaillés ici.
+
+--------------------------------------------------------------------------------
+PARTIE A — GESTION DES DISPONIBILITÉS (INTERFACE HÔTE)
+--------------------------------------------------------------------------------
+
+1. Modèle de données existant utilisé :
+   - Table `property_availability` (entité PropertyAvailability) :
+     * property_id (FK), available_date (DATE), is_available (BOOL),
+       price_override (DECIMAL nullable), minimum_stay (INT nullable)
+   - Architecture retenue : table de JOURS INDIVIDUELS (un row par date bloquée).
+     Justification en section Réflexion ci-dessous.
+
+2. Interface hôte (Controller `HostCalendarController`) :
+   - GET /hote/logement/{id}/calendrier → vue mensuelle (Twig + Stimulus)
+     * Affiche chaque jour du mois avec code couleur :
+       - Vert = disponible
+       - Rouge = bloqué manuellement (PropertyAvailability.is_available = false)
+       - Bleu  = réservation confirmée
+     * Navigation mois précédent/suivant via Turbo Frame.
+   - POST /hote/logement/{id}/calendrier/bloquer → bloc de dates
+     * Paramètres : date_start, date_end, motif (optionnel)
+     * Crée N entrées PropertyAvailability avec is_available = false.
+   - DELETE /hote/logement/{id}/calendrier/debloquer → libère les dates
+     * Supprime les entrées PropertyAvailability pour la plage donnée.
+
+3. Algorithme de disponibilité (service `AvailabilityChecker`) :
+   Une plage [checkin, checkout[ est disponible SI ET SEULEMENT SI :
+     a) Property.status = 'published'
+     b) Aucun jour dans [checkin, checkout[ n'a de PropertyAvailability avec
+        is_available = false
+     c) Aucune Reservation avec status IN ('pending','confirmed') ne chevauche
+        (r.checkinDate < checkout AND r.checkoutDate > checkin)
+     d) Property.maxGuests >= nombre de voyageurs demandé
+
+   Requête unique côté repository (pas d'itération jour par jour) :
+   ```sql
+   SELECT COUNT(*) FROM property_availability pa
+   WHERE pa.property_id = :id
+     AND pa.available_date >= :checkin
+     AND pa.available_date < :checkout
+     AND pa.is_available = false
+   ```
+   Si count > 0 → indisponible. Combiné avec hasOverlap() existant.
+
+--------------------------------------------------------------------------------
+PARTIE C — MOTEUR DE RECHERCHE FILTRÉ
+--------------------------------------------------------------------------------
+
+Route existante : GET /search (HomeController::search)
+Problème actuel : retourne findForListing('published') sans exploiter les filtres.
+
+Conception :
+1. Nouvelle méthode `PropertyRepository::findAvailableForSearch(
+       ?string $destination, ?DateTimeImmutable $checkin, ?DateTimeImmutable $checkout, ?int $guests
+   )`
+
+2. Logique de filtrage (QueryBuilder unique) :
+   a) Filtre destination : WHERE (LOWER(a.city) LIKE :dest OR LOWER(a.street) LIKE :dest)
+      avec jointure sur PropertyAddress (alias a).
+   b) Filtre guests : WHERE p.maxGuests >= :guests
+   c) Filtre dates [checkin, checkout[ :
+      - Sous-requête NOT EXISTS sur Reservation (overlap confirmée/pending)
+      - Sous-requête NOT EXISTS sur PropertyAvailability (jours bloqués dans la plage)
+   d) Toujours : p.status = 'published'
+
+3. Le controller passe les paramètres GET au repository. Résultat paginé (optionnel).
+
+   Requête SQL cible (simplifiée) :
+   ```sql
+   SELECT p.* FROM properties p
+   JOIN property_addresses a ON a.property_id = p.id
+   WHERE p.status = 'published'
+     AND (:destination IS NULL OR LOWER(a.city) LIKE :destination)
+     AND (:guests IS NULL OR p.max_guests >= :guests)
+     AND NOT EXISTS (
+       SELECT 1 FROM reservations r
+       WHERE r.property_id = p.id AND r.status IN ('pending','confirmed')
+         AND r.checkin_date < :checkout AND r.checkout_date > :checkin
+     )
+     AND NOT EXISTS (
+       SELECT 1 FROM property_availability pa
+       WHERE pa.property_id = p.id AND pa.is_available = false
+         AND pa.available_date >= :checkin AND pa.available_date < :checkout
+     )
+   ```
+
+--------------------------------------------------------------------------------
+PARTIE D — NOTIFICATIONS EMAIL ASYNCHRONES
+--------------------------------------------------------------------------------
+
+1. Architecture Messenger :
+   - Dossier src/Message/ : classes DTO immuables
+     * ReservationCreatedMessage(reservationId: int)
+     * ReservationConfirmedMessage(reservationId: int)
+     * ReservationCancelledMessage(reservationId: int, reason: ?string)
+   - Dossier src/MessageHandler/ : handlers #[AsMessageHandler]
+     * Chaque handler récupère la Reservation via le repository, construit un
+       TemplatedEmail (Symfony Mailer) et l'envoie.
+
+2. Routing Messenger (config/packages/messenger.yaml) :
+   ```yaml
+   routing:
+       App\Message\ReservationCreatedMessage: async
+       App\Message\ReservationConfirmedMessage: async
+       App\Message\ReservationCancelledMessage: async
+   ```
+
+3. Dispatch :
+   - Dans BookingController::checkout, après flush() → dispatch(new ReservationCreatedMessage(...))
+   - Dans ReservationLifecycleService::confirm → dispatch(new ReservationConfirmedMessage(...))
+   - Dans ReservationLifecycleService::cancel → dispatch(new ReservationCancelledMessage(...))
+   Le dispatch intervient APRÈS le flush() pour garantir la cohérence des données.
+
+4. Emails envoyés :
+   | Déclencheur         | Destinataire(s) | Contenu                                    |
+   |---------------------|-----------------|--------------------------------------------|
+   | Nouvelle demande    | Hôte            | Logement, dates, voyageur, total, lien     |
+   | Confirmation        | Voyageur + Hôte | Récapitulatif complet, coordonnées         |
+   | Annulation          | Partie(s)       | Motif, dates libérées                      |
+
+5. Templates email : templates/emails/reservation_{created,confirmed,cancelled}.html.twig
+
+6. Vérification via Mailpit (localhost:8025).
+
+--------------------------------------------------------------------------------
+PARTIE E — EXPORT iCAL (ENDPOINT .ICS)
+--------------------------------------------------------------------------------
+
+1. Sécurisation par token :
+   - Ajout d'un champ `icalExportToken` (VARCHAR 64, unique, nullable) sur l'entité Property.
+   - Migration Doctrine pour ajouter la colonne.
+   - Le token est généré (bin2hex(random_bytes(32))) à la demande de l'hôte via un bouton
+     dans l'interface calendrier. Il est révocable (mise à null).
+
+2. Endpoint :
+   - Route : GET /api/properties/{id}/calendar.ics?token={secret}
+   - Controller : `ICalExportController`
+   - Pas d'authentification session/JWT : seul le token query-param est vérifié.
+   - Retourne une Response avec Content-Type: text/calendar; charset=utf-8
+
+3. Génération du flux :
+   - Récupère toutes les Reservations confirmées/completed pour la Property.
+   - Construit le VCALENDAR avec un VEVENT par réservation :
+     ```
+     BEGIN:VCALENDAR
+     VERSION:2.0
+     PRODID:-//Clone Airbnb//FR
+     BEGIN:VEVENT
+     UID:res-{id}@clone-airbnb.local
+     SUMMARY:{titre logement} — {prénom nom voyageur}
+     DTSTART;VALUE=DATE:{checkin YYYYMMDD}
+     DTEND;VALUE=DATE:{checkout YYYYMMDD}
+     DESCRIPTION:Séjour {n} nuits — {total}€ — {email voyageur}
+     END:VEVENT
+     END:VCALENDAR
+     ```
+
+--------------------------------------------------------------------------------
+PARTIE F (BONUS) — IMPORT iCAL
+--------------------------------------------------------------------------------
+
+1. Commande Symfony : `app:ical:sync`
+   - Parcourt toutes les entrées PropertyICalSync (qui stockent l'URL iCal externe).
+   - Utilise Symfony HttpClient pour récupérer le contenu .ics distant.
+   - Parse chaque VEVENT (extraction DTSTART/DTEND).
+   - Pour chaque événement distant, crée des PropertyAvailability (is_available=false)
+     couvrant la plage de dates.
+
+2. Gestion des conflits :
+   - Si une réservation confirmée locale chevauche un événement distant :
+     → Log un warning (pas de suppression automatique de la réservation locale).
+   - Avant chaque sync, suppression des PropertyAvailability créées par le provider
+     (identifiées par un champ source_provider ou par convention). Puis re-création
+     à partir du flux frais → approche "delete & recreate" pour éviter les orphelins.
+
+3. Automatisation : Cron toutes les 4 heures (ou Symfony Scheduler).
+   Met à jour PropertyICalSync.lastSyncAt après chaque synchronisation réussie.
+
+--------------------------------------------------------------------------------
+PARTIE G.1 (BONUS) — EXPIRATION DES DEMANDES PENDING (24H)
+--------------------------------------------------------------------------------
+
+1. Commande : `app:reservations:expire`
+   - Récupère les réservations avec status = 'pending' ET createdAt < now - 24h.
+   - Appelle ReservationLifecycleService::cancel() avec motif "Expiration automatique
+     (demande non traitée sous 24h)" et changedBy = utilisateur système.
+   - Dispatch ReservationCancelledMessage pour notification email.
+
+2. Exécution : Cron toutes les 15 minutes ou Symfony Scheduler (MessengerSchedule).
+
+================================================================================
+RÉFLEXION — QUESTIONS DE CONCEPTION
+================================================================================
+
+1. MODÉLISATION TEMPORELLE (check-out réservable ?)
+   ─────────────────────────────────────────────────
+   Le jour de checkout EST réservable par un nouveau voyageur.
+   Convention : une réservation occupe la plage [checkin, checkout[  (checkout exclu).
+   Concrètement, un départ à 11h laisse le logement libre pour une arrivée à 15h le même jour.
+   Dans le code, l'overlap est détecté par :
+     r.checkinDate < :checkout AND r.checkoutDate > :checkin
+   Cela signifie qu'une nouvelle réservation avec checkin = ancien checkout ne génère
+   PAS de chevauchement → le jour est libre.
+
+2. GESTION DES ÉTATS — PENDING BLOQUE-T-IL LES DATES ?
+   ─────────────────────────────────────────────────────
+   OUI, dans notre implémentation les réservations Pending bloquent les dates.
+   (cf. hasOverlap() qui filtre sur status IN ('pending','confirmed')).
+
+   Risque : Un hôte lent à répondre bloque les dates pour d'autres voyageurs (blocage abusif).
+   Mitigation :
+   - Expiration automatique à 24h (G.1) → limite la durée du blocage.
+   - Alternative non retenue : ne pas bloquer en Pending et vérifier au moment du confirm
+     → risque d'overbooking si deux Pending sur les mêmes dates puis double confirmation.
+   Notre choix privilégie la COHÉRENCE (pas d'overbooking) avec une expiration rapide.
+
+3. CONCURRENCE (deux paiements simultanés)
+   ────────────────────────────────────────
+   Problème : deux utilisateurs soumettent une réservation sur les mêmes dates au même instant.
+   Solution : verrouillage pessimiste via SELECT ... FOR UPDATE sur la Property lors de la
+   vérification d'overlap.
+
+   Implémentation Doctrine :
+   ```php
+   $em->getConnection()->beginTransaction();
+   $em->lock($property, LockMode::PESSIMISTIC_WRITE);
+   if ($reservationRepo->hasOverlap(...)) { throw ... }
+   $em->persist($reservation);
+   $em->flush();
+   $em->getConnection()->commit();
+   ```
+   Le premier à obtenir le verrou crée la réservation ; le second reçoit une erreur d'overlap.
+   Alternative : contrainte EXCLUDE en PostgreSQL sur (property_id, daterange(checkin, checkout))
+   mais plus complexe à maintenir avec Doctrine.
+
+4. PERFORMANCE — VALIDATION DE DISPONIBILITÉ SUR 20 NUITS
+   ────────────────────────────────────────────────────────
+   Pas de boucle jour par jour. Deux requêtes SQL suffisent (exécutées en parallèle possible) :
+   a) COUNT sur property_availability WHERE date >= checkin AND date < checkout AND is_available=false
+   b) COUNT sur reservations WHERE overlap (déjà existant : hasOverlap)
+   
+   Chaque requête bénéficie d'un index composé :
+   - property_availability : INDEX(property_id, available_date, is_available)
+   - reservations : INDEX(property_id, status, checkin_date, checkout_date)
+   
+   Complexité : O(1) par requête (scan d'index), quelle que soit la durée du séjour.
+
+5. ASYNCHRONISME — POURQUOI ENVOYER L'EMAIL APRÈS LE FLUSH ?
+   ──────────────────────────────────────────────────────────
+   Si l'email est envoyé avant le flush et que le flush échoue (contrainte BDD, exception),
+   le voyageur reçoit une confirmation pour une réservation qui n'existe pas en base.
+   → L'email DOIT être dispatché APRÈS le flush réussi.
+
+   Stratégie si le transport Messenger (RabbitMQ / Doctrine) est indisponible :
+   - Le transport Doctrine (doctrine://default) est notre fallback : tant que PostgreSQL
+     est up, les messages sont stockés dans la table messenger_messages.
+   - En cas de panne totale, Symfony lève une exception TransportException. Le controller
+     peut catcher et logger l'erreur sans bloquer la réservation (l'email sera renvoyé
+     manuellement ou via un retry).
+   - Les retries sont configurés (max_retries: 3, multiplier: 2) dans messenger.yaml.
+
+6. STRUCTURE SQL — TABLE DE JOURS vs TABLE DE PÉRIODES
+   ────────────────────────────────────────────────────
+   Choix retenu : TABLE DE JOURS INDIVIDUELS (PropertyAvailability avec available_date).
+
+   Justification :
+   + Requêtes de vérification simples (WHERE date IN (...) ou range simple).
+   + Pas de gestion de fragmentation/fusion de périodes lors d'un déblocage partiel.
+   + Permet un prix_override et minimum_stay par jour (tarification fine).
+   + Compatible directement avec l'import iCal (un VEVENT → N jours bloqués).
+
+   Inconvénient :
+   - Volume de données plus important (365 rows/an maximum par logement si tout est bloqué,
+     ce qui reste négligeable pour PostgreSQL avec indexation).
+   
+   Alternative rejetée : table de périodes (date_start, date_end). Plus compacte mais
+   complexifie les opérations de split/merge quand l'hôte débloque un jour au milieu
+   d'une période, et rend la requête de vérification de disponibilité plus lourde
+   (détection d'intersection de ranges).
+
+================================================================================
+FIN DU DOCUMENT
+================================================================================

@@ -3,12 +3,28 @@
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
         <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Résultats de recherche</h1>
-        {% if destination %}<p class="text-gray-500 mb-8">Destination : {{ destination }}</p>{% endif %}
+
+        <div class="flex flex-wrap items-center gap-2 text-sm text-gray-500 mb-8">
+            <span>{{ properties|length }} logement{{ properties|length > 1 ? 's' : '' }}</span>
+            {% if destination %}
+                <span>·</span>
+                <span>{{ destination }}</span>
+            {% endif %}
+            {% if checkin and checkout %}
+                <span>·</span>
+                <span>{{ checkin|date('d/m/Y') }} → {{ checkout|date('d/m/Y') }}</span>
+            {% endif %}
+            {% if guests %}
+                <span>·</span>
+                <span>{{ guests }} voyageur{{ guests > 1 ? 's' : '' }}</span>
+            {% endif %}
+        </div>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
             {% for property in properties %}
                 {% include 'components/card.html.twig' with { property: property } %}
             {% else %}
-                <p class="col-span-full text-gray-500">Aucun logement trouvé.</p>
+                <p class="col-span-full text-gray-500">Aucun logement trouvé pour ces critères.</p>
             {% endfor %}
         </div>
     </main>

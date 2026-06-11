@@ -25,6 +25,12 @@
                 <i class="fa-solid fa-house w-4 text-center text-gray-400"></i>
                 Mes propriétés
             </a>
+            {% if is_granted('ROLE_HOST') %}
+                <a href="{{ path('app_account_reservations') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
+                    <i class="fa-solid fa-calendar-check w-4 text-center text-gray-400"></i>
+                    Réservations reçues
+                </a>
+            {% endif %}
             <a href="{{ path('app_messages_index') }}" class="flex items-center gap-3 px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition">
                 <i class="fa-solid fa-envelope w-4 text-center text-gray-400"></i>
                 Mes messages

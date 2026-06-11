@@ -13,10 +13,13 @@ final class ReservationVoter extends Voter
 {
     public const VIEW = 'RESERVATION_VIEW';
     public const MANAGE = 'RESERVATION_MANAGE';
+    public const CONFIRM = 'RESERVATION_CONFIRM';
+    public const CANCEL = 'RESERVATION_CANCEL';
+    public const COMPLETE = 'RESERVATION_COMPLETE';
 
     protected function supports(string $attribute, mixed $subject): bool
     {
-        return in_array($attribute, [self::VIEW, self::MANAGE], true)
+        return in_array($attribute, [self::VIEW, self::MANAGE, self::CONFIRM, self::CANCEL, self::COMPLETE], true)
             && $subject instanceof Reservation;
     }
 
@@ -40,6 +43,9 @@ final class ReservationVoter extends Voter
         return match ($attribute) {
             self::VIEW => $isGuest || $isHost,
             self::MANAGE => $isHost,
+            self::CONFIRM => $isHost && $reservation->getStatus() === 'pending',
+            self::CANCEL => ($isGuest || $isHost) && in_array($reservation->getStatus(), ['pending', 'confirmed'], true),
+            self::COMPLETE => false,
             default => false,
         };
     }

@@ -9,6 +9,7 @@ use App\Entity\UserProfile;
 use App\Form\AccountProfileType;
 use App\Form\AccountSettingsType;
 use App\Repository\PropertyRepository;
+use App\Repository\ReservationRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -84,6 +85,20 @@ final class AccountController extends AbstractController
 
         return $this->render('front/account/properties.html.twig', [
             'properties' => $propertyRepository->findByHost($user),
+        ]);
+    }
+
+    #[Route('/reservations', name: 'app_account_reservations', methods: ['GET'])]
+    #[IsGranted('ROLE_HOST')]
+    public function reservations(ReservationRepository $reservationRepository): Response
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        return $this->render('front/account/reservations.html.twig', [
+            'reservations' => $reservationRepository->findByHostForListing($user),
         ]);
     }
 }

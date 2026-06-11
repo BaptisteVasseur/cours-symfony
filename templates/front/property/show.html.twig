@@ -23,6 +23,12 @@
                     <span>{{ property.address.city }}, {{ property.address.country }}</span>
                 {% endif %}
             </div>
+            {% if app.user and property.host and app.user.id == property.host.id %}
+                <a href="{{ path('app_host_calendar', {id: property.id}) }}"
+                   class="inline-flex items-center gap-2 mt-3 px-4 py-2 text-sm font-medium text-white bg-brand hover:bg-brandHover rounded-lg transition">
+                    <i class="fa-regular fa-calendar"></i> Gérer le calendrier
+                </a>
+            {% endif %}
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-2 rounded-xl overflow-hidden mb-10 h-[300px] md:h-[480px]">
