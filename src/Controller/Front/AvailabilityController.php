@@ -80,4 +80,28 @@ final class AvailabilityController extends AbstractController
 
         return $this->redirectToRoute('app_availability_index', ['id' => $property->getId()]);
     }
+
+    #[Route('/debloquer-tout', name: 'app_availability_unblock_all', methods: ['POST'])]
+    public function unblockAll(Property $property, EntityManagerInterface $em): Response
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User || !$this->isGranted('ROLE_HOST')) {
+            throw $this->createAccessDeniedException();
+        }
+
+        $blocked = $em->getRepository(PropertyAvailability::class)->findBy([
+            'property' => $property,
+            'isAvailable' => false,
+        ]);
+
+        foreach ($blocked as $availability) {
+            $em->remove($availability);
+        }
+
+        $em->flush();
+
+        $this->addFlash('success', 'Toutes les dates bloquées ont été débloquées.');
+
+        return $this->redirectToRoute('app_availability_index', ['id' => $property->getId()]);
+    }
 }

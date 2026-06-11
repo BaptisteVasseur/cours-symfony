@@ -90,4 +90,18 @@ final class HostReservationController extends AbstractController
 
         return $this->redirectToRoute('app_host_reservations');
     }
+
+
+    #[Route('/pending-count', name: 'app_host_pending_count', methods: ['GET'])]
+    public function pendingCount(ReservationRepository $reservationRepository): Response
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User || !$this->isGranted('ROLE_HOST')) {
+            return new Response('0');
+        }
+        
+        $count = $reservationRepository->countPendingForHost($user);
+        
+        return new Response((string) $count);
+    }
 }

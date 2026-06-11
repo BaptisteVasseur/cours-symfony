@@ -95,15 +95,15 @@
                                 <input type="date" name="end_date" required class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
                             </div>
                             <div>
-    <label class="block text-sm font-medium text-gray-700 mb-1">Motif</label>
-    <select name="reason" required class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
-        <option value="">-- Choisir un motif --</option>
-        <option value="Travaux">Travaux</option>
-        <option value="Usage personnel">Usage personnel</option>
-        <option value="Entretien">Entretien</option>
-        <option value="Autre">Autre</option>
-    </select>
-</div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Motif</label>
+                        <select name="reason" required class="w-full border border-gray-300 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-900">
+                            <option value="">-- Choisir un motif --</option>
+                            <option value="Travaux">Travaux</option>
+                            <option value="Usage personnel">Usage personnel</option>
+                            <option value="Entretien">Entretien</option>
+                            <option value="Autre">Autre</option>
+                        </select>
+                        </div>
                         </div>
                         <button type="submit" class="bg-gray-900 text-white font-semibold px-5 py-2.5 rounded-lg text-sm hover:bg-gray-700 transition">
                             <i class="fa-solid fa-ban mr-2"></i>Bloquer ces dates
@@ -124,34 +124,45 @@
                     {% endif %}
                 </h2>
 
-    {% if blocked|length > 0 %}
-        <div class="space-y-3 max-h-80 overflow-y-auto">
-            {% for availability in blocked %}
-                <div class="group flex items-center justify-between py-2 px-1 border-b border-gray-100 hover:bg-gray-50 rounded-lg transition-colors">
-                    <div class="flex items-center gap-2">
-                        <i class="fa-solid fa-ban text-red-400 text-sm"></i>
-                        <span class="text-sm font-medium text-gray-700">
-                            {{ availability.availableDate|date('d/m/Y') }}
-                        </span>
-                        {% if availability.reason %}
-                            <span class="text-xs text-gray-400 ml-1">
-                                ({{ availability.reason|length > 30 ? availability.reason|slice(0, 30) ~ '...' : availability.reason }})
+                {% if blocked|length > 0 %}
+                <form method="POST" action="{{ path('app_availability_unblock_all', { id: property.id }) }}"
+                      onsubmit="return confirm('Attention : Voulez-vous vraiment débloquer TOUTES les dates ?')">
+                    <button type="submit" 
+                            class="text-xs text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1.5 rounded-lg transition font-medium">
+                        <i class="fa-solid fa-trash-alt mr-1"></i>
+                        Tout débloquer
+                    </button>
+                </form>
+            {% endif %}
+
+        {% if blocked|length > 0 %}
+            <div class="space-y-3 max-h-80 overflow-y-auto">
+                {% for availability in blocked %}
+                    <div class="group flex items-center justify-between py-2 px-1 border-b border-gray-100 hover:bg-gray-50 rounded-lg transition-colors">
+                        <div class="flex items-center gap-2">
+                            <i class="fa-solid fa-ban text-red-400 text-sm"></i>
+                            <span class="text-sm font-medium text-gray-700">
+                                {{ availability.availableDate|date('d/m/Y') }}
                             </span>
-                        {% endif %}
+                            {% if availability.reason %}
+                                <span class="text-xs text-gray-400 ml-1">
+                                    ({{ availability.reason|length > 30 ? availability.reason|slice(0, 30) ~ '...' : availability.reason }})
+                                </span>
+                            {% endif %}
+                        </div>
+                        
+                        <form method="POST" action="{{ path('app_availability_unblock', { id: property.id, availabilityId: availability.id }) }}"
+                            onsubmit="return confirm('Débloquer cette date ?')">
+                            <button type="submit" 
+                                    class="text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors font-medium">
+                                <i class="fa-solid fa-unlock-alt mr-1"></i>
+                                Débloquer
+                            </button>
+                        </form>
                     </div>
-                    
-                    <form method="POST" action="{{ path('app_availability_unblock', { id: property.id, availabilityId: availability.id }) }}"
-                          onsubmit="return confirm('Débloquer cette date ?')">
-                        <button type="submit" 
-                                class="text-xs text-gray-500 hover:text-red-600 hover:bg-red-50 px-2 py-1 rounded transition-colors font-medium">
-                            <i class="fa-solid fa-unlock-alt mr-1"></i>
-                            Débloquer
-                        </button>
-                    </form>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
+                {% endfor %}
+            </div>
+        {% else %}
         <div class="text-center py-8">
             <div class="w-12 h-12 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-3">
                 <i class="fa-solid fa-check text-green-500 text-xl"></i>

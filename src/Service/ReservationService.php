@@ -22,6 +22,7 @@ class ReservationService
         private readonly EntityManagerInterface $em,
         private readonly ReservationRepository $reservationRepository,
         private readonly MessageBusInterface $bus,
+        private readonly NotificationService $notificationService,
     ) {}
 
     public function isAvailable(Property $property, \DateTimeImmutable $checkin, \DateTimeImmutable $checkout, int $guestsCount): bool
@@ -106,8 +107,11 @@ class ReservationService
         $this->em->flush();
 
         if ($initialStatus === 'pending') {
+            $this->notificationService->createForReservationCreated($reservation, $property->getHost());
             $this->bus->dispatch(new ReservationCreatedMessage($reservation->getId()));
         } elseif ($initialStatus === 'confirmed') {
+            $this->notificationService->createForReservationConfirmed($reservation, $guest);
+            $this->notificationService->createForReservationConfirmed($reservation, $property->getHost());
             $this->bus->dispatch(new ReservationConfirmedMessage($reservation->getId()));
         }
 
@@ -122,6 +126,9 @@ class ReservationService
 
         $this->transition($reservation, 'confirmed', $changedBy);
 
+        $this->notificationService->createForReservationConfirmed($reservation, $reservation->getGuest());
+        $this->notificationService->createForReservationConfirmed($reservation, $reservation->getProperty()->getHost());
+
         $this->bus->dispatch(new ReservationConfirmedMessage($reservation->getId()));
     }
 
@@ -130,9 +137,10 @@ class ReservationService
         if (!in_array($reservation->getStatus(), ['pending', 'confirmed'], true)) {
             throw new \RuntimeException('Cette réservation ne peut plus être annulée.');
         }
-
         $reservation->setCancellationReason($reason);
         $this->transition($reservation, 'cancelled', $changedBy);
+        $this->notificationService->createForReservationCancelled($reservation, $reservation->getGuest());
+        $this->notificationService->createForReservationCancelled($reservation, $reservation->getProperty()->getHost());
         $this->bus->dispatch(new ReservationCancelledMessage($reservation->getId()));
     }
 

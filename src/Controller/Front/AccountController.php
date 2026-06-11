@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller\Front;
 
+use App\Entity\Property;
 use App\Entity\User;
 use App\Entity\UserProfile;
 use App\Form\AccountProfileType;
@@ -85,5 +86,21 @@ final class AccountController extends AbstractController
         return $this->render('front/account/properties.html.twig', [
             'properties' => $propertyRepository->findByHost($user),
         ]);
+    }
+
+    #[Route('/propriete/{id}/generate-ical-token', name: 'app_property_generate_ical_token', methods: ['POST'])]
+    public function generateIcalToken(Property $property, EntityManagerInterface $em): Response
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User || $property->getHost() !== $user) {
+            throw $this->createAccessDeniedException('Vous n\'êtes pas autorisé à modifier ce logement.');
+        }
+
+        $property->generateIcalToken();
+        $em->flush();
+
+        $this->addFlash('success', 'Token iCal généré avec succès.');
+
+        return $this->redirectToRoute('app_account_properties');
     }
 }

@@ -159,6 +159,12 @@ class Property
     #[ORM\OneToMany(targetEntity: PropertyICalSync::class, mappedBy: 'property', orphanRemoval: true)]
     private Collection $iCalSyncs;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $icalToken = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $icalTokenExpiresAt = null;
+
     /** @var Collection<int, Reservation> */
     #[ORM\OneToMany(targetEntity: Reservation::class, mappedBy: 'property')]
     private Collection $reservations;
@@ -588,5 +594,35 @@ class Property
         }
 
         return round($total / $this->reviews->count(), 2);
+    }
+
+    public function getIcalToken(): ?string
+    {
+        return $this->icalToken;
+    }
+
+    public function setIcalToken(?string $icalToken): static
+    {
+        $this->icalToken = $icalToken;
+        return $this;
+    }
+
+    public function getIcalTokenExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->icalTokenExpiresAt;
+    }
+
+    public function setIcalTokenExpiresAt(?\DateTimeImmutable $icalTokenExpiresAt): static
+    {
+        $this->icalTokenExpiresAt = $icalTokenExpiresAt;
+        return $this;
+    }
+
+    public function generateIcalToken(): string
+    {
+        $token = bin2hex(random_bytes(32));
+        $this->icalToken = $token;
+        $this->icalTokenExpiresAt = new \DateTimeImmutable('+1 year');
+        return $token;
     }
 }

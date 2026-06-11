@@ -60,7 +60,6 @@ class HomeController extends AbstractController
         $checkout = $this->parseDate($request->query->get('checkout'));
         $guests = $request->query->getInt('guests');
 
-        // 🔥 ICI : utilise findBySearch() au lieu de findForListing()
         $properties = $propertyRepository->findBySearch($destination, $checkin, $checkout, $guests);
 
         return $this->render('front/search/index.html.twig', [

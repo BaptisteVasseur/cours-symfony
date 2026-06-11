@@ -109,4 +109,17 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getResult();
     }
+
+    public function countPendingForHost(User $host): int
+    {
+        return (int) $this->createQueryBuilder('r')
+            ->select('COUNT(r.id)')
+            ->leftJoin('r.property', 'p')
+            ->where('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->getQuery()
+            ->getSingleScalarResult();
+    }
 }
