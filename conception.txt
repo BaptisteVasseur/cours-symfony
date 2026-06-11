@@ -1,0 +1,100 @@
+CONCEPTION TECHNIQUE — Moteur de réservation & iCal
+====================================================
+
+1. Modélisation temporelle
+--------------------------
+J'ai décidé que le jour de checkout est réservable par un nouveau voyageur.
+La logique c'est qu'on réserve des nuits : un séjour du 10 au 15 juillet
+occupe les nuits du 10 au 14, donc le 15 est libre pour une nouvelle arrivée.
+
+Dans le code, la vérification de conflit se fait comme ça :
+  checkinDate < checkout_existant AND checkoutDate > checkin_existant
+
+Les horaires (checkin à 15h, checkout à 11h) sont gérés par les champs
+checkinTime/checkoutTime sur Property, mais n'impactent pas le verrouillage
+des dates en base.
+
+
+2. Gestion des états — est-ce que Pending bloque les dates ?
+------------------------------------------------------------
+Non. J'ai choisi que Pending ne bloque pas les dates.
+
+Pourquoi : si on bloque sur Pending, n'importe qui peut spammer des demandes
+pour saturer le calendrier d'un logement sans jamais payer.
+
+Le risque d'overbooking est géré autrement : quand l'hôte accepte une demande
+Pending, on re-vérifie la disponibilité au moment de la confirmation. Si
+quelqu'un d'autre a été confirmé entre-temps, on refuse automatiquement
+avec un email d'explication.
+
+Seul "confirmed" verrouille les dates.
+
+
+3. Concurrence — deux utilisateurs réservent en même temps
+----------------------------------------------------------
+Pour éviter que deux réservations soient confirmées sur les mêmes dates,
+j'utilise un verrou pessimiste (PESSIMISTIC_WRITE de Doctrine) dans une
+transaction :
+
+  - On ouvre une transaction
+  - On pose un SELECT FOR UPDATE sur les lignes de disponibilité
+  - On vérifie la dispo
+  - Si OK → on confirme, sinon → on retourne une erreur
+  - On commit
+
+Le deuxième utilisateur devra attendre la fin de la transaction du premier,
+et constatera que les dates sont prises.
+
+
+4. Performance — vérifier 20 nuits sans faire 20 requêtes
+---------------------------------------------------------
+Une seule requête SQL qui compte les jours bloqués sur la plage :
+
+  SELECT COUNT(*) FROM property_availability
+  WHERE property_id = X
+  AND available_date >= checkin AND available_date < checkout
+  AND is_available = false
+
+Si COUNT = 0, aucun jour bloqué manuellement.
+
+Une deuxième requête vérifie les réservations confirmées existantes :
+
+  SELECT COUNT(*) FROM reservations
+  WHERE property_id = X AND status = 'confirmed'
+  AND checkin_date < checkout AND checkout_date > checkin
+
+Deux requêtes au total quelle que soit la durée du séjour.
+Un index sur (property_id, available_date) assure la rapidité.
+
+
+5. Asynchronisme — pourquoi envoyer l'email après le flush() ?
+--------------------------------------------------------------
+Si on envoie l'email avant le flush() et que le flush() plante,
+le voyageur reçoit une confirmation pour une réservation qui n'existe
+pas en base. C'est un gros problème.
+
+Donc on dispatch le message Symfony (ex: ReservationConfirmedMessage)
+uniquement après que le flush() a réussi.
+
+Si RabbitMQ tombe : on configure un transport de fallback "doctrine"
+dans messenger.yaml. Les messages sont stockés en base et rejoués
+automatiquement quand le worker redémarre. On configure aussi 3 tentatives
+avec délai exponentiel avant de passer en "failed".
+
+
+6. Structure SQL — jours individuels ou périodes ?
+--------------------------------------------------
+J'ai gardé la table PropertyAvailability existante (jours individuels).
+
+Table de périodes (date_start/date_end) :
+  - Les requêtes de chevauchement sont plus complexes
+  - Difficile de faire des overrides de prix par jour
+
+Table de jours individuels (mon choix) :
+  + Requêtes simples avec BETWEEN
+  + Le champ priceOverride par jour est natif
+  + Compatible avec l'import iCal
+  - Plus de lignes, mais compensé par l'index
+
+L'entité PropertyAvailability du projet avec ses champs isAvailable,
+priceOverride et minimumStay confirme que c'est la bonne approche ici.

@@ -1,0 +1,61 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Calendrier — {{ property.title }}{% endblock %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+    <a href="{{ path('app_host_reservations') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i> Retour aux demandes
+    </a>
+
+    <h1 class="text-2xl font-bold text-gray-900 mb-2">Calendrier de disponibilité</h1>
+    <p class="text-gray-500 mb-8">{{ property.title }}</p>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <div class="border border-gray-200 rounded-2xl p-6 bg-white shadow-sm">
+            <h2 class="text-lg font-semibold mb-4">Bloquer une période</h2>
+            <form method="post" action="{{ path('app_host_calendar', { id: property.id }) }}" class="space-y-4">
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Date de début</label>
+                    <input type="date" name="start_date" required
+                        class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm">
+                </div>
+                <div>
+                    <label class="block text-sm text-gray-600 mb-1">Date de fin</label>
+                    <input type="date" name="end_date" required
+                        class="w-full border border-gray-300 rounded-xl px-4 py-3 text-sm">
+                </div>
+                <button type="submit" class="w-full bg-gray-900 hover:bg-gray-700 text-white font-semibold py-3 rounded-xl text-sm">
+                    Bloquer ces dates
+                </button>
+            </form>
+        </div>
+
+        <div class="border border-gray-200 rounded-2xl p-6 bg-white shadow-sm">
+            <h2 class="text-lg font-semibold mb-4">Jours bloqués (2 prochains mois)</h2>
+            {% if blockedDays is empty %}
+                <p class="text-gray-500 text-sm">Aucun jour bloqué.</p>
+            {% else %}
+                <ul class="space-y-2">
+                    {% for day in blockedDays %}
+                        {% if not day.isAvailable %}
+                            <li class="flex items-center justify-between text-sm">
+                                <span class="text-gray-700">{{ day.availableDate|date('d/m/Y') }}</span>
+                                <span class="text-red-600 font-semibold">Bloqué</span>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        </div>
+    </div>
+</main>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Mes demandes de réservation{% endblock %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+    <h1 class="text-2xl font-bold text-gray-900 mb-6">Demandes en attente</h1>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% if pending is empty %}
+        <div class="text-center py-16 text-gray-500">
+            <p class="text-lg">Aucune demande en attente.</p>
+        </div>
+    {% else %}
+        <div class="space-y-4">
+            {% for reservation in pending %}
+                {% set guest = reservation.guest %}
+                {% set guestProfile = guest ? guest.profile : null %}
+                {% set property = reservation.property %}
+
+                <div class="border border-gray-200 rounded-2xl p-6 bg-white shadow-sm">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <h2 class="font-semibold text-gray-900">{{ property.title }}</h2>
+                            <p class="text-sm text-gray-500 mt-1">
+                                {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                                · {{ reservation.guestsCount }} voyageur(s)
+                            </p>
+                            <p class="text-sm text-gray-500">
+                                Voyageur : {{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : guest.email }}
+                            </p>
+                            <p class="text-sm font-semibold text-gray-900 mt-1">{{ reservation.totalPrice|number_format(2, ',', ' ') }} €</p>
+                        </div>
+                        <div class="flex flex-col sm:flex-row gap-2 shrink-0">
+                            <form method="post" action="{{ path('app_host_reservation_confirm', { id: reservation.id }) }}">
+                                <button type="submit" class="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-5 py-2 rounded-xl">
+                                    Accepter
+                                </button>
+                            </form>
+                            <form method="post" action="{{ path('app_host_reservation_refuse', { id: reservation.id }) }}" class="flex gap-2">
+                                <input type="text" name="reason" placeholder="Motif de refus" required
+                                    class="border border-gray-300 rounded-xl px-3 py-2 text-sm w-48">
+                                <button type="submit" class="bg-red-100 hover:bg-red-200 text-red-800 text-sm font-semibold px-4 py-2 rounded-xl">
+                                    Refuser
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+</main>
+{% endblock %}
