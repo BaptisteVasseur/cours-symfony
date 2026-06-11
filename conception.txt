@@ -1,0 +1,109 @@
+CONCEPTION TECHNIQUE — Moteur de Réservation & Calendrier iCal
+Auteur : Madhkour Chaimaa
+Date   : 11 Juin 2026
+
+
+0. MODÈLE DE DONNÉES
+
+Le moteur repose sur cinq entités principales. La Property (logement) porte son statut de publication (draft, published, suspended), 
+un indicateur instantBooking qui décide du mode de validation, sa capacité (maxGuests), son tarif (pricePerNight, cleaningFee,
+securityDeposit), ses horaires fixes d'arrivée et de départ (checkinTime, checkoutTime) et son hôte propriétaire. 
+La Reservation relie un logement et un voyageur (guest) sur une plage de dates (checkinDate, checkoutDate, stockées en 
+DATE_IMMUTABLE), avec un nombre de voyageurs, un statut (pending, confirmed, cancelled, completed), les montants chiffrés et 
+un éventuel motif d'annulation. 
+La PropertyAvailability crée le calendrier, une ligne par jour (availableDate), avec un drapeau isAvailable, un tarif
+(priceOverride) et une durée de séjour minimum (minimumStay). La ReservationStatusHistory trace chaque changement de statut 
+(ancien, nouveau, auteur, date), ce qui permet de suivre la traçabilité demandée. Et la PropertyICalSync retient les sources 
+iCal.
+
+Parcours : 
+Le voyageur choisit ses dates et son nombre de voyageurs depuis la fiche du logement ou depuis la recherche, 
+il accède à une page de récapitulatif où le PricingService calcule le coût total affiché. À la soumission, 
+l'AvailabilityService valide la disponibilité en temps réel. Si la plage est disponible, le BookingService crée la réservation alors 
+son statut devient confirmed lorsque le logement accepte la réservation instantanée, ou pending dans le cas
+contraire si la validation doit se faite manuellemment par l'hôte. La réservation et son historique sont ensuite flush, 
+et c'est qu'après ce flush que les notifications sont envoyé à Messenger pour un envoi d'email asynchrone. Le voyageur est enfin
+redirigé vers son espace de suivi avec un message.
+
+
+1. MODÉLISATION TEMPORELLE
+
+J'ai retenu un modèle de "nuitées", standard en hôtellerie en gros celui qui fait la réservation ne se base pas sur un jour 
+plein mais sur une nuit. Un séjour du 10 au 15 correspond ainsi à cinq nuits (10, 11, 12, 13 et 14), 
+la nuit du 15 ne compte pas dans ce séjour.
+En gros, je pars sur une intervalles demi-ouverts, la détection de chevauchement compare checkinDate < checkout et
+checkoutDate > checkin, et les boucles de calendrier s'arrêtent à checkout-1. 
+
+C'est précisément ce qui résout la superposition d'un départ à 11h et d'une arrivée à 15h le même jour. 
+Vue que la nuit de départ est libre, le voyageur de l'après-midi réserve à partir de cette date (15h) sans entrer en conflit 
+avec le séjour précédent. Je n'ai donc pas besoin de stocker les heures sur chaque réservation, elles sont des règles fixes du
+logement (checkinTime et checkoutTime), identiques pour tous les voyageurs. 
+
+
+
+2. GESTION DES ÉTATS
+
+Dans mon implémentation, une demande au statut pending ne bloque pas les dates, ce sont seulement les réservations 
+confirmed sont considérées comme bloquantes par l'algorithme de disponibilité. 
+Plusieurs voyageurs peuvent donc déposer une demande sur les mêmes dates, formant une file d'attente. Le cycle de vie est 
+encadré par le BookingService, qui n'autorise que les transitions  pending → confirmed ou cancelled, et confirmed → cancelled ou 
+completed. Chaque passage est journalisé dans l'historique.
+
+L'hôte pourrait en théorie, confirmer deux demandes qui se chevauchent. Je bloque ce risque au moment de la confirmation.
+BookingService::confirm re-vérifie la disponibilité avant de passer en confirmed. La première demande confirmée verrouille donc 
+les dates, et les suivantes deviennent impossible a confirmer (le contrôle échoue et lève une BookingException). 
+À l'inverse, faire en sorte qu'une demande pending bloque les dates créerait un risque de blocage abusif. Comme des
+demandes jamais traitées bloquerait le calendrier. 
+
+
+3. CONCURRENCE
+
+Pour mettre en place une solution simple et sûre, je retiens un verrou pessimiste. Soit encadrer le contrôle et l'écriture dans 
+une transaction, et poser un verrou d'écriture sur le logement (em->lock(property, LockMode::PESSIMISTIC_WRITE), ce qui reviens a 
+faire  un SELECT ... FOR UPDATE). Les confirmations concurrentes portant sur un même logement sont alors sérialisées. 
+La seconde attend la première, relit l'état réel et échoue. La contention reste limitée au seul logement concerné. 
+Sur du plus long terme, la solution la plus robuste serait une contrainte d'exclusion PostgreSQL. 
+
+
+4. PERFORMANCE
+
+Pour valider une disponibilité sur vingt nuits consécutives, je fais par requêtes ensemblistes. Une requête récupère les
+jours bloqués sur toute la plage (findBlockedDays), une autre détecte les chevauchements de réservations confirmées 
+(findOverlappingConfirmed). La capacité et le statut du logement sont de simples comparaisons en mémoire sur l'objet Property 
+déjà chargé, et le calcul de prix charge tous les tarifs spécifiques de la plage en une seule requête avant d'itérer.
+
+La raison est qu'une requête bornée sur vingt nuits coûte pratiquement le même prix qu'une requête sur une seule nuit, 
+un unique aller-retour réseau et un unique plan d'exécution. Vingt requêtes "jour par jour" cumuleraient au contraire une 20aines 
+latences et et une 20aines de plans, pour un coût rapidement contraignant. La règle est donc de raisonner en ensembles plutôt 
+qu'en itérations. Pour soutenir ces requêtes, deux index sont nécessaires : 
+    - un index (property_id, available_date) sur la table du calendrier, qui sert aussi bien au repérage des jours bloqués 
+    qu'au chargement des tarifs
+    - un index (property_id, status, checkin_date, checkout_date) sur les réservations, qui couvre exactement la requête de 
+    chevauchement. 
+La recherche /search sur N logements ne doit surtout pas appeler l'algorithme logement par logement, ce qui provoquerait 
+un problème de N+1. Je le mettrais en place avec une une seule requête combinant des clauses NOT EXISTS 
+(aucune réservation confirmée chevauchante, aucun jour bloqué) et le filtre de capacté
+
+
+5. ASYNCHRONISME
+
+L'envoi des emails doit intervenir après le flush de l'ORM parce qu'un email reflète un fait réellement persisté. Si je notifie 
+avant le flush et que celui-ci échouait ona ura donc une contrainte violée, une connexion perdue, donc un rollback. 
+Le principe est qu'on ne communique qu'un état committé. 
+
+On mets en place cet envoi seur Messenger car l'émission d'un email par SMTP est lente et faillible. La réaliser de façon 
+synchrone dans la requête HTTP bloquerait l'utilisateur. En déposant un message dans une file consommée par un worker, la réponse 
+renvoyée au voyageur est immédiate. 
+
+
+6. STRUCTURE SQL DU CALENDRIER
+
+Le calendrier peut se modéliser de deux façons avec une table de jours individuels (une ligne par jour) ou une table de périodes 
+(date_start, date_end). la mis en place du modèle "jour individuel", incarné par PropertyAvailability.
+
+Ce choix est plus simple à utiliser au quotidien. Comme chaque jour est une ligne, on peut mettre un tarif différent ou une 
+durée minimum sur un seul jour très facilement, et les requêtes de disponibilité restent simples (on filtre juste sur une plage 
+de dates). Le modèle par périodes est plus compact (une longue indisponibilité tient en une seule ligne), mais il est plus compliqué à gérer. 
+Un tarif qui change selon le jour devient lourd à exprimer, et surtout il faut découper ou fusionner les périodes quand une 
+réservation tombe au milieu d'une plage libre, ce qui ramene facilement des bugs.
+
