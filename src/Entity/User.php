@@ -58,6 +58,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $phone = null;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $hostIcalToken = null;
+
     #[Assert\NotBlank(message: 'Le statut du compte est obligatoire.')]
     #[Assert\Choice(
         choices: ['active', 'pending', 'suspended'],
@@ -239,6 +242,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         $this->phone = $phone;
 
         return $this;
+    }
+
+    public function getHostIcalToken(): ?string
+    {
+        return $this->hostIcalToken;
+    }
+
+    public function setHostIcalToken(?string $hostIcalToken): static
+    {
+        $this->hostIcalToken = $hostIcalToken;
+
+        return $this;
+    }
+
+    public function generateHostIcalToken(): string
+    {
+        $this->hostIcalToken = bin2hex(random_bytes(32));
+
+        return $this->hostIcalToken;
     }
 
     public function getStatus(): ?string

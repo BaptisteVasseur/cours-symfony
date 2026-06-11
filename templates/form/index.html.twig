@@ -1,0 +1,83 @@
+{% extends 'layouts/base.html.twig' %}
+
+{% block content %}
+	<main class="min-h-screen bg-neutral-100 text-neutral-900">
+		<div class="flex min-h-screen items-center justify-center px-4 py-12">
+			<div class="w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-xl">
+				<div class="border-b border-neutral-200 px-6 py-5 text-center">
+					<h1 class="text-lg font-bold">Connexion ou inscription</h1>
+				</div>
+
+				<div class="px-6 py-6">
+					<h2 class="mb-6 text-2xl font-semibold">
+						Bienvenue sur Airbnb
+					</h2>
+
+					<form action="#" method="post" class="space-y-4">
+						<div>
+							<label for="email" class="mb-2 block text-sm font-semibold">
+								Adresse e-mail
+							</label>
+
+							<input type="email" id="email" name="email" placeholder="exemple@email.com" required class="w-full rounded-xl border border-neutral-300 px-4 py-3 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10"/>
+						</div>
+
+						<div>
+							<label for="password" class="mb-2 block text-sm font-semibold">
+								Mot de passe
+							</label>
+
+							<input type="password" id="password" name="password" placeholder="Votre mot de passe" required class="w-full rounded-xl border border-neutral-300 px-4 py-3 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10"/>
+						</div>
+
+						<div class="flex items-center justify-between text-sm">
+							<label class="flex items-center gap-2">
+								<input type="checkbox" name="remember" class="h-4 w-4 rounded border-neutral-300 text-rose-600 focus:ring-rose-500"/>
+
+								<span>Se souvenir de moi</span>
+							</label>
+
+							<a href="#" class="font-semibold underline">
+								Mot de passe oublié ?
+							</a>
+						</div>
+
+						<button type="submit" class="w-full rounded-xl bg-gradient-to-r from-rose-500 to-pink-700 px-4 py-3 font-bold text-white transition hover:from-rose-600 hover:to-pink-800">
+							Continuer
+						</button>
+					</form>
+
+					<div class="my-6 flex items-center gap-4">
+						<div class="h-px flex-1 bg-neutral-300"></div>
+						<span class="text-sm text-neutral-500">ou</span>
+						<div class="h-px flex-1 bg-neutral-300"></div>
+					</div>
+
+					<div class="space-y-3">
+						<button class="flex w-full items-center justify-center gap-3 rounded-xl border border-neutral-900 px-4 py-3 font-semibold transition hover:bg-neutral-50">
+							<span class="text-xl">G</span>
+							<span>Continuer avec Google</span>
+						</button>
+
+						<button class="flex w-full items-center justify-center gap-3 rounded-xl border border-neutral-900 px-4 py-3 font-semibold transition hover:bg-neutral-50">
+							<span class="text-xl">f</span>
+							<span>Continuer avec Facebook</span>
+						</button>
+
+						<button class="flex w-full items-center justify-center gap-3 rounded-xl border border-neutral-900 px-4 py-3 font-semibold transition hover:bg-neutral-50">
+							<span class="text-xl"></span>
+							<span>Continuer avec Apple</span>
+						</button>
+					</div>
+
+					<p class="mt-6 text-center text-sm text-neutral-600">
+						Pas encore de compte ?
+						<a href="#" class="font-bold text-neutral-900 underline">
+							Créer un compte
+						</a>
+					</p>
+				</div>
+			</div>
+		</div>
+	</main>
+{% endblock %}

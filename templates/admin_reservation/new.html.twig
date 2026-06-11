@@ -1,0 +1,46 @@
+{% extends 'layouts/user.html.twig' %}
+
+{% block title %}Créer une réservation{% endblock %}
+
+{% block content %}
+    <main class="min-h-screen bg-neutral-50 px-6 py-10">
+        <div class="mx-auto max-w-4xl">
+            <div class="mb-8">
+                <a
+                    href="{{ path('app_admin_reservation_index') }}"
+                    class="inline-flex items-center gap-2 text-sm font-semibold underline"
+                >
+                    ← Retour à la liste
+                </a>
+
+                <div class="mt-6">
+                    <p class="text-sm font-bold uppercase tracking-wide text-rose-600">
+                        Administration
+                    </p>
+
+                    <h1 class="mt-2 text-4xl font-bold text-neutral-900">
+                        Créer une réservation
+                    </h1>
+
+                    <p class="mt-2 text-neutral-500">
+                        Ajoutez une nouvelle réservation à la plateforme.
+                    </p>
+                </div>
+            </div>
+
+            <div class="rounded-3xl bg-white p-6 shadow-sm md:p-8">
+                <div class="mb-6 border-b border-neutral-200 pb-6">
+                    <h2 class="text-2xl font-bold text-neutral-900">
+                        Informations de la réservation
+                    </h2>
+
+                    <p class="mt-2 text-neutral-500">
+                        Renseignez le logement, le voyageur, les dates et le montant.
+                    </p>
+                </div>
+
+                {{ include('admin_reservation/_form.html.twig') }}
+            </div>
+        </div>
+    </main>
+{% endblock %}

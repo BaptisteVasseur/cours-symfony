@@ -7,6 +7,11 @@
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
         <div class="mb-6">
             <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">{{ property.title }}</h1>
             <div class="flex flex-wrap items-center gap-2 mt-2 text-sm text-gray-600">
@@ -54,6 +59,7 @@
                             · {{ property.bathrooms }} salle{{ property.bathrooms > 1 ? 's' : '' }} de bain
                         </p>
                     </div>
+
                     <div class="w-14 h-14 rounded-full bg-gray-200 overflow-hidden shrink-0">
                         {% if hostProfile and hostProfile.avatarUrl %}
                             <img src="{{ hostProfile.avatarUrl }}" alt="Hôte" class="w-full h-full object-cover">
@@ -92,15 +98,19 @@
                     <h2 class="text-xl font-semibold text-gray-900 mb-6">
                         Avis ({{ totalReviews|default(property.reviews|length) }})
                     </h2>
+
                     {% set reviewCount = totalReviews|default(property.reviews|length) %}
+
                     {% if reviewCount > 0 %}
                         <div class="space-y-6">
                             {% for review in reviews|default(property.reviews) %}
                                 {% include 'front/property/partials/review_item.html.twig' with { review: review } %}
                             {% endfor %}
                         </div>
+
                         {% if reviewCount > 5 %}
-                            <a href="{{ path('app_logement_reviews', { id: property.id }) }}" class="inline-block mt-6 text-sm font-semibold underline text-gray-900 hover:text-brand">
+                            <a href="{{ path('app_logement_reviews', { id: property.id }) }}"
+                               class="inline-block mt-6 text-sm font-semibold underline text-gray-900 hover:text-brand">
                                 Tout afficher ({{ reviewCount }} avis)
                             </a>
                         {% endif %}
@@ -112,34 +122,89 @@
 
             <aside class="lg:col-span-1">
                 <div class="sticky top-28 border border-gray-200 rounded-xl shadow-lg p-6">
-                    <p class="text-2xl font-semibold mb-4">
+                    <p class="text-2xl font-semibold mb-2">
                         <span class="font-bold">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span>
                         <span class="text-base font-normal text-gray-600"> / nuit</span>
                     </p>
+
                     {% if property.cleaningFee %}
-                        <p class="text-sm text-gray-500 mb-4">Frais de ménage : {{ property.cleaningFee|number_format(0, ',', ' ') }} €</p>
+                        <p class="text-sm text-gray-500 mb-4">
+                            Frais de ménage : {{ property.cleaningFee|number_format(0, ',', ' ') }} €
+                        </p>
                     {% endif %}
-                    <div class="border border-gray-300 rounded-lg mb-4">
-                        <div class="grid grid-cols-2 divide-x divide-gray-300">
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Arrivée</p>
-                                <p class="text-sm text-gray-500">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
+
+                    <form action="{{ path('app_booking_checkout', { id: property.id }) }}" method="get" class="space-y-4">
+                        <div class="border border-gray-300 rounded-lg overflow-hidden">
+                            <div class="grid grid-cols-2 divide-x divide-gray-300">
+                                <div class="p-3">
+                                    <label for="checkin" class="block text-[10px] font-bold uppercase text-gray-800">
+                                        Arrivée
+                                    </label>
+                                    <input
+                                        type="date"
+                                        id="checkin"
+                                        name="checkin"
+                                        required
+                                        class="mt-1 w-full text-sm text-gray-700 outline-none"
+                                    >
+                                    <p class="mt-1 text-xs text-gray-400">
+                                        Dès {{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}
+                                    </p>
+                                </div>
+
+                                <div class="p-3">
+                                    <label for="checkout" class="block text-[10px] font-bold uppercase text-gray-800">
+                                        Départ
+                                    </label>
+                                    <input
+                                        type="date"
+                                        id="checkout"
+                                        name="checkout"
+                                        required
+                                        class="mt-1 w-full text-sm text-gray-700 outline-none"
+                                    >
+                                    <p class="mt-1 text-xs text-gray-400">
+                                        Avant {{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}
+                                    </p>
+                                </div>
                             </div>
-                            <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Départ</p>
-                                <p class="text-sm text-gray-500">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
+
+                            <div class="p-3 border-t border-gray-300">
+                                <label for="guests" class="block text-[10px] font-bold uppercase text-gray-800">
+                                    Voyageurs
+                                </label>
+                                <input
+                                    type="number"
+                                    id="guests"
+                                    name="guests"
+                                    min="1"
+                                    max="{{ property.maxGuests }}"
+                                    value="1"
+                                    required
+                                    class="mt-1 w-full text-sm text-gray-700 outline-none"
+                                >
+                                <p class="mt-1 text-xs text-gray-400">
+                                    Jusqu'à {{ property.maxGuests }} personne{{ property.maxGuests > 1 ? 's' : '' }}
+                                </p>
                             </div>
                         </div>
-                        <div class="p-3 border-t border-gray-300">
-                            <p class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</p>
-                            <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
-                        </div>
-                    </div>
-                    <a href="{{ path('app_booking_checkout', { id: property.id }) }}" class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center">
-                        Réserver
-                    </a>
+
+                        <button
+                            type="submit"
+                            class="block w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition text-center"
+                        >
+                            Réserver
+                        </button>
+                    </form>
+
                     {% if property.instantBooking %}
-                        <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
+                        <p class="text-center text-xs text-gray-500 mt-3">
+                            Réservation instantanée disponible
+                        </p>
+                    {% else %}
+                        <p class="text-center text-xs text-gray-500 mt-3">
+                            Votre demande devra être validée par l'hôte
+                        </p>
                     {% endif %}
                 </div>
             </aside>

@@ -1,0 +1,183 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-10 max-w-6xl mx-auto w-full">
+        <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <p class="text-sm font-semibold text-brand">Espace hôte</p>
+                <h1 class="text-3xl font-bold text-gray-900">
+                    Demandes en attente
+                </h1>
+                <p class="mt-2 text-gray-500">
+                    Consultez les demandes de réservation reçues et acceptez ou refusez-les.
+                </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="{{ path('app_host_calendar') }}"
+                   class="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100">
+                    Synchronisation iCal
+                </a>
+                <a href="{{ path('app_host_property_index') }}"
+                   class="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-800 hover:bg-gray-100">
+                    Mes logements
+                </a>
+            </div>
+        </div>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 rounded-2xl px-5 py-3 text-sm font-medium
+                    {{ label == 'success' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        {% if reservations is empty %}
+            <section class="rounded-3xl border border-gray-200 bg-white p-10 text-center shadow-sm">
+                <div class="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-gray-100 text-2xl">
+                    📨
+                </div>
+
+                <h2 class="mt-5 text-xl font-bold text-gray-900">
+                    Aucune demande en attente
+                </h2>
+
+                <p class="mt-2 text-gray-500">
+                    Lorsqu’un voyageur enverra une demande de réservation, elle apparaîtra ici.
+                </p>
+            </section>
+        {% else %}
+            <section class="space-y-5">
+                {% for reservation in reservations %}
+                    {% set property = reservation.property %}
+                    {% set cover = property.coverMedia %}
+
+                    <article class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm">
+                        <div class="grid gap-0 lg:grid-cols-[240px_1fr_280px]">
+                            <div class="h-56 bg-gray-100 lg:h-full">
+                                <img
+                                    src="{{ cover ? cover.fileUrl : 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' }}"
+                                    alt="{{ property.title }}"
+                                    class="h-full w-full object-cover"
+                                >
+                            </div>
+
+                            <div class="p-6">
+                                <div class="mb-3 flex flex-wrap items-center gap-2">
+                                    <span class="rounded-full bg-orange-50 px-3 py-1 text-xs font-semibold text-orange-700">
+                                        En attente
+                                    </span>
+
+                                    <span class="text-sm text-gray-400">
+                                        Demande reçue le {{ reservation.createdAt|date('d/m/Y à H:i') }}
+                                    </span>
+                                </div>
+
+                                <h2 class="text-xl font-bold text-gray-900">
+                                    {{ property.title }}
+                                </h2>
+
+                                <div class="mt-4 grid gap-3 text-sm text-gray-600 sm:grid-cols-2">
+                                    <div class="rounded-2xl bg-gray-50 p-4">
+                                        <p class="text-xs font-semibold uppercase text-gray-400">
+                                            Voyageur
+                                        </p>
+                                        <p class="mt-1 font-semibold text-gray-900">
+                                            {{ reservation.guest ? reservation.guest.email : '—' }}
+                                        </p>
+                                    </div>
+
+                                    <div class="rounded-2xl bg-gray-50 p-4">
+                                        <p class="text-xs font-semibold uppercase text-gray-400">
+                                            Nombre de voyageurs
+                                        </p>
+                                        <p class="mt-1 font-semibold text-gray-900">
+                                            {{ reservation.guestsCount }} voyageur{{ reservation.guestsCount > 1 ? 's' : '' }}
+                                        </p>
+                                    </div>
+
+                                    <div class="rounded-2xl bg-gray-50 p-4">
+                                        <p class="text-xs font-semibold uppercase text-gray-400">
+                                            Arrivée
+                                        </p>
+                                        <p class="mt-1 font-semibold text-gray-900">
+                                            {{ reservation.checkinDate|date('d/m/Y') }}
+                                        </p>
+                                    </div>
+
+                                    <div class="rounded-2xl bg-gray-50 p-4">
+                                        <p class="text-xs font-semibold uppercase text-gray-400">
+                                            Départ
+                                        </p>
+                                        <p class="mt-1 font-semibold text-gray-900">
+                                            {{ reservation.checkoutDate|date('d/m/Y') }}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {% if reservation.totalPrice %}
+                                    <p class="mt-4 text-sm text-gray-500">
+                                        Montant total :
+                                        <span class="font-bold text-gray-900">
+                                            {{ reservation.totalPrice }} {{ reservation.currency }}
+                                        </span>
+                                    </p>
+                                {% endif %}
+                            </div>
+
+                            <div class="border-t border-gray-200 p-6 lg:border-l lg:border-t-0">
+                                <div class="rounded-2xl bg-gray-50 p-4">
+                                    <p class="text-sm font-semibold text-gray-900">
+                                        Décision hôte
+                                    </p>
+                                    <p class="mt-1 text-sm text-gray-500">
+                                        Acceptez la demande pour confirmer la réservation, ou refusez-la avec un motif.
+                                    </p>
+                                </div>
+
+                                <div class="mt-5 space-y-3">
+                                    <form method="post" action="{{ path('app_host_reservation_accept', { id: reservation.id }) }}">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('accept-reservation' ~ reservation.id) }}">
+
+                                        <button type="submit"
+                                                class="w-full rounded-full bg-emerald-600 px-5 py-3 text-sm font-bold text-white hover:bg-emerald-700">
+                                            Accepter
+                                        </button>
+                                    </form>
+
+                                    <form method="post"
+                                          action="{{ path('app_host_reservation_reject', { id: reservation.id }) }}"
+                                          onsubmit="return confirmReject(this);">
+                                        <input type="hidden" name="_token" value="{{ csrf_token('reject-reservation' ~ reservation.id) }}">
+
+                                        <input
+                                            type="text"
+                                            name="reason"
+                                            placeholder="Motif du refus (obligatoire)"
+                                            class="mb-3 w-full rounded-2xl border border-gray-300 px-4 py-3 text-sm outline-none focus:border-gray-900"
+                                        >
+
+                                        <button type="submit"
+                                                class="w-full rounded-full border border-red-200 bg-red-50 px-5 py-3 text-sm font-bold text-red-700 hover:bg-red-100">
+                                            Refuser
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                {% endfor %}
+            </section>
+        {% endif %}
+    </main>
+
+    <script>
+        function confirmReject(form) {
+            const reason = form.querySelector('input[name="reason"]').value;
+
+            return confirm('Confirmer le refus de la réservation' + (reason ? "\nMotif : " + reason : ''));
+        }
+    </script>
+{% endblock %}

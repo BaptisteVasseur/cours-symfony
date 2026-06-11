@@ -53,17 +53,54 @@ class HomeController extends AbstractController
     }
 
     #[Route('/search', name: 'app_search', methods: ['GET'])]
-    public function search(Request $request, PropertyRepository $propertyRepository): Response
+    public function search(Request $request, PropertyRepository $propertyRepository, \App\Service\PropertyAvailabilityService $propertyAvailabilityService): Response
     {
         $checkin = $this->parseDate($request->query->get('checkin'));
         $checkout = $this->parseDate($request->query->get('checkout'));
 
+        $destination = trim((string) $request->query->get('destination', ''));
+        $guests = $request->query->getInt('guests', 0);
+
+        $qb = $propertyRepository->createQueryBuilder('p')
+            ->addSelect('m', 'a', 'r', 'host', 'hostProfile')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.reviews', 'r')
+            ->leftJoin('p.host', 'host')
+            ->leftJoin('host.profile', 'hostProfile')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :dest OR LOWER(p.title) LIKE :dest')
+                ->setParameter('dest', '%' . mb_strtolower($destination) . '%');
+        }
+
+        if ($guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        $properties = $qb->getQuery()->getResult();
+
+        // If both dates provided, strict availability filtering
+        if ($checkin instanceof \DateTimeImmutable && $checkout instanceof \DateTimeImmutable) {
+            $available = [];
+            foreach ($properties as $property) {
+                if ($propertyAvailabilityService->isAvailable($property, $checkin, $checkout, $guests)) {
+                    $available[] = $property;
+                }
+            }
+            $properties = $available;
+        }
+
         return $this->render('front/search/index.html.twig', [
-            'properties' => $propertyRepository->findForListing('published'),
+            'properties' => $properties,
             'checkin' => $checkin,
             'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'guests' => $guests,
+            'destination' => $destination,
         ]);
     }
 

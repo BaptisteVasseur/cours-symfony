@@ -1,0 +1,123 @@
+{% extends 'layouts/base.html.twig' %}
+
+{% block title %}Log in!{% endblock %}
+
+{% block content %}
+    <main class="min-h-screen bg-neutral-100 px-4 py-12">
+        <div class="mx-auto flex min-h-[calc(100vh-120px)] max-w-md items-center justify-center">
+            <div class="w-full overflow-hidden rounded-3xl bg-white shadow-xl">
+                <div class="border-b border-neutral-200 px-6 py-5 text-center">
+                    <h1 class="text-lg font-bold">
+                        Connexion
+                    </h1>
+                </div>
+
+                <div class="px-6 py-6">
+                    <h2 class="mb-2 text-2xl font-semibold">
+                        Bon retour parmi nous
+                    </h2>
+
+                    <p class="mb-6 text-neutral-500">
+                        Connecte-toi pour accéder à tes réservations.
+                    </p>
+
+                    {% if error %}
+                        <div class="mb-5 rounded-xl bg-red-50 px-4 py-3 text-sm font-semibold text-red-700">
+                            {{ error.messageKey|trans(error.messageData, 'security') }}
+                        </div>
+                    {% endif %}
+
+                    {% if app.user %}
+                        <div class="mb-5 rounded-xl bg-green-50 px-4 py-3 text-sm text-green-700">
+                            Tu es connecté en tant que
+                            <span class="font-semibold">{{ app.user.userIdentifier }}</span>.
+                            <a href="{{ logout_path() }}" class="font-bold underline">
+                                Déconnexion
+                            </a>
+                        </div>
+                    {% endif %}
+
+                    <form method="post" class="space-y-4">
+                        <div>
+                            <label for="username" class="mb-2 block text-sm font-semibold">
+                                Adresse e-mail
+                            </label>
+
+                            <input
+                                type="email"
+                                value="{{ last_username }}"
+                                name="_username"
+                                id="username"
+                                autocomplete="email"
+                                required
+                                autofocus
+                                placeholder="exemple@email.com"
+                                class="w-full rounded-xl border border-neutral-300 px-4 py-3 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10"
+                            />
+                        </div>
+
+                        <div>
+                            <label for="password" class="mb-2 block text-sm font-semibold">
+                                Mot de passe
+                            </label>
+
+                            <input
+                                type="password"
+                                name="_password"
+                                id="password"
+                                autocomplete="current-password"
+                                required
+                                placeholder="Votre mot de passe"
+                                class="w-full rounded-xl border border-neutral-300 px-4 py-3 outline-none transition focus:border-neutral-900 focus:ring-2 focus:ring-neutral-900/10"
+                            />
+                        </div>
+
+                        <input
+                            type="hidden"
+                            name="_csrf_token"
+                            data-controller="csrf-protection"
+                            value="{{ csrf_token('authenticate') }}"
+                        />
+
+                        <div class="flex items-center justify-between text-sm">
+                            <label class="flex items-center gap-2">
+                                <input
+                                    type="checkbox"
+                                    name="_remember_me"
+                                    id="_remember_me"
+                                    class="h-4 w-4 rounded border-neutral-300 text-rose-600 focus:ring-rose-500"
+                                />
+
+                                <span>Se souvenir de moi</span>
+                            </label>
+
+                            <a href="#" class="font-semibold underline">
+                                Mot de passe oublié ?
+                            </a>
+                        </div>
+
+                        <button
+                            type="submit"
+                            class="w-full rounded-xl bg-gradient-to-r from-rose-500 to-pink-700 px-4 py-3 font-bold text-white transition hover:from-rose-600 hover:to-pink-800 cursor-pointer"
+                        >
+                            Se connecter
+                        </button>
+                    </form>
+
+                    <div class="my-6 flex items-center gap-4">
+                        <div class="h-px flex-1 bg-neutral-300"></div>
+                        <span class="text-sm text-neutral-500">ou</span>
+                        <div class="h-px flex-1 bg-neutral-300"></div>
+                    </div>
+
+                    <p class="text-center text-sm text-neutral-600">
+                        Pas encore de compte ?
+                        <a href="#" class="font-bold text-neutral-900 underline">
+                            Créer un compte
+                        </a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </main>
+{% endblock %}

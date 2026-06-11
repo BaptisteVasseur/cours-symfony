@@ -1,0 +1,178 @@
+<header class="relative border-b border-neutral-200" data-main-menu>
+    <div class="px-12 py-6">
+        <div class="flex items-center justify-between">
+            <a href="/" class="flex items-center gap-2 text-rose-500 font-bold text-3xl">
+                <span class="text-4xl leading-none">⌂</span>
+                <span>airbnb</span>
+            </a>
+
+            <nav class="hidden md:flex items-center gap-12">
+                <a href="/" class="flex flex-col items-center gap-1 border-b-4 border-neutral-900 pb-3">
+                    <span class="text-4xl leading-none">🏠</span>
+                    <span class="font-semibold">Logements</span>
+                </a>
+
+                <a
+                    href="{{ path('app_reservation_index') }}"
+                   class="relative flex flex-col items-center gap-1 text-neutral-600 pb-3">
+                    <span class="text-4xl leading-none">📅</span>
+                    <span>Réservations</span>
+                </a>
+
+                {% if app.user and is_granted('ROLE_HOST') %}
+                    <a href="{{ path('app_host_dashboard') }}"
+                       class="relative flex flex-col items-center gap-1 text-neutral-600 pb-3">
+                        <span class="text-4xl leading-none">📊</span>
+                        <span>Dashboard hôte</span>
+                    </a>
+                    <a href="{{ path('app_host_property_index') }}"
+                       class="relative flex flex-col items-center gap-1 text-neutral-600 pb-3">
+                        <span class="text-4xl leading-none">🏘️</span>
+                        <span>Mes logements</span>
+                    </a>
+                {% endif %}
+            </nav>
+
+            <div class="relative flex items-center gap-5">
+                {% if app.user %}
+                    <div class="hidden lg:block text-right text-sm">
+                        <p class="font-semibold">Connecté</p>
+                        <p class="max-w-[180px] truncate text-neutral-500">{{ app.user.userIdentifier }}</p>
+                    </div>
+                {% endif %}
+
+
+                <button
+                    type="button"
+                    data-menu-toggle
+                    class="flex h-12 w-12 items-center justify-center rounded-full bg-neutral-100 text-2xl hover:bg-neutral-200"
+                    aria-expanded="false"
+                    aria-label="Ouvrir le menu"
+                >
+                    ≡
+                </button>
+
+                <div
+                    data-menu-dropdown
+                    class="hidden absolute right-0 top-16 z-50 w-72 overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5"
+                >
+                    <div class="py-2">
+                        {% if app.user %}
+                            <div class="border-b border-neutral-200 px-5 py-4">
+                                <p class="text-sm text-neutral-500">Connecté en tant que</p>
+                                <p class="truncate font-semibold">{{ app.user.userIdentifier }}</p>
+                            </div>
+
+                            <a
+                                href="{{ path('app_reservation_index') }}"
+                                class="block px-5 py-3 font-semibold hover:bg-neutral-100"
+                            >
+                                Mes réservations
+                            </a>
+
+                            {% if is_granted('ROLE_HOST') %}
+                                <a
+                                    href="{{ path('app_host_dashboard') }}"
+                                    class="block px-5 py-3 font-semibold hover:bg-neutral-100"
+                                >
+                                    Dashboard hôte
+                                </a>
+                                <a
+                                    href="{{ path('app_host_property_index') }}"
+                                    class="block px-5 py-3 font-semibold hover:bg-neutral-100"
+                                >
+                                    Mes logements
+                                </a>
+                            {% endif %}
+
+
+
+                            <a
+                                href="{{ logout_path() }}"
+                                class="block border-t border-neutral-200 px-5 py-3 font-semibold text-rose-600 hover:bg-neutral-100"
+                            >
+                                Se déconnecter
+                            </a>
+                        {% else %}
+                            <a
+                                href="{{ path('app_login') }}"
+                                class="block px-5 py-3 font-semibold hover:bg-neutral-100"
+                            >
+                                Se connecter
+                            </a>
+
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mt-8 flex justify-center">
+            <form action="{{ path('app_search') }}" method="get" class="flex w-full max-w-4xl items-center rounded-full border border-neutral-300 bg-white shadow-xl">
+                <div class="flex-1 px-6 py-3 text-left">
+                    <label class="block text-xs font-bold text-neutral-900 mb-1">Destination</label>
+                    <input name="destination" type="text" value="{{ app.request.query.get('destination')|default('') }}" placeholder="Rechercher une destination" class="w-full text-sm text-neutral-700 placeholder-neutral-400 bg-transparent outline-none" />
+                </div>
+
+                <div class="h-8 w-px bg-neutral-300"></div>
+
+                <div class="flex-1 px-6 py-3 text-left">
+                    <label class="block text-xs font-bold text-neutral-900 mb-1">Arrivée</label>
+                    <input name="checkin" type="date" value="{{ app.request.query.get('checkin')|default('') }}" class="w-full text-sm text-neutral-700 bg-transparent outline-none" />
+                </div>
+
+                <div class="h-8 w-px bg-neutral-300"></div>
+
+                <div class="flex-1 px-6 py-3 text-left">
+                    <label class="block text-xs font-bold text-neutral-900 mb-1">Départ</label>
+                    <input name="checkout" type="date" value="{{ app.request.query.get('checkout')|default('') }}" class="w-full text-sm text-neutral-700 bg-transparent outline-none" />
+                </div>
+
+                <div class="h-8 w-px bg-neutral-300"></div>
+
+                <div class="px-4 py-3">
+                    <label class="block text-xs font-bold text-neutral-900 mb-1">Voyageurs</label>
+                    <input name="guests" type="number" min="1" max="16" value="{{ app.request.query.get('guests')|default(1) }}" class="w-20 text-sm text-neutral-700 bg-transparent outline-none" />
+                </div>
+
+                <div class="pr-3 pl-2 py-2">
+                    <button type="submit" class="bg-rose-600 hover:bg-rose-700 text-white rounded-full px-5 py-3.5 flex items-center space-x-2 transition font-semibold text-sm">
+                        <span>Rechercher</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</header>
+
+<script>
+    document.querySelectorAll('[data-main-menu]').forEach((menu) => {
+        if (menu.dataset.menuBound === '1') {
+            return;
+        }
+
+        const toggle = menu.querySelector('[data-menu-toggle]');
+        const dropdown = menu.querySelector('[data-menu-dropdown]');
+
+        if (!toggle || !dropdown) {
+            return;
+        }
+
+        menu.dataset.menuBound = '1';
+
+        toggle.addEventListener('click', (event) => {
+            event.stopPropagation();
+            const shouldOpen = dropdown.classList.contains('hidden');
+            dropdown.classList.toggle('hidden', !shouldOpen);
+            toggle.setAttribute('aria-expanded', shouldOpen ? 'true' : 'false');
+        });
+
+        document.addEventListener('click', (event) => {
+            if (!menu.contains(event.target)) {
+                dropdown.classList.add('hidden');
+                toggle.setAttribute('aria-expanded', 'false');
+            }
+        });
+    });
+</script>
+

@@ -7,7 +7,9 @@ namespace App\Controller\Front;
 use App\Entity\Reservation;
 use App\Entity\User;
 use App\Repository\ReservationRepository;
+use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
+use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
 use App\Security\Voter\ReservationVoter;
@@ -45,4 +47,38 @@ final class ReservationController extends AbstractController
             'reservation' => $reservation,
         ]);
     }
+
+    #[Route('/{id}/delete', name: 'app_reservation_delete', methods: ['POST'])]
+    public function delete(Reservation $reservation, Request $request, EntityManagerInterface $entityManager): Response
+    {
+        $user = $this->getUser();
+        if (!$user instanceof User) {
+            return $this->redirectToRoute('app_login');
+        }
+
+        // Authorization: allow guest who created the reservation or admins
+        $isOwner = $reservation->getGuest()?->getId() === $user->getId();
+        $isAdmin = in_array('ROLE_ADMIN', $user->getRoles(), true);
+
+        if (!$isOwner && !$isAdmin) {
+            $this->addFlash('error', 'Vous n\'êtes pas autorisé à supprimer cette réservation.');
+
+            return $this->redirectToRoute('app_reservation_index');
+        }
+
+        $token = $request->request->get('_token');
+        if (!$this->isCsrfTokenValid('delete-reservation'.$reservation->getId(), $token)) {
+            $this->addFlash('error', 'Jeton CSRF invalide.');
+
+            return $this->redirectToRoute('app_reservation_index');
+        }
+
+        $entityManager->remove($reservation);
+        $entityManager->flush();
+
+        $this->addFlash('success', 'Réservation supprimée.');
+
+        return $this->redirectToRoute('app_reservation_index');
+    }
 }
+

@@ -1,0 +1,12 @@
+App\Entity\CancellationPolicy:
+    cancellation_policy_1:
+        code: "flexible"
+        label: "Flexible"
+
+    cancellation_policy_2:
+        code: "moderate"
+        label: "Modérée"
+
+    cancellation_policy_3:
+        code: "strict"
+        label: "Stricte"

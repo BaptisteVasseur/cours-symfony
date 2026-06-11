@@ -115,6 +115,7 @@ class Reservation
 
     /** @var Collection<int, ReservationStatusHistory> */
     #[ORM\OneToMany(targetEntity: ReservationStatusHistory::class, mappedBy: 'reservation', orphanRemoval: true)]
+    #[ORM\OrderBy(['createdAt' => 'DESC'])]
     private Collection $statusHistory;
 
     /** @var Collection<int, Payment> */

@@ -1,0 +1,12 @@
+<h3>Réservation annulée / refusée</h3>
+<p>Bonjour,</p>
+<p>La réservation pour <strong>{{ reservation.property.title }}</strong> a été annulée ou refusée.</p>
+{% if reason %}
+<p>Motif : {{ reason }}</p>
+{% endif %}
+<ul>
+    <li>Dates : {{ reservation.checkinDate|date('Y-m-d') }} → {{ reservation.checkoutDate|date('Y-m-d') }}</li>
+    <li>Voyageurs : {{ reservation.guestsCount }}</li>
+    <li>Invité : {{ reservation.guest.userIdentifier }}</li>
+</ul>
+<p>Si vous avez des questions, contactez le support.</p>

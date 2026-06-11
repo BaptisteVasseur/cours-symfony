@@ -1,0 +1,81 @@
+{% extends 'layouts/user.html.twig' %}
+
+{% block title %}Synchronisation iCal - Tableau de bord hôte{% endblock %}
+
+{% block content %}
+<main class="mx-auto max-w-6xl px-6 py-10">
+    <div class="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+            <p class="text-sm font-semibold text-rose-500">Espace hôte</p>
+            <h1 class="text-3xl font-bold text-neutral-900">Synchronisation iCal</h1>
+            <p class="mt-2 text-neutral-500">
+                Exportez les réservations confirmées vers votre agenda personnel (Google Calendar, Outlook, etc.).
+            </p>
+        </div>
+        <a href="{{ path('app_host_dashboard') }}"
+           class="rounded-full border border-neutral-300 px-5 py-2 text-sm font-semibold hover:bg-neutral-100">
+            Retour au tableau de bord
+        </a>
+    </div>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 rounded-2xl px-5 py-3 text-sm font-medium
+                {{ label == 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700' }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {% if properties is empty %}
+        <div class="rounded-3xl border border-neutral-200 bg-neutral-50 p-8 text-center">
+            <p class="text-neutral-600">Vous n'avez aucune propriété disponible.</p>
+        </div>
+    {% else %}
+        <div class="rounded-3xl border border-neutral-200 bg-white p-8 shadow-sm">
+            <p class="text-sm text-neutral-500">Export global pour {{ properties|length }} propriété(s).</p>
+            <div class="mt-4">
+                <label for="host-ical-link" class="text-sm font-semibold text-neutral-700">Lien d'accès sécurisé :</label>
+                <input type="text"
+                       id="host-ical-link"
+                       readonly
+                       value="{{ hostIcalUrl }}"
+                       class="mt-2 w-full rounded-lg border border-neutral-300 bg-neutral-50 px-3 py-2 text-xs text-neutral-700 font-mono" />
+            </div>
+
+            <div class="mt-4">
+                <a href="{{ hostIcalUrl }}"
+                   target="_blank"
+                   class="inline-block rounded-lg bg-rose-500 hover:bg-rose-600 text-white text-center px-6 py-2 font-semibold transition">
+                    Télécharger le fichier .ics
+                </a>
+            </div>
+
+            <div class="mt-6 rounded-lg bg-neutral-50 p-4 text-sm text-neutral-700 space-y-2">
+                <p class="font-semibold text-neutral-900">Comment synchroniser :</p>
+                <ul class="space-y-1 text-xs">
+                    <li class="flex gap-2">
+                        <span class="font-semibold text-rose-500">•</span>
+                        <span><strong>Google Calendar :</strong> Paramètres → Ajouter d'autres agendas → Importer par URL</span>
+                    </li>
+                    <li class="flex gap-2">
+                        <span class="font-semibold text-rose-500">•</span>
+                        <span><strong>Outlook :</strong> Accueil → Ajouter un agenda → Importer depuis un fichier</span>
+                    </li>
+                    <li class="flex gap-2">
+                        <span class="font-semibold text-rose-500">•</span>
+                        <span><strong>Apple Calendar :</strong> Fichier → Importer → Sélectionner le fichier .ics</span>
+                    </li>
+                </ul>
+            </div>
+
+            <div class="mt-4 text-xs text-neutral-500 border-t pt-4">
+                <p>
+                    <strong>⚠️ Sécurité :</strong> Ce lien est personnalisé et contient un token unique. Ne le partagez pas publiquement.
+                    Seules les réservations confirmées sont exportées.
+                </p>
+            </div>
+        </div>
+    {% endif %}
+</main>
+{% endblock %}

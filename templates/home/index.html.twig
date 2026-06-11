@@ -1,0 +1,37 @@
+{% extends 'layouts/user.html.twig' %}
+
+{% block content %}
+    <main>
+        <section class="px-12 py-10">
+            <div class="mb-6 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <h1 class="text-2xl font-bold">Annonces consultées récemment</h1>
+
+                    <button class="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-xl">
+                        →
+                    </button>
+                </div>
+
+                <div class="hidden md:flex items-center gap-3">
+                    <button
+                        class="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-300">
+                        ‹
+                    </button>
+
+                    <button
+                        class="flex h-9 w-9 items-center justify-center rounded-full bg-neutral-100 text-neutral-900">
+                        ›
+                    </button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5">
+                {% for property in properties %}
+                    {% include 'home/card.html.twig' with {
+                        property: property
+                    } %}
+                {% endfor %}
+            </div>
+        </section>
+    </main>
+{% endblock %}
