@@ -1,0 +1,49 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Devenir Hôte - Airbnb Clone{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-16 max-w-4xl mx-auto w-full flex flex-col items-center justify-center text-center">
+        <div class="max-w-2xl bg-white border border-gray-200 rounded-3xl p-8 md:p-12 shadow-sm">
+            <div class="w-16 h-16 bg-brand/10 text-brand rounded-2xl flex items-center justify-center text-2xl mb-6 mx-auto">
+                <i class="fa-solid fa-house-chimney-user"></i>
+            </div>
+            
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 tracking-tight mb-4">
+                Ouvrez votre porte au monde et commencez à gagner
+            </h1>
+            
+            <p class="text-gray-500 text-lg mb-8 leading-relaxed">
+                Partagez votre logement avec des voyageurs du monde entier. En devenant hôte, vous pouvez gérer vos tarifs, vos disponibilités, et accepter les voyageurs qui correspondent à votre style de vie.
+            </p>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-left mb-10">
+                <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <i class="fa-solid fa-calendar-check text-brand text-lg mb-2 block"></i>
+                    <h3 class="font-semibold text-gray-800 mb-1">Liberté totale</h3>
+                    <p class="text-xs text-gray-500">Louez quand vous voulez et fixez vos propres règles de séjour.</p>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <i class="fa-solid fa-coins text-brand text-lg mb-2 block"></i>
+                    <h3 class="font-semibold text-gray-800 mb-1">Revenus additionnels</h3>
+                    <p class="text-xs text-gray-500">Rentabilisez votre espace vide et financez vos propres voyages.</p>
+                </div>
+                <div class="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <i class="fa-solid fa-shield-cat text-brand text-lg mb-2 block"></i>
+                    <h3 class="font-semibold text-gray-800 mb-1">Sérénité assurée</h3>
+                    <p class="text-xs text-gray-500">Vous restez maître des décisions grâce au système d'approbation manuelle.</p>
+                </div>
+            </div>
+
+            <form action="{{ path('app_become_host') }}" method="POST">
+                <button type="submit" class="inline-flex items-center gap-2 bg-brand text-white font-semibold px-8 py-4 rounded-xl shadow-lg hover:shadow-xl hover:bg-brand-dark transition transform hover:-translate-y-0.5 active:translate-y-0">
+                    <i class="fa-solid fa-rocket"></i> Activer mon profil hôte maintenant
+                </button>
+            </form>
+            
+            <p class="text-xs text-gray-400 mt-4">
+                En activant votre profil, vous acceptez les conditions générales d'utilisation pour les hôtes.
+            </p>
+        </div>
+    </main>
+{% endblock %}
