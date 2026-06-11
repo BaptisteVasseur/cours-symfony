@@ -49,17 +49,135 @@ final class MailService
 
         $reservationUrl = $this->urlGenerator->generate('app_reservation_show', ['id' => $reservation->getId()], UrlGeneratorInterface::ABSOLUTE_URL);
 
+        $this->sendReservationEmail(
+            $reservation,
+            $guest,
+            'Votre séjour est réservé !',
+            'emails/booking_confirmation.html.twig',
+            ['reservationUrl' => $reservationUrl],
+        );
+    }
+
+    public function sendBookingPendingHostEmail(Reservation $reservation): void
+    {
+        $property = $reservation->getProperty();
+        $host = $property?->getHost();
+        if ($host === null) {
+            return;
+        }
+
+        $this->sendReservationEmail(
+            $reservation,
+            $host,
+            'Nouvelle demande de réservation',
+            'emails/booking_pending_host.html.twig',
+            [
+                'hostReservationsUrl' => $this->urlGenerator->generate('app_host_reservations', [], UrlGeneratorInterface::ABSOLUTE_URL),
+            ],
+        );
+    }
+
+    public function sendBookingConfirmationEmails(Reservation $reservation): void
+    {
+        $this->sendBookingConfirmationEmail($reservation);
+
+        $property = $reservation->getProperty();
+        $host = $property?->getHost();
+        if ($host === null) {
+            return;
+        }
+
+        $this->sendReservationEmail(
+            $reservation,
+            $host,
+            'Réservation confirmée',
+            'emails/booking_confirmed_host.html.twig',
+            [
+                'reservationUrl' => $this->urlGenerator->generate('app_reservation_show', ['id' => $reservation->getId()], UrlGeneratorInterface::ABSOLUTE_URL),
+            ],
+        );
+    }
+
+    public function sendBookingRefusedEmail(Reservation $reservation): void
+    {
+        $guest = $reservation->getGuest();
+        if ($guest === null) {
+            return;
+        }
+
+        $this->sendReservationEmail(
+            $reservation,
+            $guest,
+            'Votre demande de réservation a été refusée',
+            'emails/booking_refused.html.twig',
+            [
+                'reservationUrl' => $this->urlGenerator->generate('app_reservation_show', ['id' => $reservation->getId()], UrlGeneratorInterface::ABSOLUTE_URL),
+            ],
+        );
+    }
+
+    public function sendBookingCancelledEmails(Reservation $reservation): void
+    {
+        $guest = $reservation->getGuest();
+        if ($guest !== null) {
+            $this->sendReservationEmail(
+                $reservation,
+                $guest,
+                'Réservation annulée',
+                'emails/booking_cancelled.html.twig',
+                [
+                    'reservationUrl' => $this->urlGenerator->generate('app_reservation_show', ['id' => $reservation->getId()], UrlGeneratorInterface::ABSOLUTE_URL),
+                ],
+            );
+        }
+
+        $host = $reservation->getProperty()?->getHost();
+        if ($host !== null && $host->getId() !== $guest?->getId()) {
+            $this->sendReservationEmail(
+                $reservation,
+                $host,
+                'Réservation annulée',
+                'emails/booking_cancelled.html.twig',
+                [
+                    'reservationUrl' => $this->urlGenerator->generate('app_reservation_show', ['id' => $reservation->getId()], UrlGeneratorInterface::ABSOLUTE_URL),
+                ],
+            );
+        }
+    }
+
+    private function sendReservationEmail(
+        Reservation $reservation,
+        User $recipient,
+        string $subject,
+        string $template,
+        array $context = [],
+    ): void {
+        $emailAddress = $recipient->getEmail();
+        $property = $reservation->getProperty();
+        if ($emailAddress === null || $property === null) {
+            return;
+        }
+
         $email = (new TemplatedEmail())
             ->from(new Address('noreply@airbnb-clone.local', 'Airbnb Clone'))
-            ->to(new Address($guest->getEmail(), $guest->getProfile()?->getFirstName() ?? ''))
-            ->subject('Votre séjour est réservé !')
-            ->htmlTemplate('emails/booking_confirmation.html.twig')
+            ->to(new Address($emailAddress, $this->displayName($recipient)))
+            ->subject($subject)
+            ->htmlTemplate($template)
             ->context([
                 'reservation' => $reservation,
                 'property' => $property,
-                'reservationUrl' => $reservationUrl,
+                'recipient' => $recipient,
+                ...$context,
             ]);
 
         $this->mailer->send($email);
+    }
+
+    private function displayName(User $user): string
+    {
+        $profile = $user->getProfile();
+        $name = trim(sprintf('%s %s', $profile?->getFirstName() ?? '', $profile?->getLastName() ?? ''));
+
+        return $name !== '' ? $name : (string) $user->getEmail();
     }
 }
