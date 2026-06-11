@@ -18,7 +18,7 @@
             {% endif %}
 
             <form method="POST" action="{{ path('app_login') }}" class="space-y-5">
-                <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                <input type="hidden" name="_csrf_token" value="{{ csrf_token('login') }}">
 
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
