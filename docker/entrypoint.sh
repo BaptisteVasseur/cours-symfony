@@ -1,5 +1,5 @@
 #!/bin/sh
-set -e
+#set -e
 
 if [ ! -f .env ]; then
   echo "==> Aucun .env trouvé, copie de .env.example..."
