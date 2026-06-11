@@ -6,9 +6,7 @@ use App\Entity\ListingLocation;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<ListingLocation>
- */
+
 class ListingLocationRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)

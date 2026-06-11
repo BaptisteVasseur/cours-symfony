@@ -32,14 +32,32 @@ class Amenity
         $this->listings = new ArrayCollection();
     }
 
-    public function getId(): ?Uuid { return $this->id; }
+    public function getId(): ?Uuid
+    {
+        return $this->id;
+    }
 
-    public function getName(): ?string { return $this->name; }
-    public function setName(string $v): static { $this->name = $v; return $this; }
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+    public function setName(string $v): static
+    {
+        $this->name = $v;
+        return $this;
+    }
 
-    public function getIcon(): ?string { return $this->icon; }
-    public function setIcon(?string $v): static { $this->icon = $v; return $this; }
-
-    /** @return Collection<int, Listing> */
-    public function getListings(): Collection { return $this->listings; }
+    public function getIcon(): ?string
+    {
+        return $this->icon;
+    }
+    public function setIcon(?string $v): static
+    {
+        $this->icon = $v;
+        return $this;
+    }
+    public function getListings(): Collection
+    {
+        return $this->listings;
+    }
 }

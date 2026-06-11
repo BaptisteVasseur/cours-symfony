@@ -6,9 +6,7 @@ use App\Entity\PasswordReset;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<PasswordReset>
- */
+
 class PasswordResetRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)

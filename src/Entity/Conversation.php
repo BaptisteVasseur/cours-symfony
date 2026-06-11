@@ -46,10 +46,8 @@ class Conversation
     public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }
     public function setCreatedAt(\DateTimeImmutable $v): static { $this->createdAt = $v; return $this; }
 
-    /** @return Collection<int, Message> */
     public function getMessages(): Collection { return $this->messages; }
 
-    /** @return Collection<int, User> */
     public function getParticipants(): Collection { return $this->participants; }
 
     public function addParticipant(User $user): static

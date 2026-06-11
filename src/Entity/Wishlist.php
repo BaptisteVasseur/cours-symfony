@@ -37,19 +37,45 @@ class Wishlist
         $this->listings = new ArrayCollection();
     }
 
-    public function getId(): ?Uuid { return $this->id; }
+    public function getId(): ?Uuid
+    {
+        return $this->id;
+    }
 
-    public function getUser(): ?User { return $this->user; }
-    public function setUser(?User $v): static { $this->user = $v; return $this; }
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+    public function setUser(?User $v): static
+    {
+        $this->user = $v;
+        return $this;
+    }
 
-    public function getName(): ?string { return $this->name; }
-    public function setName(string $v): static { $this->name = $v; return $this; }
+    public function getName(): ?string
+    {
+        return $this->name;
+    }
+    public function setName(string $v): static
+    {
+        $this->name = $v;
+        return $this;
+    }
 
-    public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }
-    public function setCreatedAt(\DateTimeImmutable $v): static { $this->createdAt = $v; return $this; }
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+    public function setCreatedAt(\DateTimeImmutable $v): static
+    {
+        $this->createdAt = $v;
+        return $this;
+    }
 
-    /** @return Collection<int, Listing> */
-    public function getListings(): Collection { return $this->listings; }
+    public function getListings(): Collection
+    {
+        return $this->listings;
+    }
 
     public function addListing(Listing $listing): static
     {

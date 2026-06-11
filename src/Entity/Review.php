@@ -60,38 +60,113 @@ class Review
         $this->photos = new ArrayCollection();
     }
 
-    public function getId(): ?Uuid { return $this->id; }
+    public function getId(): ?Uuid
+    {
+        return $this->id;
+    }
 
-    public function getBooking(): ?Booking { return $this->booking; }
-    public function setBooking(?Booking $v): static { $this->booking = $v; return $this; }
+    public function getBooking(): ?Booking
+    {
+        return $this->booking;
+    }
+    public function setBooking(?Booking $v): static
+    {
+        $this->booking = $v;
+        return $this;
+    }
 
-    public function getListing(): ?Listing { return $this->listing; }
-    public function setListing(?Listing $v): static { $this->listing = $v; return $this; }
+    public function getListing(): ?Listing
+    {
+        return $this->listing;
+    }
+    public function setListing(?Listing $v): static
+    {
+        $this->listing = $v;
+        return $this;
+    }
 
-    public function getReviewer(): ?User { return $this->reviewer; }
-    public function setReviewer(?User $v): static { $this->reviewer = $v; return $this; }
+    public function getReviewer(): ?User
+    {
+        return $this->reviewer;
+    }
+    public function setReviewer(?User $v): static
+    {
+        $this->reviewer = $v;
+        return $this;
+    }
 
-    public function getRatingOverall(): ?int { return $this->ratingOverall; }
-    public function setRatingOverall(int $v): static { $this->ratingOverall = $v; return $this; }
+    public function getRatingOverall(): ?int
+    {
+        return $this->ratingOverall;
+    }
+    public function setRatingOverall(int $v): static
+    {
+        $this->ratingOverall = $v;
+        return $this;
+    }
 
-    public function getRatingCleanliness(): ?int { return $this->ratingCleanliness; }
-    public function setRatingCleanliness(?int $v): static { $this->ratingCleanliness = $v; return $this; }
+    public function getRatingCleanliness(): ?int
+    {
+        return $this->ratingCleanliness;
+    }
+    public function setRatingCleanliness(?int $v): static
+    {
+        $this->ratingCleanliness = $v;
+        return $this;
+    }
 
-    public function getRatingCommunication(): ?int { return $this->ratingCommunication; }
-    public function setRatingCommunication(?int $v): static { $this->ratingCommunication = $v; return $this; }
+    public function getRatingCommunication(): ?int
+    {
+        return $this->ratingCommunication;
+    }
+    public function setRatingCommunication(?int $v): static
+    {
+        $this->ratingCommunication = $v;
+        return $this;
+    }
 
-    public function getRatingLocation(): ?int { return $this->ratingLocation; }
-    public function setRatingLocation(?int $v): static { $this->ratingLocation = $v; return $this; }
+    public function getRatingLocation(): ?int
+    {
+        return $this->ratingLocation;
+    }
+    public function setRatingLocation(?int $v): static
+    {
+        $this->ratingLocation = $v;
+        return $this;
+    }
 
-    public function getRatingAccuracy(): ?int { return $this->ratingAccuracy; }
-    public function setRatingAccuracy(?int $v): static { $this->ratingAccuracy = $v; return $this; }
+    public function getRatingAccuracy(): ?int
+    {
+        return $this->ratingAccuracy;
+    }
+    public function setRatingAccuracy(?int $v): static
+    {
+        $this->ratingAccuracy = $v;
+        return $this;
+    }
 
-    public function getComment(): ?string { return $this->comment; }
-    public function setComment(?string $v): static { $this->comment = $v; return $this; }
+    public function getComment(): ?string
+    {
+        return $this->comment;
+    }
+    public function setComment(?string $v): static
+    {
+        $this->comment = $v;
+        return $this;
+    }
 
-    public function getCreatedAt(): ?\DateTimeImmutable { return $this->createdAt; }
-    public function setCreatedAt(\DateTimeImmutable $v): static { $this->createdAt = $v; return $this; }
+    public function getCreatedAt(): ?\DateTimeImmutable
+    {
+        return $this->createdAt;
+    }
+    public function setCreatedAt(\DateTimeImmutable $v): static
+    {
+        $this->createdAt = $v;
+        return $this;
+    }
 
-    /** @return Collection<int, ReviewPhoto> */
-    public function getPhotos(): Collection { return $this->photos; }
+    public function getPhotos(): Collection
+    {
+        return $this->photos;
+    }
 }
