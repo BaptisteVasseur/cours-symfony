@@ -2,6 +2,16 @@
 
 {% block page_title %}Gestion des utilisateurs{% endblock %}
 
+{% macro sort_link(label, column, currentSort, currentDir, route, params) %}
+    {% set newDir = (currentSort == column and currentDir == 'ASC') ? 'DESC' : 'ASC' %}
+    {% set icon = currentSort == column ? (currentDir == 'ASC' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort' %}
+    <a href="{{ path(route, params|merge({sort: column, dir: newDir})) }}"
+       class="inline-flex items-center gap-1 hover:text-gray-700 transition {{ currentSort == column ? 'text-gray-700' : '' }}">
+        {{ label }}
+        <i class="fa-solid {{ icon }} text-[10px]"></i>
+    </a>
+{% endmacro %}
+
 {% block content %}
     {% for label, messages in app.flashes %}
         {% for message in messages %}
@@ -51,22 +61,47 @@
     </div>
 
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h3 class="font-bold text-gray-900">Liste des utilisateurs</h3>
-            <a href="{{ path('app_user_new') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brandHover text-white font-semibold text-sm px-4 py-2 rounded-lg transition">
-                <i class="fa-solid fa-plus text-xs"></i>
-                Nouvel utilisateur
-            </a>
+        <div class="px-6 py-4 border-b border-gray-200 flex flex-col gap-3">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h3 class="font-bold text-gray-900">Liste des utilisateurs</h3>
+                <a href="{{ path('app_user_new') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brandHover text-white font-semibold text-sm px-4 py-2 rounded-lg transition">
+                    <i class="fa-solid fa-plus text-xs"></i>
+                    Nouvel utilisateur
+                </a>
+            </div>
+            <form method="GET" action="{{ path('app_user_index') }}" class="flex gap-2">
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <input type="hidden" name="dir" value="{{ dir }}">
+                <div class="relative flex-1 max-w-sm">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Rechercher par nom, email..."
+                           class="w-full pl-8 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                </div>
+                <button type="submit" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
+                    Rechercher
+                </button>
+                {% if search %}
+                    <a href="{{ path('app_user_index', {sort: sort, dir: dir}) }}" class="px-3 py-2 text-gray-400 hover:text-gray-600 text-sm transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                {% endif %}
+            </form>
         </div>
 
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-sm">
                 <thead>
                     <tr class="bg-gray-50 text-gray-400 font-semibold border-b border-gray-200 uppercase text-[11px] tracking-wider">
-                        <th class="px-6 py-3">Utilisateur</th>
+                        <th class="px-6 py-3">
+                            {{ _self.sort_link('Utilisateur', 'email', sort, dir, 'app_user_index', {q: search}) }}
+                        </th>
                         <th class="px-6 py-3">Rôle</th>
-                        <th class="px-6 py-3">Statut</th>
-                        <th class="px-6 py-3">Inscription</th>
+                        <th class="px-6 py-3">
+                            {{ _self.sort_link('Statut', 'status', sort, dir, 'app_user_index', {q: search}) }}
+                        </th>
+                        <th class="px-6 py-3">
+                            {{ _self.sort_link('Inscription', 'createdAt', sort, dir, 'app_user_index', {q: search}) }}
+                        </th>
                         <th class="px-6 py-3 text-right">Actions</th>
                     </tr>
                 </thead>

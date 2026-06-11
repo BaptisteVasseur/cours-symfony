@@ -21,14 +21,26 @@ class UserRepository extends ServiceEntityRepository
     /**
      * @return list<User>
      */
-    public function findForListing(): array
-    {
-        return $this->createQueryBuilder('u')
+    public function findForListing(
+        ?string $search = null,
+        string $sort = 'createdAt',
+        string $dir = 'DESC',
+    ): array {
+        $allowedSorts = ['email' => 'u.email', 'status' => 'u.status', 'createdAt' => 'u.createdAt'];
+        $orderCol = $allowedSorts[$sort] ?? 'u.createdAt';
+        $orderDir = strtoupper($dir) === 'ASC' ? 'ASC' : 'DESC';
+
+        $qb = $this->createQueryBuilder('u')
             ->addSelect('p')
             ->leftJoin('u.profile', 'p')
-            ->orderBy('u.createdAt', 'DESC')
-            ->getQuery()
-            ->getResult();
+            ->orderBy($orderCol, $orderDir);
+
+        if ($search !== null && $search !== '') {
+            $qb->andWhere('u.email LIKE :search OR p.firstName LIKE :search OR p.lastName LIKE :search')
+                ->setParameter('search', '%' . $search . '%');
+        }
+
+        return $qb->getQuery()->getResult();
     }
 
     public function findOneForDetail(User $user): ?User

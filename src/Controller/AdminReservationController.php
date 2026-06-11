@@ -6,8 +6,10 @@ namespace App\Controller;
 
 use App\Entity\Dispute;
 use App\Entity\Reservation;
+use App\Form\AdminRejectType;
 use App\Form\ReservationType;
 use App\Repository\ReservationRepository;
+use App\Service\BookingService;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -20,24 +22,36 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class AdminReservationController extends AbstractController
 {
     #[Route(name: 'app_admin_reservation_index', methods: ['GET'])]
-    public function index(ReservationRepository $reservationRepository): Response
+    public function index(Request $request, ReservationRepository $reservationRepository): Response
     {
-        $reservations = $reservationRepository->findAllForListing();
+        $search = $request->query->getString('q');
+        $search = $search !== '' ? $search : null;
+        $statusFilter = $request->query->getString('status');
+        $statusFilter = $statusFilter !== '' ? $statusFilter : null;
+        $sort = $request->query->getString('sort', 'createdAt');
+        $dir  = $request->query->getString('dir', 'DESC');
 
+        $reservations = $reservationRepository->findAllForListing($search, $statusFilter, $sort, $dir);
+
+        $allReservations = $reservationRepository->findAllForListing();
         $revenue = 0.0;
-        foreach ($reservations as $reservation) {
+        foreach ($allReservations as $reservation) {
             if (in_array($reservation->getStatus(), ['confirmed', 'completed'], true)) {
                 $revenue += (float) $reservation->getTotalPrice();
             }
         }
 
         return $this->render('admin_reservation/index.html.twig', [
-            'reservations' => $reservations,
-            'total' => count($reservations),
-            'confirmed' => count(array_filter($reservations, static fn (Reservation $r): bool => $r->getStatus() === 'confirmed')),
-            'pending' => count(array_filter($reservations, static fn (Reservation $r): bool => $r->getStatus() === 'pending')),
-            'cancelled' => count(array_filter($reservations, static fn (Reservation $r): bool => $r->getStatus() === 'cancelled')),
-            'revenue' => $revenue,
+            'reservations'  => $reservations,
+            'total'         => $reservationRepository->count([]),
+            'confirmed'     => $reservationRepository->count(['status' => 'confirmed']),
+            'pending'       => $reservationRepository->count(['status' => 'pending']),
+            'cancelled'     => $reservationRepository->count(['status' => 'cancelled']),
+            'revenue'       => $revenue,
+            'search'        => $search ?? '',
+            'statusFilter'  => $statusFilter,
+            'sort'          => $sort,
+            'dir'           => $dir,
         ]);
     }
 
@@ -71,10 +85,63 @@ final class AdminReservationController extends AbstractController
     public function show(Reservation $reservation, ReservationRepository $reservationRepository): Response
     {
         $reservation = $reservationRepository->findOneForDetail($reservation) ?? $reservation;
+        $rejectForm  = $this->createForm(AdminRejectType::class, null, [
+            'action' => $this->generateUrl('app_admin_reservation_reject', ['id' => $reservation->getId()]),
+            'method' => 'POST',
+        ]);
 
         return $this->render('admin_reservation/show.html.twig', [
             'reservation' => $reservation,
+            'rejectForm'  => $rejectForm,
         ]);
+    }
+
+    #[Route('/{id}/approve', name: 'app_admin_reservation_approve', methods: ['POST'])]
+    public function approve(Request $request, Reservation $reservation, BookingService $bookingService): Response
+    {
+        if (!$this->isCsrfTokenValid('admin_approve_' . $reservation->getId(), $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token CSRF invalide.');
+            return $this->redirectToRoute('app_admin_reservation_show', ['id' => $reservation->getId()]);
+        }
+
+        try {
+            $bookingService->confirm($reservation);
+            $this->addFlash('success', 'Réservation confirmée.');
+        } catch (\RuntimeException $e) {
+            $this->addFlash('error', $e->getMessage());
+        }
+
+        return $this->redirectToRoute('app_admin_reservation_show', ['id' => $reservation->getId()], Response::HTTP_SEE_OTHER);
+    }
+
+    #[Route('/{id}/reject', name: 'app_admin_reservation_reject', methods: ['POST'])]
+    public function reject(Request $request, Reservation $reservation, BookingService $bookingService): Response
+    {
+        $form = $this->createForm(AdminRejectType::class);
+        $form->handleRequest($request);
+
+        if ($form->isSubmitted() && $form->isValid()) {
+            $preset = $form->get('presetReason')->getData();
+            $custom = trim((string) $form->get('customReason')->getData());
+
+            $presetLabels = array_flip(AdminRejectType::PRESET_REASONS);
+            $presetLabel  = $presetLabels[$preset] ?? $preset;
+
+            $reason = $preset === 'other'
+                ? ($custom !== '' ? $custom : 'Autre motif')
+                : ($custom !== '' ? $presetLabel . ' — ' . $custom : $presetLabel);
+
+            try {
+                $bookingService->rejectByAdmin($reservation, $reason);
+                $this->addFlash('success', 'Réservation refusée.');
+            } catch (\RuntimeException $e) {
+                $this->addFlash('error', $e->getMessage());
+            }
+        } else {
+            $this->addFlash('error', 'Veuillez sélectionner un motif de refus.');
+        }
+
+        return $this->redirectToRoute('app_admin_reservation_show', ['id' => $reservation->getId()], Response::HTTP_SEE_OTHER);
     }
 
     #[Route('/{id}/edit', name: 'app_admin_reservation_edit', methods: ['GET', 'POST'])]

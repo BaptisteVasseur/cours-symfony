@@ -1,0 +1,1472 @@
+Ce document à été généré jusqu'à la ligne 1430, pour les questions spécifiques du rendu voir plus bas, bonne lecture.
+================================================================================
+CONCEPTION — MOTEUR DE RÉSERVATION SYMFONY 7
+Feature : Booking Engine avec transitions d'état + Traitements asynchrones
+Projet  : cours-symfony
+Date    : 2026-06-11
+================================================================================
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. COMPRÉHENSION DU BESOIN
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+L'objectif est de construire un moteur de réservation complet intégré à un
+projet Symfony 7, simulant le comportement d'une plateforme de location entre
+particuliers (type Airbnb simplifié).
+
+Les enjeux clés :
+  - Un logement peut fonctionner en mode "instantBooking" (confirmation
+    immédiate) ou en mode "validation hôte" (l'hôte accepte ou refuse).
+  - Chaque réservation suit un cycle de vie strict avec des transitions d'état
+    contrôlées par la logique métier.
+  - Les notifications (emails) sont déclenchées de façon asynchrone via
+    Symfony Messenger pour ne pas bloquer les requêtes HTTP.
+  - Un scheduler interne gère l'expiration automatique des demandes sans
+    réponse après 48 heures.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. UTILISATEURS & RÔLES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌──────────────┬────────────────────────────────────────────────┬────────────┐
+│ Rôle         │ Description                                    │ Hérite de  │
+├──────────────┼────────────────────────────────────────────────┼────────────┤
+│ ROLE_USER    │ Compte créé, aucun droit métier par défaut     │ —          │
+│ ROLE_GUEST   │ Peut chercher et réserver des logements        │ ROLE_USER  │
+│ ROLE_HOST    │ Publie des logements, gère les demandes reçues │ ROLE_USER  │
+│ ROLE_ADMIN   │ Vue globale, force les transitions d'état      │ ROLE_HOST  │
+└──────────────┴────────────────────────────────────────────────┴────────────┘
+
+Remarque : Un même utilisateur peut cumuler ROLE_GUEST et ROLE_HOST. La
+hiérarchie Symfony gère cela via role_hierarchy dans security.yaml.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. MODÈLE DE DONNÉES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+3.1 Stratégie de clés primaires
+─────────────────────────────────
+UUID v4 pour toutes les entités (package symfony/uid requis).
+Justification : les IDs de réservation ne doivent pas être devinables dans les
+URLs pour éviter l'énumération.
+
+3.2 Entités
+─────────────
+
+▶ User
+┌──────────────────┬────────────────────┬──────────┬────────┐
+│ Propriété        │ Type Doctrine      │ Nullable │ Unique │
+├──────────────────┼────────────────────┼──────────┼────────┤
+│ id               │ uuid               │ non      │ oui    │
+│ email            │ string(180)        │ non      │ oui    │
+│ password         │ string             │ non      │ non    │
+│ firstName        │ string(100)        │ non      │ non    │
+│ lastName         │ string(100)        │ non      │ non    │
+│ roles            │ json               │ non      │ non    │
+│ createdAt        │ datetime_immutable │ non      │ non    │
+└──────────────────┴────────────────────┴──────────┴────────┘
+
+▶ Listing (logement)
+┌──────────────────┬────────────────────┬──────────┬────────┐
+│ Propriété        │ Type Doctrine      │ Nullable │ Unique │
+├──────────────────┼────────────────────┼──────────┼────────┤
+│ id               │ uuid               │ non      │ oui    │
+│ title            │ string(255)        │ non      │ non    │
+│ description      │ text               │ oui      │ non    │
+│ pricePerNight    │ decimal(8,2)       │ non      │ non    │
+│ maxGuests        │ integer            │ non      │ non    │
+│ instantBooking   │ boolean            │ non      │ non    │
+│ isActive         │ boolean            │ non      │ non    │
+│ createdAt        │ datetime_immutable │ non      │ non    │
+│ host             │ ManyToOne → User   │ non      │ non    │
+└──────────────────┴────────────────────┴──────────┴────────┘
+
+Justification de instantBooking :
+  - true  → à la création du Booking, statut = confirmed (pas de pending)
+  - false → à la création du Booking, statut = pending (hôte doit agir)
+
+▶ Booking (réservation)
+┌──────────────────┬────────────────────┬──────────┬────────┐
+│ Propriété        │ Type Doctrine      │ Nullable │ Unique │
+├──────────────────┼────────────────────┼──────────┼────────┤
+│ id               │ uuid               │ non      │ oui    │
+│ checkIn          │ date_immutable     │ non      │ non    │
+│ checkOut         │ date_immutable     │ non      │ non    │
+│ nbGuests         │ integer            │ non      │ non    │
+│ totalAmount      │ decimal(10,2)      │ non      │ non    │
+│ status           │ enum BookingStatus │ non      │ non    │
+│ expiresAt        │ datetime_immutable │ oui      │ non    │
+│ cancelledBy      │ string(20)         │ oui      │ non    │
+│ createdAt        │ datetime_immutable │ non      │ non    │
+│ updatedAt        │ datetime_immutable │ non      │ non    │
+│ listing          │ ManyToOne → Listing│ non      │ non    │
+│ guest            │ ManyToOne → User   │ non      │ non    │
+└──────────────────┴────────────────────┴──────────┴────────┘
+
+  - totalAmount calculé = listing.pricePerNight × (checkOut - checkIn en jours)
+  - expiresAt = createdAt + 48h (positionné uniquement quand status = pending)
+  - cancelledBy = 'guest' | 'host' | 'admin' (trace de qui a annulé)
+
+3.3 Enum BookingStatus (src/Enum/BookingStatus.php)
+──────────────────────────────────────────────────────
+┌───────────┬──────────────┬─────────────────────────────────────────────────┐
+│ Case      │ Valeur string│ Description                                     │
+├───────────┼──────────────┼─────────────────────────────────────────────────┤
+│ PENDING   │ 'pending'    │ Demande en attente de validation par l'hôte     │
+│ CONFIRMED │ 'confirmed'  │ Réservation confirmée (manuellement ou auto)    │
+│ COMPLETED │ 'completed'  │ Séjour terminé (date checkOut dépassée)         │
+│ CANCELLED │ 'cancelled'  │ Annulée par guest, hôte ou admin                │
+│ EXPIRED   │ 'expired'    │ Expirée automatiquement après 48h sans réponse  │
+└───────────┴──────────────┴─────────────────────────────────────────────────┘
+
+3.4 Relations
+──────────────
+┌─────────┬──────────────┬─────────┬──────────────────────────────┐
+│ Entité A│ Relation     │ Entité B│ Cascade                      │
+├─────────┼──────────────┼─────────┼──────────────────────────────┤
+│ User    │ OneToMany    │ Listing │ persist (orphanRemoval: true) │
+│ User    │ OneToMany    │ Booking │ —                            │
+│ Listing │ OneToMany    │ Booking │ —                            │
+└─────────┴──────────────┴─────────┴──────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. SCHÉMA DES TRANSITIONS D'ÉTAT (STATE MACHINE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+                    ┌──────────────────────────────────────┐
+                    │           CRÉATION Booking           │
+                    └──────────────┬───────────────────────┘
+                                   │
+               ┌───────────────────┴───────────────────────┐
+               │ listing.instantBooking = false            │ listing.instantBooking = true
+               ▼                                           ▼
+         ┌──────────┐                              ┌───────────────┐
+         │ PENDING  │                              │   CONFIRMED   │
+         └────┬─────┘                              └──────┬────────┘
+              │                                           │
+    ┌─────────┼──────────────────────┐                    │
+    │         │                      │                    │
+    ▼         ▼                      ▼                    ▼
+┌────────┐ ┌───────────┐       ┌──────────┐       ┌───────────────┐
+│EXPIRED │ │ CONFIRMED │       │CANCELLED │       │  COMPLETED    │
+│(auto   │ │(hôte      │       │(hôte     │       │(auto/manuel   │
+│48h)    │ │ accepte)  │       │ refuse)  │       │ après checkOut│
+└────────┘ └─────┬─────┘       └──────────┘       └───────────────┘
+                 │
+        ┌────────┴───────────┐
+        │                    │
+        ▼                    ▼
+┌───────────────┐     ┌──────────┐
+│  COMPLETED    │     │CANCELLED │
+│(fin séjour)   │     │(guest/   │
+└───────────────┘     │host/admin│
+                      └──────────┘
+
+Règles de garde des transitions :
+  ┌────────────────────┬──────────────────────┬────────────────────────────┐
+  │ Transition         │ Déclencheur          │ Condition / Garde          │
+  ├────────────────────┼──────────────────────┼────────────────────────────┤
+  │ → pending          │ Création (Guest)     │ !listing.instantBooking    │
+  │ → confirmed (auto) │ Création (Guest)     │ listing.instantBooking     │
+  │ pending→confirmed  │ Hôte (action manuelle│ Hôte = owner du Listing    │
+  │ pending→cancelled  │ Hôte refuse          │ Hôte = owner du Listing    │
+  │ pending→expired    │ Scheduler (48h)      │ now() > expiresAt          │
+  │ confirmed→cancelled│ Guest / Hôte / Admin │ Voter CANCEL granted       │
+  │ confirmed→completed│ Scheduler / Admin    │ now() >= checkOut          │
+  └────────────────────┴──────────────────────┴────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. RÈGLES MÉTIER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+5.1 Règles de création d'une réservation
+──────────────────────────────────────────
+  R1. checkIn >= date du jour (impossible de réserver dans le passé)
+  R2. checkIn < checkOut (durée minimale = 1 nuit)
+  R3. nbGuests >= 1 et nbGuests <= listing.maxGuests
+  R4. listing.isActive === true
+  R5. Aucune réservation CONFIRMED ne doit chevaucher les dates demandées
+      (les PENDING se cumulent ; seuls les CONFIRMED bloquent la dispo)
+  R6. totalAmount = listing.pricePerNight × nb_nuits (calculé à la création,
+      gelé ensuite — le tarif du logement peut changer sans affecter les
+      réservations existantes)
+
+5.2 Mode instantBooking
+────────────────────────
+  - Si listing.instantBooking = true :
+      → Booking.status = CONFIRMED dès la création
+      → expiresAt = null (pas de délai d'expiration)
+      → Email "Réservation confirmée" envoyé au guest (asynchrone)
+      → Email "Nouvelle réservation" envoyé à l'hôte (asynchrone)
+
+  - Si listing.instantBooking = false :
+      → Booking.status = PENDING dès la création
+      → expiresAt = createdAt + 48h
+      → Email "Nouvelle demande" envoyé à l'hôte (asynchrone)
+
+5.3 Qui peut faire quoi
+────────────────────────
+  ┌──────────────────────────────┬────────────────────────────────────────┐
+  │ Action                       │ Autorisé pour                          │
+  ├──────────────────────────────┼────────────────────────────────────────┤
+  │ Créer un Booking             │ ROLE_GUEST (pas le host du Listing)    │
+  │ Accepter (pending→confirmed) │ Host propriétaire du Listing           │
+  │ Refuser (pending→cancelled)  │ Host propriétaire du Listing           │
+  │ Annuler (confirmed→cancelled)│ Guest auteur du Booking + Host + Admin │
+  │ Modifier listing.instantBook.│ Host propriétaire du Listing           │
+  │ Forcer n'importe quelle trans│ ROLE_ADMIN uniquement                  │
+  └──────────────────────────────┴────────────────────────────────────────┘
+
+  Règle métier supplémentaire : un hôte ne peut pas réserver son propre
+  logement (vérification dans BookingService).
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. ARCHITECTURE TECHNIQUE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+6.1 Structure des dossiers (ajouts pour cette feature)
+────────────────────────────────────────────────────────
+  src/
+  ├── Enum/
+  │   └── BookingStatus.php          # PHP 8.1 backed enum (string)
+  ├── Entity/
+  │   ├── User.php
+  │   ├── Listing.php
+  │   └── Booking.php
+  ├── Message/                        # DTOs Messenger (sérialisables)
+  │   ├── BookingRequestedMessage.php # booking_id, listing_id
+  │   ├── BookingConfirmedMessage.php # booking_id, guest_email
+  │   ├── BookingCancelledMessage.php # booking_id, guest_email, host_email
+  │   └── BookingExpiredMessage.php   # booking_id, guest_email
+  ├── MessageHandler/                 # Handlers (#[AsMessageHandler])
+  │   ├── BookingRequestedHandler.php → envoie email à l'hôte
+  │   ├── BookingConfirmedHandler.php → envoie email au guest
+  │   ├── BookingCancelledHandler.php → envoie emails aux deux parties
+  │   └── BookingExpiredHandler.php  → envoie email au guest
+  ├── Scheduler/
+  │   └── BookingScheduleProvider.php # RecurringMessage toutes les heures
+  ├── Message/Schedule/
+  │   └── ExpireBookingsMessage.php   # Message déclenché par le scheduler
+  ├── MessageHandler/Schedule/
+  │   └── ExpireBookingsHandler.php   # Expire les pending + complete les confirmed
+  ├── Service/
+  │   └── BookingService.php          # Logique métier des transitions
+  ├── Security/Voter/
+  │   ├── BookingVoter.php            # CANCEL, VIEW
+  │   └── ListingVoter.php            # EDIT, MANAGE_BOOKING
+  ├── Form/
+  │   ├── BookingType.php             # checkIn, checkOut, nbGuests
+  │   └── ListingType.php             # title, price, maxGuests, instantBooking
+  ├── Repository/
+  │   ├── BookingRepository.php       # findPendingExpired(), findConfirmedCompleted()
+  │   └── ListingRepository.php       # findAvailable()
+  └── Controller/
+      ├── ListingController.php       # show() + book()
+      ├── BookingController.php       # myBookings() + cancel()
+      └── HostDashboardController.php # pendingRequests() + confirm() + reject()
+
+6.2 BookingService — méthodes principales
+──────────────────────────────────────────
+  createBooking(Listing, User, DateTimeImmutable $checkIn, DateTimeImmutable $checkOut, int $nbGuests): Booking
+    → valide les règles R1-R5
+    → calcule totalAmount
+    → détermine le statut initial (pending ou confirmed)
+    → dispatch le Message approprié (BookingRequested ou BookingConfirmed)
+    → flush()
+
+  confirm(Booking, User $host): void
+    → vérifie transition pending → confirmed autorisée
+    → met à jour status + updatedAt
+    → dispatch BookingConfirmedMessage
+    → flush()
+
+  reject(Booking, User $host): void
+    → vérifie transition pending → cancelled autorisée
+    → cancelledBy = 'host'
+    → dispatch BookingCancelledMessage
+    → flush()
+
+  cancel(Booking, User $canceller): void
+    → accepte guest / host / admin
+    → vérifie transition confirmed → cancelled autorisée
+    → cancelledBy selon rôle de $canceller
+    → dispatch BookingCancelledMessage
+    → flush()
+
+Justification de mettre la logique dans un Service et non dans l'entité :
+  les entités sont des POPO (Plain Old PHP Objects) ; la logique métier
+  (dispatch Messenger, appel repository) nécessite des dépendances injectées
+  que Doctrine ne peut pas gérer sur les entités.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. TRAITEMENTS ASYNCHRONES — SYMFONY MESSENGER
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+7.1 Transport
+──────────────
+  config/packages/messenger.yaml :
+    transports:
+      async:
+        dsn: '%env(MESSENGER_TRANSPORT_DSN)%'
+        options:
+          auto_setup: true
+    routing:
+      'App\Message\BookingRequestedMessage': async
+      'App\Message\BookingConfirmedMessage': async
+      'App\Message\BookingCancelledMessage': async
+      'App\Message\BookingExpiredMessage':   async
+      'App\Message\Schedule\ExpireBookingsMessage': async
+
+  MESSENGER_TRANSPORT_DSN dans .env.local :
+    → doctrine://default   (PostgreSQL, simple à mettre en place avec Doctrine)
+    → ou redis://localhost  (si Redis disponible)
+    Recommandation cours : doctrine://default (aucune dépendance externe)
+
+7.2 Matrice des messages / handlers / emails
+─────────────────────────────────────────────
+  ┌────────────────────────────┬───────────────────────┬───────────────────────┐
+  │ Message                    │ Déclenché quand        │ Email envoyé via      │
+  │                            │                        │ Symfony Mailer        │
+  ├────────────────────────────┼───────────────────────┼───────────────────────┤
+  │ BookingRequestedMessage    │ Booking créé (pending) │ → Hôte : "Demande     │
+  │                            │                        │   reçue"              │
+  │ BookingConfirmedMessage    │ Booking confirmed      │ → Guest : "Confirmé"  │
+  │ BookingCancelledMessage    │ Booking cancelled      │ → Guest + Hôte :      │
+  │                            │                        │   "Annulé"            │
+  │ BookingExpiredMessage      │ pending → expired      │ → Guest : "Expiré"    │
+  │ ExpireBookingsMessage      │ Scheduler (1h)         │ (interne, pas d'email │
+  │                            │                        │  direct — dispatch    │
+  │                            │                        │  BookingExpiredMessage│
+  │                            │                        │  pour chaque booking) │
+  └────────────────────────────┴───────────────────────┴───────────────────────┘
+
+7.3 Scheduler — expiration automatique (Symfony 6.3+)
+───────────────────────────────────────────────────────
+  src/Scheduler/BookingScheduleProvider.php
+    implements ScheduleProviderInterface
+    → RecurringMessage::every('1 hour', new ExpireBookingsMessage())
+
+  src/MessageHandler/Schedule/ExpireBookingsHandler.php
+    → BookingRepository::findPendingExpired() : tous les Booking en status=PENDING
+      dont expiresAt < now()
+    → Pour chaque booking :
+        booking.status = EXPIRED
+        dispatch(new BookingExpiredMessage(booking.id, guest.email))
+    → BookingRepository::findConfirmedCompleted() : tous les Booking en
+      status=CONFIRMED dont checkOut < now()
+    → Pour chaque booking :
+        booking.status = COMPLETED
+    → flush() unique à la fin
+
+  Justification du Scheduler plutôt qu'une commande + cron OS :
+    Le Messenger Scheduler est natif Symfony, ne nécessite pas d'accès au
+    système hôte, et s'exécute dans le même worker que les autres messages,
+    garantissant un transport unifié et observable via messenger:stats.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. SÉCURITÉ — VOTERS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+BookingVoter (src/Security/Voter/BookingVoter.php)
+  Attributs gérés : BOOKING_CANCEL, BOOKING_VIEW
+  supports()     : instanceof Booking
+  voteOnAttribute() :
+    BOOKING_CANCEL :
+      - $user === $booking->getGuest()  → ACCESS_GRANTED
+      - $user === $booking->getListing()->getHost() → ACCESS_GRANTED
+      - $user has ROLE_ADMIN → ACCESS_GRANTED
+      - sinon ACCESS_DENIED
+    BOOKING_VIEW :
+      - $user === $booking->getGuest() → ACCESS_GRANTED
+      - $user === $booking->getListing()->getHost() → ACCESS_GRANTED
+      - $user has ROLE_ADMIN → ACCESS_GRANTED
+
+ListingVoter (src/Security/Voter/ListingVoter.php)
+  Attributs gérés : LISTING_EDIT, LISTING_MANAGE_BOOKING
+  supports()     : instanceof Listing
+  voteOnAttribute() :
+    LISTING_EDIT / LISTING_MANAGE_BOOKING :
+      - $user === $listing->getHost() → ACCESS_GRANTED
+      - $user has ROLE_ADMIN → ACCESS_GRANTED
+
+Utilisation dans les contrôleurs :
+  $this->denyAccessUnlessGranted('BOOKING_CANCEL', $booking);
+  $this->denyAccessUnlessGranted('LISTING_MANAGE_BOOKING', $listing);
+
+Protection CSRF :
+  Token CSRF sur toutes les transitions d'état (confirm, reject, cancel).
+  Chaque action utilise un token unique : csrf_token('booking_action_'.$id)
+  Vérifié dans le contrôleur avant d'appeler BookingService.
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+9. PAGES & ROUTES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+┌─────────────────────────────────┬────────┬───────────────┬──────────────────────────────────────┐
+│ URL                             │ Méthode│ Rôle requis   │ Description                          │
+├─────────────────────────────────┼────────┼───────────────┼──────────────────────────────────────┤
+│ /listings/{id}                  │ GET    │ PUBLIC        │ Fiche logement + formulaire demande  │
+│ /listings/{id}/book             │ POST   │ ROLE_GUEST    │ Soumet une demande de réservation    │
+│ /my-bookings                    │ GET    │ ROLE_GUEST    │ Liste des réservations du voyageur   │
+│ /bookings/{id}/cancel           │ POST   │ ROLE_GUEST    │ Annule une réservation (Voter)       │
+│ /host/dashboard                 │ GET    │ ROLE_HOST     │ Demandes en attente du host          │
+│ /host/bookings/{id}/confirm     │ POST   │ ROLE_HOST     │ Accepte une demande (Voter)          │
+│ /host/bookings/{id}/reject      │ POST   │ ROLE_HOST     │ Refuse une demande (Voter)           │
+│ /host/listings/{id}/edit        │ GET/POST│ ROLE_HOST    │ Modifie les paramètres du logement   │
+└─────────────────────────────────┴────────┴───────────────┴──────────────────────────────────────┘
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+10. DONNÉES DE FIXTURES (VOLUME RICHE)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Utilisateurs (10) :
+  - 1 admin (ROLE_ADMIN)
+  - 4 hôtes (ROLE_HOST)     — certains aussi ROLE_GUEST
+  - 5 voyageurs (ROLE_GUEST)
+  Tous avec mot de passe "password" (hashé argon2i)
+
+Logements (10) :
+  - 5 logements instantBooking = true
+  - 5 logements instantBooking = false
+  - Répartis entre les 4 hôtes
+  - Mix isActive true/false (1 inactif pour tester la garde)
+
+Réservations (30+) :
+  - 6 PENDING   (sur des logements instantBooking=false)
+  - 8 CONFIRMED (mix des deux modes)
+  - 6 COMPLETED (checkOut dans le passé)
+  - 5 CANCELLED (cancelledBy: 'guest', 'host', 'admin')
+  - 3 EXPIRED   (createdAt >48h, statut forcé)
+  - Couvrir les deux modes instantBooking pour les tests
+  - Inclure des chevauchements de dates refusés en fixtures commentées
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+11. ENVIRONNEMENT & SETUP
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+SGBD        : PostgreSQL (via Docker)
+Serveur     : Docker / DDEV
+Stack       : PHP 8.3, Symfony 7.x, Doctrine ORM, Twig
+
+Variables .env.local :
+  DATABASE_URL="postgresql://postgres:postgres@127.0.0.1:5432/cours_symfony_booking?serverVersion=16&charset=utf8"
+  APP_SECRET=<généré par symfony>
+  MAILER_DSN=smtp://localhost:1025   # MailHog pour le dev
+  MESSENGER_TRANSPORT_DSN=doctrine://default
+
+Packages supplémentaires à installer :
+  composer require symfony/uid                 # UUID
+  composer require symfony/messenger           # Messenger + Scheduler
+  composer require symfony/mailer              # Mailer
+  composer require symfony/scheduler           # Scheduler (Symfony 6.3+)
+  composer require symfony/twig-bundle twig    # (déjà dans --webapp)
+
+Commandes de démarrage :
+  docker run -d --name postgres_booking -e POSTGRES_PASSWORD=postgres -p 5432:5432 postgres:16
+  composer install
+  php bin/console doctrine:database:create
+  php bin/console doctrine:migrations:migrate
+  php bin/console doctrine:fixtures:load
+  php bin/console messenger:consume async scheduler_default -vv  # worker
+
+Comptes de test :
+  admin@test.com     / password  (ROLE_ADMIN)
+  host1@test.com     / password  (ROLE_HOST)
+  guest1@test.com    / password  (ROLE_GUEST)
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+12. JUSTIFICATIONS DES CHOIX TECHNIQUES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Choix                     Justification
+─────────────────────────────────────────────────────────────────────────────
+PHP 8.1 Backed Enum       BookingStatus est une enum backed string : comparaison
+                          stricte (=== BookingStatus::PENDING) sans magic strings,
+                          lisible dans les templates Twig (.value), stockée en
+                          base comme une colonne string.
+
+Messenger pour emails     Les emails ne doivent pas bloquer la requête HTTP.
+asynchrones               En cas d'échec SMTP, le message reste en queue et peut
+                          être rejoué (retry_strategy). Découplage fort entre le
+                          code métier et l'infrastructure email.
+
+Scheduler Symfony         Natif Symfony 6.3+, s'exécute dans le worker Messenger
+plutôt que cron OS        existant. Pas d'accès au crontab du serveur nécessaire.
+                          L'expiration s'observe via messenger:stats comme tout
+                          autre message.
+
+expiresAt stocké en BDD   Permet à la query SQL de trouver les bookings expirés
+                          sans calcul applicatif (WHERE expires_at < NOW()).
+                          Indexable pour la performance.
+
+cancelledBy (string)      Trace légère de qui a annulé, sans relation FK vers User.
+                          Valeurs contrôlées ('guest'|'host'|'admin'), suffit pour
+                          l'audit sans complexité de migration future.
+
+Vérification dispo        Seules les CONFIRMED bloquent : les PENDING peuvent se
+sur CONFIRMED seulement   cumuler car l'hôte choisit qui il accepte. C'est le
+                          comportement des plateformes de location avec validation.
+
+UUID pour toutes          Les IDs de booking dans les URLs ne doivent pas être
+les entités               énumérables (sécurité). UUID v4 offre l'opacité
+                          nécessaire pour toutes les entités exposées.
+
+BookingService            Centralise toutes les transitions d'état, garantit que
+centralisé                les dispatch Messenger se font toujours au bon moment.
+                          Respecte la règle "pas de logique métier dans l'entité".
+
+Voters séparés            BookingVoter et ListingVoter sont séparés pour respecter
+(Booking vs Listing)      le principe de responsabilité unique : chaque Voter
+                          protège une seule entité et ses attributs propres.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+13. ANALYSE DE RÉGRESSION — COMPATIBILITÉ AVEC L'EXISTANT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Cette section documente les points de vigilance identifiés après lecture du
+code existant (entités, contrôleurs, templates, formulaires, repository).
+Chaque point indique si la feature nécessite une adaptation, et laquelle.
+
+──────────────────────────────────────────────────────────────────────────────
+13.1 ENTITÉS — AUCUNE CRÉATION NÉCESSAIRE (tout existe déjà)
+──────────────────────────────────────────────────────────────────────────────
+
+▶ Entité Reservation (src/Entity/Reservation.php)
+  STATUS : COMPATIBLE ✓ — avec 2 adaptations requises
+
+  Ce qui existe déjà et correspond exactement au besoin :
+    - property (ManyToOne → Property)     ← notre "Listing"
+    - guest (ManyToOne → User)
+    - checkinDate / checkoutDate (DATE_IMMUTABLE)
+    - guestsCount (int)
+    - status (string 'pending'|'confirmed'|'completed'|'cancelled')
+    - totalPrice (decimal 10,2)
+    - cleaningFee, serviceFee, securityDeposit (nullable, déjà présents)
+    - currency (string)
+    - cancellationReason (text, nullable)
+    - createdAt (datetime_immutable)
+    - statusHistory (OneToMany → ReservationStatusHistory) ← audit trail déjà là
+    - Invoice, Payment, Payout, Dispute, Conversation, Review (relations déjà là)
+
+  ⚠ ADAPTATION 1 — Ajouter les champs manquants via migration (pas make:entity) :
+    - expiresAt (datetime_immutable, nullable) : nécessaire pour le Scheduler
+    - cancelledBy (string 20, nullable) : trace 'guest'|'host'|'admin'
+    - updatedAt (datetime_immutable, nullable) : bon usage pour les transitions
+
+    → Créer ces 3 champs via une migration Doctrine. NE PAS modifier le schéma
+      existant. NE PAS toucher aux colonnes déjà mappées.
+
+  ⚠ ADAPTATION 2 — Statut 'expired' absent de la contrainte @Assert\Choice :
+    La contrainte actuelle autorise uniquement 'pending','confirmed','completed',
+    'cancelled'. Il faut ajouter 'expired' à la liste pour éviter une violation
+    de validation lors de la transition automatique du Scheduler.
+
+    Fichier : src/Entity/Reservation.php, ligne 52-56
+    Avant :
+      choices: ['pending', 'confirmed', 'completed', 'cancelled'],
+    Après :
+      choices: ['pending', 'confirmed', 'completed', 'cancelled', 'expired'],
+
+  ⚠ ADAPTATION 3 — ReservationType (formulaire admin) :
+    Le formulaire ReservationType (src/Form/ReservationType.php) propose aussi
+    les 4 statuts via un ChoiceType. Ajouter 'expired' pour cohérence admin :
+      'Expirée' => 'expired',
+    Sans cela, l'admin ne peut pas visualiser correctement le statut 'expired'
+    dans le formulaire d'édition.
+
+──────────────────────────────────────────────────────────────────────────────
+▶ Entité Property (src/Entity/Property.php)
+  STATUS : COMPATIBLE ✓ — aucune modification nécessaire
+
+  Ce qui correspond directement à la conception :
+    - instantBooking (bool) : champ déjà présent (ligne 118), getter
+      isInstantBooking() déjà défini (ligne 347)
+    - pricePerNight (decimal 10,2) : présent
+    - maxGuests (int) : présent
+    - status ('draft'|'pending'|'published') : c'est le statut de MODÉRATION
+      du logement, distinct de isActive conceptuel. Notre garde métier doit
+      vérifier property.status === 'published' (et non un champ isActive qui
+      n'existe pas).
+
+  ⚠ ADAPTATION — La règle R4 "Listing doit être actif" doit être réécrite :
+    Dans la conception, on référençait "isActive (bool)". Ce champ N'EXISTE PAS
+    dans l'entité Property. Le champ équivalent est status === 'published'.
+    Le BookingService doit vérifier :
+      if ($property->getStatus() !== 'published') { throw ... }
+
+  Autres champs utiles déjà présents (aucune action requise) :
+    - cleaningFee, securityDeposit : déjà sur Property, peuvent alimenter les
+      frais de la Reservation
+    - checkinTime / checkoutTime : utiles pour l'affichage
+    - cancellationPolicy (ManyToOne → CancellationPolicy) : entité déjà là,
+      peut être référencée lors de l'annulation
+
+──────────────────────────────────────────────────────────────────────────────
+▶ Entité ReservationStatusHistory (src/Entity/ReservationStatusHistory.php)
+  STATUS : COMPATIBLE ✓ — correspond exactement au besoin
+
+  Champs disponibles : oldStatus, newStatus, changedBy (User), createdAt.
+  Le BookingService doit créer une entrée ReservationStatusHistory à chaque
+  transition d'état. La relation est déjà mappée dans Reservation.statusHistory.
+
+──────────────────────────────────────────────────────────────────────────────
+▶ Entité User (src/Entity/User.php)
+  STATUS : COMPATIBLE ✓ — avec clarification de la nomenclature des rôles
+
+  Ce qui existe :
+    - roles (json array) géré via Roles::HOST = 'ROLE_HOST'
+    - Roles::ADMIN = 'ROLE_ADMIN', Roles::SUPER_ADMIN = 'ROLE_SUPER_ADMIN'
+    - ROLE_GUEST n'existe pas en tant que constante dans Roles.php
+
+  ⚠ ADAPTATION — Pas de ROLE_GUEST dans le système existant :
+    La classe Roles (src/Security/Roles.php) définit HOST, ADMIN, SUPER_ADMIN.
+    Tout utilisateur sans rôle spécial obtient 'ROLE_USER' (via getRoles()).
+    La méthode Roles::primaryLabel() retourne déjà 'Voyageur' pour ce cas.
+
+    Deux options :
+    a) OPTION RECOMMANDÉE : utiliser ROLE_USER comme rôle de base pour les
+       voyageurs — tout utilisateur connecté peut réserver. Vérifier dans
+       BookingService que l'utilisateur n'est pas l'hôte du logement.
+    b) Ajouter ROLE_GUEST à Roles.php et au security.yaml si on veut
+       distinguer les voyageurs vérifiés des simples comptes.
+
+    → La conception est mise à jour : ROLE_USER remplace ROLE_GUEST pour éviter
+      toute rupture avec les contrôleurs existants.
+
+──────────────────────────────────────────────────────────────────────────────
+13.2 CONTRÔLEURS — RISQUES DE COLLISION DE ROUTES
+──────────────────────────────────────────────────────────────────────────────
+
+▶ ReservationController (src/Controller/ReservationController.php)
+  Routes existantes :
+    GET  /reservations          app_reservation_index  → home/reservations.html.twig
+    GET  /reservations/{id}     app_reservation_show   → home/reservation.html.twig
+
+  ⚠ RISQUE — La route GET /reservations/{id} utilise ParamConverter sur
+    Reservation. Si le BookingService crée de nouvelles réservations avec
+    les mêmes champs mais sans certaines colonnes nouvelles (expiresAt,
+    cancelledBy), aucun problème tant que ces colonnes sont nullable.
+    → Vérifier que la migration les déclare bien nullable: true.
+
+  ⚠ RISQUE — La route index (/reservations) itère sur app.user.reservations
+    directement en Twig (templates/home/reservations.html.twig, ligne 10).
+    C'est un appel lazy sur une collection User.reservations — cela provoque
+    du N+1 si de nombreuses réservations existent.
+    → La feature ne doit pas aggraver ce point. Le tableau de bord hôte
+      (nouvelle route /host/dashboard) doit utiliser un Repository avec
+      addSelect() pour éviter le problème dès le départ.
+
+  Nouvelles routes à ajouter SANS toucher aux routes existantes :
+    POST /reservations/{id}/cancel   app_reservation_cancel   (nouveau)
+
+▶ AdminReservationController (src/Controller/AdminReservationController.php)
+  Routes existantes :
+    GET/POST  /admin/reservation          index, new
+    GET       /admin/reservation/{id}     show
+    GET/POST  /admin/reservation/{id}/edit edit
+    POST      /admin/reservation/{id}     delete
+    POST      /admin/reservation/dispute/{id}/resolve  resolveDispute
+
+  ⚠ RISQUE — Le contrôleur index filtre par status 'confirmed' et 'cancelled'
+    (lignes 29, 37, 39). Les compteurs passés au template n'incluent pas
+    'expired'. Il faudra ajouter le compteur 'expired' au template
+    admin_reservation/index.html.twig si on veut le dashboard complet.
+    → C'est un enrichissement, pas une régression. L'existant continue
+      de fonctionner sans modification.
+
+  ⚠ RISQUE — Le formulaire ReservationType utilisé dans new/edit ne contient
+    pas 'expired' dans le ChoiceType statut (voir ADAPTATION 3 ci-dessus).
+    Sans la correction, l'admin qui visualise une réservation expirée dans
+    le formulaire edit verra un statut vide/invalide.
+
+──────────────────────────────────────────────────────────────────────────────
+13.3 TEMPLATES — RISQUES D'AFFICHAGE
+──────────────────────────────────────────────────────────────────────────────
+
+▶ templates/parts/reservation_row.html.twig
+▶ templates/home/reservation.html.twig
+▶ templates/admin_reservation/_reservation_row.html.twig
+▶ templates/admin_reservation/show.html.twig
+
+  ⚠ RISQUE — Tous ces templates définissent un statusLabels et statusColors
+    (ou statusClasses) avec seulement 4 clés :
+      'confirmed', 'completed', 'pending', 'cancelled'
+
+    Si une réservation passe au statut 'expired', ces templates afficheront :
+      - reservation_row.html.twig : statusColors['expired'] → null → fallback
+        'bg-gray-100 text-gray-800' (le filtre |default est en place ✓)
+      - admin show.html.twig : idem, fallback 'bg-gray-100 text-gray-700' ✓
+      - reservation.html.twig : le badge utilisera le fallback ✓
+      - Le label sera affiché tel quel ('expired') au lieu de 'Expirée'
+
+    → CORRECTION REQUISE dans les 4 fichiers : ajouter l'entrée 'expired'
+      aux dictionnaires statusLabels et statusColors/statusClasses.
+
+    Fichiers à modifier :
+      templates/parts/reservation_row.html.twig          lignes 6-17
+      templates/home/reservation.html.twig               lignes 9-20
+      templates/admin_reservation/_reservation_row.html.twig  lignes 7-24
+      templates/admin_reservation/show.html.twig         lignes 10-21
+
+    Valeurs à ajouter dans chaque dictionnaire :
+      statusLabels  : 'expired' → 'Expirée'
+      statusColors  : 'expired' → 'bg-gray-100 text-gray-500'
+      statusClasses : 'expired' → 'bg-gray-50 text-gray-500 border border-gray-200'
+      statusIcons   : 'expired' → 'fa-hourglass-end'
+
+▶ templates/home/logement.html.twig
+  Le bouton "Réserver" est actuellement un <button type="button"> sans action
+  (ligne 156). La feature remplacera ce bouton par un formulaire pointant vers
+  POST /property/{id}/book (ou similaire).
+  → Aucune régression sur l'affichage existant car le bouton ne fait rien.
+    La modification est additive.
+
+▶ templates/home/reservations.html.twig (ligne 10)
+  Itère sur app.user.reservations (lazy). Les nouvelles réservations créées
+  par la feature apparaîtront automatiquement dans cette liste.
+  → Pas de régression.
+
+──────────────────────────────────────────────────────────────────────────────
+13.4 REPOSITORY — MÉTHODES EXISTANTES
+──────────────────────────────────────────────────────────────────────────────
+
+▶ ReservationRepository
+
+  Méthodes existantes (à NE PAS modifier) :
+    findAllForListing()   : utilisée par AdminReservationController::index()
+    findOneForDetail()    : utilisée par AdminReservationController::show()
+    sumCompletedRevenue() : filtre sur 'confirmed','completed' → OK pour 'expired'
+
+  Nouvelles méthodes à AJOUTER (sans toucher aux existantes) :
+    findPendingExpired()        : WHERE status='pending' AND expiresAt < NOW()
+    findConfirmedToComplete()   : WHERE status='confirmed' AND checkoutDate < TODAY
+    findByGuestOrderedByDate()  : pour le tableau de bord voyageur (évite lazy)
+    findPendingByHost()         : pour le tableau de bord hôte
+
+  ⚠ sumCompletedRevenue() n'inclut pas 'expired' dans le calcul de revenus —
+    c'est correct : une réservation expirée n'a pas généré de revenu.
+
+──────────────────────────────────────────────────────────────────────────────
+13.5 SÉCURITÉ — ROLES ET SECURITY.YAML
+──────────────────────────────────────────────────────────────────────────────
+
+▶ src/Security/Roles.php
+  ROLE_HOST et ROLE_ADMIN existent. ROLE_GUEST est absent.
+  → Utiliser ROLE_USER pour les voyageurs (tout utilisateur connecté).
+    Si ROLE_GUEST est ajouté dans security.yaml, l'ajouter aussi dans
+    Roles::ASSIGNABLE et Roles::LABELS pour cohérence avec les vues admin.
+
+▶ security.yaml (non lu mais inféré)
+  access_control existant probablement :
+    - { path: ^/admin, roles: ROLE_ADMIN }
+  À AJOUTER sans toucher à l'existant :
+    - { path: ^/host, roles: ROLE_HOST }
+    - { path: ^/reservations$, roles: ROLE_USER }  # déjà géré par #[IsGranted]
+  → L'ajout de nouvelles règles access_control en bas de la liste ne casse
+    pas les règles existantes (Symfony applique la première correspondance).
+
+▶ UserChecker (src/Security/UserChecker.php)
+  Probablement vérifie le statut du compte (active/suspended).
+  → Aucune interaction avec la feature de réservation.
+
+──────────────────────────────────────────────────────────────────────────────
+13.6 RÉCAPITULATIF DES MODIFICATIONS REQUISES (NON ADDITIVES)
+──────────────────────────────────────────────────────────────────────────────
+
+Ces modifications touchent du code EXISTANT et doivent être faites avec soin :
+
+  ┌─────┬────────────────────────────────────────────────────┬─────────────┐
+  │ #   │ Fichier                                            │ Impact      │
+  ├─────┼────────────────────────────────────────────────────┼─────────────┤
+  │ M1  │ src/Entity/Reservation.php                         │ CRITIQUE    │
+  │     │ Ajouter 'expired' dans @Assert\Choice (statut)     │             │
+  ├─────┼────────────────────────────────────────────────────┼─────────────┤
+  │ M2  │ src/Form/ReservationType.php                       │ MODÉRÉ      │
+  │     │ Ajouter 'Expirée' => 'expired' dans ChoiceType     │             │
+  ├─────┼────────────────────────────────────────────────────┼─────────────┤
+  │ M3  │ templates/parts/reservation_row.html.twig          │ MODÉRÉ      │
+  │     │ Ajouter 'expired' dans statusLabels/statusColors   │             │
+  ├─────┼────────────────────────────────────────────────────┼─────────────┤
+  │ M4  │ templates/home/reservation.html.twig               │ MODÉRÉ      │
+  │     │ Ajouter 'expired' dans statusLabels/statusColors   │             │
+  ├─────┼────────────────────────────────────────────────────┼─────────────┤
+  │ M5  │ templates/admin_reservation/_reservation_row.html  │ MODÉRÉ      │
+  │     │ Ajouter 'expired' dans statusLabels/statusClasses/ │             │
+  │     │ statusIcons                                        │             │
+  ├─────┼────────────────────────────────────────────────────┼─────────────┤
+  │ M6  │ templates/admin_reservation/show.html.twig         │ MODÉRÉ      │
+  │     │ Ajouter 'expired' dans statusLabels/statusClasses  │             │
+  └─────┴────────────────────────────────────────────────────┴─────────────┘
+
+  Tout le reste (nouvelles entités Voters, Services, Messages, Handlers,
+  Scheduler, nouveaux contrôleurs, nouvelles routes, nouvelles méthodes
+  Repository) est ADDITIF et ne touche pas au code existant.
+
+──────────────────────────────────────────────────────────────────────────────
+13.7 MIGRATION DOCTRINE — STRATÉGIE SANS RÉGRESSION
+──────────────────────────────────────────────────────────────────────────────
+
+Les 3 nouveaux champs sur la table reservations sont tous nullable :
+  ALTER TABLE reservations ADD expires_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL;
+  ALTER TABLE reservations ADD cancelled_by VARCHAR(20) DEFAULT NULL;
+  ALTER TABLE reservations ADD updated_at TIMESTAMP(0) WITHOUT TIME ZONE DEFAULT NULL;
+
+Règle : colonnes nullable → migration non destructive, zéro downtime.
+Les lignes existantes auront NULL dans ces colonnes, ce qui est correct :
+  - expires_at NULL = réservation sans expiration (instantBooking ou ancienne)
+  - cancelled_by NULL = non annulée (ou ancienne annulation sans traçabilité)
+  - updated_at NULL = jamais mis à jour après création (acceptable)
+
+La migration sera générée par :
+  php bin/console make:migration
+  php bin/console doctrine:migrations:migrate
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+15. SPECS COMPLÉMENTAIRES — PARTIES A, B, C, D, E (v2)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Décisions prises après collecte des besoins sur les 11 gaps identifiés.
+Chaque gap est résolu et documenté avec ses choix techniques justifiés.
+
+──────────────────────────────────────────────────────────────────────────────
+G1 — VUE CALENDRIER HÔTE (12 mois en scroll vertical)
+──────────────────────────────────────────────────────────────────────────────
+
+Route   : GET /host/properties/{id}/calendar
+Contrôleur : HostCalendarController::show()
+Rôle requis : ROLE_HOST + ListingVoter LISTING_EDIT (l'hôte est bien le owner)
+
+Données chargées côté serveur :
+  - Toutes les PropertyAvailability du logement pour les 12 prochains mois
+    (isAvailable = false → jour bloqué)
+  - Toutes les Reservation CONFIRMED ou PENDING du logement sur la même période
+  → Sérialisées en JSON dans une variable Twig pour rendu JS côté client.
+
+Rendu :
+  - 12 grilles mensuelles empilées en scroll vertical (HTML/CSS pur + JS léger)
+  - Légende : vert = libre, rouge = bloqué (PropertyAvailability), bleu = réservé
+    (CONFIRMED), orange = en attente (PENDING)
+  - Bouton "Bloquer une période" ouvre un formulaire inline (plage de dates)
+
+Template : templates/host/calendar.html.twig
+Repository : PropertyAvailabilityRepository::findByPropertyAndPeriod()
+             ReservationRepository::findByPropertyAndPeriod()
+
+──────────────────────────────────────────────────────────────────────────────
+G2 — BLOCAGE DE DATES PAR PLAGE (PropertyAvailability, jour par jour)
+──────────────────────────────────────────────────────────────────────────────
+
+Modèle de données :
+  PropertyAvailability (déjà en BDD) :
+    - availableDate (DATE_IMMUTABLE) : 1 ligne par jour
+    - isAvailable (bool)             : false = bloqué
+    - priceOverride (decimal, nullable) : tarif spécifique ce jour
+    - minimumStay (int, nullable)    : durée de séjour minimum ce jour
+  → Aucune migration requise, tous les champs existent.
+
+Interface hôte (formulaire "Bloquer une période") :
+  Champs exposés :
+    - startDate (date)        : début de la plage
+    - endDate (date)          : fin de la plage (incluse)
+    - priceOverride (decimal) : optionnel, tarif journalier spécifique
+    - minimumStay (int)       : optionnel, durée de séjour minimum (jours)
+  → Le service crée/met à jour une ligne PropertyAvailability par jour
+    dans la plage [startDate, endDate].
+  → Idempotent : si une ligne existe déjà pour ce jour, elle est mise à jour.
+
+Service : AvailabilityService::blockPeriod(Property, DateRange, ?priceOverride, ?minimumStay)
+  Pour chaque jour de la plage :
+    $avail = repo->findOneByPropertyAndDate($property, $day) ?? new PropertyAvailability()
+    $avail->setIsAvailable(false)
+    $avail->setPriceOverride($priceOverride)
+    $avail->setMinimumStay($minimumStay)
+    persist($avail)
+  flush() unique à la fin
+
+  → Si des Reservation PENDING existent sur les dates bloquées :
+      foreach $pendingConflicts as $booking :
+        $bookingService->cancelBySystem($booking, 'Logement indisponible sur ces dates')
+        dispatch(new BookingBlockedMessage($booking->getId(), $booking->getGuest()->getEmail()))
+      flush()
+
+Route : POST /host/properties/{id}/block-dates
+CSRF  : token 'block_dates_'.$property->getId()
+
+──────────────────────────────────────────────────────────────────────────────
+G3 — ALGORITHME DE DISPONIBILITÉ COMPLET (BookingService + R5 corrigée)
+──────────────────────────────────────────────────────────────────────────────
+
+Règle R5 mise à jour (remplace l'ancienne) :
+  Une plage [checkIn, checkOut[ est disponible si ET SEULEMENT SI :
+    R4. property.status === 'published'
+    R5a. Aucune Reservation CONFIRMED ne chevauche ces dates
+    R5b. Aucune PropertyAvailability avec isAvailable=false ne couvre ces dates
+    R5c. Pour chaque jour de la plage, le minimumStay est respecté
+         (nbNuits >= MAX(minimumStay des jours concernés))
+
+Méthode repository :
+  PropertyAvailabilityRepository::findBlockedInPeriod(Property, checkIn, checkOut): array
+    → WHERE property = :p AND isAvailable = false
+      AND availableDate >= :checkIn AND availableDate < :checkOut
+
+  PropertyAvailabilityRepository::getMaxMinimumStayInPeriod(Property, checkIn, checkOut): ?int
+    → SELECT MAX(minimumStay) WHERE property = :p AND availableDate >= :checkIn
+      AND availableDate < :checkOut AND minimumStay IS NOT NULL
+
+BookingService::createBooking() — ordre des gardes :
+  1. property.status === 'published'           (R4)
+  2. checkIn >= today                          (R1)
+  3. checkIn < checkOut                        (R2)
+  4. nbGuests <= property.maxGuests            (R3)
+  5. Pas de CONFIRMED qui chevauche            (R5a)
+  6. Pas de dates bloquées dans la plage       (R5b)
+  7. minimumStay respecté                      (R5c)
+  8. L'hôte ne réserve pas son propre logement (métier)
+
+Justification de l'ordre : les gardes "données" (R1-R3) passent avant les
+requêtes BDD (R5a-c) pour éviter des requêtes inutiles en cas d'erreur simple.
+
+──────────────────────────────────────────────────────────────────────────────
+G4 — PAGE CHECKOUT (récapitulatif dynamique avant soumission)
+──────────────────────────────────────────────────────────────────────────────
+
+Route   : GET  /properties/{id}/checkout?checkin=YYYY-MM-DD&checkout=YYYY-MM-DD&guests=N
+          POST /properties/{id}/book   (soumission finale, existant en section 9)
+Contrôleur : BookingController::checkout()
+
+Fonctionnement :
+  - GET charge la page avec le récapitulatif pré-calculé côté serveur
+    (prix de base, frais de ménage du logement, total)
+  - Un formulaire BookingType est affiché pré-rempli avec les dates GET
+  - Quand l'utilisateur change les dates dans le formulaire, un appel AJAX
+    vers GET /api/properties/{id}/price?checkin=&checkout=&guests=
+    retourne un JSON { totalPrice, nights, pricePerNight, cleaningFee }
+    et met à jour l'affichage sans rechargement de page.
+
+Route API prix : GET /api/properties/{id}/price
+Contrôleur     : BookingApiController::calculatePrice()
+Retour JSON    : { nights: int, pricePerNight: string, cleaningFee: string|null,
+                   totalPrice: string, currency: string, available: bool }
+Sécurité       : pas de #[IsGranted], disponible publiquement (lecture seule)
+                 — seul le POST /book exige d'être connecté
+
+──────────────────────────────────────────────────────────────────────────────
+G5 — MOTIF D'ANNULATION OBLIGATOIRE (tous les acteurs)
+──────────────────────────────────────────────────────────────────────────────
+
+Règle : toute transition vers 'cancelled' ou refus (pending → cancelled par
+l'hôte) requiert un cancellationReason non vide.
+
+BookingService — mise à jour :
+  cancel(Booking, User $canceller, string $reason): void
+    if (trim($reason) === '') → throw new \InvalidArgumentException(...)
+    $booking->setCancellationReason($reason)
+    $booking->setCancelledBy(...)
+    ...
+
+  reject(Booking, User $host, string $reason): void
+    if (trim($reason) === '') → throw new \InvalidArgumentException(...)
+    $booking->setCancellationReason($reason)
+    ...
+
+Formulaires concernés :
+  - BookingCancelType (nouveau) : un seul champ textarea 'cancellationReason',
+    required: true, label 'Motif d\'annulation', maxlength 2000.
+    Utilisé sur les routes /bookings/{id}/cancel (voyageur) et
+    /host/bookings/{id}/reject (hôte).
+
+Cohérence avec l'existant :
+  L'entité Reservation porte déjà un @Assert\Expression qui exige
+  cancellationReason non vide quand status === 'cancelled'. Cette contrainte
+  reste en place et sert de filet de sécurité côté entité.
+
+──────────────────────────────────────────────────────────────────────────────
+G6 — MOTEUR DE RECHERCHE /search (filtres dispo réels)
+──────────────────────────────────────────────────────────────────────────────
+
+La route /search et HomeController::search() existent déjà mais n'appliquent
+aucun filtre. La méthode findForListing() est remplacée par une méthode
+conditionnelle selon les paramètres présents.
+
+HomeController::search() — mise à jour :
+  if ($checkin && $checkout && $guests) :
+    $properties = $propertyRepository->findAvailableForSearch($destination, $checkin, $checkout, $guests)
+  else :
+    $properties = $propertyRepository->findForListing()  ← comportement actuel conservé
+
+PropertyRepository::findAvailableForSearch(
+    ?string $destination,
+    \DateTimeImmutable $checkin,
+    \DateTimeImmutable $checkout,
+    int $guests
+): array
+
+  QueryBuilder :
+    SELECT p FROM properties p
+    JOIN p.address a
+    LEFT JOIN p.availabilities av
+      WITH av.isAvailable = false
+      AND av.availableDate >= :checkin
+      AND av.availableDate < :checkout
+    LEFT JOIN p.reservations r
+      WITH r.status = 'confirmed'
+      AND r.checkinDate < :checkout
+      AND r.checkoutDate > :checkin
+    WHERE p.status = 'published'
+      AND p.maxGuests >= :guests
+      AND (:destination IS NULL OR a.city LIKE :destinationLike)
+      AND av.id IS NULL     ← aucune date bloquée dans la plage
+      AND r.id IS NULL      ← aucune résa CONFIRMED qui chevauche
+    GROUP BY p.id
+
+  Note : la jointure LEFT JOIN + IS NULL est plus performante qu'un NOT EXISTS
+  sur PostgreSQL pour ce volume de données.
+
+Comportement sans paramètres (conservé) :
+  → afficher tous les logements publiés, comme la home.
+
+──────────────────────────────────────────────────────────────────────────────
+G7/G8/G9 — ENRICHISSEMENT DES MESSAGES MESSENGER
+──────────────────────────────────────────────────────────────────────────────
+
+BookingRequestedMessage (G7) — DTO enrichi :
+  + checkinDate (string 'Y-m-d')
+  + checkoutDate (string 'Y-m-d')
+  + guestsCount (int)
+  + totalPrice (string)
+  + currency (string)
+  + guestFirstName (string)
+  + guestEmail (string)
+  + hostDashboardUrl (string) ← CTA pointant vers /host/dashboard
+  Email envoyé à : l'hôte uniquement
+
+BookingConfirmedMessage (G8) — ajout de l'hôte en destinataire :
+  + hostEmail (string)
+  Email envoyé à : voyageur ET hôte (deux TemplatedEmail distincts dans le handler)
+
+BookingCancelledMessage (G9) — ajout du motif :
+  + cancellationReason (string)
+  + cancelledBy (string : 'guest'|'host'|'admin')
+  Email envoyé à : voyageur ET hôte
+
+BookingBlockedMessage (nouveau, blocage dates) :
+  Champs : bookingId (Uuid), guestEmail (string), propertyTitle (string),
+           checkinDate (string), checkoutDate (string)
+  Handler : BookingBlockedHandler → email au voyageur "Votre demande a été
+            annulée car le logement est indisponible sur ces dates."
+  Routing messenger.yaml : 'App\Message\BookingBlockedMessage': async
+
+──────────────────────────────────────────────────────────────────────────────
+G10/G11 — EXPORT iCAL (par logement + agrégé hôte)
+──────────────────────────────────────────────────────────────────────────────
+
+Modèle de données — deux nouvelles migrations :
+
+  1. Champ calendarToken sur Property :
+     ALTER TABLE properties ADD calendar_token VARCHAR(64) DEFAULT NULL UNIQUE;
+     → Généré à la création du logement via bin2hex(random_bytes(32))
+     → L'hôte peut le régénérer depuis /host/properties/{id}/settings
+     → Getter : getCalendarToken(), Setter : setCalendarToken()
+
+  2. Champ calendarToken sur User (pour l'iCal agrégé hôte) :
+     ALTER TABLE users ADD calendar_token VARCHAR(64) DEFAULT NULL UNIQUE;
+     → Généré à la première demande d'accès
+     → Révocable depuis le profil hôte
+
+Routes iCal :
+  GET /api/properties/{id}/calendar.ics?token={secret}
+    → Export d'UN logement (réservations CONFIRMED uniquement)
+    → Contrôleur : ICalController::propertyCalendar()
+
+  GET /api/hosts/{id}/calendar.ics?token={secret}
+    → Export AGRÉGÉ de tous les logements de l'hôte
+    → Contrôleur : ICalController::hostCalendar()
+    → Fusionne les VEVENT de tous les logements publiés de l'hôte
+
+Sécurité des deux endpoints :
+  - Pas de session ni de cookie — authentification par token uniquement
+  - Charger le Property/User par {id}, vérifier calendarToken === $token
+  - Si token invalide ou manquant → 404 (ne pas distinguer "pas de logement"
+    de "mauvais token" pour éviter l'énumération)
+  - Pas de #[IsGranted] — l'URL est publique mais tokenisée
+
+ICalExportService::generateForProperty(Property $p): string
+  → findConfirmedByProperty() → boucle VEVENT
+  → DTSTART;VALUE=DATE:{checkinDate->format('Ymd')}
+  → DTEND;VALUE=DATE:{checkoutDate->format('Ymd')}
+  → SUMMARY:{property.title} — {guest.profile.firstName} {guest.profile.lastName}
+  → DESCRIPTION:Séjour {nights} nuits — {totalPrice}{currency} — {guest.email}
+  → UID:res-{reservation.id}@cours-symfony.local
+  → Envelopper dans BEGIN:VCALENDAR VERSION:2.0 PRODID:-//cours-symfony//FR
+
+ICalExportService::generateForHost(User $host): string
+  → Pour chaque property publiée de l'hôte :
+      $ics .= generateEventsForProperty($property)
+  → Un seul VCALENDAR contenant tous les VEVENT de tous les logements
+
+Response : new Response($ics, 200, [
+    'Content-Type' => 'text/calendar; charset=UTF-8',
+    'Content-Disposition' => 'attachment; filename="calendar.ics"',
+])
+
+Exposition à l'hôte :
+  La page /host/properties/{id}/settings affiche :
+    "Votre URL iCal : /api/properties/{id}/calendar.ics?token=XXXX  [Copier] [Régénérer]"
+  La page /host/profile affiche :
+    "iCal agrégé (tous vos logements) : /api/hosts/{id}/calendar.ics?token=YYYY"
+
+──────────────────────────────────────────────────────────────────────────────
+NOUVELLES ROUTES — TABLEAU COMPLET (section 9 mise à jour)
+──────────────────────────────────────────────────────────────────────────────
+
+  ┌──────────────────────────────────────────┬──────────┬───────────────────┐
+  │ URL                                      │ Méthode  │ Rôle / Sécurité   │
+  ├──────────────────────────────────────────┼──────────┼───────────────────┤
+  │ /properties/{id}/checkout                │ GET      │ ROLE_USER         │
+  │ /properties/{id}/book                    │ POST     │ ROLE_USER         │
+  │ /bookings/{id}/cancel                    │ POST     │ ROLE_USER (Voter) │
+  │ /my-bookings                             │ GET      │ ROLE_USER         │
+  │ /host/dashboard                          │ GET      │ ROLE_HOST         │
+  │ /host/bookings/{id}/confirm              │ POST     │ ROLE_HOST (Voter) │
+  │ /host/bookings/{id}/reject               │ POST     │ ROLE_HOST (Voter) │
+  │ /host/properties/{id}/calendar           │ GET      │ ROLE_HOST (Voter) │
+  │ /host/properties/{id}/block-dates        │ POST     │ ROLE_HOST (Voter) │
+  │ /host/properties/{id}/settings           │ GET/POST │ ROLE_HOST (Voter) │
+  │ /api/properties/{id}/price               │ GET      │ PUBLIC            │
+  │ /api/properties/{id}/calendar.ics        │ GET      │ Token dans query  │
+  │ /api/hosts/{id}/calendar.ics             │ GET      │ Token dans query  │
+  └──────────────────────────────────────────┴──────────┴───────────────────┘
+
+──────────────────────────────────────────────────────────────────────────────
+NOUVELLES ENTITÉS / CHAMPS — BILAN MIGRATIONS
+──────────────────────────────────────────────────────────────────────────────
+
+  Migration 1 — Table reservations (déjà listée section 13.7) :
+    + expires_at TIMESTAMP nullable
+    + cancelled_by VARCHAR(20) nullable
+    + updated_at TIMESTAMP nullable
+
+  Migration 2 — Table properties :
+    + calendar_token VARCHAR(64) nullable UNIQUE
+
+  Migration 3 — Table users :
+    + calendar_token VARCHAR(64) nullable UNIQUE
+
+  Aucune nouvelle table : PropertyAvailability, PropertyICalSync, User, Property,
+  Reservation, ReservationStatusHistory sont toutes réutilisées telles quelles.
+
+──────────────────────────────────────────────────────────────────────────────
+NOUVEAUX SERVICES — LISTE FINALE
+──────────────────────────────────────────────────────────────────────────────
+
+  src/Service/
+    BookingService.php         (existant, mis à jour gardes R5b/R5c + motif)
+    AvailabilityService.php    (nouveau — G2 : blockPeriod, unblockPeriod)
+    ICalExportService.php      (nouveau — G10/G11 : generateForProperty, generateForHost)
+
+  src/Controller/
+    BookingController.php      (nouveau — checkout, book, cancel, myBookings)
+    HostDashboardController.php(nouveau — dashboard, confirm, reject)
+    HostCalendarController.php (nouveau — G1 : calendar, blockDates, settings)
+    ICalController.php         (nouveau — G10/G11 : propertyCalendar, hostCalendar)
+    BookingApiController.php   (nouveau — G4 : calculatePrice JSON)
+
+  src/Message/
+    BookingBlockedMessage.php  (nouveau — G2 blocage dates)
+
+  src/MessageHandler/
+    BookingBlockedHandler.php  (nouveau — email voyageur blocage)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+14. COUVERTURE DES SPECS OFFICIELLES (Parties A–E)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Analyse croisée entre les spécifications officielles du projet et la conception
+existante. Chaque exigence est marquée : ✓ COUVERT | ⚠ PARTIEL | ✗ ABSENT
+
+──────────────────────────────────────────────────────────────────────────────
+PARTIE A — Gestion des disponibilités (§5)
+──────────────────────────────────────────────────────────────────────────────
+
+A.1 Interface de gestion hôte
+  ✓ Tableau de bord hôte (/host/dashboard) : prévu en section 9
+  ✗ Vue calendrier mensuelle du logement       ← NON COUVERTE
+      L'hôte doit voir un calendrier de son logement (vue mensuelle).
+      La conception ne prévoit que la liste des demandes pending.
+      → AJOUTER : route GET /host/properties/{id}/calendar
+        + vue Twig avec grille mensuelle des dates occupées/libres
+        + données : réservations CONFIRMED sur ce logement pour le mois affiché
+
+  ✗ Déclaration de périodes d'indisponibilité  ← NON COUVERTE
+      L'hôte doit pouvoir bloquer des dates (travaux, usage personnel).
+      L'entité PropertyAvailability existe déjà dans le projet
+      (src/Entity/PropertyAvailability.php) — elle modélise exactement ce besoin.
+      → AJOUTER :
+        - Utiliser PropertyAvailability avec un champ type ('blocked'|'available')
+          ou un boolean isBlocked + dateRange (startDate, endDate)
+        - Route POST /host/properties/{id}/block-dates
+        - L'algorithme de dispo (R5) doit aussi vérifier PropertyAvailability
+
+  ⚠ Durée de séjour minimum / tarif journalier spécifique (optionnel)
+      L'entité Property ne possède pas de champ minNights. PropertyAvailability
+      pourrait stocker un priceOverride. Ces champs sont optionnels dans le spec.
+      → NON BLOQUANT pour la livraison, documenter comme hors périmètre V1.
+
+A.2 Algorithme de disponibilité
+  ✓ Condition 1 — property.status === 'published' (couvert R4, section 5.1)
+  ✗ Condition 2 — Aucun jour manuellement bloqué par l'hôte  ← NON COUVERTE
+      La règle R5 vérifie uniquement les réservations CONFIRMED.
+      Elle ne consulte pas PropertyAvailability.
+      → CORRIGER R5 dans BookingService :
+        findAvailable() du PropertyAvailabilityRepository doit être appelé
+        AVANT de créer la réservation pour valider qu'aucune date n'est bloquée.
+  ✓ Condition 3 — Aucune réservation CONFIRMED ne chevauche (couvert R5)
+  ✓ Condition 4 — maxGuests suffisant (couvert R3)
+
+──────────────────────────────────────────────────────────────────────────────
+PARTIE B — Parcours de réservation (§6)
+──────────────────────────────────────────────────────────────────────────────
+
+B.1 Expérience Voyageur
+  ✓ 1. Sélection des dates depuis la fiche logement
+       Le bouton "Réserver" sur logement.html.twig est prévu (section 13.3)
+  ✓ 2. Page de récapitulatif (checkout)
+       Implicitement couvert par le formulaire BookingType + vue de confirmation
+       → PRÉCISER : ajouter une route GET /properties/{id}/checkout
+         qui affiche un récap (dates, prix calculé, nbGuests) AVANT soumission
+  ✓ 3. Validation de disponibilité en temps réel lors de la soumission
+       Couvert par BookingService::createBooking() (règles R1–R5)
+  ✓ 4. Création de la réservation (CONFIRMED ou PENDING selon instantBooking)
+  ✓ 5. Redirection + flash message (mentionné section 6 architecture)
+  ✓ 6. Déclenchement asynchrone des notifications email
+
+B.2 Espace Hôte — Modération des demandes
+  ✓ Liste des demandes PENDING (/host/dashboard)
+  ✓ Accepter une demande (pending → confirmed)
+  ⚠ Refuser avec motif  ← PARTIELLEMENT COUVERT
+      La conception prévoit reject() dans BookingService (section 6.2) mais ne
+      spécifie pas de champ "motif de refus" sur la Reservation.
+      Le champ cancellationReason existe déjà sur Reservation et peut servir
+      de motif de refus.
+      → PRÉCISER dans BookingService::reject() : renseigner cancellationReason
+        avec le motif saisi par l'hôte. Le formulaire de refus doit exposer
+        ce champ (textarea obligatoire lors d'un refus).
+  ✓ Notification email asynchrone à chaque action (BookingCancelledMessage)
+
+B.3 Processus d'annulation
+  ✗ Motif obligatoire à l'annulation  ← NON EXPLICITEMENT COUVERT
+      Le champ cancellationReason existe sur Reservation mais la conception
+      ne précise pas qu'il est OBLIGATOIRE lors d'une annulation.
+      → AJOUTER dans BookingService::cancel() et ::reject() :
+        validation que $reason n'est pas vide avant de persister.
+        Côté formulaire : cancellationReason required: true quand status → cancelled.
+        (Cohérent avec le @Assert\Expression déjà présent sur l'entité Reservation)
+  ✓ Libération immédiate des dates dans le calendrier
+      La transition confirmed → cancelled retire la réservation de l'algorithme
+      de dispo (qui ne filtre que sur CONFIRMED). Effet immédiat. ✓
+  ✓ Notification des deux parties (BookingCancelledMessage → guest + hôte)
+
+──────────────────────────────────────────────────────────────────────────────
+PARTIE C — Moteur de recherche (§7)
+──────────────────────────────────────────────────────────────────────────────
+
+  ✗ Route /search avec filtres destination / checkin+checkout / guests  ← ABSENTE
+      La conception ne couvre pas le moteur de recherche. Il existe déjà
+      templates/home/search.html.twig et HomeController dans le projet,
+      mais la logique de filtrage sur disponibilités n'est pas documentée.
+
+      → AJOUTER à la conception :
+
+      Route : GET /search
+      Contrôleur : HomeController::search() (probablement existant, à enrichir)
+      Paramètres GET :
+        destination (string) → LIKE sur property.address.city ou addressLine1
+        checkin     (date)   → filtre de dispo
+        checkout    (date)   → filtre de dispo
+        guests      (int)    → WHERE property.maxGuests >= :guests
+
+      PropertyRepository::findAvailableForSearch() :
+        SELECT p FROM properties p
+        JOIN p.address a
+        WHERE p.status = 'published'
+          AND p.maxGuests >= :guests
+          AND a.city LIKE :destination
+          AND NOT EXISTS (
+            SELECT r FROM reservations r
+            WHERE r.property = p
+              AND r.status = 'confirmed'
+              AND r.checkinDate < :checkout
+              AND r.checkoutDate > :checkin
+          )
+          AND NOT EXISTS (
+            SELECT pa FROM property_availability pa
+            WHERE pa.property = p
+              AND pa.isBlocked = true
+              AND pa.startDate < :checkout
+              AND pa.endDate > :checkin
+          )
+
+      Note : PropertyAvailability et PropertyAddress existent déjà dans le projet.
+      La jointure sur l'adresse est déjà présente dans ReservationRepository.
+
+──────────────────────────────────────────────────────────────────────────────
+PARTIE D — Notifications transactionnelles (§8)
+──────────────────────────────────────────────────────────────────────────────
+
+  ✓ Transport Messenger (doctrine://default ou RabbitMQ) — section 7.1
+  ✓ Nouvelle demande (Pending) → notif hôte (BookingRequestedMessage)
+  ⚠ Données minimales requises dans l'email "Nouvelle demande" :
+      La spec exige : logement, dates, infos voyageur, total, CTA d'action.
+      La conception mentionne uniquement booking_id et listing_id dans le DTO.
+      → ENRICHIR BookingRequestedMessage avec :
+          - checkinDate, checkoutDate, guestsCount
+          - totalPrice, currency
+          - guestFirstName, guestEmail
+          - URL CTA vers /host/bookings/{id}/confirm (lien dans l'email)
+  ✓ Réservation validée → notif voyageur + hôte (BookingConfirmedMessage)
+      Actuellement prévu uniquement vers le guest. La spec exige VOYAGEUR + HÔTE.
+      → AJOUTER l'hôte en destinataire de BookingConfirmedMessage.
+  ✓ Refus ou Annulation → partie(s) concernée(s) avec motif explicite
+      BookingCancelledMessage prévu vers guest + hôte. Le motif
+      (cancellationReason) doit être inclus dans le DTO.
+      → ENRICHIR BookingCancelledMessage avec cancellationReason.
+  ✓ Validation via Mailpit (http://localhost:8025)
+      Le MAILER_DSN est actuellement smtp://localhost:1025 (MailHog).
+      → CORRIGER en section 11 : Mailpit écoute sur le port 1025 (SMTP) et
+        expose son UI sur le port 8025. Aucun changement de config nécessaire
+        si Mailpit est installé à la place de MailHog — même port SMTP.
+        MAILER_DSN=smtp://localhost:1025 est correct pour Mailpit. ✓
+
+──────────────────────────────────────────────────────────────────────────────
+PARTIE E — Synchronisation iCal : Export (§9)
+──────────────────────────────────────────────────────────────────────────────
+
+  ✗ Export iCal (.ics) par logement  ← TOTALEMENT ABSENT DE LA CONCEPTION
+
+      L'entité PropertyICalSync existe déjà dans le projet
+      (src/Entity/PropertyICalSync.php) — elle contient probablement un token
+      de synchronisation. C'est exactement le mécanisme décrit dans le spec.
+
+      → AJOUTER à la conception :
+
+      Route : GET /api/properties/{id}/calendar.ics?token={secret}
+      Contrôleur : ICalController::export()
+      Sécurité :
+        - NE PAS utiliser #[IsGranted] — l'URL est publique mais tokenisée
+        - Charger le PropertyICalSync par property + token
+        - Si token invalide → 404 (ne pas révéler l'existence du logement)
+        - Si token valide → générer le fichier .ics
+
+      Service : ICalExportService
+        generateIcs(Property $property): string
+          → Requête ReservationRepository::findConfirmedByProperty($property)
+          → Pour chaque réservation confirmed :
+              BEGIN:VEVENT
+              UID:res-{reservation.id}@cours-symfony.local
+              SUMMARY:{property.title} — {guest.profile.firstName} {guest.profile.lastName}
+              DTSTART;VALUE=DATE:{checkinDate format Ymd}
+              DTEND;VALUE=DATE:{checkoutDate format Ymd}
+              DESCRIPTION:Séjour {nb_nuits} nuits — {totalPrice}{currency} — {guest.email}
+              END:VEVENT
+          → Envelopper dans BEGIN:VCALENDAR / END:VCALENDAR
+          → Header Content-Type: text/calendar; charset=UTF-8
+          → Header Content-Disposition: attachment; filename="calendar-{id}.ics"
+
+      Gestion du token :
+        - PropertyICalSync stocke calendarToken (string, unique)
+        - L'hôte peut régénérer son token depuis /host/properties/{id}/settings
+        - En cas de révocation : ancien token → 404 immédiat
+
+      Entité PropertyICalSync (déjà présente) :
+        Vérifier que les champs calendarToken et property existent.
+        Si le champ token n'est pas présent → ajouter via migration nullable.
+
+──────────────────────────────────────────────────────────────────────────────
+RÉCAPITULATIF DES GAPS — CE QUI DOIT ÊTRE AJOUTÉ À LA CONCEPTION
+──────────────────────────────────────────────────────────────────────────────
+
+  ┌────┬─────────────────────────────────────────────────┬──────────┬────────┐
+  │ ID │ Gap                                             │ Partie   │ Prio   │
+  ├────┼─────────────────────────────────────────────────┼──────────┼────────┤
+  │ G1 │ Vue calendrier mensuelle hôte                   │ A.1      │ HAUTE  │
+  │ G2 │ Blocage de dates (PropertyAvailability)         │ A.1/A.2  │ HAUTE  │
+  │ G3 │ Algorithme dispo vérifie aussi les dates        │ A.2      │ HAUTE  │
+  │    │ bloquées (pas seulement les CONFIRMED)          │          │        │
+  │ G4 │ Page checkout (récap avant soumission)          │ B.1      │ HAUTE  │
+  │ G5 │ Motif obligatoire sur refus ET annulation       │ B.2/B.3  │ HAUTE  │
+  │ G6 │ Route /search avec filtres dispo                │ C        │ HAUTE  │
+  │ G7 │ Email "Demande" enrichi (CTA + données voyageur)│ D        │ MODÉRÉ │
+  │ G8 │ Email "Confirmée" envoyé aussi à l'hôte         │ D        │ MODÉRÉ │
+  │ G9 │ cancellationReason dans BookingCancelledMessage │ D        │ MODÉRÉ │
+  │G10 │ Export iCal /api/properties/{id}/calendar.ics   │ E        │ HAUTE  │
+  │G11 │ ICalExportService + sécurisation par token      │ E        │ HAUTE  │
+  └────┴─────────────────────────────────────────────────┴──────────┴────────┘
+
+  Ce qui était DÉJÀ COUVERT et reste valide :
+    ✓ Transitions d'état (pending/confirmed/completed/cancelled/expired)
+    ✓ Mode instantBooking par logement
+    ✓ Traitements asynchrones Messenger
+    ✓ Scheduler expiration 48h
+    ✓ Voters (BookingVoter, ListingVoter)
+    ✓ Protection CSRF
+    ✓ ReservationStatusHistory (audit trail)
+    ✓ UUID sur toutes les entités
+    ✓ Analyse de régression (section 13)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FIN DU DOCUMENT DE CONCEPTION
+================================================================================
+
+Modélisation temporelle : Le jour de check-out est-il réservable par un nouveau voyageur ?
+Oui Il est demandé au voyageur de check-in à une certaine heure et de check-out à une certaine heure
+ (paramètrable par l'hote), alors après le départ du voyageur1 il a un laps de temps pour préparer le logement
+ pour le voyageur2.
+
+Comment gérez-vous la superposition d'un départ à 11h et d'une arrivée à 15h dans votre schéma
+de données ?
+Les réservations se font par nuit, donc le jour du check-out (qui suit la dernière nuit) n'est pas complexité
+Il n'y a ducoup pas de superposition.
+
+Gestion des états : Une demande Pending bloque-t-elle les dates ? Analysez les risques liés à
+ce choix (blocage abusif vs overbooking).
+Non elle ne bloque pas, de sorte à ce que l'hote puisse choisir la demande qu'il préfère (à son bon jugement)
+et refuser l'autre, cependant je n'ai pas mis de sécurité/vérification d'un dédoublement sur plusieurs dates,
+ou une suggestion de la réservation la plus rentable pour lui, je n'ai pas sécurisé le fait que 2 demandes puissent
+être acceptés simultanément.
+
+Concurrence : Comment votre base de données réagit-elle si deux utilisateurs valident un paiement
+à la milliseconde près pour le même logement et les mêmes dates ?
+D'après le resultat du test unitaire généré, si deux hôtes cliquent "Accepter" à la milliseconde près 
+sur deux pending chevauchantes, les deux passeraient confirmed — la vérification de chevauchement n'est 
+faite qu'à la création de la demande, pas à la confirmation. 
+-> php vendor/bin/phpunit tests/Service/ConcurrentBookingTest.php --testdox 2>&1
+
+Performance : Comment valider la disponibilité d'un logement sur 20 nuits consécutives sans
+saturer la base de requêtes SQL itératives ?
+Au lieu de faire 20 requêtes SQL (une par nuit), mon PropertyRepository::findAvailableForSearch()
+utilise une sous-requête NOT EXISTS qui vérifie en une seule requête si une réservation confirmée
+chevauche la période demandée (checkinDate < checkout AND checkoutDate > checkin).
+
+Asynchronisme : Pourquoi l'envoi d'email doit-il préférentiellement intervenir après le flush() de
+l'ORM ? Quelle est la stratégie si RabbitMQ tombe en panne ?
+Si le transport Messenger tombe, les messages restent en table messenger_messages non consommés — ils
+ne sont pas perdus et seront traités au prochain messenger:consume.
+
+Structure SQL : Justifiez votre choix d'architecture pour le calendrier : table de jours individuels
+( PropertyAvailability ) ou table de périodes ( date_start , date_end ).
+J'ai choisi la table de jours individuels. Avantage : modifier un jour précis (bloquer un lundi spécifique,
+débloquer un créneau). L'hote intervient moins souvent pour bloquer que pour créer des disponibilités il 
+est donc plus logique de rendre toujours disponible sauf quand il le décide, sinon il devrait ouvrir des
+créneaux manuellement trop fréquemment.

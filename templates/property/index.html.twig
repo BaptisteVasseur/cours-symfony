@@ -2,6 +2,16 @@
 
 {% block page_title %}Gestion des annonces{% endblock %}
 
+{% macro sort_link(label, column, currentSort, currentDir, route, params) %}
+    {% set newDir = (currentSort == column and currentDir == 'ASC') ? 'DESC' : 'ASC' %}
+    {% set icon = currentSort == column ? (currentDir == 'ASC' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort' %}
+    <a href="{{ path(route, params|merge({sort: column, dir: newDir})) }}"
+       class="inline-flex items-center gap-1 hover:text-gray-700 transition {{ currentSort == column ? 'text-gray-700' : '' }}">
+        {{ label }}
+        <i class="fa-solid {{ icon }} text-[10px]"></i>
+    </a>
+{% endmacro %}
+
 {% block content %}
     {% for label, messages in app.flashes %}
         {% for message in messages %}
@@ -42,27 +52,53 @@
     </div>
 
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h3 class="font-bold text-gray-900">Liste des annonces</h3>
-            <div class="flex items-center gap-2 flex-wrap">
-                <a href="{{ path('app_property_index') }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter is null ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">Toutes</a>
-                <a href="{{ path('app_property_index', { status: 'published' }) }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter == 'published' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">Publiées</a>
-                <a href="{{ path('app_property_index', { status: 'pending' }) }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter == 'pending' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">En attente</a>
-                <a href="{{ path('app_property_new') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brandHover text-white font-semibold text-sm px-4 py-2 rounded-lg transition ml-auto">
-                    <i class="fa-solid fa-plus text-xs"></i>
-                    Nouvelle annonce
-                </a>
+        <div class="px-6 py-4 border-b border-gray-200 flex flex-col gap-3">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h3 class="font-bold text-gray-900">Liste des annonces</h3>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <a href="{{ path('app_property_index', {q: search, sort: sort, dir: dir}) }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter is null ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">Toutes</a>
+                    <a href="{{ path('app_property_index', {status: 'published', q: search, sort: sort, dir: dir}) }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter == 'published' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">Publiées</a>
+                    <a href="{{ path('app_property_index', {status: 'pending', q: search, sort: sort, dir: dir}) }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter == 'pending' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">En attente</a>
+                    <a href="{{ path('app_property_new') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brandHover text-white font-semibold text-sm px-4 py-2 rounded-lg transition ml-auto">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        Nouvelle annonce
+                    </a>
+                </div>
             </div>
+            <form method="GET" action="{{ path('app_property_index') }}" class="flex gap-2">
+                {% if statusFilter %}<input type="hidden" name="status" value="{{ statusFilter }}">{% endif %}
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <input type="hidden" name="dir" value="{{ dir }}">
+                <div class="relative flex-1 max-w-sm">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Rechercher par titre, ville..."
+                           class="w-full pl-8 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                </div>
+                <button type="submit" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
+                    Rechercher
+                </button>
+                {% if search %}
+                    <a href="{{ path('app_property_index', {status: statusFilter, sort: sort, dir: dir}) }}" class="px-3 py-2 text-gray-400 hover:text-gray-600 text-sm transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                {% endif %}
+            </form>
         </div>
 
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse text-sm">
                 <thead>
                     <tr class="bg-gray-50 text-gray-400 font-semibold border-b border-gray-200 uppercase text-[11px] tracking-wider">
-                        <th class="px-6 py-3">Annonce</th>
+                        <th class="px-6 py-3">
+                            {{ _self.sort_link('Annonce', 'title', sort, dir, 'app_property_index', {status: statusFilter, q: search}) }}
+                        </th>
                         <th class="px-6 py-3">Type</th>
-                        <th class="px-6 py-3">Statut</th>
-                        <th class="px-6 py-3">Prix / nuit</th>
+                        <th class="px-6 py-3">
+                            {{ _self.sort_link('Statut', 'status', sort, dir, 'app_property_index', {status: statusFilter, q: search}) }}
+                        </th>
+                        <th class="px-6 py-3">
+                            {{ _self.sort_link('Prix / nuit', 'pricePerNight', sort, dir, 'app_property_index', {status: statusFilter, q: search}) }}
+                        </th>
                         <th class="px-6 py-3">Capacité</th>
                         <th class="px-6 py-3 text-right">Actions</th>
                     </tr>
@@ -82,4 +118,106 @@
             </table>
         </div>
     </div>
+
+    {# ── Modale refus annonce ────────────────────────────────────── #}
+    <dialog id="reject-modal"
+            class="rounded-2xl shadow-xl border border-gray-200 p-0 w-full max-w-md backdrop:bg-black/40"
+            onclick="if(event.target===this)this.close()">
+        <div class="p-6">
+            <div class="flex items-start justify-between mb-4">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-900">Refuser l'annonce</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">Un motif est obligatoire.</p>
+                </div>
+                <button type="button" onclick="document.getElementById('reject-modal').close()"
+                        class="text-gray-400 hover:text-gray-600 p-1 rounded-lg transition">
+                    <i class="fa-solid fa-xmark text-base"></i>
+                </button>
+            </div>
+
+            <form id="reject-modal-form" method="post" action="" class="space-y-4">
+                <input type="hidden" name="_token" id="reject-modal-token" value="">
+
+                <div>
+                    <label for="reject-preset" class="block text-sm font-medium text-gray-700 mb-1">Motif du refus</label>
+                    <select id="reject-preset" name="rejection_reason_preset"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400">
+                        <option value="">— Sélectionner un motif —</option>
+                        <option value="Annonce non conforme aux règles de la plateforme">Non-conforme aux règles de la plateforme</option>
+                        <option value="Photos insuffisantes ou trompeuses">Photos insuffisantes ou trompeuses</option>
+                        <option value="Description incomplète ou incorrecte">Description incomplète ou incorrecte</option>
+                        <option value="Prix manifestement incorrect">Prix manifestement incorrect</option>
+                        <option value="Propriété déjà présente sur la plateforme">Doublon détecté</option>
+                        <option value="other">Autre (préciser ci-dessous)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label for="reject-custom" class="block text-sm font-medium text-gray-700 mb-1">Précisions <span class="text-gray-400 font-normal">(optionnel)</span></label>
+                    <textarea id="reject-custom" name="rejection_reason_custom" rows="3" maxlength="1000"
+                              placeholder="Détails supplémentaires…"
+                              class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 resize-none"></textarea>
+                </div>
+
+                <input type="hidden" id="reject-final-reason" name="rejection_reason" value="">
+
+                <div class="flex gap-3 pt-1">
+                    <button type="submit" id="reject-submit-btn"
+                            class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm py-2.5 rounded-xl transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-ban"></i>
+                        Confirmer le refus
+                    </button>
+                    <button type="button" onclick="document.getElementById('reject-modal').close()"
+                            class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold text-sm py-2.5 rounded-xl transition">
+                        Annuler
+                    </button>
+                </div>
+            </form>
+        </div>
+    </dialog>
+
+    <script>
+    function openRejectModal(btn) {
+        const modal = document.getElementById('reject-modal');
+        document.getElementById('reject-modal-form').action = btn.dataset.rejectUrl;
+        document.getElementById('reject-modal-token').value  = btn.dataset.rejectToken;
+        document.getElementById('reject-preset').value = '';
+        document.getElementById('reject-custom').value = '';
+        modal.showModal();
+    }
+
+    document.getElementById('reject-modal-form').addEventListener('submit', function (e) {
+        const preset  = document.getElementById('reject-preset').value.trim();
+        const custom  = document.getElementById('reject-custom').value.trim();
+        const finalEl = document.getElementById('reject-final-reason');
+
+        if (preset === '' && custom === '') {
+            e.preventDefault();
+            document.getElementById('reject-preset').classList.add('border-red-500');
+            return;
+        }
+
+        if (preset === 'other' || preset === '') {
+            finalEl.value = custom !== '' ? custom : preset;
+        } else {
+            finalEl.value = custom !== '' ? preset + ' — ' + custom : preset;
+        }
+
+        if (finalEl.value.trim() === '' || finalEl.value === 'other') {
+            e.preventDefault();
+            document.getElementById('reject-custom').classList.add('border-red-500');
+        }
+    });
+
+    document.getElementById('reject-preset').addEventListener('change', function () {
+        this.classList.remove('border-red-500');
+        document.getElementById('reject-custom').classList.remove('border-red-500');
+        const customRow = document.getElementById('reject-custom').closest('div');
+        if (this.value === 'other') {
+            document.getElementById('reject-custom').placeholder = 'Précisez le motif (obligatoire)…';
+        } else {
+            document.getElementById('reject-custom').placeholder = 'Détails supplémentaires…';
+        }
+    });
+    </script>
 {% endblock %}

@@ -13,7 +13,6 @@ use Symfony\Component\Form\Extension\Core\Type\ChoiceType;
 use Symfony\Component\Form\Extension\Core\Type\DateType;
 use Symfony\Component\Form\Extension\Core\Type\IntegerType;
 use Symfony\Component\Form\Extension\Core\Type\NumberType;
-use Symfony\Component\Form\Extension\Core\Type\TextareaType;
 use Symfony\Component\Form\FormBuilderInterface;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -50,6 +49,7 @@ class ReservationType extends AbstractType
                     'Confirmée' => 'confirmed',
                     'Terminée' => 'completed',
                     'Annulée' => 'cancelled',
+                    'Expirée' => 'expired',
                 ],
             ])
             ->add('totalPrice', NumberType::class, [
@@ -78,10 +78,6 @@ class ReservationType extends AbstractType
                     'USD ($)' => 'USD',
                     'GBP (£)' => 'GBP',
                 ],
-            ])
-            ->add('cancellationReason', TextareaType::class, [
-                'label' => 'Motif d\'annulation',
-                'required' => false,
             ])
         ;
     }

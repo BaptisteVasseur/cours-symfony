@@ -116,6 +116,9 @@ class UserFixture extends Fixture
 
         foreach ($users as [$reference, $email, $firstName, $lastName, $status, $verified, $roles, $identityStatus, $withOauth]) {
             $user = $this->createUser($email, $status, $verified, $roles);
+            if (in_array(Roles::HOST, $roles, true)) {
+                $user->regenerateCalendarToken();
+            }
             $manager->persist($user);
 
             $profile = new UserProfile();

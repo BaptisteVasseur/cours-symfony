@@ -22,17 +22,25 @@ use Symfony\Component\Security\Http\Attribute\IsGranted;
 final class UserController extends AbstractController
 {
     #[Route(name: 'app_user_index', methods: ['GET'])]
-    public function index(UserRepository $userRepository): Response
+    public function index(Request $request, UserRepository $userRepository): Response
     {
-        $users = $userRepository->findForListing();
+        $search = $request->query->getString('q');
+        $search = $search !== '' ? $search : null;
+        $sort = $request->query->getString('sort', 'createdAt');
+        $dir  = $request->query->getString('dir', 'DESC');
+
+        $users = $userRepository->findForListing($search, $sort, $dir);
 
         return $this->render('user/index.html.twig', [
-            'users' => $users,
-            'total' => count($users),
-            'active' => count(array_filter($users, static fn (User $u): bool => $u->getStatus() === 'active')),
-            'pending' => count(array_filter($users, static fn (User $u): bool => $u->getStatus() === 'pending')),
-            'suspended' => count(array_filter($users, static fn (User $u): bool => $u->getStatus() === 'suspended')),
+            'users'      => $users,
+            'total'      => count($users),
+            'active'     => count(array_filter($users, static fn (User $u): bool => $u->getStatus() === 'active')),
+            'pending'    => count(array_filter($users, static fn (User $u): bool => $u->getStatus() === 'pending')),
+            'suspended'  => count(array_filter($users, static fn (User $u): bool => $u->getStatus() === 'suspended')),
             'roleLabels' => Roles::LABELS,
+            'search'     => $search ?? '',
+            'sort'       => $sort,
+            'dir'        => $dir,
         ]);
     }
 

@@ -1,0 +1,254 @@
+{% extends 'layout/user.html.twig' %}
+
+{% form_theme form _self %}
+{% block form_errors %}
+    {% if errors|length > 0 %}
+        <ul class="mt-1 space-y-0.5">
+            {% for error in errors %}
+                <li class="text-xs text-red-600 flex items-center gap-1">
+                    <i class="fa-solid fa-circle-exclamation text-[10px]"></i>
+                    {{ error.message }}
+                </li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+{% endblock %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+
+    <a href="{{ path('host_my_properties') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i>
+        Retour à mes propriétés
+    </a>
+
+    <div class="mb-8">
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">
+            {% if promoteToHost is defined and not promoteToHost %}
+                Ajouter un logement
+            {% else %}
+                Proposez votre logement
+            {% endif %}
+        </h1>
+        <p class="text-gray-500 text-sm mt-1">
+            Votre annonce sera soumise à notre équipe de modération et publiée après validation.
+        </p>
+    </div>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-6 px-4 py-3 rounded-lg text-sm flex items-start gap-3
+                {% if label == 'success' %}bg-green-50 text-green-700 border border-green-200
+                {% else %}bg-red-50 text-red-700 border border-red-200{% endif %}">
+                <i class="fa-solid {% if label == 'success' %}fa-circle-check{% else %}fa-circle-exclamation{% endif %} mt-0.5 shrink-0"></i>
+                <span>{{ message }}</span>
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {{ form_start(form, { attr: { class: 'space-y-6' } }) }}
+
+    {# Bannière d'erreurs globale si le form a été soumis et est invalide #}
+    {% if form.vars.submitted and not form.vars.valid %}
+        <div class="bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-start gap-3">
+            <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0"></i>
+            <div>
+                <p class="font-semibold mb-1">Veuillez corriger les erreurs ci-dessous avant de soumettre.</p>
+                {{ form_errors(form) }}
+            </div>
+        </div>
+    {% endif %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        {# ── Colonne gauche ────────────────────────────────────────── #}
+        <div class="space-y-6">
+
+            <div class="bg-white border border-gray-200 rounded-2xl p-6">
+                <h2 class="text-sm font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100 uppercase tracking-wide">Informations générales</h2>
+                <div class="space-y-4">
+                    {% for f in [form.title, form.description, form.propertyType, form.cancellationPolicy] %}
+                        {% set err = f.vars.errors|length > 0 %}
+                        <div>
+                            {{ form_label(f, null, { label_attr: { class: 'block text-xs font-semibold uppercase tracking-wide mb-1 ' ~ (err ? 'text-red-500' : 'text-gray-500') } }) }}
+                            {{ form_widget(f, { attr: { class: 'w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 bg-white resize-none ' ~ (err ? 'border-red-400 focus:ring-red-300 bg-red-50' : 'border-gray-300 focus:ring-brand') } }) }}
+                            {{ form_errors(f) }}
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-2xl p-6">
+                <h2 class="text-sm font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100 uppercase tracking-wide">Adresse</h2>
+                <div class="space-y-4">
+                    {% set err = form.addressLine1.vars.errors|length > 0 %}
+                    <div>
+                        {{ form_label(form.addressLine1, null, { label_attr: { class: 'block text-xs font-semibold uppercase tracking-wide mb-1 ' ~ (err ? 'text-red-500' : 'text-gray-500') } }) }}
+                        {{ form_widget(form.addressLine1, { attr: { class: 'w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ' ~ (err ? 'border-red-400 focus:ring-red-300 bg-red-50' : 'border-gray-300 focus:ring-brand') } }) }}
+                        {{ form_errors(form.addressLine1) }}
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        {% for f in [form.city, form.country] %}
+                            {% set err = f.vars.errors|length > 0 %}
+                            <div>
+                                {{ form_label(f, null, { label_attr: { class: 'block text-xs font-semibold uppercase tracking-wide mb-1 ' ~ (err ? 'text-red-500' : 'text-gray-500') } }) }}
+                                {{ form_widget(f, { attr: { class: 'w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ' ~ (err ? 'border-red-400 focus:ring-red-300 bg-red-50' : 'border-gray-300 focus:ring-brand') } }) }}
+                                {{ form_errors(f) }}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {# ── Colonne droite ────────────────────────────────────────── #}
+        <div class="space-y-6">
+
+            <div class="bg-white border border-gray-200 rounded-2xl p-6">
+                <h2 class="text-sm font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100 uppercase tracking-wide">Capacité & tarifs</h2>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    {% for f in [form.maxGuests, form.bedrooms, form.beds, form.bathrooms] %}
+                        {% set err = f.vars.errors|length > 0 %}
+                        <div>
+                            {{ form_label(f, null, { label_attr: { class: 'block text-xs font-semibold uppercase tracking-wide mb-1 ' ~ (err ? 'text-red-500' : 'text-gray-500') } }) }}
+                            {{ form_widget(f, { attr: { class: 'w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 text-center ' ~ (err ? 'border-red-400 focus:ring-red-300 bg-red-50' : 'border-gray-300 focus:ring-brand') } }) }}
+                            {{ form_errors(f) }}
+                        </div>
+                    {% endfor %}
+                </div>
+                {% for f in [form.pricePerNight, form.cleaningFee, form.securityDeposit] %}
+                    {% set err = f.vars.errors|length > 0 %}
+                    <div class="mb-4">
+                        {{ form_label(f, null, { label_attr: { class: 'block text-xs font-semibold uppercase tracking-wide mb-1 ' ~ (err ? 'text-red-500' : 'text-gray-500') } }) }}
+                        <div class="relative">
+                            {{ form_widget(f, { attr: { class: 'w-full border rounded-lg pl-4 pr-8 py-2.5 text-sm focus:outline-none focus:ring-2 ' ~ (err ? 'border-red-400 focus:ring-red-300 bg-red-50' : 'border-gray-300 focus:ring-brand') } }) }}
+                            <span class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs">€</span>
+                        </div>
+                        {{ form_errors(f) }}
+                    </div>
+                {% endfor %}
+            </div>
+
+            <div class="bg-white border border-gray-200 rounded-2xl p-6">
+                <h2 class="text-sm font-bold text-gray-900 mb-4 pb-2 border-b border-gray-100 uppercase tracking-wide">Horaires & options</h2>
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    {% for f in [form.checkinTime, form.checkoutTime] %}
+                        {% set err = f.vars.errors|length > 0 %}
+                        <div>
+                            {{ form_label(f, null, { label_attr: { class: 'block text-xs font-semibold uppercase tracking-wide mb-1 ' ~ (err ? 'text-red-500' : 'text-gray-500') } }) }}
+                            {{ form_widget(f, { attr: { class: 'w-full border rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 ' ~ (err ? 'border-red-400 focus:ring-red-300 bg-red-50' : 'border-gray-300 focus:ring-brand') } }) }}
+                            {{ form_errors(f) }}
+                        </div>
+                    {% endfor %}
+                </div>
+                <label class="flex items-center gap-3 cursor-pointer">
+                    {{ form_widget(form.instantBooking, { attr: { class: 'w-4 h-4 accent-brand' } }) }}
+                    <span class="text-sm text-gray-700">{{ form_label(form.instantBooking) }}</span>
+                </label>
+            </div>
+
+        </div>
+    </div>
+
+    {# ── Photos (uniquement pour HostPropertyType) ────────────────── #}
+    {% if form.imageUrls is defined %}
+    <div class="bg-white border border-gray-200 rounded-2xl p-6">
+        {# Champs ajoutés dynamiquement via JS #}
+        <div id="photo-entries" class="space-y-2 mb-3">
+            {# Les entrées existantes (re-render après erreur) #}
+            {% for entry in form.imageUrls %}
+                <div class="flex items-center gap-2 photo-entry">
+                    <span class="text-xs text-gray-400 w-16 shrink-0">
+                        {% if loop.first %}Cover{% else %}Photo {{ loop.index }}{% endif %}
+                    </span>
+                    {{ form_widget(entry, { attr: { class: 'flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand' } }) }}
+                    <button type="button" onclick="this.closest('.photo-entry').remove(); updateLabels();" class="text-gray-400 hover:text-red-500 transition shrink-0">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
+                </div>
+            {% endfor %}
+        </div>
+
+        <button type="button" id="add-photo-btn"
+                class="inline-flex items-center gap-2 text-sm text-brand hover:text-brandHover font-medium transition">
+            <i class="fa-solid fa-plus"></i> Ajouter une photo
+        </button>
+        {{ form_errors(form.imageUrls) }}
+    </div>
+
+    <script>
+    const _photoList = document.getElementById('photo-entries');
+    const _addBtn    = document.getElementById('add-photo-btn');
+    const _maxPhotos = 10;
+
+    function updateLabels() {
+        _photoList.querySelectorAll('.photo-entry').forEach((entry, i) => {
+            const span = entry.querySelector('span');
+            if (span) span.textContent = i === 0 ? 'Cover' : 'Photo ' + (i + 1);
+            const input = entry.querySelector('input');
+            if (input) input.name = `host_property[imageUrls][${i}]`;
+        });
+    }
+
+    function addPhotoEntry() {
+        const count = _photoList.querySelectorAll('.photo-entry').length;
+        if (count >= _maxPhotos) return;
+        const label = count === 0 ? 'Cover' : 'Photo ' + (count + 1);
+        const div   = document.createElement('div');
+        div.className = 'flex items-center gap-2 photo-entry';
+        div.innerHTML = `
+            <span class="text-xs text-gray-400 w-16 shrink-0">${label}</span>
+            <input type="url" name="host_property[imageUrls][${count}]" placeholder="https://…"
+                   class="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand">
+            <button type="button" onclick="this.closest('.photo-entry').remove(); updateLabels();"
+                    class="text-gray-400 hover:text-red-500 transition shrink-0">
+                <i class="fa-solid fa-xmark"></i>
+            </button>`;
+        _photoList.appendChild(div);
+        updateLabels();
+    }
+
+    _addBtn.addEventListener('click', addPhotoEntry);
+
+    // Ajouter une première entrée si aucune photo existante au chargement
+    if (_photoList.querySelectorAll('.photo-entry').length === 0) {
+        addPhotoEntry();
+    }
+    </script>
+    {% endif %}
+
+    <div class="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-800 flex gap-3">
+        <i class="fa-solid fa-circle-info mt-0.5 shrink-0"></i>
+        <span>Votre annonce sera soumise à notre équipe de modération et publiée après validation.</span>
+    </div>
+
+    <div class="flex items-center gap-3">
+        <button type="submit"
+                class="bg-brand hover:bg-brandHover text-white font-semibold py-3 px-8 rounded-xl transition text-sm">
+            <i class="fa-solid fa-paper-plane mr-2"></i>
+            Soumettre mon logement
+        </button>
+        <a href="{{ path('host_my_properties') }}"
+           class="text-sm font-semibold text-gray-600 hover:text-gray-900 px-5 py-3 rounded-xl hover:bg-gray-100 transition">
+            Annuler
+        </a>
+    </div>
+
+    {{ form_end(form) }}
+
+</main>
+
+{% if form.vars.submitted and not form.vars.valid %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const first = document.querySelector('.border-red-400, [class*="border-red"]');
+        if (first) {
+            first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            first.focus({ preventScroll: true });
+        }
+    });
+</script>
+{% endif %}
+
+{% endblock %}

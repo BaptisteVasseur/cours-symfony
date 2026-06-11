@@ -71,6 +71,17 @@ class ReservationFixture extends Fixture implements DependentFixtureInterface
                 '840.00',
                 'Changement de programme personnel',
             ],
+            [
+                FixtureReferences::RESERVATION_EXPIRED,
+                $property3,
+                $guest1,
+                '+5 days',
+                '+8 days',
+                1,
+                'expired',
+                '267.00',
+                null,
+            ],
         ];
 
         $invoiceCounter = 1;
@@ -89,6 +100,19 @@ class ReservationFixture extends Fixture implements DependentFixtureInterface
             $reservation->setSecurityDeposit('200.00');
             $reservation->setCurrency('EUR');
             $reservation->setCancellationReason($cancellationReason);
+            $reservation->setCreatedAt(new \DateTimeImmutable());
+            $reservation->setUpdatedAt(new \DateTimeImmutable());
+
+            if ($status === 'cancelled') {
+                $reservation->setCancelledBy('guest');
+            }
+            if ($status === 'expired') {
+                $reservation->setExpiresAt(new \DateTimeImmutable('-1 hour'));
+            }
+            if ($status === 'pending') {
+                $reservation->setExpiresAt(new \DateTimeImmutable('+48 hours'));
+            }
+
             $manager->persist($reservation);
 
             $history = new ReservationStatusHistory();

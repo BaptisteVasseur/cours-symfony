@@ -2,6 +2,16 @@
 
 {% block page_title %}Réservations & revenus{% endblock %}
 
+{% macro sort_link(label, column, currentSort, currentDir, route, params) %}
+    {% set newDir = (currentSort == column and currentDir == 'ASC') ? 'DESC' : 'ASC' %}
+    {% set icon = currentSort == column ? (currentDir == 'ASC' ? 'fa-sort-up' : 'fa-sort-down') : 'fa-sort' %}
+    <a href="{{ path(route, params|merge({sort: column, dir: newDir})) }}"
+       class="inline-flex items-center gap-1 hover:text-gray-700 transition {{ currentSort == column ? 'text-gray-700' : '' }}">
+        {{ label }}
+        <i class="fa-solid {{ icon }} text-[10px]"></i>
+    </a>
+{% endmacro %}
+
 {% block content %}
     {% for label, messages in app.flashes %}
         {% for message in messages %}
@@ -60,12 +70,38 @@
     </div>
 
     <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-        <div class="px-6 py-4 border-b border-gray-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <h3 class="font-bold text-gray-900">Liste des réservations</h3>
-            <a href="{{ path('app_admin_reservation_new') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brandHover text-white font-semibold text-sm px-4 py-2 rounded-lg transition">
-                <i class="fa-solid fa-plus text-xs"></i>
-                Nouvelle réservation
-            </a>
+        <div class="px-6 py-4 border-b border-gray-200 flex flex-col gap-3">
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <h3 class="font-bold text-gray-900">Liste des réservations</h3>
+                <div class="flex items-center gap-2 flex-wrap">
+                    <a href="{{ path('app_admin_reservation_index', {q: search, sort: sort, dir: dir}) }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter is null ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">Toutes</a>
+                    <a href="{{ path('app_admin_reservation_index', {status: 'confirmed', q: search, sort: sort, dir: dir}) }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter == 'confirmed' ? 'bg-emerald-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">Confirmées</a>
+                    <a href="{{ path('app_admin_reservation_index', {status: 'pending', q: search, sort: sort, dir: dir}) }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter == 'pending' ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">En attente</a>
+                    <a href="{{ path('app_admin_reservation_index', {status: 'cancelled', q: search, sort: sort, dir: dir}) }}" class="text-xs font-semibold px-3 py-1.5 rounded-lg transition {{ statusFilter == 'cancelled' ? 'bg-red-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200' }}">Annulées</a>
+                    <a href="{{ path('app_admin_reservation_new') }}" class="inline-flex items-center gap-2 bg-brand hover:bg-brandHover text-white font-semibold text-sm px-4 py-2 rounded-lg transition ml-auto">
+                        <i class="fa-solid fa-plus text-xs"></i>
+                        Nouvelle réservation
+                    </a>
+                </div>
+            </div>
+            <form method="GET" action="{{ path('app_admin_reservation_index') }}" class="flex gap-2">
+                {% if statusFilter %}<input type="hidden" name="status" value="{{ statusFilter }}">{% endif %}
+                <input type="hidden" name="sort" value="{{ sort }}">
+                <input type="hidden" name="dir" value="{{ dir }}">
+                <div class="relative flex-1 max-w-sm">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs"></i>
+                    <input type="text" name="q" value="{{ search }}" placeholder="Rechercher par logement, voyageur..."
+                           class="w-full pl-8 pr-4 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand">
+                </div>
+                <button type="submit" class="px-4 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-medium rounded-lg transition">
+                    Rechercher
+                </button>
+                {% if search %}
+                    <a href="{{ path('app_admin_reservation_index', {status: statusFilter, sort: sort, dir: dir}) }}" class="px-3 py-2 text-gray-400 hover:text-gray-600 text-sm transition">
+                        <i class="fa-solid fa-xmark"></i>
+                    </a>
+                {% endif %}
+            </form>
         </div>
 
         <div class="overflow-x-auto">
@@ -74,9 +110,15 @@
                     <tr class="bg-gray-50 text-gray-400 font-semibold border-b border-gray-200 uppercase text-[11px] tracking-wider">
                         <th class="px-6 py-3">Réservation</th>
                         <th class="px-6 py-3">Voyageur</th>
-                        <th class="px-6 py-3">Dates</th>
-                        <th class="px-6 py-3">Statut</th>
-                        <th class="px-6 py-3">Montant</th>
+                        <th class="px-6 py-3">
+                            {{ _self.sort_link('Dates', 'checkinDate', sort, dir, 'app_admin_reservation_index', {status: statusFilter, q: search}) }}
+                        </th>
+                        <th class="px-6 py-3">
+                            {{ _self.sort_link('Statut', 'status', sort, dir, 'app_admin_reservation_index', {status: statusFilter, q: search}) }}
+                        </th>
+                        <th class="px-6 py-3">
+                            {{ _self.sort_link('Montant', 'totalPrice', sort, dir, 'app_admin_reservation_index', {status: statusFilter, q: search}) }}
+                        </th>
                         <th class="px-6 py-3 text-right">Actions</th>
                     </tr>
                 </thead>

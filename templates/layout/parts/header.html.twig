@@ -4,13 +4,15 @@
         <span>airbnb</span>
     </a>
 
-    {% include 'parts/search_bar.html.twig' with { variant: 'compact' } %}
-
     <div class="flex items-center space-x-4">
         <a href="{{ path('app_reservation_index') }}" class="text-sm font-semibold py-2 px-4 hover:bg-gray-50 rounded-full hidden lg:inline-block">
             Mes réservations
         </a>
-        <span class="text-sm font-semibold py-2 px-4 hover:bg-gray-50 rounded-full cursor-pointer hidden lg:inline-block">Mettre mon logement sur Airbnb</span>
+        {% if app.user and is_granted('ROLE_HOST') %}
+            <a href="{{ path('host_my_properties') }}" class="text-sm font-semibold py-2 px-4 hover:bg-gray-50 rounded-full hidden lg:inline-block">Mes propriétés</a>
+        {% else %}
+            <a href="{{ path('become_host') }}" class="text-sm font-semibold py-2 px-4 hover:bg-gray-50 rounded-full hidden lg:inline-block">Mettre mon logement sur Airbnb</a>
+        {% endif %}
         <button class="text-gray-600 hover:bg-gray-50 p-2 rounded-full hidden sm:block">
             <i class="fa-solid fa-globe"></i>
         </button>

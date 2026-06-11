@@ -1,0 +1,176 @@
+{% extends 'layout/user.html.twig' %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Calendrier</h1>
+            <p class="text-gray-500 mt-1">{{ property.title }}</p>
+        </div>
+        <div class="flex gap-3">
+            <a href="{{ path('host_calendar_settings', {id: property.id}) }}"
+               class="text-sm bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium px-4 py-2 rounded-xl transition-colors">
+                <i class="fa-solid fa-gear mr-1"></i>Paramètres iCal
+            </a>
+            <a href="{{ path('host_my_properties') }}"
+               class="text-sm text-gray-600 hover:text-gray-900 flex items-center gap-1">
+                ← Mes propriétés
+            </a>
+        </div>
+    </div>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-lg text-sm
+                {% if label == 'error' %}bg-red-50 text-red-700 border border-red-200
+                {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+        {# ── Panneau latéral ─────────────────────────────────────────── #}
+        <div class="space-y-5 h-fit">
+
+            {# Légende #}
+            <div class="bg-white border border-gray-200 rounded-2xl p-5">
+                <h2 class="text-sm font-semibold text-gray-900 mb-3">Légende</h2>
+                <ul class="space-y-2 text-xs">
+                    <li class="flex items-center gap-2">
+                        <span class="w-4 h-4 rounded bg-green-200 border border-green-300 shrink-0"></span>
+                        <span class="text-gray-700">Réservation confirmée</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-4 h-4 rounded bg-yellow-200 border border-yellow-300 shrink-0"></span>
+                        <span class="text-gray-700">Demande en attente</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-4 h-4 rounded bg-gray-200 border border-gray-300 shrink-0"></span>
+                        <span class="text-gray-700">Date bloquée</span>
+                    </li>
+                    <li class="flex items-center gap-2">
+                        <span class="w-4 h-4 rounded bg-blue-100 border border-blue-300 shrink-0"></span>
+                        <span class="text-gray-700">Tarif spécial</span>
+                    </li>
+                </ul>
+            </div>
+
+            {# Formulaire blocage #}
+            <div class="bg-white border border-gray-200 rounded-2xl p-5">
+                <h2 class="text-sm font-semibold text-gray-900 mb-1">Bloquer des dates</h2>
+                <p class="text-xs text-gray-400 mb-4">Les voyageurs ne pourront pas réserver ces dates.</p>
+                {{ form_start(blockForm, {attr: {class: 'space-y-3'}}) }}
+                    <div>
+                        {{ form_label(blockForm.startDate, null, {label_attr: {class: 'block text-xs font-medium text-gray-700 mb-1'}}) }}
+                        {{ form_widget(blockForm.startDate, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm'}}) }}
+                        {{ form_errors(blockForm.startDate) }}
+                    </div>
+                    <div>
+                        {{ form_label(blockForm.endDate, null, {label_attr: {class: 'block text-xs font-medium text-gray-700 mb-1'}}) }}
+                        {{ form_widget(blockForm.endDate, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm'}}) }}
+                        {{ form_errors(blockForm.endDate) }}
+                    </div>
+                    <div>
+                        {{ form_label(blockForm.blockReason, null, {label_attr: {class: 'block text-xs font-medium text-gray-700 mb-1'}}) }}
+                        {{ form_widget(blockForm.blockReason, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm', placeholder: 'Ex : Travaux, usage personnel...'}}) }}
+                        {{ form_errors(blockForm.blockReason) }}
+                    </div>
+                    <button type="submit"
+                            class="w-full bg-gray-900 hover:bg-gray-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
+                        <i class="fa-solid fa-lock mr-1"></i>Bloquer ces dates
+                    </button>
+                {{ form_end(blockForm) }}
+            </div>
+
+            {# Formulaire tarif spécial #}
+            <div class="bg-white border border-blue-200 rounded-2xl p-5">
+                <h2 class="text-sm font-semibold text-gray-900 mb-1">Tarif spécial</h2>
+                <p class="text-xs text-gray-400 mb-4">Appliquer un prix personnalisé sur une période. Les dates restent disponibles à la réservation.</p>
+                {{ form_start(specialPriceForm, {attr: {class: 'space-y-3'}}) }}
+                    <div>
+                        {{ form_label(specialPriceForm.startDate, null, {label_attr: {class: 'block text-xs font-medium text-gray-700 mb-1'}}) }}
+                        {{ form_widget(specialPriceForm.startDate, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm'}}) }}
+                        {{ form_errors(specialPriceForm.startDate) }}
+                    </div>
+                    <div>
+                        {{ form_label(specialPriceForm.endDate, null, {label_attr: {class: 'block text-xs font-medium text-gray-700 mb-1'}}) }}
+                        {{ form_widget(specialPriceForm.endDate, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm'}}) }}
+                        {{ form_errors(specialPriceForm.endDate) }}
+                    </div>
+                    <div>
+                        {{ form_label(specialPriceForm.priceOverride, null, {label_attr: {class: 'block text-xs font-medium text-gray-700 mb-1'}}) }}
+                        {{ form_widget(specialPriceForm.priceOverride, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm', placeholder: 'Ex : 95'}}) }}
+                        {{ form_errors(specialPriceForm.priceOverride) }}
+                    </div>
+                    <button type="submit"
+                            class="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-2.5 rounded-xl transition-colors">
+                        <i class="fa-solid fa-tag mr-1"></i>Appliquer ce tarif
+                    </button>
+                {{ form_end(specialPriceForm) }}
+            </div>
+
+        </div>
+
+        {# ── Grille calendrier 12 mois ───────────────────────────────── #}
+        <div class="lg:col-span-2 space-y-5">
+            {% for m in calendarMonths %}
+                <div class="bg-white border border-gray-200 rounded-2xl p-5">
+                    <h3 class="text-sm font-semibold text-gray-700 mb-3">{{ m.label }}</h3>
+
+                    <div class="grid grid-cols-7 text-center text-xs text-gray-400 mb-1">
+                        {% for d in ['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'] %}
+                            <div>{{ d }}</div>
+                        {% endfor %}
+                    </div>
+
+                    <div class="grid grid-cols-7 text-center text-sm gap-y-1">
+                        {% for blank in 1..(m.firstWeekday - 1) %}
+                            <div></div>
+                        {% endfor %}
+
+                        {% for day in 1..m.daysInMonth %}
+                            {% set dateKey = m.year ~ '-'
+                                ~ (m.month < 10 ? '0' ~ m.month : m.month) ~ '-'
+                                ~ (day < 10 ? '0' ~ day : day) %}
+
+                            {% set isBlocked     = blockedMap[dateKey] is defined %}
+                            {% set blockReason   = isBlocked and blockedMap[dateKey].reason is defined ? blockedMap[dateKey].reason : null %}
+                            {% set reservStatus  = reservationMap[dateKey] is defined ? reservationMap[dateKey] : null %}
+                            {% set specialPrice  = specialPriceMap[dateKey] is defined ? specialPriceMap[dateKey] : null %}
+
+                            {% if isBlocked %}
+                                {% set cellClass = 'bg-gray-200 text-gray-400 line-through' %}
+                                {% set titleAttr = blockReason ? 'Bloquée · ' ~ blockReason : 'Date bloquée' %}
+                            {% elseif reservStatus == 'confirmed' %}
+                                {% set cellClass = 'bg-green-200 text-green-800 font-semibold' %}
+                                {% set titleAttr = 'Réservation confirmée' %}
+                            {% elseif reservStatus == 'pending' %}
+                                {% set cellClass = 'bg-yellow-200 text-yellow-800 font-semibold' %}
+                                {% set titleAttr = 'Demande en attente' %}
+                            {% elseif specialPrice %}
+                                {% set cellClass = 'bg-blue-100 text-blue-800 font-semibold' %}
+                                {% set titleAttr = 'Tarif spécial : ' ~ specialPrice ~ ' €' %}
+                            {% else %}
+                                {% set cellClass = 'hover:bg-gray-50' %}
+                                {% set titleAttr = '' %}
+                            {% endif %}
+
+                            <div class="rounded py-1 {{ cellClass }} relative group cursor-default"
+                                 {% if titleAttr %}title="{{ titleAttr }}"{% endif %}>
+                                {{ day }}
+                                {% if specialPrice and not isBlocked and not reservStatus %}
+                                    <span class="absolute -bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-blue-500 block"></span>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</main>
+{% endblock %}

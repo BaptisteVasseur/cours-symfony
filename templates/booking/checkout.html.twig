@@ -1,0 +1,297 @@
+{% extends 'layout/user.html.twig' %}
+
+{% set cover = property.coverMedia ?? null %}
+{% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
+
+{% set backParams = { id: property.id } %}
+{% if checkin %}  {% set backParams = backParams|merge({ checkin:  checkin|date('Y-m-d') }) %}  {% endif %}
+{% if checkout %} {% set backParams = backParams|merge({ checkout: checkout|date('Y-m-d') }) %} {% endif %}
+{% if guests > 1 %} {% set backParams = backParams|merge({ guests: guests }) %} {% endif %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
+
+    <a href="{{ path('app_logement_detail', backParams) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+        <i class="fa-solid fa-arrow-left"></i>
+        Retour au logement
+    </a>
+
+    <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-8">Finaliser votre réservation</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+
+        {# ── Colonne gauche ─────────────────────────────────────────── #}
+        <div>
+            {% for label, messages in app.flashes %}
+                {% for message in messages %}
+                    <div class="mb-4 px-4 py-3 rounded-lg text-sm
+                        {% if label == 'error' %}bg-red-50 text-red-700 border border-red-200
+                        {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endfor %}
+
+            {% if app.user %}
+                {# ── Utilisateur connecté ─────────────────────────── #}
+                {% set profile = app.user.profile %}
+                {% set displayName = profile and (profile.firstName or profile.lastName)
+                    ? (profile.firstName ~ ' ' ~ profile.lastName)|trim
+                    : app.user.email %}
+                {% set initials = profile and profile.firstName
+                    ? profile.firstName|first|upper ~ (profile.lastName ? profile.lastName|first|upper : '')
+                    : app.user.email|first|upper %}
+
+                <div class="bg-white border border-gray-200 rounded-2xl p-6 mb-6">
+                    <h2 class="text-base font-semibold text-gray-900 mb-4">Vos informations</h2>
+                    <div class="flex items-center gap-4">
+                        <div class="w-14 h-14 rounded-full bg-gray-700 text-white flex items-center justify-center font-bold text-lg shrink-0 overflow-hidden">
+                            {% if profile and profile.avatarUrl %}
+                                <img src="{{ profile.avatarUrl }}" alt="{{ displayName }}" class="w-full h-full object-cover">
+                            {% else %}
+                                {{ initials }}
+                            {% endif %}
+                        </div>
+                        <div>
+                            <p class="font-semibold text-gray-900">{{ displayName }}</p>
+                            <p class="text-sm text-gray-500">{{ app.user.email }}</p>
+                        </div>
+                    </div>
+                </div>
+
+                {# Booking form (champs cachés + submit) #}
+                {% if form %}
+                    {{ form_start(form) }}
+
+                    {% if form.vars.submitted and not form.vars.valid %}
+                        <div class="mb-4 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-sm text-red-700 flex items-start gap-3">
+                            <i class="fa-solid fa-circle-exclamation mt-0.5 shrink-0"></i>
+                            <div>
+                                <p class="font-semibold mb-1">Veuillez corriger les erreurs suivantes :</p>
+                                <ul class="space-y-0.5 list-none">
+                                    {% for error in form.checkinDate.vars.errors %}
+                                        <li class="flex items-center gap-1"><i class="fa-solid fa-circle-dot text-[10px]"></i> {{ error.message }}</li>
+                                    {% endfor %}
+                                    {% for error in form.checkoutDate.vars.errors %}
+                                        <li class="flex items-center gap-1"><i class="fa-solid fa-circle-dot text-[10px]"></i> {{ error.message }}</li>
+                                    {% endfor %}
+                                    {% for error in form.guestsCount.vars.errors %}
+                                        <li class="flex items-center gap-1"><i class="fa-solid fa-circle-dot text-[10px]"></i> {{ error.message }}</li>
+                                    {% endfor %}
+                                    {% for error in form.vars.errors %}
+                                        <li class="flex items-center gap-1"><i class="fa-solid fa-circle-dot text-[10px]"></i> {{ error.message }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    {# form_end rend automatiquement les champs non encore affichés #}
+                    <button type="submit"
+                            class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-4 px-6 rounded-xl transition-colors text-base flex items-center justify-center gap-2">
+                        {% if property.instantBooking %}
+                            <i class="fa-solid fa-bolt"></i>
+                        {% else %}
+                            <i class="fa-solid fa-paper-plane"></i>
+                        {% endif %}
+                        Confirmer la réservation
+                    </button>
+                    {{ form_end(form) }}
+
+                    <p class="text-xs text-gray-500 mt-3 text-center">
+                        {% if property.instantBooking %}
+                            <i class="fa-solid fa-bolt text-yellow-500 mr-1"></i>Réservation confirmée immédiatement
+                        {% else %}
+                            L'hôte dispose de 48h pour accepter ou refuser votre demande.
+                        {% endif %}
+                    </p>
+                {% endif %}
+
+            {% else %}
+                {# ── Utilisateur non connecté ─────────────────────── #}
+                <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                    {# Tabs #}
+                    <div class="flex border-b border-gray-200" id="auth-tabs">
+                        <button type="button"
+                                onclick="switchTab('login')"
+                                id="tab-login"
+                                class="flex-1 py-3.5 text-sm font-semibold text-brand border-b-2 border-brand transition">
+                            Se connecter
+                        </button>
+                        <button type="button"
+                                onclick="switchTab('register')"
+                                id="tab-register"
+                                class="flex-1 py-3.5 text-sm font-medium text-gray-500 hover:text-gray-700 border-b-2 border-transparent transition">
+                            Créer un compte
+                        </button>
+                    </div>
+
+                    {# Panneau connexion #}
+                    <div id="panel-login" class="p-6">
+                        <p class="text-sm text-gray-500 mb-5">Connectez-vous pour finaliser votre réservation.</p>
+                        <form method="POST" action="{{ path('app_login') }}" class="space-y-4">
+                            <input type="hidden" name="_target_path" value="{{ app.request.uri }}">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Adresse e-mail</label>
+                                <input type="email" name="_username" required autocomplete="email"
+                                       class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                                       placeholder="vous@exemple.com">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+                                <input type="password" name="_password" required autocomplete="current-password"
+                                       class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                                       placeholder="••••••••">
+                            </div>
+                            <input type="hidden" name="_csrf_token" value="{{ csrf_token('authenticate') }}">
+                            <button type="submit"
+                                    class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl transition text-sm">
+                                Se connecter
+                            </button>
+                        </form>
+                    </div>
+
+                    {# Panneau inscription #}
+                    <div id="panel-register" class="p-6 hidden">
+                        <p class="text-sm text-gray-500 mb-5">Créez votre compte pour réserver en quelques secondes.</p>
+                        <form method="POST" action="{{ path('app_register') }}" class="space-y-4">
+                            <input type="hidden" name="_target_path" value="{{ app.request.uri }}">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Prénom</label>
+                                    <input type="text" name="firstName" required autocomplete="given-name"
+                                           class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                                           placeholder="Jean">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-1">Nom</label>
+                                    <input type="text" name="lastName" required autocomplete="family-name"
+                                           class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                                           placeholder="Dupont">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Adresse e-mail</label>
+                                <input type="email" name="email" required autocomplete="email"
+                                       class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                                       placeholder="vous@exemple.com">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">Mot de passe</label>
+                                <input type="password" name="password" required autocomplete="new-password"
+                                       class="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand"
+                                       placeholder="••••••••">
+                            </div>
+                            <button type="submit"
+                                    class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl transition text-sm">
+                                Créer mon compte
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                <script>
+                function switchTab(tab) {
+                    const tabs = { login: document.getElementById('tab-login'), register: document.getElementById('tab-register') };
+                    const panels = { login: document.getElementById('panel-login'), register: document.getElementById('panel-register') };
+                    Object.keys(tabs).forEach(k => {
+                        const active = k === tab;
+                        tabs[k].classList.toggle('text-brand', active);
+                        tabs[k].classList.toggle('border-brand', active);
+                        tabs[k].classList.toggle('font-semibold', active);
+                        tabs[k].classList.toggle('text-gray-500', !active);
+                        tabs[k].classList.toggle('border-transparent', !active);
+                        panels[k].classList.toggle('hidden', !active);
+                    });
+                }
+                </script>
+            {% endif %}
+        </div>
+
+        {# ── Colonne droite : récap propriété ───────────────────────── #}
+        <div class="bg-white border border-gray-200 rounded-2xl p-6 h-fit shadow-sm lg:sticky lg:top-28">
+
+            {# Propriété #}
+            <div class="flex gap-4 mb-5">
+                <img src="{{ cover ? cover.fileUrl : placeholderImage }}"
+                     alt="{{ property.title }}"
+                     class="w-24 h-20 object-cover rounded-xl shrink-0">
+                <div>
+                    <p class="font-semibold text-gray-900 leading-snug">{{ property.title }}</p>
+                    {% if property.address %}
+                        <p class="text-sm text-gray-500 mt-0.5">{{ property.address.city }}{% if property.address.country %}, {{ property.address.country }}{% endif %}</p>
+                    {% endif %}
+                    {% if property.host and property.host.profile %}
+                        <p class="text-sm text-gray-400 mt-0.5">Hôte : {{ property.host.profile.firstName }}</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            {# Dates & voyageurs #}
+            {% if checkin and checkout %}
+                <div class="border border-gray-100 rounded-xl divide-y divide-gray-100 text-sm mb-5">
+                    <div class="grid grid-cols-2 divide-x divide-gray-100">
+                        <div class="p-3">
+                            <p class="text-[10px] font-bold uppercase text-gray-400 mb-0.5">Arrivée</p>
+                            <p class="font-semibold text-gray-900">{{ checkin|date('d/m/Y') }}</p>
+                        </div>
+                        <div class="p-3">
+                            <p class="text-[10px] font-bold uppercase text-gray-400 mb-0.5">Départ</p>
+                            <p class="font-semibold text-gray-900">{{ checkout|date('d/m/Y') }}</p>
+                        </div>
+                    </div>
+                    <div class="p-3">
+                        <p class="text-[10px] font-bold uppercase text-gray-400 mb-0.5">Voyageurs</p>
+                        <p class="font-semibold text-gray-900">{{ guests }} voyageur{{ guests > 1 ? 's' : '' }}</p>
+                    </div>
+                </div>
+            {% endif %}
+
+            {# Détail du prix #}
+            <div class="border-t border-gray-100 pt-4 space-y-2 text-sm">
+                {% if nights %}
+                    <div class="flex justify-between text-gray-600">
+                        <span>{{ property.pricePerNight|number_format(0, ',', ' ') }} € × {{ nights }} nuit{{ nights > 1 ? 's' : '' }}</span>
+                        <span>{{ base|number_format(2, ',', ' ') }} €</span>
+                    </div>
+                {% else %}
+                    <div class="flex justify-between text-gray-600">
+                        <span>Prix par nuit</span>
+                        <span>{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span>
+                    </div>
+                {% endif %}
+
+                {% if cleaning > 0 %}
+                    <div class="flex justify-between text-gray-600">
+                        <span>Frais de ménage</span>
+                        <span>{{ cleaning|number_format(0, ',', ' ') }} €</span>
+                    </div>
+                {% endif %}
+
+                <div class="flex justify-between text-gray-600">
+                    <span>Frais de service (5 %)</span>
+                    <span>{{ serviceFee is not null ? serviceFee|number_format(2, ',', ' ') ~ ' €' : '—' }}</span>
+                </div>
+
+                {% if deposit and deposit > 0 %}
+                    <div class="flex justify-between text-gray-500 text-xs pt-1">
+                        <span>Caution (remboursable)</span>
+                        <span>{{ deposit|number_format(0, ',', ' ') }} €</span>
+                    </div>
+                {% endif %}
+
+                <div class="flex justify-between font-semibold text-gray-900 border-t border-gray-100 pt-2 mt-1">
+                    <span>
+                        Total
+                        {% if total and guests > 1 %}
+                            <span class="text-gray-400 font-normal text-xs ml-1">(soit {{ (total / guests)|number_format(2, ',', ' ') }} €/pers.)</span>
+                        {% endif %}
+                    </span>
+                    <span>{{ total is not null ? total|number_format(2, ',', ' ') ~ ' €' : '—' }}</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</main>
+{% endblock %}

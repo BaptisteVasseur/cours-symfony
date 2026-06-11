@@ -34,23 +34,23 @@ class Reservation
     #[ORM\JoinColumn(nullable: false)]
     private ?User $guest = null;
 
-    #[Assert\NotNull(message: 'La date d\'arrivée est obligatoire.')]
+    #[Assert\NotNull(message: 'La date d\'arrivée est obligatoire.', groups: ['Default', 'booking_checkout'])]
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     private ?\DateTimeImmutable $checkinDate = null;
 
-    #[Assert\NotNull(message: 'La date de départ est obligatoire.')]
-    #[Assert\GreaterThan(propertyPath: 'checkinDate', message: 'La date de départ doit être postérieure à la date d\'arrivée.')]
+    #[Assert\NotNull(message: 'La date de départ est obligatoire.', groups: ['Default', 'booking_checkout'])]
+    #[Assert\GreaterThan(propertyPath: 'checkinDate', message: 'La date de départ doit être postérieure à la date d\'arrivée.', groups: ['Default', 'booking_checkout'])]
     #[ORM\Column(type: Types::DATE_IMMUTABLE)]
     private ?\DateTimeImmutable $checkoutDate = null;
 
-    #[Assert\NotNull(message: 'Le nombre de voyageurs est obligatoire.')]
-    #[Assert\GreaterThanOrEqual(value: 1, message: 'Il doit y avoir au moins {{ compared_value }} voyageur.')]
+    #[Assert\NotNull(message: 'Le nombre de voyageurs est obligatoire.', groups: ['Default', 'booking_checkout'])]
+    #[Assert\GreaterThanOrEqual(value: 1, message: 'Il doit y avoir au moins {{ compared_value }} voyageur.', groups: ['Default', 'booking_checkout'])]
     #[ORM\Column]
     private ?int $guestsCount = null;
 
     #[Assert\NotBlank(message: 'Le statut est obligatoire.')]
     #[Assert\Choice(
-        choices: ['pending', 'confirmed', 'completed', 'cancelled'],
+        choices: ['pending', 'confirmed', 'completed', 'cancelled', 'expired'],
         message: 'Le statut sélectionné n\'est pas valide.',
     )]
     #[ORM\Column(length: 50)]
@@ -91,6 +91,15 @@ class Reservation
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE)]
     private ?\DateTimeImmutable $createdAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $updatedAt = null;
+
+    #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
+    private ?\DateTimeImmutable $expiresAt = null;
+
+    #[ORM\Column(length: 20, nullable: true)]
+    private ?string $cancelledBy = null;
 
     #[ORM\OneToOne(mappedBy: 'reservation', targetEntity: Invoice::class, cascade: ['persist', 'remove'])]
     private ?Invoice $invoice = null;
@@ -282,6 +291,42 @@ class Reservation
     public function setCreatedAt(\DateTimeImmutable $createdAt): static
     {
         $this->createdAt = $createdAt;
+
+        return $this;
+    }
+
+    public function getUpdatedAt(): ?\DateTimeImmutable
+    {
+        return $this->updatedAt;
+    }
+
+    public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
+    {
+        $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    public function getExpiresAt(): ?\DateTimeImmutable
+    {
+        return $this->expiresAt;
+    }
+
+    public function setExpiresAt(?\DateTimeImmutable $expiresAt): static
+    {
+        $this->expiresAt = $expiresAt;
+
+        return $this;
+    }
+
+    public function getCancelledBy(): ?string
+    {
+        return $this->cancelledBy;
+    }
+
+    public function setCancelledBy(?string $cancelledBy): static
+    {
+        $this->cancelledBy = $cancelledBy;
 
         return $this;
     }

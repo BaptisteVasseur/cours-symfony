@@ -23,14 +23,22 @@ final class PropertyController extends AbstractController
     {
         $statusFilter = $request->query->getString('status');
         $statusFilter = $statusFilter !== '' ? $statusFilter : null;
-        $properties = $propertyRepository->findForListing($statusFilter);
+        $search = $request->query->getString('q');
+        $search = $search !== '' ? $search : null;
+        $sort = $request->query->getString('sort', 'createdAt');
+        $dir  = $request->query->getString('dir', 'DESC');
+
+        $properties = $propertyRepository->findForListing($statusFilter, null, $search, $sort, $dir);
 
         return $this->render('property/index.html.twig', [
-            'properties' => $properties,
-            'total' => $propertyRepository->countAll(),
-            'published' => $propertyRepository->countByStatus('published'),
-            'pending' => $propertyRepository->countByStatus('pending'),
+            'properties'   => $properties,
+            'total'        => $propertyRepository->countAll(),
+            'published'    => $propertyRepository->countByStatus('published'),
+            'pending'      => $propertyRepository->countByStatus('pending'),
             'statusFilter' => $statusFilter,
+            'search'       => $search ?? '',
+            'sort'         => $sort,
+            'dir'          => $dir,
         ]);
     }
 
@@ -120,12 +128,28 @@ final class PropertyController extends AbstractController
     #[Route('/{id}/reject', name: 'app_property_reject', methods: ['POST'])]
     public function reject(Request $request, Property $property, EntityManagerInterface $entityManager): Response
     {
-        if ($this->isCsrfTokenValid('reject'.$property->getId(), $request->getPayload()->getString('_token'))) {
-            $property->setStatus('draft');
-            $property->setUpdatedAt(new \DateTimeImmutable());
-            $entityManager->flush();
-            $this->addFlash('success', 'Annonce refusée et repassée en brouillon.');
+        if (!$this->isCsrfTokenValid('reject'.$property->getId(), $request->request->get('_token'))) {
+            $this->addFlash('error', 'Token CSRF invalide.');
+            $redirect = $request->headers->get('referer');
+            return $redirect
+                ? $this->redirect($redirect)
+                : $this->redirectToRoute('app_property_show', ['id' => $property->getId()], Response::HTTP_SEE_OTHER);
         }
+
+        $reason = trim($request->request->getString('rejection_reason'));
+        if ($reason === '') {
+            $this->addFlash('error', 'Le motif de refus est obligatoire.');
+            $redirect = $request->headers->get('referer');
+            return $redirect
+                ? $this->redirect($redirect)
+                : $this->redirectToRoute('app_property_show', ['id' => $property->getId()], Response::HTTP_SEE_OTHER);
+        }
+
+        $property->setStatus('rejected');
+        $property->setRejectionReason($reason);
+        $property->setUpdatedAt(new \DateTimeImmutable());
+        $entityManager->flush();
+        $this->addFlash('success', 'Annonce refusée.');
 
         $redirect = $request->headers->get('referer');
 

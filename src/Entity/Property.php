@@ -66,7 +66,7 @@ class Property
 
     #[Assert\NotBlank(message: 'Le statut est obligatoire.')]
     #[Assert\Choice(
-        choices: ['draft', 'pending', 'published'],
+        choices: ['pending', 'published', 'rejected'],
         message: 'Le statut sélectionné n\'est pas valide.',
     )]
     #[ORM\Column(length: 50)]
@@ -122,6 +122,12 @@ class Property
 
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
+
+    #[ORM\Column(length: 64, nullable: true, unique: true)]
+    private ?string $calendarToken = null;
+
+    #[ORM\Column(type: Types::TEXT, nullable: true)]
+    private ?string $rejectionReason = null;
 
     #[ORM\OneToOne(mappedBy: 'property', targetEntity: PropertyAddress::class, cascade: ['persist', 'remove'])]
     private ?PropertyAddress $address = null;
@@ -378,6 +384,35 @@ class Property
         $this->updatedAt = $updatedAt;
 
         return $this;
+    }
+
+    public function getCalendarToken(): ?string
+    {
+        return $this->calendarToken;
+    }
+
+    public function setCalendarToken(?string $calendarToken): static
+    {
+        $this->calendarToken = $calendarToken;
+
+        return $this;
+    }
+
+    public function getRejectionReason(): ?string
+    {
+        return $this->rejectionReason;
+    }
+
+    public function setRejectionReason(?string $rejectionReason): static
+    {
+        $this->rejectionReason = $rejectionReason;
+
+        return $this;
+    }
+
+    public function regenerateCalendarToken(): void
+    {
+        $this->calendarToken = bin2hex(random_bytes(32));
     }
 
     public function getAddress(): ?PropertyAddress

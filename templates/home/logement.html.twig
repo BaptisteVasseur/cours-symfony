@@ -6,7 +6,24 @@
 {% set hostProfile = property.host ? property.host.profile : null %}
 
 {% block content %}
+    {% set isOwner = app.user and property.host and app.user.id == property.host.id %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+
+        {% if isOwner and property.status == 'rejected' %}
+        <div class="mb-6 bg-red-50 border border-red-200 rounded-2xl px-5 py-4 flex items-start gap-4">
+            <div class="shrink-0 w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
+                <i class="fa-solid fa-ban text-red-500 text-base"></i>
+            </div>
+            <div>
+                <p class="font-semibold text-red-700 text-sm">Annonce refusée par l'équipe de modération</p>
+                {% if property.rejectionReason %}
+                    <p class="text-red-700 text-xs mt-1 font-medium">Motif : {{ property.rejectionReason }}</p>
+                {% endif %}
+                <p class="text-red-600 text-xs mt-1">Cette propriété n'est pas visible par les voyageurs. Contactez le support si vous pensez qu'il s'agit d'une erreur.</p>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="mb-6">
             <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">{{ property.title }}</h1>
             <div class="flex flex-wrap items-center gap-2 mt-2 text-sm text-gray-600">
@@ -88,6 +105,111 @@
                     </section>
                 {% endif %}
 
+                {# ── Calendrier des disponibilités ──────────────────── #}
+                <section id="calendrier-disponibilites" class="border-t border-gray-100 pt-8">
+                    <div class="flex items-center justify-between mb-2">
+                        <h2 class="text-xl font-semibold text-gray-900">Disponibilités</h2>
+                        <div class="flex items-center gap-2">
+                            <button id="cal-prev" type="button"
+                                    class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-100 transition disabled:opacity-30 disabled:cursor-default"
+                                    disabled>
+                                <i class="fa-solid fa-chevron-left text-xs"></i>
+                            </button>
+                            <span id="cal-range-label" class="text-sm font-medium text-gray-700 min-w-[180px] text-center"></span>
+                            <button id="cal-next" type="button"
+                                    class="w-9 h-9 flex items-center justify-center rounded-full border border-gray-200 hover:bg-gray-100 transition">
+                                <i class="fa-solid fa-chevron-right text-xs"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-500 mb-4">Sélectionnez vos dates d'arrivée et de départ</p>
+
+                    <div class="flex gap-3 mb-5 flex-wrap text-xs">
+                        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-white border border-gray-300 inline-block"></span> Disponible</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-gray-200 inline-block"></span> Indisponible</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-blue-100 border border-blue-300 inline-block"></span> Tarif spécial</span>
+                        <span class="flex items-center gap-1.5"><span class="w-3.5 h-3.5 rounded bg-red-100 inline-block"></span> Réservé</span>
+                    </div>
+
+                    {# Tous les mois en JSON pour le JS #}
+                    <script>
+                    const _calMonths = {{ calendarMonths|json_encode|raw }};
+                    const _avMap     = {{ availabilityMap|json_encode|raw }};
+                    const _resMap    = {{ reservedMap|json_encode|raw }};
+                    </script>
+
+                    <div id="cal-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-6"></div>
+                </section>
+
+                <script>
+                (document.readyState === 'loading'
+                    ? document.addEventListener('DOMContentLoaded', init)
+                    : init());
+                document.addEventListener('turbo:load', init);
+                function init() {
+                    const grid   = document.getElementById('cal-grid');
+                    const btnPrev = document.getElementById('cal-prev');
+                    const btnNext = document.getElementById('cal-next');
+                    const rangeLabel = document.getElementById('cal-range-label');
+                    const STEP  = 1;
+                    const SHOW  = 2;
+                    const TOTAL = _calMonths.length;
+                    let offset = 0;
+
+                    const today = new Date().toISOString().slice(0, 10);
+
+                    function pad(n) { return String(n).padStart(2, '0'); }
+
+                    function renderMonth(m) {
+                        const blanks = m.firstWeekday - 1;
+                        let days = '';
+                        for (let b = 0; b < blanks; b++) days += '<div></div>';
+                        for (let day = 1; day <= m.daysInMonth; day++) {
+                            const dateKey = `${m.year}-${pad(m.month)}-${pad(day)}`;
+                            const isPast  = dateKey < today;
+                            const info    = _avMap[dateKey];
+                            const reserved = _resMap[dateKey];
+                            const blocked  = info && info.available === false;
+                            const special  = info && info.priceOverride !== null && info.available !== false;
+                            let cls = 'relative py-1.5 rounded text-xs text-center ';
+                            let title = '';
+                            if (isPast)     cls += 'text-gray-300 cursor-default';
+                            else if (reserved) cls += 'bg-red-100 text-red-400 line-through cursor-not-allowed';
+                            else if (blocked)  { cls += 'bg-gray-200 text-gray-400 line-through cursor-not-allowed'; title = info.blockReason ? `Indisponible · ${info.blockReason}` : 'Indisponible'; }
+                            else if (special) {
+                                cls += 'bg-blue-100 border border-blue-300 text-blue-900 font-medium cursor-pointer hover:bg-blue-200';
+                                title = `Tarif spécial : ${info.priceOverride} €/nuit${info.minimumStay ? ' · ' + info.minimumStay + ' nuit(s) min.' : ''}`;
+                            } else {
+                                cls += 'text-gray-800 hover:bg-gray-100 cursor-pointer';
+                                if (info && info.minimumStay) title = `Séjour minimum : ${info.minimumStay} nuit(s)`;
+                            }
+                            days += `<div class="${cls}"${title ? ` title="${title}"` : ''}>${day}</div>`;
+                        }
+                        return `
+                            <div class="bg-white border border-gray-200 rounded-2xl p-4">
+                                <p class="text-sm font-semibold text-gray-800 mb-3 text-center">${m.label}</p>
+                                <div class="grid grid-cols-7 text-center text-[10px] text-gray-400 font-semibold mb-1">
+                                    ${['L','M','M','J','V','S','D'].map(d=>`<div>${d}</div>`).join('')}
+                                </div>
+                                <div class="grid grid-cols-7 gap-y-0.5">${days}</div>
+                            </div>`;
+                    }
+
+                    function render() {
+                        const slice = _calMonths.slice(offset, offset + SHOW);
+                        grid.innerHTML = slice.map(renderMonth).join('');
+                        rangeLabel.textContent = slice.map(m => m.label).join(' – ');
+                        btnPrev.disabled = offset === 0;
+                        btnNext.disabled = offset + SHOW >= TOTAL;
+                    }
+
+                    btnPrev.addEventListener('click', () => { if (offset > 0) { offset -= STEP; render(); } });
+                    btnNext.addEventListener('click', () => { if (offset + SHOW < TOTAL) { offset += STEP; render(); } });
+
+                    render();
+                }
+                </script>
+
                 <section>
                     <h2 class="text-xl font-semibold text-gray-900 mb-6">
                         Avis ({{ property.reviews|length }})
@@ -129,35 +251,153 @@
             </div>
 
             <aside class="lg:col-span-1">
-                <div class="sticky top-28 border border-gray-200 rounded-xl shadow-lg p-6">
-                    <p class="text-2xl font-semibold mb-4">
+                <div class="sticky top-28 border border-gray-200 rounded-xl shadow-lg p-6"
+                     data-controller="logement-booking"
+                     data-logement-booking-price-url-value="{{ path('api_booking_calculate_price', { id: property.id }) }}"
+                     data-logement-booking-checkout-url-value="{{ path('booking_checkout', { id: property.id }) }}"
+                     data-logement-booking-instant-value="{{ property.instantBooking ? 'true' : 'false' }}"
+                     data-logement-booking-logged-value="{{ app.user ? 'true' : 'false' }}"
+                     data-logement-booking-login-url-value="{{ path('app_login') }}">
+
+                    <p class="text-2xl font-semibold mb-1">
                         <span class="font-bold">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span>
                         <span class="text-base font-normal text-gray-600"> / nuit</span>
                     </p>
-                    {% if property.cleaningFee %}
-                        <p class="text-sm text-gray-500 mb-4">Frais de ménage : {{ property.cleaningFee|number_format(0, ',', ' ') }} €</p>
-                    {% endif %}
-                    <div class="border border-gray-300 rounded-lg mb-4">
+                    <div class="flex gap-3 text-xs text-gray-400 mb-4">
+                        <span><i class="fa-regular fa-clock mr-1"></i>Check-in : {{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</span>
+                        <span>·</span>
+                        <span>Check-out : {{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</span>
+                        <span>·</span>
+                        <span>Max {{ property.maxGuests }} pers.</span>
+                    </div>
+
+                    {# Sélecteurs de dates #}
+                    {% set formDisabled = isOwner and property.status in ['rejected', 'pending'] %}
+                    <div class="border border-gray-300 rounded-lg mb-3 text-sm divide-y divide-gray-300 {{ formDisabled ? 'opacity-40 pointer-events-none select-none' : '' }}">
                         <div class="grid grid-cols-2 divide-x divide-gray-300">
                             <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Arrivée</p>
-                                <p class="text-sm text-gray-500">{{ property.checkinTime ? property.checkinTime|date('H:i') : '15:00' }}</p>
+                                <label class="block text-[10px] font-bold uppercase text-gray-800 mb-1">Arrivée</label>
+                                <input type="date"
+                                       value="{{ checkin ? checkin|date('Y-m-d') : '' }}"
+                                       min="{{ 'now'|date('Y-m-d') }}"
+                                       class="w-full text-sm text-gray-700 focus:outline-none bg-transparent"
+                                       data-logement-booking-target="checkin"
+                                       data-action="change->logement-booking#onDateChange"
+                                       {{ formDisabled ? 'disabled' : '' }}>
                             </div>
                             <div class="p-3">
-                                <p class="text-[10px] font-bold uppercase text-gray-800">Départ</p>
-                                <p class="text-sm text-gray-500">{{ property.checkoutTime ? property.checkoutTime|date('H:i') : '11:00' }}</p>
+                                <label class="block text-[10px] font-bold uppercase text-gray-800 mb-1">Départ</label>
+                                <input type="date"
+                                       value="{{ checkout ? checkout|date('Y-m-d') : '' }}"
+                                       min="{{ checkin ? checkin|date('Y-m-d') : 'now'|date('Y-m-d') }}"
+                                       class="w-full text-sm text-gray-700 focus:outline-none bg-transparent"
+                                       data-logement-booking-target="checkout"
+                                       data-action="change->logement-booking#onDateChange"
+                                       {{ formDisabled ? 'disabled' : '' }}>
                             </div>
                         </div>
-                        <div class="p-3 border-t border-gray-300">
-                            <p class="text-[10px] font-bold uppercase text-gray-800">Voyageurs</p>
-                            <p class="text-sm text-gray-500">Jusqu'à {{ property.maxGuests }} personnes</p>
+                        <div class="p-3">
+                            <label class="block text-[10px] font-bold uppercase text-gray-800 mb-1">Voyageurs</label>
+                            <select data-logement-booking-target="guests"
+                                    data-action="change->logement-booking#onGuestsChange"
+                                    class="text-sm text-gray-700 focus:outline-none bg-transparent w-full"
+                                    {{ formDisabled ? 'disabled' : '' }}>
+                                {% for i in 1..property.maxGuests %}
+                                    <option value="{{ i }}" {{ i == guests ? 'selected' : '' }}>
+                                        {{ i }} voyageur{{ i > 1 ? 's' : '' }}
+                                    </option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
-                    <button type="button" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition">
-                        Réserver
-                    </button>
+
+                    {# Zone warning (indisponibilité) #}
+                    <div class="hidden rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 mb-3 text-sm text-amber-800"
+                         data-logement-booking-target="warning">
+                        <p class="font-semibold mb-1"><i class="fa-solid fa-triangle-exclamation mr-1"></i><span data-logement-booking-target="warningText"></span></p>
+                        <button type="button"
+                                class="text-amber-700 underline text-xs"
+                                data-action="click->logement-booking#scrollToCalendar">
+                            Voir le calendrier des disponibilités
+                        </button>
+                    </div>
+
+                    {# Loader #}
+                    <div class="hidden text-center py-2 mb-3" data-logement-booking-target="loader">
+                        <i class="fa-solid fa-circle-notch fa-spin text-gray-400"></i>
+                    </div>
+
+                    {# Détail du prix (rempli dynamiquement par JS) #}
+                    <div class="hidden border border-gray-200 rounded-lg mb-4 text-sm divide-y divide-gray-100 bg-gray-50"
+                         data-logement-booking-target="priceBreakdown">
+                        <div class="px-4 py-3 flex justify-between">
+                            <span class="text-gray-600" data-logement-booking-target="lineBase"></span>
+                            <span class="font-medium" data-logement-booking-target="lineBaseAmt"></span>
+                        </div>
+                        <div class="px-4 py-3 flex justify-between" data-logement-booking-target="lineCleaning">
+                            <span class="text-gray-600">Frais de ménage</span>
+                            <span class="font-medium" data-logement-booking-target="lineCleaningAmt"></span>
+                        </div>
+                        <div class="px-4 py-3 flex justify-between">
+                            <span class="text-gray-600">Frais de service (5 %)</span>
+                            <span class="font-medium" data-logement-booking-target="lineService"></span>
+                        </div>
+                        {% if property.securityDeposit and property.securityDeposit > 0 %}
+                        <div class="px-4 py-3 flex justify-between text-xs text-gray-500">
+                            <span>Caution (remboursable)</span>
+                            <span>{{ property.securityDeposit|number_format(0, ',', ' ') }} €</span>
+                        </div>
+                        {% endif %}
+                        <div class="px-4 py-3 flex justify-between font-semibold text-gray-900">
+                            <span>
+                                Total
+                                <span class="text-gray-400 font-normal text-xs hidden" data-logement-booking-target="lineTotalPerPerson"></span>
+                            </span>
+                            <span data-logement-booking-target="lineTotal"></span>
+                        </div>
+                    </div>
+
+                    {# CTA (mis à jour par JS) #}
+                    <div data-logement-booking-target="cta">
+                        {% if isOwner and property.status == 'rejected' %}
+                            <div class="block w-full text-center bg-red-50 text-red-400 font-semibold py-3 rounded-lg cursor-not-allowed select-none border border-red-200">
+                                <i class="fa-solid fa-ban mr-1.5"></i>Annonce refusée
+                            </div>
+                        {% elseif isOwner and property.status == 'pending' %}
+                            {# L'hôte voit son propre logement en attente de validation #}
+                            <div class="block w-full text-center bg-gray-100 text-gray-400 font-semibold py-3 rounded-lg cursor-not-allowed select-none">
+                                <i class="fa-solid fa-clock mr-1.5"></i>En attente de validation
+                            </div>
+                            <p class="text-center text-xs text-amber-600 mt-2">
+                                <i class="fa-solid fa-circle-info mr-1"></i>Votre annonce est en cours de modération.
+                            </p>
+                        {% elseif app.user %}
+                            {% set checkoutParams = { id: property.id } %}
+                            {% if checkin %}  {% set checkoutParams = checkoutParams|merge({ checkin:  checkin|date('Y-m-d') }) %}  {% endif %}
+                            {% if checkout %} {% set checkoutParams = checkoutParams|merge({ checkout: checkout|date('Y-m-d') }) %} {% endif %}
+                            {% if guests > 1 %} {% set checkoutParams = checkoutParams|merge({ guests: guests }) %} {% endif %}
+                            <a href="{{ path('booking_checkout', checkoutParams) }}"
+                               class="block w-full text-center bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition">
+                                {% if property.instantBooking %}
+                                    <i class="fa-solid fa-bolt mr-1"></i>Réserver instantanément
+                                {% else %}
+                                    Demander à réserver
+                                {% endif %}
+                            </a>
+                        {% else %}
+                            <a href="{{ path('app_login') }}"
+                               class="block w-full text-center bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-lg transition">
+                                Se connecter pour réserver
+                            </a>
+                        {% endif %}
+                    </div>
+
                     {% if property.instantBooking %}
-                        <p class="text-center text-xs text-gray-500 mt-3">Réservation instantanée disponible</p>
+                        <p class="text-center text-xs text-gray-500 mt-3">
+                            <i class="fa-solid fa-bolt text-yellow-500 mr-1"></i>Réservation instantanée disponible
+                        </p>
+                    {% else %}
+                        <p class="text-center text-xs text-gray-500 mt-3">L'hôte a 48h pour répondre à votre demande.</p>
                     {% endif %}
                 </div>
             </aside>

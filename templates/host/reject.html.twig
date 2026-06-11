@@ -1,0 +1,90 @@
+{% extends 'layout/user.html.twig' %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-2xl mx-auto w-full">
+        <a href="{{ path('host_dashboard') }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
+            <i class="fa-solid fa-arrow-left"></i>
+            Retour au tableau de bord
+        </a>
+
+        <div class="bg-white border border-gray-200 rounded-2xl p-8">
+            <h1 class="text-xl font-semibold text-gray-900 mb-2">Refuser la demande de réservation</h1>
+            <p class="text-sm text-gray-500 mb-6">
+                Logement : <strong>{{ reservation.property ? reservation.property.title : '—' }}</strong>
+                · {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+            </p>
+
+            {{ form_start(form, {attr: {class: 'space-y-5', id: 'reject-form'}}) }}
+                <input type="hidden" name="_token" value="{{ csrf_token('host_reject_' ~ reservation.id) }}">
+
+                <div>
+                    <label for="preset-reason" class="block text-sm font-medium text-gray-700 mb-1">Motif du refus</label>
+                    <select id="preset-reason" name="preset_reason"
+                            class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-400 bg-white">
+                        <option value="">— Sélectionner un motif courant —</option>
+                        <option value="Les dates ne sont plus disponibles suite à une autre réservation.">Dates plus disponibles</option>
+                        <option value="Le logement ne correspond pas aux besoins du voyageur.">Logement non adapté</option>
+                        <option value="Le profil du voyageur ne correspond pas à mes critères d'acceptation.">Profil du voyageur</option>
+                        <option value="Des travaux ou une intervention sont prévus sur cette période.">Travaux prévus</option>
+                        <option value="other">Autre (écrire ci-dessous)</option>
+                    </select>
+                </div>
+
+                <div>
+                    {{ form_label(form.cancellationReason, 'Précisions', {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+                    {{ form_widget(form.cancellationReason, {attr: {
+                        class: 'w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-400',
+                        id: 'custom-reason',
+                        placeholder: 'Le motif sélectionné ci-dessus sera utilisé, ou précisez ici…'
+                    }}) }}
+                    {{ form_errors(form.cancellationReason) }}
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="submit" class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold py-2.5 px-6 rounded-xl transition-colors text-sm">
+                        Confirmer le refus
+                    </button>
+                    <a href="{{ path('host_dashboard') }}"
+                       class="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-2.5 px-6 rounded-xl transition-colors text-sm">
+                        Annuler
+                    </a>
+                </div>
+            {{ form_end(form) }}
+        </div>
+    </main>
+
+    <script>
+    (function () {
+        const select = document.getElementById('preset-reason');
+        const textarea = document.getElementById('custom-reason');
+
+        select.addEventListener('change', function () {
+            if (this.value === '' || this.value === 'other') {
+                textarea.value = '';
+                textarea.focus();
+            } else {
+                textarea.value = this.value;
+            }
+        });
+
+        document.getElementById('reject-form').addEventListener('submit', function (e) {
+            const preset = select.value;
+            const custom = textarea.value.trim();
+
+            // Bloquer si ni preset ni custom
+            if (preset === '' && custom === '') {
+                e.preventDefault();
+                select.classList.add('border-red-500');
+                select.focus();
+                return;
+            }
+            // Si "Autre" sélectionné mais textarea vide, bloquer
+            if (preset === 'other' && custom === '') {
+                e.preventDefault();
+                textarea.classList.add('border-red-500');
+                textarea.focus();
+            }
+        });
+    })();
+    </script>
+{% endblock %}

@@ -12,12 +12,14 @@
     'completed': 'Terminée',
     'pending': 'En attente',
     'cancelled': 'Annulée',
+    'expired': 'Expirée',
 } %}
 {% set statusClasses = {
     'confirmed': 'bg-emerald-50 text-emerald-800 border border-emerald-200',
     'completed': 'bg-blue-50 text-blue-800 border border-blue-200',
     'pending': 'bg-amber-50 text-amber-800 border border-amber-200',
     'cancelled': 'bg-red-50 text-red-800 border border-red-200',
+    'expired': 'bg-gray-50 text-gray-500 border border-gray-200',
 } %}
 
 {% block page_title %}Réservation #{{ reservation.id|slice(0, 8) }}{% endblock %}
@@ -45,14 +47,77 @@
         </span>
     </div>
 
-    {% if reservation.status == 'cancelled' and reservation.cancellationReason %}
+    {% if reservation.status == 'cancelled' %}
         <div class="mb-6 bg-red-50 border border-red-200 rounded-xl p-4 flex items-start gap-3">
-            <i class="fa-solid fa-circle-xmark text-red-600 mt-0.5"></i>
+            <i class="fa-solid fa-circle-xmark text-red-600 mt-0.5 shrink-0"></i>
             <div>
-                <p class="font-semibold text-red-900">Réservation annulée</p>
-                <p class="text-sm text-red-700 mt-1">Motif : {{ reservation.cancellationReason }}</p>
+                {% if reservation.cancelledBy == 'admin' %}
+                    <p class="font-semibold text-red-900">Réservation refusée par l'administration</p>
+                {% elseif reservation.cancelledBy == 'host' %}
+                    <p class="font-semibold text-red-900">Réservation refusée par l'hôte</p>
+                {% elseif reservation.cancelledBy == 'guest' %}
+                    <p class="font-semibold text-red-900">Réservation annulée par le voyageur</p>
+                {% elseif reservation.cancelledBy == 'system' %}
+                    <p class="font-semibold text-red-900">Réservation annulée automatiquement</p>
+                {% else %}
+                    <p class="font-semibold text-red-900">Réservation annulée</p>
+                {% endif %}
+                {% if reservation.cancellationReason %}
+                    <p class="text-sm text-red-700 mt-1">Motif : {{ reservation.cancellationReason }}</p>
+                {% endif %}
             </div>
         </div>
+    {% endif %}
+
+    {% if reservation.status == 'pending' %}
+        <div class="mb-6 bg-amber-50 border border-amber-200 rounded-xl p-5">
+            <p class="font-semibold text-amber-900 mb-4">Actions sur cette demande</p>
+            <div class="flex flex-col sm:flex-row gap-3">
+                {# Approuver #}
+                <form method="POST" action="{{ path('app_admin_reservation_approve', {id: reservation.id}) }}" class="flex-1">
+                    <input type="hidden" name="_token" value="{{ csrf_token('admin_approve_' ~ reservation.id) }}">
+                    <button type="submit"
+                            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-check"></i>
+                        Confirmer la réservation
+                    </button>
+                </form>
+                {# Refuser — toggle formulaire #}
+                <button type="button" id="toggle-reject-form"
+                        class="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-4 py-2.5 rounded-lg transition flex items-center justify-center gap-2">
+                    <i class="fa-solid fa-xmark"></i>
+                    Refuser la réservation
+                </button>
+            </div>
+
+            {# Formulaire de refus (masqué par défaut) #}
+            <div id="reject-form-panel" class="hidden mt-4 border-t border-amber-200 pt-4">
+                {{ form_start(rejectForm, {attr: {class: 'space-y-3'}}) }}
+                    <div>
+                        {{ form_label(rejectForm.presetReason, null, {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+                        {{ form_widget(rejectForm.presetReason, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400'}}) }}
+                        {{ form_errors(rejectForm.presetReason) }}
+                    </div>
+                    <div>
+                        {{ form_label(rejectForm.customReason, null, {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+                        {{ form_widget(rejectForm.customReason, {attr: {class: 'w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-red-400'}}) }}
+                        {{ form_errors(rejectForm.customReason) }}
+                    </div>
+                    <button type="submit"
+                            class="bg-red-600 hover:bg-red-700 text-white font-semibold text-sm px-5 py-2.5 rounded-lg transition flex items-center gap-2">
+                        <i class="fa-solid fa-ban"></i>
+                        Confirmer le refus
+                    </button>
+                {{ form_end(rejectForm) }}
+            </div>
+        </div>
+        <script>
+            document.getElementById('toggle-reject-form').addEventListener('click', function () {
+                const panel = document.getElementById('reject-form-panel');
+                panel.classList.toggle('hidden');
+                this.textContent = panel.classList.contains('hidden') ? ' Refuser la réservation' : ' Annuler';
+            });
+        </script>
     {% endif %}
 
     <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
@@ -168,8 +233,8 @@
             {{ include('admin_reservation/_financial_section.html.twig') }}
         </div>
 
-        <div class="space-y-6">
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6 sticky top-6">
+        <div class="sticky top-6 space-y-3">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm p-6">
                 <h3 class="font-bold text-gray-900 mb-4">Récapitulatif</h3>
                 <dl class="space-y-3 text-sm">
                     <div class="flex justify-between">

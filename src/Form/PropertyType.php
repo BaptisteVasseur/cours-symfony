@@ -54,9 +54,9 @@ class PropertyType extends AbstractType
             ->add('status', ChoiceType::class, [
                 'label' => 'Statut',
                 'choices' => [
-                    'Brouillon' => 'draft',
                     'En attente' => 'pending',
                     'Publiée' => 'published',
+                    'Refusée' => 'rejected',
                 ],
             ])
             ->add('maxGuests', IntegerType::class, [

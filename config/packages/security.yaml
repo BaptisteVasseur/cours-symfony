@@ -49,6 +49,16 @@ security:
     # Note: Only the *first* matching rule is applied
     access_control:
         - { path: ^/(login|register), roles: PUBLIC_ACCESS }
+        - { path: ^/ical/, roles: PUBLIC_ACCESS }
+        - { path: ^/host/mes-proprietes, roles: ROLE_USER }
+        - { path: ^/host/nouveau-logement, roles: ROLE_HOST }
+        - { path: ^/devenir-hote, roles: ROLE_USER }
+        - { path: ^/host/, roles: ROLE_HOST }
+        - { path: ^/bookings/mes-reservations, roles: ROLE_USER }
+        - { path: ^/bookings/checkout, roles: PUBLIC_ACCESS }
+        - { path: ^/bookings/.+/annuler, roles: ROLE_USER }
+        - { path: ^/api/booking/calculate-price, roles: PUBLIC_ACCESS }
+        - { path: ^/api/booking/, roles: ROLE_USER }
         - { path: ^/reservations, roles: ROLE_USER }
         - { path: ^/admin, roles: ROLE_ADMIN }
         - { path: ^/property, roles: ROLE_ADMIN }

@@ -1,0 +1,326 @@
+{% extends 'layout/user.html.twig' %}
+
+{% set statusLabels = {
+    'pending':   'En attente',
+    'confirmed': 'Confirmée',
+    'cancelled': 'Annulée',
+    'completed': 'Terminée',
+    'expired':   'Expirée',
+} %}
+{% set statusColors = {
+    'pending':   'bg-yellow-100 text-yellow-800',
+    'confirmed': 'bg-green-100 text-green-700',
+    'cancelled': 'bg-red-100 text-red-700',
+    'completed': 'bg-blue-100 text-blue-700',
+    'expired':   'bg-gray-100 text-gray-500',
+} %}
+
+{% block content %}
+<main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
+
+    <div class="flex flex-wrap items-center justify-between gap-4 mb-8">
+        <div>
+            <h1 class="text-2xl md:text-3xl font-semibold text-gray-900">Tableau de bord hôte</h1>
+            <p class="text-gray-500 mt-1">Gérez vos demandes et consultez l'activité de vos logements</p>
+        </div>
+        <a href="{{ path('host_my_properties') }}"
+           class="text-sm font-medium text-gray-600 hover:text-gray-900 flex items-center gap-1">
+            <i class="fa-solid fa-house-chimney"></i> Mes propriétés
+        </a>
+    </div>
+
+    {% for label, messages in app.flashes %}
+        {% for message in messages %}
+            <div class="mb-4 px-4 py-3 rounded-lg text-sm
+                {% if label == 'error' %}bg-red-50 text-red-700 border border-red-200
+                {% else %}bg-green-50 text-green-700 border border-green-200{% endif %}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    {% endfor %}
+
+    {# ── Demandes en attente ───────────────────────────────────────────── #}
+    <section class="mb-10">
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-yellow-400 inline-block"></span>
+            Demandes en attente
+            {% if pendingReservations|length > 0 %}
+                <span class="ml-1 text-xs font-bold bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full">{{ pendingReservations|length }}</span>
+            {% endif %}
+        </h2>
+
+        {% if pendingReservations|length > 0 %}
+            <div class="space-y-4">
+                {% for reservation in pendingReservations %}
+                    {% set guest = reservation.guest %}
+                    {% set guestProfile = guest ? guest.profile : null %}
+                    {% set property = reservation.property %}
+
+                    <div class="bg-white border border-yellow-200 rounded-2xl p-5">
+                        <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+                            <div>
+                                <h3 class="font-semibold text-gray-900">
+                                    {{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : guest.email }}
+                                </h3>
+                                <p class="text-sm text-gray-500">{{ property ? property.title : '—' }}</p>
+                            </div>
+                            <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-yellow-100 text-yellow-800">En attente</span>
+                        </div>
+
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm mb-4">
+                            <div>
+                                <p class="text-gray-400 text-xs uppercase tracking-wide">Arrivée</p>
+                                <p class="font-medium">{{ reservation.checkinDate|date('d/m/Y') }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-400 text-xs uppercase tracking-wide">Départ</p>
+                                <p class="font-medium">{{ reservation.checkoutDate|date('d/m/Y') }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-400 text-xs uppercase tracking-wide">Voyageurs</p>
+                                <p class="font-medium">{{ reservation.guestsCount }}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-400 text-xs uppercase tracking-wide">Total</p>
+                                <p class="font-medium">{{ reservation.totalPrice }} €</p>
+                            </div>
+                        </div>
+
+                        {% if reservation.expiresAt %}
+                            <p class="text-xs text-yellow-700 mb-4">
+                                <i class="fa-solid fa-clock mr-1"></i>
+                                Expire le {{ reservation.expiresAt|date('d/m/Y à H:i') }}
+                            </p>
+                        {% endif %}
+
+                        <div class="flex gap-3">
+                            <form method="POST" action="{{ path('host_confirm_booking', {id: reservation.id}) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('host_confirm_' ~ reservation.id) }}">
+                                <button type="submit"
+                                        class="bg-green-600 hover:bg-green-700 text-white text-sm font-semibold px-5 py-2 rounded-xl transition-colors">
+                                    <i class="fa-solid fa-check mr-1"></i>Accepter
+                                </button>
+                            </form>
+                            <a href="{{ path('host_reject_booking', {id: reservation.id}) }}"
+                               class="bg-red-50 hover:bg-red-100 text-red-700 text-sm font-semibold px-5 py-2 rounded-xl transition-colors">
+                                <i class="fa-solid fa-xmark mr-1"></i>Refuser
+                            </a>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-10 border border-dashed border-gray-200 rounded-xl">
+                <i class="fa-solid fa-inbox text-3xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 text-sm">Aucune demande en attente.</p>
+            </div>
+        {% endif %}
+    </section>
+
+    {# ── Timeline calendrier ──────────────────────────────────────────── #}
+    <section class="mb-10">
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <h2 class="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                <span class="w-2 h-2 rounded-full bg-brand inline-block"></span>
+                Calendrier général
+                <span class="text-xs font-normal text-gray-400">— 60 prochains jours</span>
+            </h2>
+            <div class="flex flex-wrap gap-3 text-xs text-gray-600">
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-green-400 inline-block"></span> Confirmée</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-yellow-300 inline-block"></span> En attente</span>
+                <span class="flex items-center gap-1.5"><span class="w-3 h-3 rounded-sm bg-blue-300 inline-block"></span> Terminée</span>
+            </div>
+        </div>
+
+        {% if properties|length == 0 %}
+            <div class="text-center py-10 border border-dashed border-gray-200 rounded-xl">
+                <i class="fa-solid fa-calendar-xmark text-3xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 text-sm">Aucune propriété.</p>
+            </div>
+        {% else %}
+        <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+            {# Scrollable wrapper #}
+            <div class="overflow-x-auto" id="timeline-scroll">
+                {# Min col width: 36px per day, first col (property label) is fixed 160px #}
+                <div style="min-width: {{ 160 + timelineDays|length * 36 }}px;">
+
+                    {# ── Month headers ── #}
+                    <div class="flex border-b border-gray-100">
+                        <div class="shrink-0 w-40 border-r border-gray-100"></div>
+                        <div class="flex flex-1">
+                            {% set prevMonth = '' %}
+                            {% set monthStart = 0 %}
+                            {% for idx, d in timelineDays %}
+                                {% if d.month != prevMonth %}
+                                    {% if prevMonth != '' %}
+                                        {# close previous month span via JS — we use data attrs instead #}
+                                    {% endif %}
+                                    {% set prevMonth = d.month %}
+                                {% endif %}
+                            {% endfor %}
+                            {# Simpler: group days by month with Twig #}
+                            {% set monthGroups = [] %}
+                            {% set curMonth = '' %}
+                            {% set curCount = 0 %}
+                            {% for d in timelineDays %}
+                                {% if d.month ~ d.key|slice(0,4) != curMonth %}
+                                    {% if curMonth != '' %}
+                                        {% set monthGroups = monthGroups|merge([{label: curMonth, count: curCount}]) %}
+                                    {% endif %}
+                                    {% set curMonth = d.month ~ d.key|slice(0,4) %}
+                                    {% set curCount = 1 %}
+                                {% else %}
+                                    {% set curCount = curCount + 1 %}
+                                {% endif %}
+                            {% endfor %}
+                            {% set monthGroups = monthGroups|merge([{label: curMonth, count: curCount}]) %}
+
+                            {% for mg in monthGroups %}
+                                <div class="text-center text-xs font-semibold text-gray-500 py-1.5 border-r border-gray-100 bg-gray-50"
+                                     style="width: {{ mg.count * 36 }}px; min-width: {{ mg.count * 36 }}px;">
+                                    {{ mg.label|slice(0, -4) }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# ── Day headers ── #}
+                    <div class="flex border-b border-gray-200">
+                        <div class="shrink-0 w-40 border-r border-gray-100 px-3 py-2 text-xs text-gray-400 font-medium bg-gray-50">
+                            Logement
+                        </div>
+                        <div class="flex flex-1">
+                            {% for d in timelineDays %}
+                                <div class="w-9 shrink-0 text-center py-1.5 text-[10px] leading-tight border-r border-gray-100
+                                    {{ d.isToday ? 'bg-brand/10 text-brand font-bold' : (d.isWeekend ? 'bg-gray-50 text-gray-400' : 'text-gray-400') }}">
+                                    <div>{{ d.dayLabel }}</div>
+                                    <div class="{{ d.isFirst ? 'font-bold text-gray-700' : '' }}">{{ d.day }}</div>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    {# ── Property rows ── #}
+                    {% for property in properties %}
+                        {% set propId = property.id ~ '' %}
+                        {% set segments = propertySegments[propId] is defined ? propertySegments[propId] : [] %}
+
+                        <div class="flex border-b border-gray-100 last:border-b-0 hover:bg-gray-50/50 transition group">
+                            {# Property label #}
+                            <div class="shrink-0 w-40 border-r border-gray-100 px-3 py-2 flex flex-col justify-center gap-0.5">
+                                <a href="{{ path('host_calendar_show', {id: property.id}) }}"
+                                   class="text-xs font-semibold text-gray-800 truncate group-hover:text-brand transition leading-tight"
+                                   title="{{ property.title }}">
+                                    {{ property.title }}
+                                </a>
+                                <span class="text-[10px] text-gray-400 truncate">
+                                    {% if property.address %}{{ property.address.city }}{% endif %}
+                                </span>
+                            </div>
+
+                            {# Day cells with reservation bars #}
+                            <div class="flex flex-1 relative" style="height: 44px;">
+                                {# Grid lines #}
+                                {% for d in timelineDays %}
+                                    <div class="w-9 shrink-0 h-full border-r border-gray-100
+                                        {{ d.isToday ? 'bg-brand/5' : (d.isWeekend ? 'bg-gray-50/60' : '') }}"></div>
+                                {% endfor %}
+
+                                {# Reservation bars — absolutely positioned, offsets pre-computed in controller #}
+                                {% for seg in segments %}
+                                    {% set barColor = seg.status == 'confirmed' ? 'bg-green-400 border-green-500' : (seg.status == 'completed' ? 'bg-blue-300 border-blue-400' : 'bg-yellow-300 border-yellow-400') %}
+                                    {% set textColor = seg.status == 'confirmed' ? 'text-green-900' : (seg.status == 'completed' ? 'text-blue-900' : 'text-yellow-900') %}
+                                    <a href="{{ path('app_reservation_show', {id: seg.id}) }}"
+                                       class="absolute top-2 bottom-2 rounded border {{ barColor }} {{ textColor }} flex items-center px-2 overflow-hidden cursor-pointer hover:brightness-95 transition z-10"
+                                       style="left: calc({{ seg.startCol }} * 36px + 2px); width: calc({{ seg.barDays }} * 36px - 4px);"
+                                       title="{{ seg.guestName }} · {{ seg.nights }} nuit(s)">
+                                        <span class="text-[10px] font-semibold truncate whitespace-nowrap">
+                                            {{ seg.guestName }}
+                                            {% if seg.barDays >= 3 %}· {{ seg.nights }}n{% endif %}
+                                        </span>
+                                    </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+
+                    {# Today indicator line #}
+                </div>
+            </div>
+
+            {# Scroll hint if many properties #}
+            <div class="px-4 py-2 border-t border-gray-100 flex items-center justify-between">
+                <span class="text-xs text-gray-400">Cliquez sur une réservation pour voir le détail · Cliquez sur le nom pour gérer le calendrier</span>
+                <div class="flex gap-1">
+                    <button onclick="document.getElementById('timeline-scroll').scrollBy({left:-200,behavior:'smooth'})"
+                            class="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 text-xs">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button onclick="document.getElementById('timeline-scroll').scrollBy({left:200,behavior:'smooth'})"
+                            class="w-7 h-7 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 text-xs">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </section>
+
+    {# ── Toutes les réservations ───────────────────────────────────────── #}
+    <section>
+        <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-gray-400 inline-block"></span>
+            Toutes les réservations
+            <span class="text-xs font-normal text-gray-400">({{ allReservations|length }})</span>
+        </h2>
+
+        {% if allReservations|length > 0 %}
+            <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-xs text-gray-500 uppercase tracking-wide">
+                        <tr>
+                            <th class="px-4 py-3 text-left">Voyageur</th>
+                            <th class="px-4 py-3 text-left hidden md:table-cell">Logement</th>
+                            <th class="px-4 py-3 text-left">Dates</th>
+                            <th class="px-4 py-3 text-left hidden sm:table-cell">Total</th>
+                            <th class="px-4 py-3 text-left">Statut</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for reservation in allReservations %}
+                            {% set guest = reservation.guest %}
+                            {% set guestProfile = guest ? guest.profile : null %}
+                            {% set property = reservation.property %}
+                            <tr class="hover:bg-gray-50 transition">
+                                <td class="px-4 py-3 font-medium text-gray-900">
+                                    {{ guestProfile ? guestProfile.firstName ~ ' ' ~ guestProfile.lastName : guest.email }}
+                                </td>
+                                <td class="px-4 py-3 text-gray-600 hidden md:table-cell max-w-[160px] truncate">
+                                    {{ property ? property.title : '—' }}
+                                </td>
+                                <td class="px-4 py-3 text-gray-600 whitespace-nowrap">
+                                    {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                                </td>
+                                <td class="px-4 py-3 text-gray-600 hidden sm:table-cell">
+                                    {{ reservation.totalPrice }} €
+                                </td>
+                                <td class="px-4 py-3">
+                                    <span class="text-xs font-semibold px-2 py-0.5 rounded-full {{ statusColors[reservation.status] ?? 'bg-gray-100 text-gray-500' }}">
+                                        {{ statusLabels[reservation.status] ?? reservation.status }}
+                                    </span>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-10 border border-dashed border-gray-200 rounded-xl">
+                <i class="fa-solid fa-calendar-xmark text-3xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 text-sm">Aucune réservation pour le moment.</p>
+            </div>
+        {% endif %}
+    </section>
+
+</main>
+{% endblock %}

@@ -10,7 +10,6 @@ framework:
                     max_retries: 3
                     multiplier: 2
             failed: 'doctrine://default?queue_name=failed'
-            # sync: 'sync://'
 
         default_bus: messenger.bus.default
 
@@ -18,9 +17,9 @@ framework:
             messenger.bus.default: []
 
         routing:
-#            Symfony\Component\Mailer\Messenger\SendEmailMessage: async
-#            Symfony\Component\Notifier\Message\ChatMessage: async
-#            Symfony\Component\Notifier\Message\SmsMessage: async
-
-            # Route your messages to the transports
-            # 'App\Message\YourMessage': async
+            Symfony\Component\Mailer\Messenger\SendEmailMessage: async
+            App\Message\BookingRequestedMessage: async
+            App\Message\BookingConfirmedMessage: async
+            App\Message\BookingCancelledMessage: async
+            App\Message\BookingExpiredMessage: async
+            App\Message\BookingBlockedMessage: async

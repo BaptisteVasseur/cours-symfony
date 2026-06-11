@@ -34,6 +34,7 @@ final class FixtureReferences
     public const RESERVATION_COMPLETED = 'reservation_completed';
     public const RESERVATION_PENDING = 'reservation_pending';
     public const RESERVATION_CANCELLED = 'reservation_cancelled';
+    public const RESERVATION_EXPIRED = 'reservation_expired';
 
     public const PAYMENT_CONFIRMED = 'payment_confirmed';
     public const REVIEW_1 = 'review_1';

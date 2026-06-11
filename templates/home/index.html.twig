@@ -4,23 +4,78 @@
     <main class="flex-grow px-6 md:px-12 py-8">
         {% include 'parts/search_bar.html.twig' %}
 
-        <div class="flex items-center space-x-8 overflow-x-auto pb-4 mb-8 no-scrollbar border-b border-gray-100">
-            <div class="flex flex-col items-center space-y-2 text-gray-500 hover:text-black border-b-2 border-transparent hover:border-black pb-2 cursor-pointer transition min-w-[56px]">
-                <i class="fa-solid fa-umbrella-beach text-xl"></i>
-                <span class="text-xs font-semibold whitespace-nowrap">Bord de mer</span>
+        {% set typeFilters = [
+            { type: null,        icon: 'fa-solid fa-border-all',      label: 'Tous' },
+            { type: 'villa',     icon: 'fa-solid fa-house-chimney',   label: 'Villas' },
+            { type: 'apartment', icon: 'fa-solid fa-building',        label: 'Appartements' },
+            { type: 'loft',      icon: 'fa-solid fa-city',            label: 'Lofts' },
+            { type: 'house',     icon: 'fa-solid fa-house',           label: 'Maisons' },
+            { type: 'chalet',    icon: 'fa-solid fa-mountain',        label: 'Chalets' },
+        ] %}
+
+        <div class="flex items-center gap-4 pb-4 mb-8 border-b border-gray-100">
+            <div class="flex items-center space-x-8 overflow-x-auto no-scrollbar flex-1">
+                {% for filter in typeFilters %}
+                    {% set isActive = activeType == filter.type %}
+                    <a href="{{ path('app_home', (filter.type ? { type: filter.type } : {})|merge(search ? {q: search} : {})) }}"
+                       class="flex flex-col items-center space-y-2 pb-2 border-b-2 transition min-w-[56px]
+                           {{ isActive
+                               ? 'text-black border-black'
+                               : 'text-gray-500 hover:text-black border-transparent hover:border-black' }}">
+                        <i class="{{ filter.icon }} text-xl"></i>
+                        <span class="text-xs font-semibold whitespace-nowrap">{{ filter.label }}</span>
+                    </a>
+                {% endfor %}
             </div>
-            <div class="flex flex-col items-center space-y-2 text-black border-b-2 border-black pb-2 cursor-pointer min-w-[56px]">
-                <i class="fa-solid fa-mountain-city text-xl"></i>
-                <span class="text-xs font-semibold whitespace-nowrap">Iconiques</span>
+
+            <div class="flex items-center gap-1 shrink-0">
+                <div class="relative">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-xs pointer-events-none"></i>
+                    <input
+                        id="home-search"
+                        type="text"
+                        value="{{ search }}"
+                        placeholder="Rechercher un logement..."
+                        autocomplete="off"
+                        data-base-url="{{ path('app_home') }}"
+                        data-active-type="{{ activeType }}"
+                        class="pl-8 pr-4 py-2 text-sm border border-gray-200 rounded-full bg-white focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand w-52 transition"
+                    >
+                </div>
+                <a id="home-search-clear"
+                   href="{{ path('app_home', activeType ? {type: activeType} : {}) }}"
+                   class="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition text-xs {{ search ? '' : 'invisible' }}">
+                    <i class="fa-solid fa-xmark"></i>
+                </a>
             </div>
-            <div class="flex flex-col items-center space-y-2 text-gray-500 hover:text-black border-b-2 border-transparent hover:border-black pb-2 cursor-pointer transition min-w-[56px]">
-                <i class="fa-solid fa-fire text-xl"></i>
-                <span class="text-xs font-semibold whitespace-nowrap">Tendances</span>
-            </div>
-            <div class="flex flex-col items-center space-y-2 text-gray-500 hover:text-black border-b-2 border-transparent hover:border-black pb-2 cursor-pointer transition min-w-[56px]">
-                <i class="fa-solid fa-campground text-xl"></i>
-                <span class="text-xs font-semibold whitespace-nowrap">Campings</span>
-            </div>
+            <script>
+            (function () {
+                const input   = document.getElementById('home-search');
+                const clear   = document.getElementById('home-search-clear');
+                const baseUrl = input.dataset.baseUrl;
+                const type    = input.dataset.activeType;
+                let timer;
+
+                function navigate(q) {
+                    const params = new URLSearchParams();
+                    if (type) params.set('type', type);
+                    if (q)    params.set('q', q);
+                    const qs = params.toString();
+                    window.location.href = baseUrl + (qs ? '?' + qs : '');
+                }
+
+                input.addEventListener('input', function () {
+                    clearTimeout(timer);
+                    clear.classList.toggle('invisible', this.value === '');
+                    timer = setTimeout(() => navigate(this.value.trim()), 500);
+                });
+
+                input.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') { clearTimeout(timer); navigate(this.value.trim()); }
+                    if (e.key === 'Escape') { clearTimeout(timer); navigate(''); }
+                });
+            })();
+            </script>
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">

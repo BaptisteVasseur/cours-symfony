@@ -111,7 +111,7 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
         $extraTitles = [
             ['Maison de Campagne Normande', 'house', 'published', '120.00', 'Deauville', 'France'],
             ['Chalet Alpin Familial', 'chalet', 'published', '195.00', 'Megève', 'France'],
-            ['Studio Plage Bordeaux', 'apartment', 'draft', '75.00', 'Arcachon', 'France'],
+            ['Studio Plage Bordeaux', 'apartment', 'pending', '75.00', 'Arcachon', 'France'],
             ['Penthouse Parisien', 'apartment', 'published', '350.00', 'Paris', 'France'],
             ['Gîte Rural Provence', 'house', 'published', '110.00', 'Aix-en-Provence', 'France'],
             ['Bungalow Tropical', 'house', 'pending', '160.00', 'Bali', 'Indonésie'],
@@ -234,6 +234,9 @@ class PropertyFixture extends Fixture implements DependentFixtureInterface
             $availability->setMinimumStay($day % 10 === 0 ? 3 : 1);
             $manager->persist($availability);
         }
+
+        // Generate iCal export token for all properties
+        $property->regenerateCalendarToken();
 
         if ($withICal) {
             $iCalSync = new PropertyICalSync();

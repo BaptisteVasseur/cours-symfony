@@ -2,7 +2,16 @@
 {% set averageRating = property.averageRating %}
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=800&q=80' %}
 
-<a href="{{ path('app_logement_detail', { id: property.id }) }}" class="group block">
+{% set checkin  = checkin  is defined and checkin  ? checkin  : null %}
+{% set checkout = checkout is defined and checkout ? checkout : null %}
+{% set guests   = guests   is defined and guests   ? guests   : 1 %}
+
+{% set detailParams = { id: property.id } %}
+{% if checkin  %} {% set detailParams = detailParams|merge({ checkin:  checkin|date('Y-m-d') }) %} {% endif %}
+{% if checkout %} {% set detailParams = detailParams|merge({ checkout: checkout|date('Y-m-d') }) %} {% endif %}
+{% if guests > 1 %} {% set detailParams = detailParams|merge({ guests: guests }) %} {% endif %}
+
+<a href="{{ path('app_logement_detail', detailParams) }}" class="group block">
     <div class="relative aspect-square w-full overflow-hidden rounded-xl mb-3">
         <img
             class="h-full w-full object-cover group-hover:scale-105 transition duration-300"
@@ -12,6 +21,11 @@
         <button type="button" class="absolute top-3 right-3 text-white text-xl drop-shadow-md hover:scale-110 transition" aria-label="Ajouter aux favoris" onclick="event.preventDefault()">
             <i class="fa-regular fa-heart"></i>
         </button>
+        {% if property.instantBooking %}
+            <span class="absolute bottom-3 left-3 bg-white/90 text-gray-900 text-[10px] font-semibold px-2 py-1 rounded-full">
+                <i class="fa-solid fa-bolt text-yellow-500 mr-0.5"></i>Instantané
+            </span>
+        {% endif %}
     </div>
     <div class="flex justify-between items-start gap-2">
         <h3 class="font-bold text-sm text-gray-900 line-clamp-1">{{ property.title }}</h3>
@@ -25,12 +39,11 @@
     {% if property.address %}
         <p class="text-gray-500 text-sm">{{ property.address.city }}{% if property.address.country %}, {{ property.address.country }}{% endif %}</p>
     {% endif %}
-    {% if checkin is defined and checkout is defined and checkin and checkout %}
-        <p class="text-gray-500 text-sm mb-1">
-            {{ checkin|date('d') }}–{{ checkout|date('d/m') }}
-        </p>
+    {% if checkin and checkout %}
+        <p class="text-gray-500 text-sm">{{ checkin|date('d') }}–{{ checkout|date('d/m') }} · {{ guests }} voyageur{{ guests > 1 ? 's' : '' }}</p>
     {% endif %}
-    <p class="text-sm font-semibold">
-        <span class="font-bold">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span> nuit
+    <p class="text-sm font-semibold mt-0.5">
+        <span class="font-bold">{{ property.pricePerNight|number_format(0, ',', ' ') }} €</span>
+        <span class="font-normal text-gray-500"> / nuit</span>
     </p>
 </a>

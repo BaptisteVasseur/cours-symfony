@@ -9,18 +9,21 @@
     'completed': 'Terminée',
     'pending': 'En attente',
     'cancelled': 'Annulée',
+    'expired': 'Expirée',
 } %}
 {% set statusClasses = {
     'confirmed': 'bg-emerald-50 text-emerald-800 border border-emerald-200',
     'completed': 'bg-blue-50 text-blue-800 border border-blue-200',
     'pending': 'bg-amber-50 text-amber-800 border border-amber-200',
     'cancelled': 'bg-red-50 text-red-800 border border-red-200',
+    'expired': 'bg-gray-50 text-gray-500 border border-gray-200',
 } %}
 {% set statusIcons = {
     'confirmed': 'fa-check',
     'completed': 'fa-flag-checkered',
     'pending': 'fa-clock',
     'cancelled': 'fa-xmark',
+    'expired': 'fa-hourglass-end',
 } %}
 
 <tr class="hover:bg-gray-50/70 transition">
@@ -53,6 +56,12 @@
             <i class="fa-solid {{ statusIcons[reservation.status]|default('fa-circle') }} text-[8px] mr-1.5"></i>
             {{ statusLabels[reservation.status]|default(reservation.status) }}
         </span>
+        {% if reservation.status == 'cancelled' and reservation.cancellationReason %}
+            <p class="text-xs text-red-500 mt-1 max-w-[180px] truncate" title="{{ reservation.cancellationReason }}">
+                <span class="font-medium">{{ reservation.cancelledBy == 'admin' ? 'Admin' : (reservation.cancelledBy == 'host' ? 'Hôte' : (reservation.cancelledBy == 'guest' ? 'Voyageur' : 'Système')) }} :</span>
+                {{ reservation.cancellationReason }}
+            </p>
+        {% endif %}
     </td>
     <td class="px-6 py-4 font-semibold text-gray-900">
         {{ reservation.totalPrice|number_format(0, ',', ' ') }} {{ reservation.currency|default('EUR') }}
