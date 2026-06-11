@@ -19,6 +19,10 @@ framework:
 
         routing:
             Symfony\Component\Mailer\Messenger\SendEmailMessage: async
+            App\Message\BookingCreatedMessage: async
+            App\Message\BookingConfirmedMessage: async
+            App\Message\BookingCancelledMessage: async
+            App\Message\BookingRefusedMessage: async
 #            Symfony\Component\Notifier\Message\ChatMessage: async
 #            Symfony\Component\Notifier\Message\SmsMessage: async
 

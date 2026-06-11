@@ -7,10 +7,10 @@ namespace App\Controller\Front;
 use App\Entity\Property;
 use App\Entity\User;
 use App\Exception\UnavailableDatesException;
+use App\Exception\BookingConflictException;
 use App\Form\BookingType;
 use App\Repository\PropertyRepository;
 use App\Service\BookingService;
-use App\Service\MailService;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,7 +28,6 @@ final class BookingController extends AbstractController
         Property $property,
         PropertyRepository $propertyRepository,
         BookingService $bookingService,
-        MailService $mailService,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -57,7 +56,7 @@ final class BookingController extends AbstractController
 
             try {
                 $reservation = $bookingService->create($property, $user, $checkin, $checkout, $guestsCount);
-            } catch (UnavailableDatesException|\LogicException $exception) {
+            } catch (BookingConflictException|UnavailableDatesException|\LogicException $exception) {
                 $this->addFlash('error', $exception->getMessage());
 
                 return $this->render('front/property/booking.html.twig', [
@@ -66,11 +65,10 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            if ($reservation->getStatus() === 'confirmed') {
-                $mailService->sendBookingConfirmationEmail($reservation);
-            }
-
-            $this->addFlash('success', 'Votre réservation a été enregistrée.');
+            $message = $reservation->getStatus() === 'confirmed'
+                ? 'Votre réservation est confirmée.'
+                : 'Votre demande de réservation a été transmise à l’hôte.';
+            $this->addFlash('success', $message);
 
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }

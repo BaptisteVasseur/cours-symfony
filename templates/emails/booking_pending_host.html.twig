@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Nouvelle demande de réservation</title>
+</head>
+<body style="font-family: Arial, sans-serif; background: #f7f7f7; margin: 0; padding: 24px; color: #222;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 620px; margin: 0 auto; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px;">
+        <tr>
+            <td style="padding: 28px;">
+                <h1 style="margin: 0 0 12px; font-size: 24px;">Nouvelle demande de réservation</h1>
+                <p style="margin: 0 0 20px; color: #555;">Un voyageur souhaite réserver {{ property.title }}.</p>
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse: collapse; margin-bottom: 24px;">
+                    <tr><td style="padding: 8px 0; color: #777;">Arrivée</td><td style="padding: 8px 0; font-weight: 700;">{{ reservation.checkinDate|date('d/m/Y') }}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #777;">Départ</td><td style="padding: 8px 0; font-weight: 700;">{{ reservation.checkoutDate|date('d/m/Y') }}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #777;">Voyageurs</td><td style="padding: 8px 0; font-weight: 700;">{{ reservation.guestsCount }}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #777;">Total</td><td style="padding: 8px 0; font-weight: 700;">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #777;">Voyageur</td><td style="padding: 8px 0; font-weight: 700;">{{ reservation.guest.email }}</td></tr>
+                </table>
+                <a href="{{ hostReservationsUrl }}" style="display: inline-block; background: #ff385c; color: #fff; text-decoration: none; padding: 12px 18px; border-radius: 8px; font-weight: 700;">Gérer la demande</a>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
