@@ -8,6 +8,7 @@ use App\Entity\Property;
 use App\Entity\Reservation;
 use App\Entity\ReservationStatusHistory;
 use App\Entity\User;
+use App\Message\ReservationCancelledMessage;
 use App\Message\ReservationCreatedMessage;
 use App\Message\ReservationDecisionMessage;
 use App\Repository\ReservationRepository;
@@ -168,6 +169,52 @@ final class ReservationService
         $this->bus->dispatch(new ReservationDecisionMessage(
             (string) $reservation->getId(),
             'rejected',
+            $reason,
+        ));
+    }
+
+    /**
+     * Annule une réservation (pending ou confirmed) à l'initiative du voyageur ou de l'hôte.
+     * Les dates sont immédiatement libérées (statut cancelled).
+     * Les deux parties sont notifiées par email de façon asynchrone.
+     *
+     * @throws \RuntimeException si la réservation ne peut pas être annulée ou si l'acteur n'est pas autorisé
+     */
+    public function cancelReservation(Reservation $reservation, User $actor, string $reason): void
+    {
+        $allowedStatuses = ['pending', 'confirmed'];
+        if (!in_array($reservation->getStatus(), $allowedStatuses, true)) {
+            throw new \RuntimeException('Cette réservation ne peut plus être annulée (statut actuel : ' . $reservation->getStatus() . ').');
+        }
+
+        $isGuest = $reservation->getGuest()?->getId() === $actor->getId();
+        $isHost = $reservation->getProperty()?->getHost()?->getId() === $actor->getId();
+
+        if (!$isGuest && !$isHost) {
+            throw new \RuntimeException('Vous n\'êtes pas autorisé à annuler cette réservation.');
+        }
+
+        $cancelledByRole = $isHost ? 'host' : 'guest';
+        $oldStatus = $reservation->getStatus();
+
+        $this->entityManager->wrapInTransaction(function () use ($reservation, $actor, $reason, $oldStatus, $cancelledByRole): void {
+            $reservation->setStatus('cancelled');
+            $reservation->setCancellationReason($reason);
+            $reservation->setExpiresAt(null);
+
+            $history = new ReservationStatusHistory();
+            $history->setReservation($reservation);
+            $history->setOldStatus($oldStatus);
+            $history->setNewStatus('cancelled');
+            $history->setChangedBy($actor);
+            $history->setReason($reason);
+
+            $this->entityManager->persist($history);
+        });
+
+        $this->bus->dispatch(new ReservationCancelledMessage(
+            (string) $reservation->getId(),
+            $cancelledByRole,
             $reason,
         ));
     }

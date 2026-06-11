@@ -57,6 +57,14 @@
                     Cette demande expire le {{ reservation.expiresAt|date('d/m/Y à H:i') }}. L'hôte doit répondre avant cette date.
                 </p>
             {% endif %}
+            {% if reservation.status in ['pending', 'confirmed'] and is_granted('RESERVATION_CANCEL', reservation) %}
+                <div class="mt-4">
+                    <a href="{{ path('app_reservation_cancel', {id: reservation.id}) }}"
+                       class="inline-flex items-center gap-2 px-4 py-2 bg-white border border-red-300 hover:bg-red-50 text-red-700 text-sm font-semibold rounded-xl transition shadow-sm">
+                        <i class="fa-solid fa-ban"></i> Annuler la réservation
+                    </a>
+                </div>
+            {% endif %}
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">

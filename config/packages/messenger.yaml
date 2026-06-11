@@ -24,3 +24,4 @@ framework:
 
             App\Message\ReservationCreatedMessage: async
             App\Message\ReservationDecisionMessage: async
+            App\Message\ReservationCancelledMessage: async

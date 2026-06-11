@@ -1,0 +1,90 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Annuler la réservation{% endblock %}
+
+{% block content %}
+{% set property = reservation.property %}
+{% set nights = reservation.checkinDate.diff(reservation.checkoutDate).days %}
+
+<main class="flex-grow px-4 md:px-10 py-8 max-w-2xl mx-auto w-full">
+
+    <nav class="text-sm text-gray-400 mb-6 flex items-center gap-2">
+        <a href="{{ path('app_reservation_index') }}" class="hover:text-brand transition">Mes réservations</a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <a href="{{ path('app_reservation_show', {id: reservation.id}) }}" class="hover:text-brand transition truncate max-w-xs">{{ property.title }}</a>
+        <i class="fa-solid fa-chevron-right text-xs"></i>
+        <span class="text-gray-600 font-medium">Annuler</span>
+    </nav>
+
+    {# Récapitulatif de la réservation #}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 mb-6">
+        <div class="flex items-start gap-4">
+            <div class="w-20 h-16 flex-shrink-0 rounded-xl overflow-hidden bg-gray-100">
+                {% set cover = property.media|filter(m => m.isCover)|first %}
+                {% if cover %}
+                    <img src="{{ cover.url }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                {% else %}
+                    <div class="w-full h-full flex items-center justify-center text-gray-300">
+                        <i class="fa-regular fa-image text-2xl"></i>
+                    </div>
+                {% endif %}
+            </div>
+            <div>
+                <h2 class="text-base font-semibold text-gray-900">{{ property.title }}</h2>
+                <p class="text-sm text-gray-500 mt-0.5">
+                    <i class="fa-regular fa-calendar mr-1"></i>
+                    {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                    — {{ nights }} nuit{{ nights > 1 ? 's' : '' }}
+                </p>
+                <span class="inline-flex items-center gap-1 mt-1 px-2 py-0.5 rounded-full text-xs font-semibold
+                    {{ reservation.status == 'confirmed' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800' }}">
+                    {{ reservation.status == 'confirmed' ? 'Confirmée' : 'En attente' }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    {# Formulaire d'annulation #}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
+        <h1 class="text-xl font-semibold text-gray-900 mb-1">
+            <i class="fa-solid fa-ban mr-2 text-red-500"></i>
+            Annuler cette réservation
+        </h1>
+        <p class="text-sm text-gray-500 mb-6">
+            L'annulation est <strong>immédiate et irréversible</strong>. Les dates seront libérées dans le calendrier et les deux parties recevront un email de notification.
+        </p>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm font-medium
+                    {{ label == 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' : 'bg-red-50 text-red-800 border border-red-200' }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endfor %}
+
+        {{ form_start(form, {attr: {class: 'space-y-5'}}) }}
+
+            <div>
+                {{ form_label(form.reason, null, {label_attr: {class: 'block text-sm font-medium text-gray-700 mb-1'}}) }}
+                {{ form_widget(form.reason, {attr: {class: 'w-full px-4 py-3 border border-gray-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent transition'}}) }}
+                {{ form_errors(form.reason) }}
+            </div>
+
+            <div class="flex gap-3 pt-2">
+                <button type="submit"
+                        class="flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition shadow-sm"
+                        onclick="return confirm('Confirmer l\'annulation ? Cette action est irréversible.')">
+                    <i class="fa-solid fa-ban"></i> Confirmer l'annulation
+                </button>
+                <a href="{{ path('app_reservation_show', {id: reservation.id}) }}"
+                   class="flex items-center gap-2 px-5 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 text-gray-700 text-sm font-semibold rounded-xl transition shadow-sm">
+                    Retour
+                </a>
+            </div>
+
+        {{ form_end(form) }}
+    </div>
+
+</main>
+{% endblock %}
