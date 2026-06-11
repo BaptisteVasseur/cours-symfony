@@ -60,4 +60,24 @@ class ReservationMailer
 
         $this->mailer->send($email);
     }
+    
+    public function sendDecision(Reservation $reservation): void
+    {
+        $guest = $reservation->getGuest();
+        if ($guest === null) {
+            return;
+        }
+
+        $context = [
+            'reservation' => $reservation,
+            'property' => $reservation->getProperty(),
+            'guest' => $guest,
+        ];
+
+        if ('confirmed' === $reservation->getStatus()) {
+            $this->send((string) $guest->getEmail(), 'Votre demande a été acceptée', 'email/reservation_accepted.html.twig', $context);
+        } else {
+            $this->send((string) $guest->getEmail(), 'Votre demande a été refusée', 'email/reservation_refused.html.twig', $context);
+        }
+    }
 }

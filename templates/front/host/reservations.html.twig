@@ -1,0 +1,47 @@
+{% extends 'layout/app.html.twig' %}
+
+{% block title %}Demandes de réservation{% endblock %}
+
+{% block content %}
+    <main class="flex-grow px-6 md:px-12 py-8 max-w-4xl mx-auto w-full">
+        <h1 class="text-2xl font-bold text-gray-900 mb-6">Demandes en attente</h1>
+
+        {% for label, messages in app.flashes %}
+            {% for message in messages %}
+                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
+            {% endfor %}
+        {% endfor %}
+
+        {% if pending is empty %}
+            <p class="text-gray-500">Aucune demande en attente pour le moment.</p>
+        {% else %}
+            <div class="space-y-4">
+                {% for reservation in pending %}
+                    <div class="border border-gray-200 rounded-2xl p-5 shadow-sm">
+                        <h2 class="font-semibold text-gray-900">{{ reservation.property.title }}</h2>
+                        <p class="text-sm text-gray-600 mt-1">
+                            {{ reservation.guest.profile ? reservation.guest.profile.firstName : reservation.guest.email }}
+                            · {{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}
+                            · {{ reservation.guestsCount }} voyageur(s)
+                            · {{ reservation.totalPrice }} {{ reservation.currency }}
+                        </p>
+
+                        <div class="flex flex-col sm:flex-row gap-3 mt-4">
+                            <form method="post" action="{{ path('app_host_reservation_accept', { id: reservation.id }) }}">
+                                <input type="hidden" name="_token" value="{{ csrf_token('moderate' ~ reservation.id) }}">
+                                <button class="bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">Accepter</button>
+                            </form>
+
+                            <form method="post" action="{{ path('app_host_reservation_refuse', { id: reservation.id }) }}" class="flex flex-1 gap-2">
+                                <input type="hidden" name="_token" value="{{ csrf_token('moderate' ~ reservation.id) }}">
+                                <input type="text" name="reason" placeholder="Motif du refus" required
+                                       class="flex-1 border border-gray-300 rounded-xl px-3 py-2 text-sm">
+                                <button class="bg-red-600 hover:bg-red-700 text-white text-sm font-semibold px-4 py-2 rounded-xl">Refuser</button>
+                            </form>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    </main>
+{% endblock %}

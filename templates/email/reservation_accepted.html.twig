@@ -1,0 +1,7 @@
+<h2>Bonne nouvelle, votre réservation est acceptée ✅</h2>
+<p>Bonjour {{ guest.profile ? guest.profile.firstName : guest.email }},</p>
+<p>L'hôte a accepté votre demande pour <strong>{{ property.title }}</strong>.</p>
+<ul>
+    <li>Arrivée : {{ reservation.checkinDate|date('d/m/Y') }}</li>
+    <li>Départ : {{ reservation.checkoutDate|date('d/m/Y') }}</li>
+</ul>

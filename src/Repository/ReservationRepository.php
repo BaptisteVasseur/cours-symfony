@@ -128,4 +128,19 @@ class ReservationRepository extends ServiceEntityRepository
             ->getQuery()
             ->getSingleScalarResult();
     }
+    /**
+     * @return list<Reservation>
+     */
+    public function findPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->innerJoin('r.property', 'p')->addSelect('p')
+            ->leftJoin('r.guest', 'g')->addSelect('g')
+            ->leftJoin('g.profile', 'gp')->addSelect('gp')
+            ->andWhere('p.host = :host')->setParameter('host', $host)
+            ->andWhere('r.status = :status')->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }
