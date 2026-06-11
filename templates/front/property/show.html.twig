@@ -5,6 +5,18 @@
 {% set placeholderImage = 'https://images.unsplash.com/photo-1564013799919-ab600027ffc6?auto=format&fit=crop&w=1200&q=80' %}
 {% set hostProfile = property.host ? property.host.profile : null %}
 
+{% set allMedia = [] %}
+{% if cover %}
+    {% set allMedia = allMedia|merge([cover.fileUrl]) %}
+{% else %}
+    {% set allMedia = allMedia|merge([placeholderImage]) %}
+{% endif %}
+{% for medium in property.media %}
+    {% if not cover or medium.id != cover.id %}
+        {% set allMedia = allMedia|merge([medium.fileUrl]) %}
+    {% endif %}
+{% endfor %}
+
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-6xl mx-auto w-full">
         <div class="mb-6">
@@ -26,17 +38,29 @@
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-4 gap-2 rounded-xl overflow-hidden mb-10 h-[300px] md:h-[480px]">
-            <div class="md:col-span-2 md:row-span-2 relative">
+            <div class="md:col-span-2 md:row-span-2 relative cursor-pointer overflow-hidden group" onclick="openCarousel(0)">
                 <img
                     src="{{ cover ? cover.fileUrl : placeholderImage }}"
                     alt="{{ property.title }}"
-                    class="w-full h-full object-cover"
+                    class="w-full h-full object-cover group-hover:scale-105 transition duration-300"
                 >
-            </div>
-            {% for medium in property.media|slice(1, 4) %}
-                <div class="hidden md:block relative">
-                    <img src="{{ medium.fileUrl }}" alt="{{ property.title }}" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center text-white font-semibold gap-2">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                    Agrandir
                 </div>
+            </div>
+            {% set imgIdx = 1 %}
+            {% for medium in property.media %}
+                {% if not cover or medium.id != cover.id %}
+                    <div class="hidden md:block relative cursor-pointer overflow-hidden group" onclick="openCarousel({{ imgIdx }})">
+                        <img src="{{ medium.fileUrl }}" alt="{{ property.title }}" class="w-full h-full object-cover group-hover:scale-105 transition duration-300">
+                        <div class="absolute inset-0 bg-black/10 opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center text-white font-semibold gap-2">
+                            <i class="fa-solid fa-magnifying-glass-plus"></i>
+                            Agrandir
+                        </div>
+                    </div>
+                    {% set imgIdx = imgIdx + 1 %}
+                {% endif %}
             {% endfor %}
         </div>
 
@@ -145,4 +169,99 @@
             </aside>
         </div>
     </main>
+
+    <!-- Modale Carrousel d'images -->
+    <div id="carouselModal" class="fixed inset-0 z-50 hidden bg-black/95 backdrop-blur-sm flex flex-col justify-center items-center select-none">
+        <!-- Bouton fermer -->
+        <button onclick="closeCarousel()" class="absolute top-6 right-6 text-white/75 hover:text-white text-3xl focus:outline-none transition z-50">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
+        <!-- Conteneur Image Principale -->
+        <div class="relative w-full max-w-4xl px-4 flex justify-center items-center">
+            <!-- Bouton Précédent -->
+            <button onclick="prevImage(event)" class="absolute left-6 text-white/75 hover:text-white bg-black/45 hover:bg-black/75 rounded-full w-12 h-12 flex items-center justify-center text-xl transition focus:outline-none z-50">
+                <i class="fa-solid fa-chevron-left"></i>
+            </button>
+
+            <!-- L'image -->
+            <img id="carouselImage" src="" alt="Aperçu logement" class="max-h-[80vh] max-w-full object-contain rounded-lg shadow-2xl transition-all duration-300 transform scale-95 opacity-0">
+
+            <!-- Bouton Suivant -->
+            <button onclick="nextImage(event)" class="absolute right-6 text-white/75 hover:text-white bg-black/45 hover:bg-black/75 rounded-full w-12 h-12 flex items-center justify-center text-xl transition focus:outline-none z-50">
+                <i class="fa-solid fa-chevron-right"></i>
+            </button>
+        </div>
+
+        <!-- Indicateur de position (ex: 2 / 5) -->
+        <div class="mt-4 text-white/80 font-medium text-sm" id="carouselCounter">
+            1 / 1
+        </div>
+    </div>
+
+    <script>
+        const images = {{ allMedia|json_encode|raw }};
+        let currentIndex = 0;
+
+        const modal = document.getElementById('carouselModal');
+        const carouselImg = document.getElementById('carouselImage');
+        const counter = document.getElementById('carouselCounter');
+
+        function openCarousel(index) {
+            currentIndex = index;
+            modal.classList.remove('hidden');
+            updateCarouselImage();
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeCarousel() {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }
+
+        function updateCarouselImage() {
+            if (images.length === 0) return;
+            
+            carouselImg.classList.remove('scale-100', 'opacity-100');
+            carouselImg.classList.add('scale-95', 'opacity-0');
+
+            setTimeout(() => {
+                carouselImg.src = images[currentIndex];
+                carouselImg.onload = () => {
+                    carouselImg.classList.remove('scale-95', 'opacity-0');
+                    carouselImg.classList.add('scale-100', 'opacity-100');
+                };
+                counter.innerText = `${currentIndex + 1} / ${images.length}`;
+            }, 150);
+        }
+
+        function nextImage(event) {
+            if (event) event.stopPropagation();
+            currentIndex = (currentIndex + 1) % images.length;
+            updateCarouselImage();
+        }
+
+        function prevImage(event) {
+            if (event) event.stopPropagation();
+            currentIndex = (currentIndex - 1 + images.length) % images.length;
+            updateCarouselImage();
+        }
+
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeCarousel();
+            }
+        });
+
+        document.addEventListener('keydown', (e) => {
+            if (modal.classList.contains('hidden')) return;
+            if (e.key === 'ArrowRight') {
+                nextImage();
+            } else if (e.key === 'ArrowLeft') {
+                prevImage();
+            } else if (e.key === 'Escape') {
+                closeCarousel();
+            }
+        });
+    </script>
 {% endblock %}

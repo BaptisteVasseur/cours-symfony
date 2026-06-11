@@ -9,8 +9,14 @@
             src="{{ cover ? cover.fileUrl : placeholderImage }}"
             alt="{{ property.title }}"
         >
-        <button type="button" class="absolute top-3 right-3 text-white text-xl drop-shadow-md hover:scale-110 transition" aria-label="Ajouter aux favoris" onclick="event.preventDefault()">
-            <i class="fa-regular fa-heart"></i>
+        {% set isFavorited = app.user and property in app.user.favoriteProperties %}
+        <button type="button" 
+                class="absolute top-3 right-3 text-xl drop-shadow-md hover:scale-110 transition favorite-btn" 
+                data-property-id="{{ property.id }}"
+                data-favorited="{{ isFavorited ? 'true' : 'false' }}"
+                aria-label="{{ isFavorited ? 'Retirer des favoris' : 'Ajouter aux favoris' }}" 
+                onclick="event.preventDefault(); toggleFavorite(this)">
+            <i class="{{ isFavorited ? 'fa-solid fa-heart text-rose-500' : 'fa-regular fa-heart text-white' }}"></i>
         </button>
     </div>
     <div class="flex justify-between items-start gap-2">

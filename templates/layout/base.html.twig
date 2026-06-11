@@ -21,6 +21,41 @@
         {% block javascripts %}
             {{ importmap('app') }}
         {% endblock %}
+        <script>
+            function toggleFavorite(button) {
+                const propertyId = button.getAttribute('data-property-id');
+                
+                fetch(`/logement/${propertyId}/favori`, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest'
+                    }
+                })
+                .then(response => {
+                    if (response.status === 401) {
+                        window.location.href = '/login';
+                        return;
+                    }
+                    if (!response.ok) {
+                        throw new Error('Une erreur est survenue.');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data && typeof data.favorited !== 'undefined') {
+                        button.setAttribute('data-favorited', data.favorited ? 'true' : 'false');
+                        button.setAttribute('aria-label', data.favorited ? 'Retirer des favoris' : 'Ajouter aux favoris');
+                        const icon = button.querySelector('i');
+                        if (data.favorited) {
+                            icon.className = 'fa-solid fa-heart text-rose-500';
+                        } else {
+                            icon.className = 'fa-regular fa-heart text-white';
+                        }
+                    }
+                })
+                .catch(error => console.error(error));
+            }
+        </script>
     </head>
 
     {% block body %}{% endblock %}
