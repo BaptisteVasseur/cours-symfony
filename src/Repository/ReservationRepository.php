@@ -124,6 +124,29 @@ class ReservationRepository extends ServiceEntityRepository
     }
 
     /**
+     * Demandes en attente (pending) sur tous les logements d'un hôte, pour la modération.
+     *
+     * @return list<Reservation>
+     */
+    public function findPendingForHost(User $host): array
+    {
+        return $this->createQueryBuilder('r')
+            ->addSelect('p', 'a', 'm', 'g', 'gp')
+            ->leftJoin('r.property', 'p')
+            ->leftJoin('p.address', 'a')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('r.guest', 'g')
+            ->leftJoin('g.profile', 'gp')
+            ->andWhere('p.host = :host')
+            ->andWhere('r.status = :status')
+            ->setParameter('host', $host)
+            ->setParameter('status', 'pending')
+            ->orderBy('r.createdAt', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * @return list<Reservation>
      */
     public function findByGuestForListing(User $guest): array
