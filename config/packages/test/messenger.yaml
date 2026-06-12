@@ -1,0 +1,6 @@
+framework:
+    messenger:
+        transports:
+            # En test, on n'exécute pas de worker : le transport async garde les messages en mémoire
+            # pour pouvoir asserter qu'ils ont bien été dispatchés (envoi email jamais synchrone).
+            async: 'in-memory://'

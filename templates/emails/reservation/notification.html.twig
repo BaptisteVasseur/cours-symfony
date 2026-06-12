@@ -1,0 +1,37 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block body %}
+    {% set property = reservation.property %}
+    <h2 style="font-size:18px; margin:0 0 12px;">{{ subject }}</h2>
+
+    <p style="font-size:15px; line-height:1.5; margin:0 0 16px;">
+        {% if type == 'created_pending' %}
+            {% if audience == 'guest' %}
+                Votre demande de réservation pour « {{ property.title }} » a bien été envoyée à l'hôte.
+                Vous serez notifié dès qu'elle aura été traitée.
+            {% else %}
+                Vous avez reçu une nouvelle demande de réservation pour « {{ property.title }} ».
+                Connectez-vous à votre espace pour l'accepter ou la refuser.
+            {% endif %}
+        {% elseif type == 'created_confirmed' %}
+            {% if audience == 'guest' %}
+                Votre réservation pour « {{ property.title }} » est confirmée. Bon séjour !
+            {% else %}
+                Une nouvelle réservation vient d'être confirmée pour « {{ property.title }} ».
+            {% endif %}
+        {% elseif type == 'accepted' %}
+            Bonne nouvelle : votre demande pour « {{ property.title }} » a été acceptée. Votre réservation est confirmée.
+        {% elseif type == 'refused' %}
+            Votre demande pour « {{ property.title }} » a été refusée.
+            {% if reservation.cancellationReason %}<br>Motif : {{ reservation.cancellationReason }}{% endif %}
+        {% elseif type == 'cancelled' %}
+            La réservation pour « {{ property.title }} » a été annulée.
+            {% if reservation.cancellationReason %}<br>Motif : {{ reservation.cancellationReason }}{% endif %}
+        {% endif %}
+    </p>
+
+    <p style="font-size:14px; color:#555; margin:0;">
+        Séjour : du {{ reservation.checkinDate|date('d/m/Y') }} au {{ reservation.checkoutDate|date('d/m/Y') }}
+        — {{ reservation.guestsCount }} voyageur(s).
+    </p>
+{% endblock %}
