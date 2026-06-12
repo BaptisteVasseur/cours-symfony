@@ -56,6 +56,26 @@
                         <div><dt class="text-gray-500">Voyageurs</dt><dd class="font-semibold">{{ reservation.guestsCount }}</dd></div>
                     </dl>
                 </section>
+
+                {% if reservation.status in ['pending', 'confirmed'] %}
+                    <section class="border border-red-200 rounded-xl p-6">
+                        <h2 class="text-lg font-semibold mb-2">Annuler la réservation</h2>
+                        <p class="text-sm text-gray-500 mb-4">L'annulation libère les dates et notifie l'autre partie. Un motif est obligatoire.</p>
+                        <form method="post" action="{{ path('app_reservation_cancel', { id: reservation.id }) }}" class="space-y-3">
+                            <input type="hidden" name="_token" value="{{ csrf_token('cancel_reservation_' ~ reservation.id) }}">
+                            <textarea name="reason" required maxlength="2000" rows="3" placeholder="Motif de l'annulation"
+                                      class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"></textarea>
+                            <button type="submit" class="px-4 py-2 text-sm font-semibold rounded-lg bg-red-600 text-white hover:bg-red-700 transition">
+                                Annuler la réservation
+                            </button>
+                        </form>
+                    </section>
+                {% elseif reservation.status == 'cancelled' and reservation.cancellationReason %}
+                    <section class="border border-gray-200 rounded-xl p-6">
+                        <h2 class="text-lg font-semibold mb-2">Annulation</h2>
+                        <p class="text-sm text-gray-600"><span class="text-gray-500">Motif :</span> {{ reservation.cancellationReason }}</p>
+                    </section>
+                {% endif %}
             </div>
             <aside>
                 <div class="border border-gray-200 rounded-xl p-6 sticky top-28">
