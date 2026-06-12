@@ -15,6 +15,9 @@ cache_warmup:
 fixtures:
 	docker compose exec php php bin/console doctrine:fixtures:load
 
+fixtures_hautelook:
+	docker compose exec php php bin/console hautelook:fixtures:load
+
 fixtures_force:
 	docker compose exec php php bin/console doctrine:fixtures:load --no-interaction
 

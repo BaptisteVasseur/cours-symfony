@@ -1,0 +1,75 @@
+CONCEPTION — Réponses sur la gestion des reservations
+======================================================
+
+1. Modélisation temporelle : le jour de check-out est-il réservable
+---------------------------------------------------------------------
+
+Oui. On vend des nuits, pas des jours : une réservation couvre l'intervalle
+[checkin inclus, checkout exclu]. Deux séjours se chevauchent seulement si
+(débutA < finB) et (débutB < finA) comme definie dans hasConfirmedOverlap().
+Un départ le 10 et une arrivée le 10 ne sont donc pas
+en conflit, et l'hôte ne perd pas une nuit à chaque rotation.
+
+2. Superposition départ 11h / arrivée 15
+------------------------------------------
+
+Ça ne se gère pas dans les données de réservation. Les dates de séjour sont
+des colonnes DATE (la granularité de vente est la nuit) ; les heures de
+check-in/check-out sont des attributs du logement (TIME sur Property).
+Comme l'heure de départ précède l'heure d'arrivée, le créneau 11h-15h existe
+par construction : c'est le battement de ménage, une règle affichée au
+voyageur, pas une contrainte de schéma. Des timestamps complets sur la
+réservation compliqueraient chevauchement et tarif pour rien — personne ne
+loue à l'heure.
+
+3. Gestion des états : une demande pending bloque-t-elle les dates
+--------------------------------------------------------------------
+
+Non seul confirmed compte dans AvailabilityChecker. Si pending bloquait,
+n'importe quel compte pourrait geler un calendrier sans engagement ni
+paiement : c'est le risque inacceptable. En contrepartie, plusieurs demandes
+peuvent viser les mêmes dates, mais l'overbooking est neutralisé la où ça
+compte : confirm() revérifie la disponibilité sous verrou, donc l'hôte ne
+peut confirmer qu'une seule demande — la concurrente échoue proprement et
+sera refusée. Reste un coût d'expérience (demandes vouées au refus),
+réductible plus tard par expiration automatique des pending.
+
+4. Concurrence : deux validations à la milliseconde près
+--------------------------------------------------------
+
+C'est PostgreSQL qui arbitre, pas le code. assertAvailableWithLock() pose un
+verrou pessimiste (SELECT ... FOR UPDATE) sur la ligne du logement : la
+transaction B attend le commit de A, revérifie, voit la réservation de A et
+reçoit PropertyNotAvailableException. La double réservation est
+structurellement impossible. Le verrou ne porte que sur une ligne, la
+contention reste donc locale, et un test simule cette course pour le prouver.
+
+5. Performance : valider 20 nuits sans requêtes itératives
+----------------------------------------------------------
+
+
+Justement parce qu'on raisonne en périodes, le coût ne dépend pas de la
+durée : pas de boucle « ce jour est-il libre ? », mais deux COUNT à bornes
+(réservations confirmées chevauchantes, blocages manuels chevauchants),
+chacun servi par un index composite ((property_id, status, checkin, checkout)
+et (property_id, start_date, end_date)). 2 nuits ou 200 : même requête,
+même coût.
+
+6. Asynchronisme : email après flush(), et panne du broker
+----------------------------------------------------------
+
+Un email ne se rollback pas. Envoyé avant le commit, il peut annoncer une
+réservation que la transaction va finalement rejeter — mensonge
+irrattrapable. Après commit, le pire cas est un retard, ce qui est bénin.
+ReservationWorkflow dispatche donc après le flush, et l'envoi est asynchrone
+(Messenger) pour ne jamais faire attendre la requête HTTP sur le SMTP.
+
+7. Structure SQL du calendrier : jours individuels ou périodes
+----------------------------------------------------------------
+
+Période pour la disponibilité, sans hésiter : les réservations portent leurs
+bornes, les blocages manuels sont des plages (property_unavailability).
+Trois raisons : une période = une ligne, là où une table de jours impose 365
+lignes par an et par logement à pré-générer et maintenir ; la disponibilité
+se décide par une comparaison de bornes, atomique et indexée, alors qu'en
+jours réserver 20 nuits = toucher 20 lignes avec risque d'état partiel
