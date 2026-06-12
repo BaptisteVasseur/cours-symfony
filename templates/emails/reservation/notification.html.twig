@@ -1,0 +1,82 @@
+{% extends 'emails/base.html.twig' %}
+
+{% block body %}
+    {% set property = reservation.property %}
+    {% set guestName = guest and guest.profile and (guest.profile.firstName or guest.profile.lastName)
+        ? (guest.profile.firstName ~ ' ' ~ guest.profile.lastName)|trim
+        : (guest ? guest.email : '') %}
+    {% set hostName = host and host.profile and (host.profile.firstName or host.profile.lastName)
+        ? (host.profile.firstName ~ ' ' ~ host.profile.lastName)|trim
+        : (host ? host.email : '') %}
+
+    <h2 style="font-size:18px; margin:0 0 12px;">{{ subject }}</h2>
+
+    <p style="font-size:15px; line-height:1.5; margin:0 0 16px;">
+        {% if type == 'created_pending' %}
+            {% if audience == 'guest' %}
+                Votre demande de réservation pour « {{ property.title }} » a bien été envoyée à l'hôte.
+                Vous serez notifié dès qu'elle aura été traitée.
+            {% else %}
+                Vous avez reçu une nouvelle demande de réservation pour « {{ property.title }} ».
+            {% endif %}
+        {% elseif type == 'created_confirmed' %}
+            {% if audience == 'guest' %}
+                Votre réservation pour « {{ property.title }} » est confirmée. Bon séjour !
+            {% else %}
+                Une nouvelle réservation vient d'être confirmée pour « {{ property.title }} ».
+            {% endif %}
+        {% elseif type == 'accepted' %}
+            {% if audience == 'guest' %}
+                Bonne nouvelle : votre demande pour « {{ property.title }} » a été acceptée. Votre réservation est confirmée.
+            {% else %}
+                Vous avez accepté la demande de réservation pour « {{ property.title }} ».
+            {% endif %}
+        {% elseif type == 'refused' %}
+            Votre demande pour « {{ property.title }} » a été refusée.
+        {% elseif type == 'cancelled' %}
+            La réservation pour « {{ property.title }} » a été annulée.
+        {% endif %}
+    </p>
+
+    {# Récapitulatif + montant #}
+    <table style="width:100%; border-collapse:collapse; font-size:14px; margin:0 0 16px;">
+        <tr><td style="padding:6px 0; color:#777;">Logement</td><td style="padding:6px 0; text-align:right; font-weight:600;">{{ property.title }}</td></tr>
+        <tr><td style="padding:6px 0; color:#777;">Séjour</td><td style="padding:6px 0; text-align:right;">{{ reservation.checkinDate|date('d/m/Y') }} → {{ reservation.checkoutDate|date('d/m/Y') }}</td></tr>
+        <tr><td style="padding:6px 0; color:#777;">Voyageurs</td><td style="padding:6px 0; text-align:right;">{{ reservation.guestsCount }}</td></tr>
+        <tr><td style="padding:6px 0; color:#777; border-top:1px solid #eee;">Montant total</td><td style="padding:6px 0; text-align:right; font-weight:700; border-top:1px solid #eee;">{{ reservation.totalPrice|number_format(2, ',', ' ') }} {{ reservation.currency }}</td></tr>
+    </table>
+
+    {# Infos voyageur (emails destinés à l'hôte) #}
+    {% if audience == 'host' and guest %}
+        <div style="background:#f7f7f7; border-radius:8px; padding:12px 14px; margin:0 0 16px; font-size:14px;">
+            <p style="margin:0 0 4px; font-weight:600;">Voyageur</p>
+            <p style="margin:0;">{{ guestName }}</p>
+            <p style="margin:0; color:#555;">{{ guest.email }}{% if guest.phone %} · {{ guest.phone }}{% endif %}</p>
+        </div>
+    {% endif %}
+
+    {# Coordonnées de l'hôte (emails destinés au voyageur) #}
+    {% if audience == 'guest' and host %}
+        <div style="background:#f7f7f7; border-radius:8px; padding:12px 14px; margin:0 0 16px; font-size:14px;">
+            <p style="margin:0 0 4px; font-weight:600;">Votre hôte</p>
+            <p style="margin:0;">{{ hostName }}</p>
+            <p style="margin:0; color:#555;">{{ host.email }}{% if host.phone %} · {{ host.phone }}{% endif %}</p>
+        </div>
+    {% endif %}
+
+    {# Motif explicite (refus / annulation) #}
+    {% if type in ['refused', 'cancelled'] and reservation.cancellationReason %}
+        <div style="background:#fef2f2; border-left:4px solid #ef4444; border-radius:6px; padding:12px 14px; margin:0 0 16px; font-size:14px; color:#991b1b;">
+            <strong>Motif :</strong> {{ reservation.cancellationReason }}
+        </div>
+    {% endif %}
+
+    {# Bouton d'action #}
+    {% if ctaUrl %}
+        <p style="margin:8px 0 0;">
+            <a href="{{ ctaUrl }}" style="display:inline-block; background:#FF385C; color:#ffffff; text-decoration:none; font-weight:600; padding:12px 20px; border-radius:8px;">
+                {{ ctaLabel }}
+            </a>
+        </p>
+    {% endif %}
+{% endblock %}

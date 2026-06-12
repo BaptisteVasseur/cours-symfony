@@ -38,6 +38,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 )]
 #[ORM\Entity(repositoryClass: ReservationRepository::class)]
 #[ORM\Table(name: 'reservations')]
+#[ORM\Index(name: 'idx_reservation_availability', columns: ['property_id', 'status', 'checkin_date', 'checkout_date'])]
 class Reservation
 {
     use UuidEntityTrait;

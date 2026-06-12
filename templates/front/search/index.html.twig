@@ -2,8 +2,38 @@
 
 {% block content %}
     <main class="flex-grow px-6 md:px-12 py-8 max-w-5xl mx-auto w-full">
-        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-2">Résultats de recherche</h1>
-        {% if destination %}<p class="text-gray-500 mb-8">Destination : {{ destination }}</p>{% endif %}
+        <h1 class="text-2xl md:text-3xl font-semibold text-gray-900 mb-6">Rechercher un logement</h1>
+
+        <form method="get" action="{{ path('app_search') }}" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-8 p-4 border border-gray-200 rounded-2xl shadow-sm">
+            <label class="lg:col-span-2 block">
+                <span class="text-xs font-semibold uppercase text-gray-500">Destination</span>
+                <input type="text" name="destination" value="{{ destination }}" placeholder="Ville ou adresse"
+                       class="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </label>
+            <label class="block">
+                <span class="text-xs font-semibold uppercase text-gray-500">Arrivée</span>
+                <input type="date" name="checkin" value="{{ checkin ? checkin|date('Y-m-d') : '' }}"
+                       class="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </label>
+            <label class="block">
+                <span class="text-xs font-semibold uppercase text-gray-500">Départ</span>
+                <input type="date" name="checkout" value="{{ checkout ? checkout|date('Y-m-d') : '' }}"
+                       class="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </label>
+            <label class="block">
+                <span class="text-xs font-semibold uppercase text-gray-500">Voyageurs</span>
+                <input type="number" name="guests" min="1" value="{{ guests > 0 ? guests : '' }}"
+                       class="w-full mt-1 border border-gray-300 rounded-lg px-3 py-2 text-sm">
+            </label>
+            <div class="sm:col-span-2 lg:col-span-5">
+                <button type="submit" class="w-full sm:w-auto px-6 py-2.5 bg-brand hover:bg-brandHover text-white font-semibold rounded-lg transition">
+                    Rechercher
+                </button>
+            </div>
+        </form>
+
+        <p class="text-gray-500 mb-6">{{ properties|length }} logement(s) trouvé(s){% if destination %} pour « {{ destination }} »{% endif %}.</p>
+
         <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-6 gap-y-10">
             {% for property in properties %}
                 {% include 'components/card.html.twig' with { property: property } %}

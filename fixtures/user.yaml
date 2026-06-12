@@ -1,5 +1,97 @@
+# Profils (créés d'abord, référencés par les users via la relation OneToOne cascade).
+App\Entity\UserProfile:
+    profile_host_{1..8}:
+        firstName: '<firstName()>'
+        lastName: '<lastName()>'
+        birthDate: '<dateImmutable("-65 years", "-25 years")>'
+        avatarUrl: 'https://i.pravatar.cc/150?u=host<current()>'
+        bio: '<sentence(14)>'
+        identityStatus: '<randomElement(["verified", "verified", "pending"])>'
+    profile_guest_{1..40}:
+        firstName: '<firstName()>'
+        lastName: '<lastName()>'
+        birthDate: '<dateImmutable("-70 years", "-18 years")>'
+        avatarUrl: 'https://i.pravatar.cc/150?u=guest<current()>'
+        bio: '<sentence(10)>'
+        identityStatus: '<randomElement(["unverified", "pending", "verified", "rejected"])>'
+
+    # Profils des comptes de démonstration (emails fixes, voir connexion.md).
+    profile_demo_host:
+        firstName: 'Hugo'
+        lastName: 'Hôte'
+        birthDate: '<dateImmutable("-45 years", "-30 years")>'
+        avatarUrl: 'https://i.pravatar.cc/150?u=demohost'
+        bio: 'Hôte de démonstration : propriétaire de plusieurs logements.'
+        identityStatus: 'verified'
+    profile_demo_guest:
+        firstName: 'Valérie'
+        lastName: 'Voyageuse'
+        birthDate: '<dateImmutable("-40 years", "-25 years")>'
+        avatarUrl: 'https://i.pravatar.cc/150?u=demoguest'
+        bio: 'Voyageuse de démonstration : possède des réservations.'
+        identityStatus: 'verified'
+
 App\Entity\User:
-  mon_user_{1..100}:
-    email: '<safeEmail()>'
-    phone: '<phoneNumber()>'
-    passwordHash: '<password()>'
+    # === Comptes de démonstration : emails FIXES, mot de passe "password" ===
+    # Ne pas renommer en host_*/guest_* : ces noms les inclueraient dans les
+    # pools aléatoires. Documentés dans connexion.md (racine du projet).
+    demo_super_admin:
+        email: 'superadmin@airbnb-clone.fr'
+        phone: '<phoneNumber()>'
+        passwordHash: '<hashedPassword("password")>'
+        status: 'active'
+        isEmailVerified: true
+        preferredLanguage: 'fr'
+        preferredCurrency: 'EUR'
+        assignedRoles: ['ROLE_SUPER_ADMIN']
+    demo_admin:
+        email: 'admin@airbnb-clone.fr'
+        phone: '<phoneNumber()>'
+        passwordHash: '<hashedPassword("password")>'
+        status: 'active'
+        isEmailVerified: true
+        preferredLanguage: 'fr'
+        preferredCurrency: 'EUR'
+        assignedRoles: ['ROLE_ADMIN']
+    demo_host:
+        email: 'hote@airbnb-clone.fr'
+        phone: '<phoneNumber()>'
+        passwordHash: '<hashedPassword("password")>'
+        status: 'active'
+        isEmailVerified: true
+        preferredLanguage: 'fr'
+        preferredCurrency: 'EUR'
+        assignedRoles: ['ROLE_HOST']
+        profile: '@profile_demo_host'
+    demo_guest:
+        email: 'voyageur@airbnb-clone.fr'
+        phone: '<phoneNumber()>'
+        passwordHash: '<hashedPassword("password")>'
+        status: 'active'
+        isEmailVerified: true
+        preferredLanguage: 'fr'
+        preferredCurrency: 'EUR'
+        profile: '@profile_demo_guest'
+
+    # Pool d'hôtes (rôle ROLE_HOST) — référencés par les propriétés.
+    host_{1..8}:
+        email: '<safeEmail()>'
+        phone: '<phoneNumber()>'
+        passwordHash: '<hashedPassword("password")>'
+        status: 'active'
+        isEmailVerified: true
+        preferredLanguage: 'fr'
+        preferredCurrency: 'EUR'
+        assignedRoles: ['ROLE_HOST']
+        profile: '@profile_host_<current()>'
+
+    # Pool de voyageurs (rôle par défaut) — référencés par les réservations.
+    guest_{1..40}:
+        email: '<safeEmail()>'
+        phone: '<phoneNumber()>'
+        passwordHash: '<hashedPassword("password")>'
+        status: '<randomElement(["active", "active", "active", "pending", "suspended"])>'
+        isEmailVerified: '<boolean(70)>'
+        preferredLanguage: '<randomElement(["fr", "fr", "en", "es"])>'
+        preferredCurrency: '<randomElement(["EUR", "EUR", "USD", "GBP"])>'
+        profile: '@profile_guest_<current()>'

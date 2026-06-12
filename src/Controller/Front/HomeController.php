@@ -7,6 +7,7 @@ namespace App\Controller\Front;
 use App\Entity\Property;
 use App\Repository\PropertyRepository;
 use App\Repository\ReviewRepository;
+use App\Service\Availability\AvailabilityChecker;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -27,7 +28,7 @@ class HomeController extends AbstractController
     #[Route('/logement/{id}', name: 'app_logement_detail')]
     #[IsGranted('ROLE_USER')]
     #[IsGranted(PropertyVoter::VIEW, subject: 'property')]
-    public function detail(Property $property, PropertyRepository $propertyRepository, ReviewRepository $reviewRepository): Response
+    public function detail(Request $request, Property $property, PropertyRepository $propertyRepository, ReviewRepository $reviewRepository): Response
     {
         $property = $propertyRepository->findOneForDetail($property) ?? $property;
         $allReviews = $reviewRepository->findByPropertyOrdered($property);
@@ -36,6 +37,9 @@ class HomeController extends AbstractController
             'property' => $property,
             'reviews' => \array_slice($allReviews, 0, 5),
             'totalReviews' => \count($allReviews),
+            'checkin' => $this->parseDate($request->query->get('checkin')),
+            'checkout' => $this->parseDate($request->query->get('checkout')),
+            'guests' => $request->query->getInt('guests'),
         ]);
     }
 
@@ -53,17 +57,43 @@ class HomeController extends AbstractController
     }
 
     #[Route('/search', name: 'app_search', methods: ['GET'])]
-    public function search(Request $request, PropertyRepository $propertyRepository): Response
-    {
+    public function search(
+        Request $request,
+        PropertyRepository $propertyRepository,
+        AvailabilityChecker $availabilityChecker,
+    ): Response {
+        $destination = trim((string) $request->query->get('destination', ''));
+        $guests = $request->query->getInt('guests');
         $checkin = $this->parseDate($request->query->get('checkin'));
         $checkout = $this->parseDate($request->query->get('checkout'));
 
+        $properties = $propertyRepository->searchPublished(
+            $destination !== '' ? $destination : null,
+            $guests > 0 ? $guests : null,
+        );
+
+        // Filtre de disponibilité stricte : réutilise A.2 (jours bloqués + chevauchement confirmé).
+        if (
+            $checkin !== null
+            && $checkout !== null
+            && $checkout > $checkin
+            && $checkin >= new \DateTimeImmutable('today')
+        ) {
+            $guestsForCheck = max(1, $guests);
+            $properties = array_values(array_filter(
+                $properties,
+                static fn (Property $property): bool => $availabilityChecker
+                    ->check($property, $checkin, $checkout, $guestsForCheck)
+                    ->isAvailable(),
+            ));
+        }
+
         return $this->render('front/search/index.html.twig', [
-            'properties' => $propertyRepository->findForListing('published'),
+            'properties' => $properties,
             'checkin' => $checkin,
             'checkout' => $checkout,
-            'guests' => $request->query->getInt('guests'),
-            'destination' => $request->query->get('destination'),
+            'guests' => $guests,
+            'destination' => $destination !== '' ? $destination : null,
         ]);
     }
 

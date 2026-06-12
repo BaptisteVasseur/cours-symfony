@@ -23,6 +23,7 @@ class AccountProfileType extends AbstractType
             ->add('birthDate', DateType::class, [
                 'label' => 'Date de naissance',
                 'widget' => 'single_text',
+                'input' => 'datetime_immutable',
                 'required' => false,
             ])
             ->add('avatarUrl', UrlType::class, [

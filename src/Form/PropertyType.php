@@ -88,11 +88,13 @@ class PropertyType extends AbstractType
             ->add('checkinTime', TimeType::class, [
                 'label' => 'Heure d\'arrivée',
                 'widget' => 'single_text',
+                'input' => 'datetime_immutable',
                 'required' => false,
             ])
             ->add('checkoutTime', TimeType::class, [
                 'label' => 'Heure de départ',
                 'widget' => 'single_text',
+                'input' => 'datetime_immutable',
                 'required' => false,
             ])
             ->add('instantBooking', CheckboxType::class, [

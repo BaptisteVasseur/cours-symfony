@@ -1,0 +1,56 @@
+# Données de référence : valeurs fixes (codes uniques) — pas de Faker ici.
+App\Entity\CancellationPolicy:
+    cancellation_policy_flexible:
+        code: 'flexible'
+        label: 'Flexible'
+        description: 'Remboursement intégral jusqu''à 24h avant l''arrivée.'
+    cancellation_policy_moderate:
+        code: 'moderate'
+        label: 'Modérée'
+        description: 'Remboursement intégral jusqu''à 5 jours avant l''arrivée.'
+    cancellation_policy_strict:
+        code: 'strict'
+        label: 'Stricte'
+        description: 'Remboursement à 50% jusqu''à 7 jours avant l''arrivée.'
+
+App\Entity\Amenity:
+    amenity_wifi:
+        code: 'wifi'
+        label: 'Wifi'
+        category: 'essentiel'
+    amenity_kitchen:
+        code: 'kitchen'
+        label: 'Cuisine équipée'
+        category: 'interieur'
+    amenity_parking:
+        code: 'parking'
+        label: 'Parking gratuit'
+        category: 'exterieur'
+    amenity_pool:
+        code: 'pool'
+        label: 'Piscine'
+        category: 'exterieur'
+    amenity_ac:
+        code: 'ac'
+        label: 'Climatisation'
+        category: 'interieur'
+    amenity_washer:
+        code: 'washer'
+        label: 'Lave-linge'
+        category: 'interieur'
+    amenity_tv:
+        code: 'tv'
+        label: 'Télévision'
+        category: 'interieur'
+    amenity_elevator:
+        code: 'elevator'
+        label: 'Ascenseur'
+        category: 'accessibilite'
+    amenity_balcony:
+        code: 'balcony'
+        label: 'Balcon'
+        category: 'exterieur'
+    amenity_fireplace:
+        code: 'fireplace'
+        label: 'Cheminée'
+        category: 'interieur'

@@ -1,0 +1,33 @@
+App\Entity\Notification:
+    notification_{1..80}:
+        user: '@guest_*'
+        type: '<randomElement(["reservation_confirmed", "new_message", "payment_received", "review_received", "booking_request", "listing_pending", "document_rejected"])>'
+        title: '<sentence(4)>'
+        content: '<sentence(12)>'
+        channel: '<randomElement(["email", "push"])>'
+        isRead: '<boolean(50)>'
+
+    # Notifications côté hôtes (demandes, modération d'annonce, paiements).
+    notification_host_{1..20}:
+        user: '@host_*'
+        type: '<randomElement(["booking_request", "listing_pending", "payment_received", "review_received"])>'
+        title: '<sentence(4)>'
+        content: '<sentence(12)>'
+        channel: '<randomElement(["email", "push"])>'
+        isRead: '<boolean(40)>'
+
+    # Notifications des comptes de démo (visibles dès la connexion).
+    notification_demo_host_{1..4}:
+        user: '@demo_host'
+        type: '<randomElement(["booking_request", "listing_pending", "payment_received"])>'
+        title: '<sentence(4)>'
+        content: '<sentence(12)>'
+        channel: 'email'
+        isRead: '<boolean(30)>'
+    notification_demo_guest_{1..3}:
+        user: '@demo_guest'
+        type: '<randomElement(["reservation_confirmed", "new_message"])>'
+        title: '<sentence(4)>'
+        content: '<sentence(12)>'
+        channel: 'email'
+        isRead: false

@@ -46,6 +46,35 @@ class PropertyRepository extends ServiceEntityRepository
     }
 
     /**
+     * Recherche front : logements publiés filtrés par destination (ville/adresse) et capacité.
+     * Construite en DQL (QueryBuilder) — aucune requête SQL brute, paramètres liés.
+     *
+     * @return list<Property>
+     */
+    public function searchPublished(?string $destination = null, ?int $guests = null): array
+    {
+        $qb = $this->createQueryBuilder('p')
+            ->addSelect('m', 'a')
+            ->leftJoin('p.media', 'm')
+            ->leftJoin('p.address', 'a')
+            ->andWhere('p.status = :status')
+            ->setParameter('status', 'published')
+            ->orderBy('p.createdAt', 'DESC');
+
+        if ($destination !== null && $destination !== '') {
+            $qb->andWhere('LOWER(a.city) LIKE :destination OR LOWER(a.addressLine1) LIKE :destination OR LOWER(a.country) LIKE :destination')
+                ->setParameter('destination', '%' . mb_strtolower($destination) . '%');
+        }
+
+        if ($guests !== null && $guests > 0) {
+            $qb->andWhere('p.maxGuests >= :guests')
+                ->setParameter('guests', $guests);
+        }
+
+        return $qb->getQuery()->getResult();
+    }
+
+    /**
      * @return list<Property>
      */
     public function findPendingForModeration(int $limit = 10): array

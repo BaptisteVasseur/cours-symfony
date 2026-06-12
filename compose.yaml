@@ -49,6 +49,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile.dev
+    restart: unless-stopped
     volumes:
       - .:/var/www/html:rw
       - vendor:/var/www/html/vendor
