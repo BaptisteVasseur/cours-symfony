@@ -10,34 +10,84 @@
         <a href="{{ path('app_logement_detail', { id: property.id }) }}" class="inline-flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900 mb-6">
             <i class="fa-solid fa-arrow-left"></i> Retour au logement
         </a>
-        {% for label, messages in app.flashes %}
-            {% for message in messages %}
-                <div class="mb-4 px-4 py-3 rounded-xl text-sm {{ label == 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800' }}">{{ message }}</div>
-            {% endfor %}
-        {% endfor %}
+        
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div class="lg:col-span-2">
                 <h1 class="text-2xl font-bold text-gray-900 mb-6">Finaliser votre réservation</h1>
                 <div class="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-                    {{ form_start(form, { attr: { class: 'space-y-5' } }) }}
+                    {{ form_start(form, { attr: { class: 'space-y-5', id: 'booking-form' } }) }}
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
-                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                            {{ form_row(form.checkinDate, { label: 'Arrivée', attr: { class: 'date-input w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
+                            {{ form_row(form.checkoutDate, { label: 'Départ', attr: { class: 'date-input w-full border border-gray-300 rounded-xl px-4 py-3 text-sm' } }) }}
                         </div>
                         {{ form_row(form.guestsCount, { label: 'Voyageurs', attr: { class: 'w-full border border-gray-300 rounded-xl px-4 py-3 text-sm', min: 1, max: property.maxGuests } }) }}
-                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl">Confirmer la réservation</button>
+                        <button type="submit" class="w-full bg-brand hover:bg-brandHover text-white font-semibold py-3 rounded-xl transition">Confirmer la réservation</button>
                     {{ form_end(form) }}
                 </div>
             </div>
+
             <aside>
-                <div class="border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
-                    <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-48 object-cover">
-                    <div class="p-5">
-                        <h2 class="font-semibold">{{ property.title }}</h2>
-                        <p class="text-lg font-bold mt-2">{{ property.pricePerNight|number_format(0, ',', ' ') }} € <span class="text-sm font-normal text-gray-500">/ nuit</span></p>
+                <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden shadow-sm sticky top-28">
+                    <img src="{{ cover ? cover.fileUrl : placeholderImage }}" alt="{{ property.title }}" class="w-full h-40 object-cover">
+                    <div class="p-6">
+                        <h2 class="font-bold text-gray-900">{{ property.title }}</h2>
+                        <div id="price-summary" class="mt-6 space-y-3">
+                            <div class="flex justify-between text-gray-600">
+                                <span>{{ property.pricePerNight|number_format(0) }}€ x <span id="nights-count">0</span> nuits</span>
+                                <span id="subtotal-display">0€</span>
+                            </div>
+                            <div class="flex justify-between text-gray-600">
+                                <span>Frais de ménage</span>
+                                <span>{{ property.cleaningFee|default(0) }}€</span>
+                            </div>
+                            <div class="flex justify-between text-gray-600">
+                                <span>Frais de service (12%)</span>
+                                <span id="service-fee-display">0€</span>
+                            </div>
+                            <div class="pt-4 border-t border-gray-100 flex justify-between font-bold text-lg text-gray-900">
+                                <span>Total</span>
+                                <span id="total-display">0€</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </aside>
         </div>
     </main>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const checkinInput = document.querySelector('.date-input[name*="checkinDate"]');
+            const checkoutInput = document.querySelector('.date-input[name*="checkoutDate"]');
+            const pricePerNight = {{ property.pricePerNight }};
+            const cleaningFee = {{ property.cleaningFee|default(0) }};
+
+            function updatePrice() {
+                if (checkinInput.value && checkoutInput.value) {
+                    const start = new Date(checkinInput.value);
+                    const end = new Date(checkoutInput.value);
+                    const diffTime = Math.abs(end - start);
+                    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+                    if (diffDays > 0 && end > start) {
+                        const subtotal = diffDays * pricePerNight;
+                        const serviceFee = Math.round(subtotal * 0.12 * 100) / 100;
+                        const total = subtotal + parseFloat(cleaningFee) + serviceFee;
+
+                        document.getElementById('nights-count').textContent = diffDays;
+                        document.getElementById('subtotal-display').textContent = subtotal.toLocaleString() + '€';
+                        document.getElementById('service-fee-display').textContent = serviceFee.toLocaleString() + '€';
+                        document.getElementById('total-display').textContent = total.toLocaleString() + '€';
+                        return;
+                    }
+                }
+                document.getElementById('nights-count').textContent = '0';
+                document.getElementById('total-display').textContent = (0).toLocaleString() + '€';
+            }
+
+            checkinInput.addEventListener('change', updatePrice);
+            checkoutInput.addEventListener('change', updatePrice);
+            updatePrice(); // Initial call
+        });
+    </script>
 {% endblock %}

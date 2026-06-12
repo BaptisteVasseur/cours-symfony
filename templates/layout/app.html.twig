@@ -1,13 +1,15 @@
 {% extends 'layout/base.html.twig' %}
 
 {% block body %}
-    <body class="text-gray-800 font-sans antialiased bg-white flex flex-col min-h-screen">
+    <div class="text-gray-800 font-sans antialiased bg-white flex flex-col min-h-screen">
 
-    {% include 'layout/partials/app/header.html.twig' %}
+        {% include 'layout/partials/app/header.html.twig' %}
 
-    {% block content %}{% endblock %}
+        <div class="flex-grow">
+            {% block content %}{% endblock %}
+        </div>
 
-    {% include 'layout/partials/app/footer.html.twig' %}
+        {% include 'layout/partials/app/footer.html.twig' %}
 
-    </body>
+    </div>
 {% endblock %}

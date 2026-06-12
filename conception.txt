@@ -1,0 +1,47 @@
+DOCUMENT DE CONCEPTION - MOTEUR DE RESERVATION (CLONE AIRBNB)
+=========================================================
+
+1. Modélisation temporelle (Check-in/Check-out)
+-----------------------------------------------
+Le jour de check-out est réservable par un nouveau voyageur. 
+Techniquement, une réservation de "2026-07-10 au 2026-07-15" signifie que le voyageur occupe le logement les nuits du 10, 11, 12, 13 et 14. Le 15 au matin, il libère les lieux.
+Gestion de la superposition : 
+- Dans la base de données, nous stockons des dates pleines.
+- La règle de collision est : (new_checkin < existing_checkout) ET (new_checkout > existing_checkin).
+- Pour autoriser un départ à 11h et une arrivée à 15h le même jour, le système de recherche exclut la borne de fin de la comparaison de superposition stricte.
+
+2. Gestion des états (Pending vs Dates bloquées)
+-----------------------------------------------
+Choix : Une demande au statut 'Pending' DOIT bloquer les dates temporairement.
+Justification : 
+- Risque Overbooking : Si 'Pending' ne bloque pas, deux voyageurs peuvent payer pour les mêmes dates si l'hôte est lent à répondre.
+- Risque Blocage Abusif : Un voyageur malveillant pourrait bloquer des dates sans intention de venir.
+Stratégie de mitigation : Mise en place d'une expiration automatique des demandes 'Pending' après 24h (Bonus G.1). Si l'hôte n'a pas validé, la demande passe en 'Expired/Cancelled' et les dates sont libérées.
+
+3. Concurrence (Race Conditions)
+--------------------------------
+Si deux utilisateurs valident à la milliseconde près :
+- Utilisation d'une contrainte d'intégrité au niveau SQL (Unique Index sur property_id + date si table de jours) ou, plus simplement dans ce projet, l'utilisation d'un verrou pessimiste (Pessimistic Write) sur l'entité Property ou un verrou optimiste avec une colonne version sur les disponibilités lors du flush().
+- En Symfony : $entityManager->lock($property, LockMode::PESSIMISTIC_WRITE).
+
+4. Performance (Validation sur 20 nuits)
+----------------------------------------
+Saturer le serveur avec des boucles SQL (20 requêtes pour 20 jours) est inefficace.
+Stratégie : Une seule requête SQL avec un intervalle.
+SQL : SELECT count(id) FROM reservation WHERE property_id = :id AND status = 'confirmed' AND (checkin_date < :end AND checkout_date > :start).
+Si le compte est > 0, le logement est indisponible. C'est une opération O(1) pour la base de données (si indexé).
+
+5. Asynchronisme (Messenger & Emails)
+-------------------------------------
+Pourquoi après le flush() ? 
+- Si l'envoi d'email échoue au milieu d'une transaction qui doit être annulée (rollback), on se retrouverait avec un voyageur qui reçoit un mail "Réservation confirmée" alors que la base de données n'a rien enregistré. 
+Stratégie RabbitMQ en panne : 
+- Utilisation du transport 'doctrine' (DB locale) comme fallback. Si Messenger ne peut pas contacter le broker, les messages sont stockés en base de données et pourront être retentés plus tard via 'messenger:consume'.
+
+6. Structure SQL (Calendrier)
+-----------------------------
+Choix : Table de périodes (date_start, date_end).
+Justification : 
+- Stockage optimisé : Une ligne pour un séjour de 3 mois au lieu de 90 lignes.
+- Facilité de gestion des blocs iCal (qui fournissent des plages).
+- Inconvénient : La requête de superposition est légèrement plus complexe qu'un simple "WHERE date IN (...)", mais beaucoup plus performante sur de gros volumes.

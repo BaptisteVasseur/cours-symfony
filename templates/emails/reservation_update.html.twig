@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <style>
+        body { font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif; background-color: #f7f7f7; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+        .container { max-width: 600px; margin: 20px auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .header { background-color: #FF385C; padding: 30px; text-align: center; color: white; }
+        .content { padding: 40px; color: #222222; line-height: 1.6; }
+        .property-card { background: #f9f9f9; border-radius: 12px; padding: 20px; margin-top: 25px; border: 1px solid #eeeeee; }
+        .title { font-size: 24px; font-weight: 800; margin-bottom: 10px; color: #222222; }
+        .badge { display: inline-block; padding: 4px 12px; border-radius: 99px; font-size: 12px; font-weight: bold; text-transform: uppercase; margin-bottom: 20px; }
+        .badge-confirmed { background-color: #e6f4ea; color: #1e7e34; }
+        .badge-cancelled { background-color: #fce8e6; color: #d93025; }
+        .details { margin-top: 20px; font-size: 14px; color: #717171; }
+        .footer { padding: 20px; text-align: center; font-size: 12px; color: #b0b0b0; background: #fdfdfd; }
+        .btn { display: inline-block; padding: 14px 24px; background-color: #FF385C; color: white; text-decoration: none; border-radius: 8px; font-weight: bold; margin-top: 25px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <svg width="32" height="32" viewBox="0 0 32 32" fill="white"><path d="M16 1L1 28h30L16 1zm0 5l12 21H4L16 6zm0 18a2 2 0 100-4 2 2 0 000 4z"/></svg>
+        </div>
+        <div class="content">
+            <span class="badge {% if reservation.status == 'confirmed' %}badge-confirmed{% else %}badge-cancelled{% endif %}">
+                Réservation {{ statusLabel }}
+            </span>
+            <div class="title">Bonjour {{ guest.profile.firstName }},</div>
+            <p>Nous avons le plaisir de vous informer que votre demande de réservation pour le logement <strong>{{ property.title }}</strong> a été mise à jour.</p>
+            
+            {% if reason %}
+                <p style="background: #fff8f6; padding: 15px; border-left: 4px solid #FF385C; color: #c13515;">
+                    <strong>Message de l'hôte :</strong> {{ reason }}
+                </p>
+            {% endif %}
+
+            <div class="property-card">
+                <img src="{{ property.coverMedia.fileUrl|default('https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?auto=format&fit=crop&w=600&q=80') }}" style="width: 100%; border-radius: 8px; margin-bottom: 15px;" alt="">
+                <div style="font-weight: bold; font-size: 18px;">{{ property.title }}</div>
+                <div class="details">
+                    <p>📅 Du {{ reservation.checkinDate|date('d/m/Y') }} au {{ reservation.checkoutDate|date('d/m/Y') }}</p>
+                    <p>👥 {{ reservation.guestsCount }} voyageurs</p>
+                    <p>💰 Prix total : <strong>{{ reservation.totalPrice }}€</strong></p>
+                </div>
+            </div>
+
+            <a href="http://localhost:8000/reservations" class="btn">Voir mes voyages</a>
+        </div>
+        <div class="footer">
+            &copy; 2026 Airbnb Clone — ESGI Evaluation<br>
+            Ceci est un email automatique, merci de ne pas y répondre.
+        </div>
+    </div>
+</body>
+</html>
