@@ -11,6 +11,7 @@ use App\Form\BookingType;
 use App\Repository\PropertyRepository;
 use App\Service\Availability\AvailabilityChecker;
 use App\Service\Availability\Exception\PropertyNotAvailableException;
+use App\Service\Reservation\ReservationWorkflow;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -30,6 +31,7 @@ final class BookingController extends AbstractController
         PropertyRepository $propertyRepository,
         EntityManagerInterface $entityManager,
         AvailabilityChecker $availabilityChecker,
+        ReservationWorkflow $reservationWorkflow,
     ): Response {
         if ($property->getStatus() !== 'published') {
             throw $this->createNotFoundException('Ce logement n\'est pas disponible à la réservation.');
@@ -47,7 +49,7 @@ final class BookingController extends AbstractController
             return $this->redirectToRoute('app_logement_detail', ['id' => $property->getId()]);
         }
 
-        $form = $this->createForm(BookingType::class);
+        $form = $this->createForm(BookingType::class, $this->prefillFromQuery($request));
         $form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
@@ -100,8 +102,9 @@ final class BookingController extends AbstractController
                     $checkin,
                     $checkout,
                     $guestsCount,
-                    static function () use ($entityManager, $reservation): void {
+                    function () use ($entityManager, $reservation, $reservationWorkflow, $user): void {
                         $entityManager->persist($reservation);
+                        $reservationWorkflow->recordCreation($reservation, $user);
                     },
                 );
             } catch (PropertyNotAvailableException | \InvalidArgumentException $exception) {
@@ -113,7 +116,11 @@ final class BookingController extends AbstractController
                 ]);
             }
 
-            $this->addFlash('success', 'Votre réservation a été enregistrée.');
+            $reservationWorkflow->notifyCreated($reservation);
+
+            $this->addFlash('success', $reservation->getStatus() === 'confirmed'
+                ? 'Votre réservation est confirmée.'
+                : 'Votre demande de réservation a été envoyée à l\'hôte.');
 
             return $this->redirectToRoute('app_reservation_show', ['id' => $reservation->getId()]);
         }
@@ -123,4 +130,32 @@ final class BookingController extends AbstractController
             'form' => $form,
         ]);
     }
+
+    /**
+     * Pré-remplit le formulaire depuis les dates choisies en amont (recherche / fiche logement).
+     *
+     * @return array{checkinDate?: \DateTimeImmutable, checkoutDate?: \DateTimeImmutable, guestsCount?: int}
+     */
+    private function prefillFromQuery(Request $request): array
+    {
+        $data = [];
+
+        foreach (['checkinDate' => 'checkin', 'checkoutDate' => 'checkout'] as $field => $param) {
+            $value = $request->query->get($param);
+            if (is_string($value) && $value !== '') {
+                $date = \DateTimeImmutable::createFromFormat('!Y-m-d', $value);
+                if ($date instanceof \DateTimeImmutable) {
+                    $data[$field] = $date;
+                }
+            }
+        }
+
+        $guests = $request->query->getInt('guests');
+        if ($guests > 0) {
+            $data['guestsCount'] = $guests;
+        }
+
+        return $data;
+    }
 }
+
