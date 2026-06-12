@@ -137,6 +137,9 @@ class Property
     #[ORM\Column(type: Types::DATETIME_IMMUTABLE, nullable: true)]
     private ?\DateTimeImmutable $updatedAt = null;
 
+    #[ORM\Column(length: 64, unique: true, nullable: true)]
+    private ?string $icalExportToken = null;
+
     #[ORM\OneToOne(mappedBy: 'property', targetEntity: PropertyAddress::class, cascade: ['persist', 'remove'])]
     private ?PropertyAddress $address = null;
 
@@ -395,6 +398,18 @@ class Property
     public function setUpdatedAt(?\DateTimeImmutable $updatedAt): static
     {
         $this->updatedAt = $updatedAt;
+
+        return $this;
+    }
+
+    public function getIcalExportToken(): ?string
+    {
+        return $this->icalExportToken;
+    }
+
+    public function setIcalExportToken(?string $icalExportToken): static
+    {
+        $this->icalExportToken = $icalExportToken;
 
         return $this;
     }
