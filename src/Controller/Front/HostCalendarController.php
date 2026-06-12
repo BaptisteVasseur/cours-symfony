@@ -172,6 +172,46 @@ final class HostCalendarController extends AbstractController
         ]);
     }
 
+    #[Route('/ical/generer', name: 'app_host_calendar_ical_generate', methods: ['POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function generateIcalToken(
+        Request $request,
+        Property $property,
+        EntityManagerInterface $em,
+    ): Response {
+        if (!$this->isCsrfTokenValid('ical_token_'.$property->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Jeton CSRF invalide.');
+
+            return $this->redirectToRoute('app_host_calendar', ['id' => (string) $property->getId()]);
+        }
+
+        $property->setIcalToken(bin2hex(random_bytes(24)));
+        $em->flush();
+        $this->addFlash('success', 'URL d\'export iCal générée.');
+
+        return $this->redirectToRoute('app_host_calendar', ['id' => (string) $property->getId()]);
+    }
+
+    #[Route('/ical/revoquer', name: 'app_host_calendar_ical_revoke', methods: ['POST'])]
+    #[IsGranted(PropertyVoter::EDIT, subject: 'property')]
+    public function revokeIcalToken(
+        Request $request,
+        Property $property,
+        EntityManagerInterface $em,
+    ): Response {
+        if (!$this->isCsrfTokenValid('ical_token_'.$property->getId(), (string) $request->request->get('_token'))) {
+            $this->addFlash('error', 'Jeton CSRF invalide.');
+
+            return $this->redirectToRoute('app_host_calendar', ['id' => (string) $property->getId()]);
+        }
+
+        $property->setIcalToken(null);
+        $em->flush();
+        $this->addFlash('success', 'URL d\'export iCal révoquée.');
+
+        return $this->redirectToRoute('app_host_calendar', ['id' => (string) $property->getId()]);
+    }
+
     /**
      * @param list<Unavailability> $unavailabilities
      * @param list<\App\Entity\Reservation> $reservations

@@ -127,6 +127,36 @@
                         </button>
                     {{ form_end(form) }}
                 </div>
+
+                <div class="border border-gray-200 rounded-xl p-6 sticky top-28 mt-6">
+                    <h2 class="text-lg font-semibold mb-2">Export iCal</h2>
+                    <p class="text-sm text-gray-600 mb-4">
+                        Synchronisez ce calendrier avec Google Agenda, Airbnb ou tout autre outil compatible iCal.
+                    </p>
+                    {% if property.icalToken %}
+                        {% set icalUrl = url('app_ical_export', { id: property.id }) ~ '?token=' ~ property.icalToken %}
+                        <div class="bg-gray-50 border border-gray-200 rounded-lg p-3 mb-3 break-all text-xs text-gray-700">{{ icalUrl }}</div>
+                        <div class="flex flex-wrap gap-2">
+                            <a href="{{ icalUrl }}" class="inline-flex items-center gap-2 text-sm font-semibold border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50">
+                                <i class="fa-solid fa-download"></i> Télécharger
+                            </a>
+                            <form method="post" action="{{ path('app_host_calendar_ical_revoke', { id: property.id }) }}"
+                                  onsubmit="return confirm('Révoquer cette URL ? Les agendas synchronisés cesseront de fonctionner.');">
+                                <input type="hidden" name="_token" value="{{ csrf_token('ical_token_' ~ property.id) }}">
+                                <button type="submit" class="inline-flex items-center gap-2 text-sm font-semibold text-red-600 hover:text-red-700 border border-red-200 rounded-lg px-4 py-2">
+                                    <i class="fa-solid fa-rotate"></i> Révoquer / régénérer
+                                </button>
+                            </form>
+                        </div>
+                    {% else %}
+                        <form method="post" action="{{ path('app_host_calendar_ical_generate', { id: property.id }) }}">
+                            <input type="hidden" name="_token" value="{{ csrf_token('ical_token_' ~ property.id) }}">
+                            <button type="submit" class="w-full inline-flex items-center justify-center gap-2 border border-gray-200 rounded-xl py-3 text-sm font-semibold hover:bg-gray-50">
+                                <i class="fa-solid fa-link"></i> Générer l'URL iCal
+                            </button>
+                        </form>
+                    {% endif %}
+                </div>
             </aside>
         </div>
     </main>
