@@ -105,6 +105,16 @@ App\Entity\PropertyAmenity:
     pa_tv_{1..12}:
         property: '@property_<current()>'
         amenity: '@amenity_tv'
+    # Équipements supplémentaires pour varier les annonces (piscine sur la moitié, clim partout, lave-linge).
+    pa_pool_{1..6}:
+        property: '@property_<current()>'
+        amenity: '@amenity_pool'
+    pa_ac_{1..12}:
+        property: '@property_<current()>'
+        amenity: '@amenity_ac'
+    pa_washer_{1..8}:
+        property: '@property_<current()>'
+        amenity: '@amenity_washer'
     # Équipements des annonces démo (paires composites uniques).
     pa_demo_wifi_{1..2}:
         property: '@property_demo_<current()>'

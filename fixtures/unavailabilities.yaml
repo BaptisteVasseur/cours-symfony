@@ -16,3 +16,10 @@ App\Entity\PropertyUnavailability:
         endDate: '<dateImmutable("+45 days", "+90 days")>'
         reason: '<unavailabilityReason()>'
         note: '<sentence(6)>'
+    # Indisponibilités PROCHES sur les annonces démo : visibles dès le mois courant dans le calendrier.
+    unavailability_demo_soon_{1..2}:
+        property: '@property_demo_<current()>'
+        startDate: '<dateImmutable("+22 days", "+25 days")>'
+        endDate: '<dateImmutable("+26 days", "+30 days")>'
+        reason: '<unavailabilityReason()>'
+        note: 'Maintenance planifiée'

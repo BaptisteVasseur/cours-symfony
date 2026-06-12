@@ -26,6 +26,32 @@ App\Entity\Reservation:
         serviceFee: '<amount(15, 60)>'
         securityDeposit: '<amount(100, 300)>'
         currency: 'EUR'
+    # Demandes EN ATTENTE sur les annonces de l'hôte de démo : à modérer depuis /compte/demandes.
+    reservation_demo_pending_{1..4}:
+        property: '@property_demo_*'
+        guest: '@guest_*'
+        checkinDate: '<dateImmutable("+8 days", "+18 days")>'
+        checkoutDate: '<dateImmutable("+20 days", "+30 days")>'
+        guestsCount: '<numberBetween(1, 4)>'
+        status: 'pending'
+        totalPrice: '<amount(200, 900)>'
+        cleaningFee: '<amount(20, 60)>'
+        serviceFee: '<amount(15, 60)>'
+        securityDeposit: '<amount(100, 300)>'
+        currency: 'EUR'
+    # Réservations CONFIRMÉES proches sur les annonces démo : jours "réservés" du calendrier + filtre dates de recherche.
+    reservation_demo_confirmed_{1..2}:
+        property: '@property_demo_<current()>'
+        guest: '@guest_*'
+        checkinDate: '<dateImmutable("+1 days", "+2 days")>'
+        checkoutDate: '<dateImmutable("+3 days", "+4 days")>'
+        guestsCount: 2
+        status: 'confirmed'
+        totalPrice: '<amount(200, 600)>'
+        cleaningFee: '<amount(20, 50)>'
+        serviceFee: '<amount(15, 50)>'
+        securityDeposit: '<amount(100, 250)>'
+        currency: 'EUR'
 
 App\Entity\ReservationStatusHistory:
     status_history_{1..60}:
