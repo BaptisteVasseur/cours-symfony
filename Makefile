@@ -9,9 +9,6 @@ sh:
 cache:
 	docker compose exec php php bin/console cache:clear
 
-fixtures_load:
-    docker compose exec php php bin/console hautelook:fixtures:load --no-interaction
-
 cache_warmup:
 	docker compose exec php php bin/console cache:warmup
 
